@@ -1,0 +1,7 @@
+[project]
+name = "tissueagent"
+version = "0.1.0"
+description = "autonomous AI agent for spatial transcriptomics research"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
