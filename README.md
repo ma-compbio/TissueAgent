@@ -1,17 +1,59 @@
-# TissueAgent
+# SpatialAgent
 
-### Repository set-up:
+SpatialAgent is a multi-agent system for automating spatial transcriptomics data analysis and accelerating scientific discovery.
 
-1. Clone the repository and `cd` into the local directory
+## Installation
 
-2. Install Python 3.12 and [uv](https://docs.astral.sh/uv/) (e.g. `pip` or `nix`):
+1. **Clone the repository**  
+   ```bash
+   git clone https://github.com/wenduocheng/SpatialAgent.git
+   cd SpatialAgent
 
-3. Run `uv sync` in the local repository
 
-4. Use `uv add [package]` to install additional dependencies through `pip`
+2. **Using [conda](https://anaconda.org/anaconda/conda)**:
 
-### Usage
+   > *If this is your first time using Conda, initialize your shell (once):*
+   >
+   > ```bash
+   > conda init bash     # or zsh, fish, etc.
+   > source ~/.bashrc    # or ~/.zshrc
+   > ```
 
-1. Run `source .venv/bin/activate` to activate the virtual environment created by `uv`
+   Create and activate a Conda environment, then install dependencies:
 
-2. Use `[TBD]` to start the streamlit application
+   ```bash
+   conda env create -f devenv/environment.yml
+   ```
+
+3. **Using [venv](https://docs.python.org/3/library/venv.html)** (requires Python 3.9):
+
+   ```bash
+   python3.9 -m venv .venv
+   # macOS/Linux
+   source .venv/bin/activate
+   # Windows (PowerShell)
+   .venv\Scripts\Activate.ps1
+   
+   pip install --upgrade pip
+   pip install -r devenv/requirements.txt
+   ```
+
+4. **Configure API keys** (optional)
+    Append your keys to your shell config (`~/.bashrc`, `~/.zshrc`, etc.):
+
+   ```bash
+   echo 'export OPENAI_API_KEY="YOUR_OPENAI_API_KEY"'   >> ~/.bashrc
+   echo 'export ANTHROPIC_API_KEY="YOUR_ANTHROPIC_API_KEY"' >> ~/.bashrc
+   echo 'export SERP_API_KEY="YOUR_SERP_API_KEY"'       >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+5. **Build Documentation** (to do)
+
+## Usage
+
+Launch the Streamlit app with the following command and follow the instructions displayed.
+```bash
+PYTHONPATH=$(pwd)/src python -m streamlit run src/app.py
+```
+

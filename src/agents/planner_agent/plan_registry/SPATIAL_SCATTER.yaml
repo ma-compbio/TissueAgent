@@ -1,0 +1,35 @@
+template_id: SPATIAL_SCATTER
+title: Spatial coordinates scatterplot
+version: "1.0"
+last_updated: 2025-09-25
+tags: [spatial, visualization, scatterplot]
+
+inputs:
+  - "AnnData(.h5ad) with .obsm['spatial'] or obs['x','y']"
+
+outputs:
+  - spatial_points.png
+  - spatial_points.csv
+  - viz_checks.json
+
+# one-line sketch for the planner's lookup
+step_sketch: >
+  validate coords → choose color field → render scatter → export coords table
+eval: ["file_exists(spatial_points.png)", "n_points>0", "n_nan==0", "aspect≈1"]
+
+# default params the Manager/Executor may adapt
+defaults:
+  coord_priority: ["obsm:spatial", "obs:x,y"]
+  color_key_preference: ["cluster", "cell_type", "sample_id"]
+  figure:
+    size_px: [2400, 2400]   
+    point_size: 3
+    alpha: 0.7
+
+# checklist lines the Planner can adapt/emit (≤160 chars each)
+checklist:
+  - "Locate coordinates (.obsm['spatial'] or obs['x','y'])"
+  - "Choose color field (cluster/cell_type/gene); record choice in meta.json"
+  - "Render scatter (equal aspect, axis off); save spatial_points.png + thumb"
+  - "Export spatial_points.csv with [x,y,<color_key>,sample_id?]"
+  - "Run sanity checks (n>0, no NaN, aspect~1); write viz_checks.json"
