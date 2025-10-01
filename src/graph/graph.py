@@ -23,6 +23,12 @@ from agents.planner_agent.prompt import PlannerPrompt
 from agents.planner_agent.tools import create_planner_tools
 from agents.manager_agent.prompt import ManagerPrompt
 from agents.manager_agent.tools import create_manager_tools
+from agents.recruiter_agent.prompt import RecruiterPrompt
+from agents.recruiter_agent.tools import create_recruiter_tools
+from agents.evaluator_agent.prompt import EvaluatorPrompt
+from agents.evaluator_agent.tools import create_evaluator_tools
+from agents.reporter_agent.prompt import ReporterPrompt
+from agents.reporter_agent.tools import create_reporter_tools
 
 
 def create_spatialagent_graph(
@@ -97,6 +103,8 @@ def create_spatialagent_graph(
     graph = StateGraph(AgentState)
 
     # --- Planner node ---
+
+
     planner_id = "planner"
     planner_tools = create_planner_tools(api_keys)  # registry/index + selector + file_retriever
     planner_model = bind_retry(model_ctor().bind_tools(planner_tools))
@@ -110,6 +118,20 @@ def create_spatialagent_graph(
 
     graph.add_node(planner_node_id, planner_node)
     graph.add_node(planner_tool_node_id, planner_tool_node)
+
+    # --- Recruiter node ---
+    recruiter_id = "recruiter"
+    recruiter_tools = create_recruiter_tools(api_keys)
+    recruiter_model = bind_retry(model_ctor().bind_tools(recruiter_tools))
+    recruiter_prompt = RecruiterPrompt(agent_id_descriptions)
+
+    recruiter_node_id = assign_agent_node_id(recruiter_id)
+    recruiter_tool_node_id = assign_tool_node_id(recruiter_id)
+
+    recruiter_node = create_agent_node(recruiter_node_id, recruiter_model, recruiter_prompt)
+    recruiter_tool_node = ToolNode(recruiter_tools)
+    graph.add_node(recruiter_node_id, recruiter_node)
+    graph.add_node(recruiter_tool_node_id, recruiter_tool_node)
 
     # --- Manager node ---
     manager_id = "manager"
@@ -128,20 +150,140 @@ def create_spatialagent_graph(
     graph.add_node(manager_node_id, manager_node)
     graph.add_node(manager_tool_node_id, manager_tool_node)
 
+    # --- Evaluator node ---
+    evaluator_id = "evaluator"
+    evaluator_tools = create_evaluator_tools(api_keys)
+    evaluator_model = bind_retry(model_ctor().bind_tools(evaluator_tools))
+    evaluator_prompt = EvaluatorPrompt  # static string prompt
+    evaluator_node_id = assign_agent_node_id(evaluator_id)
+    evaluator_tool_node_id = assign_tool_node_id(evaluator_id)
+    evaluator_node = create_agent_node(evaluator_node_id, evaluator_model, evaluator_prompt)
+    evaluator_tool_node = ToolNode(evaluator_tools)
+    graph.add_node(evaluator_node_id, evaluator_node)
+    graph.add_node(evaluator_tool_node_id, evaluator_tool_node)
+
+
+    # --- Reporter node ---
+    reporter_id = "reporter"
+    reporter_tools = create_reporter_tools(api_keys)
+    reporter_model = bind_retry(model_ctor().bind_tools(reporter_tools))
+    reporter_prompt = ReporterPrompt  # static string prompt
+    reporter_node_id = assign_agent_node_id(reporter_id)
+    reporter_tool_node_id = assign_tool_node_id(reporter_id)
+    reporter_node = create_agent_node(reporter_node_id, reporter_model, reporter_prompt)
+    reporter_tool_node = ToolNode(reporter_tools)
+    graph.add_node(reporter_node_id, reporter_node)
+    graph.add_node(reporter_tool_node_id, reporter_tool_node)
+
     # --- Transitions ---
-    # Planner loops Agent <-> Tools until it decides it's done (returns <final>),
-    # then we move on to Manager.
-    planner_transition = create_agent_transition(planner_tool_node_id, manager_node_id)
+    # Planner -> Recruiter -> Manager -> Evaluator -> Reporter
+
+    # Planner --> (tools or done --> END or recruiter)
+    def planner_router(state: AgentState) -> str:
+        """
+        Decide where to go next based on the Planner's final text.
+        Expected planner outputs start with one of:
+        - 'ROUTE: DIRECT'
+        - 'ROUTE: CLARIFY'
+        - 'ROUTE: PLAN'
+        """
+        if state['messages'][-1].tool_calls:
+            # Route to the tool execution node
+            return planner_tool_node_id
+    
+        last_msg = state['messages'][-1]
+        text = last_msg.content.strip() 
+        head = text.splitlines()[0].upper() if text else ""
+        # print('PLANNER ROUTER RAW:', repr(text))
+        # print('PLANNER ROUTER:', head)
+        if head.startswith("ROUTE: DIRECT"):
+            return END
+        if head.startswith("ROUTE: CLARIFY"):
+            return END
+        return recruiter_node_id
+    
     graph.add_edge(START, planner_node_id)
-    graph.add_conditional_edges(planner_node_id, planner_transition, [planner_tool_node_id, manager_node_id])
+    graph.add_conditional_edges(
+        planner_node_id,
+        planner_router,
+        {planner_tool_node_id: planner_tool_node_id, END: END, recruiter_node_id: recruiter_node_id},
+    )
     graph.add_edge(planner_tool_node_id, planner_node_id)
 
-    # Manager loops Agent <-> Tools until it returns <final>, then END.
-    manager_transition = create_agent_transition(manager_tool_node_id, END)
-    graph.add_conditional_edges(manager_node_id, manager_transition, [manager_tool_node_id, END])
+    # Recruiter -> (tools or done->Manager)
+    recruiter_transition = create_agent_transition(recruiter_tool_node_id, manager_node_id)
+    graph.add_conditional_edges(recruiter_node_id, recruiter_transition, [recruiter_tool_node_id, manager_node_id])
+    graph.add_edge(recruiter_tool_node_id, recruiter_node_id)
+
+    # Manager -> (tools or done->Evaluator)
+    manager_transition = create_agent_transition(manager_tool_node_id, evaluator_node_id)
+    graph.add_conditional_edges(manager_node_id, manager_transition, [manager_tool_node_id, evaluator_node_id])
     graph.add_edge(manager_tool_node_id, manager_node_id)
 
+    # Evaluator -> (tools, or done --> Reporter or Planner)
+    def evaluator_router(state: AgentState) -> str:
+        """
+        Decide where to go next based on the Planner's final text.
+        Expected planner outputs start with one of:
+        - 'ROUTE: REPLAN'
+        - 'ROUTE: REPORT'
+        """
+        if state['messages'][-1].tool_calls:
+            # Route to the tool execution node
+            return evaluator_tool_node_id
+    
+        last_msg = state['messages'][-1]
+        text = last_msg.content.strip() 
+        head = text.splitlines()[0].upper() if text else ""
+
+        if head.startswith("ROUTE: REPLAN"):
+            return planner_node_id
+        # head.startswith("ROUTE: REPORT"):
+        return reporter_node_id
+        
+    
+    # evaluator_transition = create_agent_transition(evaluator_tool_node_id, reporter_node_id)
+    # graph.add_conditional_edges(evaluator_node_id, evaluator_transition, [evaluator_tool_node_id, reporter_node_id])
+    graph.add_conditional_edges(
+        evaluator_node_id,
+        evaluator_router,
+        {evaluator_tool_node_id: evaluator_tool_node_id, planner_node_id: planner_node_id, reporter_node_id: reporter_node_id},
+    )
+    graph.add_edge(evaluator_tool_node_id, evaluator_node_id)
+
+    # Reporter -> (tools or done->END)
+    reporter_transition = create_agent_transition(reporter_tool_node_id, END)
+    graph.add_conditional_edges(reporter_node_id, reporter_transition, [reporter_tool_node_id, END])
+    graph.add_edge(reporter_tool_node_id, reporter_node_id)
+
     return graph
+
+
+
+
+ # Add planner tool loop
+    # planner_transition = create_agent_transition(planner_tool_node_id, "planner_post")
+    # graph.add_edge(START, planner_node_id)
+    # graph.add_conditional_edges(planner_node_id, planner_transition, [planner_tool_node_id, "planner_post"])
+    # graph.add_edge(planner_tool_node_id, planner_node_id)
+
+    # # Post-planner router node (no-op)
+    # def planner_post_node(state: AgentState) -> AgentState:
+    #     return state
+    # graph.add_node("planner_post", planner_post_node)
+
+    # # Router: return True to END (DIRECT/CLARIFY), False to recruiter (PLAN)
+    # def planner_router(state: AgentState) -> bool:
+    #     text = (getattr(state, "last_message", "") or "").strip().upper()
+    #     head = text.splitlines()[0] if text else ""
+    #     print('PLANNER ROUTER RAW:', repr(text))
+    #     out = head.startswith("ROUTE: DIRECT") or head.startswith("ROUTE: CLARIFY")
+    #     print('PLANNER ROUTER:', head, '->', out)
+    #     return out
+
+    # graph.add_conditional_edges("planner_post", planner_router, {True: END, False: recruiter_node_id})
+
+
 
 
 # import anthropic

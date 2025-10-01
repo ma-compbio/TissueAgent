@@ -21,15 +21,15 @@ from typing import List
 from agents.agent_utils import file_retriever_tool
 from api_keys import APIKeys
 
-from .tools_impl.plan_registry_tool import plan_registry_tool
-from .tools_impl.template_selector_tool import template_selector_tool
+# from .tools_impl.plan_registry_tool import plan_registry_tool
+# from .tools_impl.template_selector_tool import template_selector_tool
 
 
 # Exposed tool names (helps UI render / logs)
 PlannerToolNames: List[str] = [
     "file_retriever_tool",
-    "plan_registry_tool",
-    "template_selector_tool",
+    # "plan_registry_tool",
+    # "template_selector_tool",
 ]
 
 def create_planner_tools(api_keys: APIKeys):
@@ -39,6 +39,6 @@ def create_planner_tools(api_keys: APIKeys):
     """
     return [
         file_retriever_tool,
-        plan_registry_tool,
-        template_selector_tool,
+        # plan_registry_tool,
+        # template_selector_tool,
     ]

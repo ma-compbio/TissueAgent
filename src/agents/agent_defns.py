@@ -11,8 +11,8 @@ from agents.agent_registry.searcher_agent.prompt import SearcherPrompt, Searcher
 from agents.agent_registry.searcher_agent.tools import create_searcher_tools
 from agents.agent_registry.single_cell_agent.prompt import SingleCellPrompt, SingleCellDescription
 from agents.agent_registry.single_cell_agent.tools import create_single_cell_tools
-from agents.reporter_agent.prompt import ReporterPrompt, ReporterDescription
-from agents.reporter_agent.tools import create_reporter_tools
+# from agents.reporter_agent.prompt import ReporterPrompt, ReporterDescription
+# from agents.reporter_agent.tools import create_reporter_tools
 from api_keys import APIKeys
 
 @dataclass
@@ -53,11 +53,11 @@ def create_agent_defns(api_keys: APIKeys) -> List[Agent]:
             prompt=SingleCellPrompt,
             tools=create_single_cell_tools(api_keys),
         ),
-        Agent(
-            id="reporter",
-            name="Report Agent",
-            description=ReporterDescription,
-            prompt=ReporterPrompt,
-            tools=create_reporter_tools(api_keys),
-        )
+        # Agent(
+        #     id="reporter",
+        #     name="Report Agent",
+        #     description=ReporterDescription,
+        #     prompt=ReporterPrompt,
+        #     tools=create_reporter_tools(api_keys),
+        # )
     ]

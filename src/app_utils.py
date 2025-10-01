@@ -44,10 +44,10 @@ def render_subagent_history(messages: List[BaseMessage]):
                     tool_names.append(tool_call["name"])
 
                 output_str = ", ".join(tool_names)
-                st.markdown(f"**[{agent_name}]**: {output_str}")
+                st.text(f"**[{agent_name}]**: {output_str}")
             else:
                 agent_name = message.name
-                st.markdown(f"**[{agent_name}]**: {content}")
+                st.text(f"**[{agent_name}]**: {content}")
 
         elif isinstance(message, ToolMessage):
             tool_output = message.content
@@ -69,11 +69,28 @@ def render_conversation_history(messages: List[BaseMessage],
         content = message.content
         if isinstance(message, HumanMessage):
             with st.chat_message("user"):
-                st.markdown(content)
+                st.text(content)
         elif isinstance(message, AIMessage):
+            # if content := message.content:
+            #     with st.chat_message("assistant"):
+            #         st.text(content)
             if content := message.content:
-                with st.chat_message("assistant"):
-                    st.markdown(content)
+                with st.chat_message("assistant"): 
+                    # Remove "ROUTE:" header if present
+                    # 1. Split the content into lines.
+                    lines = content.strip().split('\n')
+                    
+                    # 2. Check if the first line starts with "ROUTE:".
+                    if lines and lines[0].upper().startswith("ROUTE:"):
+                        # Remove the first line (the ROUTE)
+                        display_content = '\n'.join(lines[1:]).strip()
+                    else:
+                        # Use the original content if no ROUTE header is found
+                        display_content = content.strip()
+                    # ═══════════════════════════════
+                    
+                    # 3. Use st.text() to display the remaining content, preserving newlines.
+                    st.text(display_content)
         elif isinstance(message, ToolMessage) and enable_debug:
             if message.name in ManagerToolNames:
                 tool_output = message.content
@@ -89,3 +106,5 @@ def render_conversation_history(messages: List[BaseMessage],
                         render_subagent_history(agent_state["messages"])
                 else:
                     st.warning(f"{agent_name}: {agent_state}", icon = "⚠️")
+
+

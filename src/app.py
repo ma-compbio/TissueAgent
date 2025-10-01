@@ -241,7 +241,7 @@ else:
 # ║ Disabled Chat UI      ║
 # ╚═══════════════════════╝
 
-st.title("🧬 SpatialAgent")
+st.title("🧬 TissueAgent")
 
 if not st.session_state.model_selected:
     st.chat_input("Select in the sidebar!", disabled=True)

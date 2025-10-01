@@ -1,5 +1,5 @@
 template_id: SPATIAL_SCATTER
-title: Spatial coordinates scatterplot
+task: Plooting spatial coordinates scatterplot
 version: "1.0"
 last_updated: 2025-09-25
 tags: [spatial, visualization, scatterplot]
@@ -8,14 +8,13 @@ inputs:
   - "AnnData(.h5ad) with .obsm['spatial'] or obs['x','y']"
 
 outputs:
-  - spatial_points.png
+  - spatial_scatterplot.png
   - spatial_points.csv
-  - viz_checks.json
 
 # one-line sketch for the planner's lookup
 step_sketch: >
   validate coords → choose color field → render scatter → export coords table
-eval: ["file_exists(spatial_points.png)", "n_points>0", "n_nan==0", "aspect≈1"]
+eval: ["file_exists(spatial_scatterplot.png)", "n_points>0", "n_nan==0", "aspect≈1"]
 
 # default params the Manager/Executor may adapt
 defaults:
