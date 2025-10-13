@@ -13,3 +13,9 @@ def create_data_analysis_tools(api_keys: APIKeys):
             python_repl_log_tool,
             file_retriever_tool,
             code_rag_tool]
+
+DataAnalysisTools: List[StructuredTool] = [
+    python_repl_exec_tool
+
+    
+]

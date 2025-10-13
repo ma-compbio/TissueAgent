@@ -31,7 +31,7 @@ class LoggingFormatter(logging.Formatter):
         out    = header + msg
         if record.exc_info:
             out = out.rstrip("\n") + "\n" + self.formatException(record.exc_info)
-        return out
+        return out + "\n"
 
 def setup_logging(
     *,

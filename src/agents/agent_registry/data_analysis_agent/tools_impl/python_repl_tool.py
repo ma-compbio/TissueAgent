@@ -53,6 +53,14 @@ def create_python_repl_tool() -> Tuple[StructuredTool, StructuredTool]:
     )
 
     python_repl = PythonREPLObj
+    # Ensure headless plotting works in non-GUI environments
+    python_repl.run_command(
+        "\n".join([
+            "import matplotlib",
+            "matplotlib.use('Agg', force=True)",
+            "del matplotlib"
+        ])
+    )
     python_repl.run_command(
         "\n".join([
             "import warnings",
@@ -68,6 +76,7 @@ def create_python_repl_tool() -> Tuple[StructuredTool, StructuredTool]:
     python_repl.run_command(
         "\n".join([
             "import os",
+            "os.makedirs(DATA_DIR, exist_ok=True)",
             "os.chdir(DATA_DIR)",
             "del os",
         ])

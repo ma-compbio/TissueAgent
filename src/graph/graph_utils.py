@@ -1,23 +1,20 @@
-# graph/graph_utils.py
 import logging
+from queue import Queue
+from typing import Any, Callable, List, Optional
 
+from langchain.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langgraph.graph import MessagesState
 from langgraph.graph.state import CompiledStateGraph
-from langchain.tools import StructuredTool
-from queue import Queue
-from typing import Any, Callable, List, Tuple
+from langgraph.types import Command
 
-from agents.agent_utils import PythonREPLObj
-from graph.state import AgentState
 from logger import logger
 
 
-def standardize_message_format(message: AIMessage) -> AIMessage:
-    """
-    Normalize AIMessage to ensure .tool_calls are present and content is readable,
-    without throwing on non-text parts (e.g., images).
-    """
+def standardize_message_format(
+    message: AIMessage
+) -> AIMessage:
     if isinstance(message.content, list):
         text_parts = []
         tool_calls = []
@@ -36,18 +33,12 @@ def standardize_message_format(message: AIMessage) -> AIMessage:
                 }
                 tool_calls.append(tool_call)
             else:
-                # image_url, image, etc.
                 other_parts.append(item)
 
-        # If there are non-text parts, keep the original list so downstream can use them.
         if other_parts:
             return AIMessage(message.content, id=message.id, tool_calls=tool_calls)
-
-        # Otherwise collapse to plain text for simplicity.
         return AIMessage("\n".join(text_parts).strip(), id=message.id, tool_calls=tool_calls)
-
     return message
-
 
 def _stringify_content(content: Any) -> List[str]:
     """
@@ -103,46 +94,35 @@ def log_message(message: BaseMessage):
     full_message = "\n".join(lines)
     logger.info(full_message)
 
-
 def create_agent_node(
-    agent_name: str, 
-    agent_model: BaseChatModel, 
-    prompt: str
-) -> Callable[[AgentState], AgentState]:
-
-    def agent_node(state: AgentState) -> AgentState:
+    agent_node_id: str,
+    agent_model: BaseChatModel,
+    prompt: str,
+    tool_node_id: str,
+    exit_node_id: Optional[str] = None,
+    exit_node_id_fn: Optional[Callable[[str], str]] = None
+) -> Callable[[MessagesState], Command]:
+    
+    def agent_node(state: MessagesState) -> Command:
         messages = state["messages"]
         system_prompt = SystemMessage(prompt)
         response = agent_model.invoke([system_prompt] + messages)
         response = standardize_message_format(response)
-        response.name = agent_name
-
-        log_message(response)
-        return {"messages": response}
-
-    def data_analysis_agent_node(state: AgentState) -> AgentState:
-        messages = state["messages"]
-        system_prompt = SystemMessage(prompt)
-        response = agent_model.invoke([system_prompt] + messages)
-        response = standardize_message_format(response)
-        response.name = agent_name
-
+        response.name = agent_node_id
         log_message(response)
 
-        # hook output of data analysis agent to Python REPL log,
-        # used for report generation.
-        PythonREPLObj.add_text(f"[Agent]: {response}")
+        next_node = tool_node_id if getattr(response, "tool_calls", []) else None
+        if not next_node:
+            next_node = exit_node_id if exit_node_id else exit_node_id_fn(response.content)
+        return Command(goto=next_node, update={"messages": [response]})
+    return agent_node
 
-        return {"messages": response}
-
-    return (data_analysis_agent_node
-            if agent_name == "data_analysis_agent" else agent_node)
-
-
-def create_tool_node(tools: List[StructuredTool]) -> Callable[[AgentState], AgentState]:
+def create_tool_node(
+    tools: List[StructuredTool]
+) -> Callable[[MessagesState], MessagesState]:
     tools_by_name = {tool.name: tool for tool in tools}
 
-    def tool_node(state: AgentState) -> AgentState:
+    def tool_node(state: MessagesState) -> MessagesState:
         result = []
         for tool_call in state["messages"][-1].tool_calls:
             tool = tools_by_name[tool_call["name"]]
@@ -155,20 +135,12 @@ def create_tool_node(tools: List[StructuredTool]) -> Callable[[AgentState], Agen
         return {"messages": result}
     return tool_node
 
-
-def create_agent_transition(tool_node_id: str, exit_node_id: str):
-    def agent_transition(state: AgentState) -> str:
-        messages = state["messages"]
-        last_message = messages[-1]
-        if getattr(last_message, "tool_calls", []):
-            return tool_node_id
-        return exit_node_id
-    return agent_transition
-
-
-def create_agent_invocation_tool(agent_node_id: str, agent_name: str,
-                                 agent: CompiledStateGraph,
-                                 state_queue: Queue):
+def create_agent_invocation_tool(
+    agent_node_id: str,
+    agent_name: str,
+    agent: CompiledStateGraph,
+    state_queue: Queue
+):
     def agent_invocation_tool(prompt: str) -> str:
         logging.info(f"Invoking agent `{agent_node_id}`")
         final_state = agent.invoke({"messages": [HumanMessage(prompt)]})

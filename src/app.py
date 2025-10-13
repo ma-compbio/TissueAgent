@@ -9,7 +9,6 @@ import streamlit_nested_layout
 from functools import partial
 from copy import deepcopy
 from langchain_core.messages import HumanMessage, ToolMessage
-from langchain_openai import ChatOpenAI  
 from langgraph.errors import GraphRecursionError
 from pydantic import SecretStr
 from streamlit_file_browser import st_file_browser
@@ -22,14 +21,10 @@ import mimetypes
 from app_utils import LLMOptions, render_conversation_history as util_render_conversation_history
 from agents.manager_agent.tools import ManagerToolNames
 from agents.agent_utils import PythonREPLObj
-from graph.graph import create_spatialagent_graph
+from graph.graph import create_tissueagent_graph
 from graph.graph_utils import log_message
 from config import DATA_DIR, SEED, RECURSION_LIMIT
 
-
-# ╔═══════════════════════╗
-# ║ Helpers               ║
-# ╚═══════════════════════╝
 
 def clear_queue(q: queue.Queue):
     """Remove everything from a Queue in a thread-safe way."""
@@ -81,10 +76,6 @@ if "pending_images" not in st.session_state:
 # Modal for image upload (opened by the ➕ button)
 image_modal = Modal("Add image(s)", key="image_modal", max_width=500)
 
-
-# ╔═══════════════════════╗
-# ║ Streamlit Sidebar     ║
-# ╚═══════════════════════╝
 
 if "api_keys" not in st.session_state:
     st.session_state["api_keys"] = {
@@ -278,11 +269,13 @@ if "state_queue" not in st.session_state:
 state_queue = st.session_state["state_queue"]
 
 if "agent" not in st.session_state:
-    graph = create_spatialagent_graph(
-        model_ctor=model_partial_ctor,
-        api_keys=st.session_state["api_keys"],
-        state_queue=state_queue,
-        max_retries=6
+    bind_retry_fn = lambda model: model.with_retry(
+        retry_if_exception_type=(openai.RateLimitError, anthropic.RateLimitError),
+        stop_after_attempt = 3,
+    )
+    graph = create_tissueagent_graph(
+        state_queue,
+        bind_retry_fn
     )
     st.session_state["agent"] = graph.compile()
 agent = st.session_state["agent"]

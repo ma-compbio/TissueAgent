@@ -1,3 +1,6 @@
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 from pathlib import Path
 
 ROOT             = Path(__file__).parent.parent

@@ -15,6 +15,20 @@ def format_agent_id_descriptions(agent_id_descriptions: Dict[str, str]):
         f" - {id}: {description}" for id, description in agent_id_descriptions.items()
     ])
 
+
+def extract_block(
+    pattern: str,
+    text: str
+) -> Optional[str]:
+    matches = list(
+        re.finditer(r'(?is)<' + pattern + r'(?:\s[^>]*)?>(.*?)</' + pattern + '>', text)
+    )
+    if len(matches) != 1:
+        return None
+    block = matches[0].group(1).strip()
+    return block or None
+
+
 ### file retriever tool
 
 def file_retriever() -> str:
