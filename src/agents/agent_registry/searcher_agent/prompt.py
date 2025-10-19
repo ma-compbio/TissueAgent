@@ -1,7 +1,7 @@
 # # src.agents.searcher_agent.prompt.py
 
 SearcherDescription = """
-Searches and retrieves scientific literature, and authoritative web sources.
+Literature & web-search specialist. Equipped with tools to search Google Scholar, PubMed, and the general web. 
 """.strip()
 
 SearcherPrompt = """

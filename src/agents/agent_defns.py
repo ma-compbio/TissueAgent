@@ -7,13 +7,13 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 
 from agents.agent_utils import file_retriever_tool
-from agents.planner_agent.prompt import PlannerPrompt
-from agents.recruiter_agent.prompt import RecruiterPrompt
-from agents.manager_agent.prompt import ManagerPrompt
-from agents.evaluator_agent.prompt import EvaluatorPrompt
-from agents.reporter_agent.prompt import ReporterPrompt
+from agents.planner_agent.prompt import PlannerPrompt, PlannerDescription
+from agents.recruiter_agent.prompt import RecruiterPrompt, RecruiterDescription
+from agents.manager_agent.prompt import ManagerPrompt, ManagerDescription
+from agents.evaluator_agent.prompt import EvaluatorPrompt, EvaluatorDescription
+from agents.reporter_agent.prompt import ReporterPrompt, ReporterDescription
 from agents.reporter_agent.tools import ReporterTools
-
+from api_keys import APIKeys
 
 @dataclass
 class ReActAgent:
@@ -37,7 +37,7 @@ DefaultModelCtor = partial(ChatOpenAI, model="gpt-5")
 PlannerAgent = ReActAgent(
     id          = "planner",
     name        = "Planner Agent",
-    description = "",
+    description = PlannerDescription,
     prompt      = PlannerPrompt,
     tools       = [file_retriever_tool],
     model_ctor  = DefaultModelCtor,
@@ -46,7 +46,7 @@ PlannerAgent = ReActAgent(
 RecruiterAgent = ReActAgent(
     id          = "recruiter",
     name        = "Recruiter Agent",
-    description = "",
+    description = RecruiterDescription,
     prompt      = RecruiterPrompt,
     tools       = [file_retriever_tool],
     model_ctor  = DefaultModelCtor,
@@ -55,7 +55,7 @@ RecruiterAgent = ReActAgent(
 ManagerAgent = ReActAgent(
     id          = "manager",
     name        = "Manager Agent",
-    description = "",
+    description = ManagerDescription,
     prompt      = ManagerPrompt,
     tools       = [file_retriever_tool],
     model_ctor  = DefaultModelCtor,
@@ -64,7 +64,7 @@ ManagerAgent = ReActAgent(
 EvaluatorAgent = ReActAgent(
     id          = "evaluator",
     name        = "Evaluator Agent",
-    description = "",
+    description = EvaluatorDescription,
     prompt      = EvaluatorPrompt,
     tools       = [],
     model_ctor  = DefaultModelCtor,
@@ -73,7 +73,7 @@ EvaluatorAgent = ReActAgent(
 ReporterAgent = ReActAgent(
     id          = "reporter",
     name        = "Reporter Agent",
-    description = "",
+    description = ReporterDescription,
     prompt      = ReporterPrompt,
     tools       = ReporterTools,
     model_ctor  = DefaultModelCtor,
@@ -84,25 +84,44 @@ ReporterAgent = ReActAgent(
 import agents.agent_registry.coding_agent.model as CodingAgent
 import agents.agent_registry.data_processing_agent.prompt as DataProcessingAgentPrompt
 import agents.agent_registry.data_processing_agent.tools as DataProcessingAgentTools
+import agents.agent_registry.searcher_agent.prompt as SearcherAgentPrompt
+import agents.agent_registry.searcher_agent.tools as SearcherAgentTools
+import agents.agent_registry.single_cell_agent.prompt as SingleCellAgentPrompt
+import agents.agent_registry.single_cell_agent.tools as SingleCellAgentTools
 
-
-
-AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
-    CustomAgent(
-        id          = "coding_agent",
-        name        = "Coding Agent",
-        description = CodingAgent.CodingAgentDescription,
-        ctor        = CodingAgent.create_coding_agent,
-    ),
-    ReActAgent(
-        id          = "data_processing",
-        name        = "Data Processing Agent",
-        description = DataProcessingAgentPrompt.DataProcessingDescription,
-        prompt      = DataProcessingAgentPrompt.DataProcessingPrompt,
-        tools       = DataProcessingAgentTools.DataProcessingTools,
-        model_ctor  = DefaultModelCtor,
-    ),
-]
+def create_agent_defns(api_keys: APIKeys) -> List[Union[ReActAgent, CustomAgent]]:
+    return [
+        CustomAgent(
+            id          = "coding_agent",
+            name        = "Coding Agent",
+            description = CodingAgent.CodingAgentDescription,
+            ctor        = CodingAgent.create_coding_agent,
+        ),
+        ReActAgent(
+            id          = "data_processing",
+            name        = "Data Processing Agent",
+            description = DataProcessingAgentPrompt.DataProcessingDescription,
+            prompt      = DataProcessingAgentPrompt.DataProcessingPrompt,
+            tools       = DataProcessingAgentTools.DataProcessingTools,
+            model_ctor  = DefaultModelCtor,
+        ),
+        ReActAgent(
+            id          = "searcher",
+            name        = "Searcher Agent",
+            description = SearcherAgentPrompt.SearcherDescription,
+            prompt      = SearcherAgentPrompt.SearcherPrompt,
+            tools       = SearcherAgentTools.create_searcher_tools(api_keys=api_keys),
+            model_ctor  = DefaultModelCtor,
+        ),
+        ReActAgent(
+            id          = "single_cell",
+            name        = "Single Cell Agent",
+            description = SingleCellAgentPrompt.SingleCellDescription,
+            prompt      = SingleCellAgentPrompt.SingleCellPrompt,
+            tools       = SingleCellAgentTools.SingleCellTools,
+            model_ctor  = DefaultModelCtor,
+        ),
+    ]
 
 # from dataclasses import dataclass
 # from typing import List

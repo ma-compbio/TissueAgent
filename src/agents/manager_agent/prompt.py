@@ -50,7 +50,7 @@ Steps:
 - Start the output with `Task`.
 - Do not change the title from the input.
 - Do Not change the reason, step, expected artifacts, assigned agent, or assigned agent reason of each step from the input.
-- For each step, replace [ ] with [✓] when done, or [✗] if failed.
+- For each step, replace [ ] with [✓] when done, or [✗] if failed or skipped.
 - Add a new field <execution result> and <execution artifacts> for each completed step.
 
 Here is a breakdown of the two new fields <execution result> and <execution artifacts> you need to include in each completed step as well as their specific instructions:

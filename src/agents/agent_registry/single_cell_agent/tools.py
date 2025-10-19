@@ -7,24 +7,25 @@ from api_keys import APIKeys
 from config import CACHED_DOCS_DIR
 
 
-def create_single_cell_tools(api_keys: APIKeys) -> List[StructuredTool]:
     
-    query_cellxgene_single_cell_tool = StructuredTool.from_function(
-        func=run_query_cellxgene_census_live,
-        name="query_cellxgene_census_live_tool",
-        description=(
-            "Live-filters CELLxGENE Census single-cell datasets by species, tissues, diseases, etc."
-            "Accepts strings or lists for filters. Uses the latest Census by default."
-        ),
-    )
+query_cellxgene_single_cell_tool = StructuredTool.from_function(
+    func=run_query_cellxgene_census_live,
+    name="query_cellxgene_census_live_tool",
+    description=(
+        "Live-filters CELLxGENE Census single-cell datasets by species, tissues, diseases, etc."
+        "Accepts strings or lists for filters. Uses the latest Census by default."
+    ),
+)
 
-    retrieve_cellxgene_single_cell_tool = StructuredTool.from_function(
-        func=retrieve_cellxgene_single_cell,
-        name="retrieve_cellxgene_single_cell_tool",
-        description="Downloads a dataset (indexed by dataset_id) from CELLxGENE for downstream analysis"
-    )
+retrieve_cellxgene_single_cell_tool = StructuredTool.from_function(
+    func=retrieve_cellxgene_single_cell,
+    name="retrieve_cellxgene_single_cell_tool",
+    description="Downloads a dataset (indexed by dataset_id) from CELLxGENE for downstream analysis"
+)
 
-    return [
-        query_cellxgene_single_cell_tool,
-        retrieve_cellxgene_single_cell_tool,
-    ]
+
+SingleCellTools = [
+    query_cellxgene_single_cell_tool,
+    retrieve_cellxgene_single_cell_tool,
+]
+

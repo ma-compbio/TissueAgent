@@ -274,8 +274,9 @@ if "agent" not in st.session_state:
         stop_after_attempt = 3,
     )
     graph = create_tissueagent_graph(
-        state_queue,
-        bind_retry_fn
+        state_queue=state_queue,
+        model_proc_fn=bind_retry_fn,
+        api_key=st.session_state["api_keys"],
     )
     st.session_state["agent"] = graph.compile()
 agent = st.session_state["agent"]

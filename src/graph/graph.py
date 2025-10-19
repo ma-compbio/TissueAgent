@@ -1,31 +1,35 @@
 import logging
 from queue import Queue
 from typing import Callable
-
+from api_keys import APIKeys
 from langchain_core.runnables import Runnable
 from langgraph.graph import END, MessagesState, START, StateGraph
 
 from agents.agent_defns import (
-    AgentDefns, CustomAgent, PlannerAgent, ManagerAgent, ReActAgent, RecruiterAgent, EvaluatorAgent, ReporterAgent
+    create_agent_defns, CustomAgent, PlannerAgent, ManagerAgent, ReActAgent, RecruiterAgent, EvaluatorAgent, ReporterAgent
 )
 from graph.graph_utils import create_agent_node, create_tool_node, create_agent_invocation_tool
 
 
 def create_tissueagent_graph(
     state_queue: Queue,
-    model_proc_fn: Callable[[Runnable], Runnable]
+    model_proc_fn: Callable[[Runnable], Runnable],
+    api_key: APIKeys,
 ) -> StateGraph:
     assign_agent_node_id = lambda id: f"{id}_agent"
     assign_tool_node_id = lambda id: f"{id}_tools"
 
+    agent_defn = create_agent_defns(api_key)
     agent_id_descriptions = {
-        assign_agent_node_id(a.id): a.description for a in AgentDefns
+        assign_agent_node_id(a.id): a.description for a in agent_defn 
     }
+
+    print("25 Agent ID Descriptions:", agent_id_descriptions)
 
     ## Build Subagents
 
     agent_invocation_tools = []
-    for agent in AgentDefns:
+    for agent in agent_defn:
         if isinstance(agent, ReActAgent):
             agent_subgraph = StateGraph(MessagesState)
             agent_model = model_proc_fn(agent.model_ctor().bind_tools(agent.tools))
