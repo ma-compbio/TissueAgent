@@ -1,0 +1,3 @@
+[server]
+fileWatcherType = "none"
+maxUploadSize=20000

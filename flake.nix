@@ -1,5 +1,5 @@
 {
-  description = "tissue agent development shell";
+  description = "spatialagent development shell";
   inputs.nixpkgs.url = "github:NixOS/nixpkgs";
   outputs = { self, nixpkgs }: 
   let
