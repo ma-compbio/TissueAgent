@@ -128,14 +128,35 @@ class PythonREPLWrapper:
 
     def add_and_run_command(self, command: str):
         output = self._python_repl.run(command)
-        idx = self._run_cnt
-        self._run_cnt += 1
-        self._events.append((f"# In[{idx}]:\n{command}\n\n"
-                             f"# Out[{idx}]:\n{output}", True))
+        # idx = self._run_cnt
+        # self._run_cnt += 1
+        # self._events.append((f"# In[{idx}]:\n{command}\n\n"
+        #                      f"# Out[{idx}]:\n{output}", True))
+        self.record_execution(command, output)
         return output
 
     def add_text(self, text: str):
         self._events.append((f"# Text: {text}", False))
+    
+    def record_execution(self, command: str, output: str):
+        command = command.strip()
+        if not command:
+            return
+
+        idx = self._run_cnt
+        self._run_cnt += 1
+
+        output_text = output.rstrip()
+        if not output_text:
+            output_text = "<no stdout>"
+
+        entry_lines = [f"# In[{idx}]:\n{command}"]
+        entry_lines.append(f"# Out[{idx}]:\n{output_text}")
+        entry = "\n\n".join(entry_lines)
+        self._events.append((entry, True))
+
+    def reset(self):
+        self._clear()
     
     @property
     def command_log(self):

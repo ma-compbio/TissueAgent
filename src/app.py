@@ -61,13 +61,19 @@ def _strip_images_for_display(messages):
     return cleaned
 
 
-def render_conversation_history_display(all_messages, subagent_states):
-    # Call your existing renderer but with text-only copies so the UI doesn't show huge data URLs
+# def render_conversation_history_display(all_messages, subagent_states):
+#     # Call your existing renderer but with text-only copies so the UI doesn't show huge data URLs
+#     return util_render_conversation_history(
+#         _strip_images_for_display(all_messages),
+#         subagent_states
+#     )
+
+def render_conversation_history_display(all_messages, subagent_states, enable_debug):
     return util_render_conversation_history(
         _strip_images_for_display(all_messages),
-        subagent_states
+        subagent_states,
+        enable_debug=enable_debug
     )
-
 
 # One-turn attachments live here until the user sends a message
 if "pending_images" not in st.session_state:
@@ -274,8 +280,10 @@ if "agent_state" not in st.session_state:
 # Initial render (text-only copy)
 render_conversation_history_display(
     st.session_state["agent_state"]["messages"],
-    st.session_state["subagent_states"]
+    st.session_state["subagent_states"],
+    enable_debug
 )
+
 
 # Floating plus button (NOT wrapping chat_input)
 plus_placeholder = st.empty()
@@ -327,7 +335,7 @@ if prompt:
     st.session_state["agent_state"]["messages"].append(user_message)
 
     # Re-render the just-sent message in text-only mode
-    render_conversation_history_display([user_message], {})
+    render_conversation_history_display([user_message], {}, enable_debug)
 
     # clear one-shot attachments after sending
     st.session_state["pending_images"] = []
@@ -376,5 +384,5 @@ if prompt:
     # Final render of new messages (text-only copy)
     render_conversation_history_display(
         st.session_state["agent_state"]["messages"][rendered_prefix:],
-        st.session_state["subagent_states"]
+        st.session_state["subagent_states"], enable_debug
     )

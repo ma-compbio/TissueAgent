@@ -8,7 +8,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
 from agents.agent_utils import PythonREPL, PythonREPLObj
-from config import DATA_DIR
+# from config import DATA_DIR
+from config import DATA_DIR, NOTEBOOK_DIR
 
 
 generate_jupyternb_text_prompt = """\
@@ -30,6 +31,33 @@ by removing redundant code and removing code that resulted in errors. Print all
 images and figures as figures in Jupyter notebook format. DO NOT SAVE IMAGES TO
 FILES. ONLY RESPOND WITH CODE. DO NOT INCLUDE THE OUTPUT.
 """.strip()
+
+def _normalize_filename(filename: Optional[Union[Path, str]]) -> Path:
+    if filename is None:
+        target = NOTEBOOK_DIR / "report.ipynb"
+    else:
+        target = Path(filename)
+
+    if not target.is_absolute():
+        target = (DATA_DIR / target).resolve()
+    else:
+        target = target.resolve()
+
+    try:
+        target.relative_to(DATA_DIR)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Notebook path '{target}' must be inside DATA_DIR '{DATA_DIR}'."
+        ) from exc
+
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Unable to create parent directory for notebook '{target}': {exc}"
+        ) from exc
+
+    return target
 
 def generate_jupyternb(filename: Optional[Union[Path, str]]=None) -> str:
     event_list = PythonREPLObj.event_list
@@ -58,13 +86,18 @@ def generate_jupyternb(filename: Optional[Union[Path, str]]=None) -> str:
         nb.cells.append(text_cell)
         nb.cells.append(code_cell)
 
-    if not filename:
-        filename = DATA_DIR / "report.ipynb"
+    # if not filename:
+    #     filename = DATA_DIR / "report.ipynb"
     try:
-        nbf.write(nb, filename)
+        # nbf.write(nb, filename)
+        filename_path = _normalize_filename(filename)
+    except Exception as exc:
+        return f"Error: {exc}"
+    try:
+        nbf.write(nb, filename_path)
     except Exception as e:
         return f"Error: notebook export failed with error `{e}`"
-    return f"Success: notebook successfully exported to {filename}"
+    return f"Success: notebook successfully exported to {filename_path}"
 
 jupyternb_generator_tool = StructuredTool.from_function(
     func=generate_jupyternb,
