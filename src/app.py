@@ -1,8 +1,10 @@
 import anthropic
+import json
 import logging
 import openai
 import os
 import shutil
+from datetime import datetime
 from pathlib import Path
 import streamlit as st
 import streamlit_nested_layout  
@@ -10,22 +12,21 @@ import streamlit_nested_layout
 from functools import partial
 from copy import deepcopy
 from langchain_core.messages import HumanMessage, ToolMessage
+from langchain_core.messages.utils import messages_from_dict
 from langgraph.errors import GraphRecursionError
 from pydantic import SecretStr
 from streamlit_file_browser import st_file_browser
-from streamlit_modal import Modal
 from queue import Queue
 import queue
 import base64
 import mimetypes
-
+from html import escape
 from app_utils import LLMOptions, render_conversation_history as util_render_conversation_history
 from agents.manager_agent.tools import ManagerToolNames
 from agents.agent_utils import PythonREPLObj
 from graph.graph import create_tissueagent_graph
 from graph.graph_utils import log_message
-# from config import DATA_DIR, RECURSION_LIMIT
-from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, RECURSION_LIMIT, UPLOADS_DIR
+from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, RECURSION_LIMIT, SESSIONS_DIR, UPLOADS_DIR
 
 def clear_queue(q: queue.Queue):
     """Remove everything from a Queue in a thread-safe way."""
@@ -57,6 +58,191 @@ def _next_available_path(directory: Path, filename: str) -> Path:
         if not candidate.exists():
             return candidate
     raise FileExistsError(f"Unable to allocate a unique filename for {filename}")
+
+def _reset_data_directories() -> None:
+    """Clear the entire data directory tree and recreate known subdirectories."""
+    shutil.rmtree(DATA_DIR, ignore_errors=True)
+    for directory in (
+        DATA_DIR,
+        DATASET_DIR,
+        UPLOADS_DIR,
+        PDF_UPLOADS_DIR,
+        SESSIONS_DIR,
+    ):
+        directory.mkdir(parents=True, exist_ok=True)
+
+SESSION_FILENAME_PREFIX = "session_"
+SESSION_FILENAME_SUFFIX = ".json"
+
+
+def _message_to_serializable(message):
+    data = message.model_dump()
+    data.pop("type", None)
+    return {"type": message.type, "data": data}
+
+
+def _format_session_label(session_path: Path) -> str:
+    stem = session_path.stem
+    if stem.startswith(SESSION_FILENAME_PREFIX):
+        stem = stem[len(SESSION_FILENAME_PREFIX):]
+    try:
+        saved_at = datetime.strptime(stem, "%Y-%m-%d_%H-%M-%S")
+        return saved_at.strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return stem
+
+
+def _session_option_label(session_path: Path) -> str:
+    return f"{_format_session_label(session_path)} ({session_path.name})"
+
+
+def _save_current_session():
+    messages = st.session_state.get("agent_state", {}).get("messages", [])
+    if not messages:
+        st.toast("No conversation history to save yet.", icon="ℹ️")
+        return
+
+    payload = {
+        "saved_at": datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
+        "messages": [_message_to_serializable(m) for m in messages],
+        "subagent_states": st.session_state.get("subagent_states", {}),
+    }
+
+    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+    file_name = f"{SESSION_FILENAME_PREFIX}{payload['saved_at']}{SESSION_FILENAME_SUFFIX}"
+    target_path = SESSIONS_DIR / file_name
+
+    try:
+        target_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2, default=str),
+            encoding="utf-8",
+        )
+    except Exception as exc:
+        logging.error("Failed to save session", exc_info=exc)
+        st.error("Failed to save session history.", icon="⚠️")
+        return
+
+    st.toast(f"Session saved as {file_name}", icon="💾")
+    st.session_state["selected_session_label"] = _session_option_label(target_path)
+    st.session_state["session_loader_select"] = st.session_state["selected_session_label"]
+
+
+def _load_session_from_path(path: Path | None):
+    if path is None:
+        return
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        logging.error("Failed to read session file", exc_info=exc)
+        st.error("Unable to read the selected session file.", icon="⚠️")
+        return
+
+    try:
+        restored_messages = messages_from_dict(payload.get("messages", []))
+    except Exception as exc:
+        logging.error("Failed to parse session messages", exc_info=exc)
+        st.error("Session file is corrupted or incompatible.", icon="⚠️")
+        return
+
+    st.session_state.setdefault("agent_state", {})
+    st.session_state["agent_state"]["messages"] = restored_messages
+    st.session_state["subagent_states"] = payload.get("subagent_states", {})
+    st.session_state["pending_images"] = []
+    st.session_state["uploaded_pdfs"] = st.session_state.get("uploaded_pdfs", [])
+    st.session_state["state_queue"] = Queue()
+    st.session_state["selected_session_label"] = _session_option_label(path)
+    st.session_state["session_loader_select"] = st.session_state["selected_session_label"]
+    st.toast(f"Loaded session from {path.name}", icon="📂")
+
+def _format_message_content_for_html(content) -> str:
+    if isinstance(content, str):
+        return f"<p>{escape(content)}</p>"
+
+    if isinstance(content, list):
+        html_parts = []
+        for part in content:
+            if not isinstance(part, dict):
+                html_parts.append(f"<p>{escape(str(part))}</p>")
+                continue
+
+            part_type = part.get("type")
+            if part_type in {"text", "output_text"}:
+                html_parts.append(f"<p>{escape(part.get('text', ''))}</p>")
+            elif part_type == "image_url":
+                image_url = part.get("image_url", {}).get("url")
+                if image_url:
+                    html_parts.append(
+                        "<div><em>Image Attachment:</em><br/><img src=\"{}\" alt=\"image attachment\" style=\"max-width: 100%; height: auto;\"/></div>".format(
+                            escape(image_url)
+                        )
+                    )
+            else:
+                html_parts.append(f"<pre>{escape(_safe_pretty_json(part))}</pre>")
+        return "\n".join(html_parts)
+
+    return f"<pre>{escape(repr(content))}</pre>"
+
+
+def _build_session_html(messages, subagent_states) -> str:
+    rows = [
+        "<html>",
+        "<head>",
+        "<meta charset=\"utf-8\" />",
+        "<title>TissueAgent Session Export</title>",
+        "<style>",
+        "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 2rem; }",
+        ".message { margin-bottom: 1.5rem; padding: 1rem; border-radius: 0.75rem; }",
+        ".role-user { background-color: #f0f4ff; }",
+        ".role-ai { background-color: #f4fff0; }",
+        ".role-tool { background-color: #fef9e7; }",
+        ".message h3 { margin-top: 0; }",
+        "pre { white-space: pre-wrap; word-break: break-word; }",
+        "img { margin-top: 0.5rem; border: 1px solid #ccc; padding: 0.25rem; border-radius: 0.5rem; }",
+        "</style>",
+        "</head>",
+        "<body>",
+        f"<h1>TissueAgent Session Export — {escape(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))}</h1>",
+    ]
+
+    for idx, message in enumerate(messages, start=1):
+        role = getattr(message, "type", "unknown")
+        role_class = {
+            "human": "role-user",
+            "ai": "role-ai",
+            "tool": "role-tool",
+        }.get(role, "role-unknown")
+
+        tool_name = getattr(message, "name", None)
+        if tool_name is None:
+            tool_name = "unknown"
+        else:
+            tool_name = str(tool_name)
+
+        title = {
+            "human": "User",
+            "ai": "TissueAgent",
+            "tool": f"Tool — {escape(getattr(message, 'name', 'unknown'))}",
+        }.get(role, escape(role.title()))
+
+        rows.append(f"<div class=\"message {role_class}\">")
+        rows.append(f"<h3>{idx}. {title}</h3>")
+        rows.append(_format_message_content_for_html(getattr(message, "content", "")))
+
+        if role == "tool":
+            tool_id = getattr(message, "id", None)
+            if tool_id is not None and tool_id in subagent_states:
+                agent_name, final_state = subagent_states[tool_id]
+                rows.append("<details><summary>Subagent State</summary>")
+                rows.append(f"<p><strong>Agent:</strong> {escape(str(agent_name))}</p>")
+                rows.append(f"<pre>{escape(_safe_pretty_json(final_state))}</pre>")
+                rows.append("</details>")
+
+        rows.append("</div>")
+
+    rows.extend(["</body>", "</html>"])
+    return "\n".join(rows)
+
 
 # Strip images from messages when rendering the chat history (display-only)
 def _strip_images_for_display(messages):
@@ -251,19 +437,96 @@ with st.sidebar:
     else:
         st.caption("No PDFs uploaded yet.")
 
+    ########### Session Saver/Loader ##########
+    st.markdown("---")
+    st.caption("Save or load full chat sessions.")
+    st.button(
+        "💾 Save Current Session",
+        on_click=_save_current_session,
+        use_container_width=True,
+    )
+
+    session_files = sorted(
+        SESSIONS_DIR.glob(f"{SESSION_FILENAME_PREFIX}*{SESSION_FILENAME_SUFFIX}"),
+        reverse=True,
+    )
+    session_map = {_session_option_label(path): path for path in session_files}
+
+    options = ["—"] + list(session_map.keys())
+    current_selection = st.session_state.get(
+        "session_loader_select",
+        st.session_state.get("selected_session_label", "—"),
+    )
+    if current_selection not in options:
+        current_selection = "—"
+    default_index = options.index(current_selection)
+    selected_label = st.selectbox(
+        "Saved Sessions:",
+        options,
+        index=default_index,
+        key="session_loader_select",
+        help="Sessions are saved with timestamps so you can revisit any conversation.",
+    )
+    selected_path = session_map.get(selected_label)
+
+    st.button(
+        "📂 Load Selected Session",
+        on_click=_load_session_from_path,
+        args=(selected_path,),
+        disabled=selected_path is None,
+        use_container_width=True,
+    )
+
+    if not session_files:
+        st.caption("No saved sessions yet.")
+
+    current_messages = st.session_state.get("agent_state", {}).get("messages", [])
+    if current_messages:
+        session_html = _build_session_html(
+            current_messages,
+            st.session_state.get("subagent_states", {}),
+        )
+        download_name = (
+            f"{SESSION_FILENAME_PREFIX}{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
+        )
+        st.download_button(
+            "⬇️ Download Session as HTML",
+            data=session_html.encode("utf-8"),
+            file_name=download_name,
+            mime="text/html",
+            use_container_width=True,
+        )
+    else:
+        st.caption("Chat history will appear here for HTML export once available.")
+
 
 # ╔═══════════════════════╗
 # ║ File Browser          ║
 # ╚═══════════════════════╝
 
-if "processed_files" not in st.session_state:
-    # shutil.rmtree(DATA_DIR, ignore_errors=True)
-    shutil.rmtree(DATASET_DIR, ignore_errors=True)
+# if "processed_files" not in st.session_state:
+#     # shutil.rmtree(DATA_DIR, ignore_errors=True)
+#     shutil.rmtree(DATASET_DIR, ignore_errors=True)
+#     st.session_state["processed_files"] = set()
+#     DATA_DIR.mkdir(parents=True, exist_ok=True)
+#     DATASET_DIR.mkdir(parents=True, exist_ok=True)
+#     UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+#     PDF_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+#     SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+if "data_initialized" not in st.session_state:
+    _reset_data_directories()
+    st.session_state["data_initialized"] = True
     st.session_state["processed_files"] = set()
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    DATASET_DIR.mkdir(parents=True, exist_ok=True)
-    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-    PDF_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+else:
+    for directory in (
+        DATA_DIR,
+        DATASET_DIR,
+        UPLOADS_DIR,
+        PDF_UPLOADS_DIR,
+        SESSIONS_DIR,
+    ):
+        directory.mkdir(parents=True, exist_ok=True)
+    st.session_state.setdefault("processed_files", set())
 
 if uploaded_files:
     for uploaded_file in uploaded_files:
