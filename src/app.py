@@ -25,7 +25,7 @@ from agents.agent_utils import PythonREPLObj
 from graph.graph import create_tissueagent_graph
 from graph.graph_utils import log_message
 # from config import DATA_DIR, RECURSION_LIMIT
-from config import DATA_DIR, DATASET_DIR, RECURSION_LIMIT, UPLOADS_DIR
+from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, RECURSION_LIMIT, UPLOADS_DIR
 
 def clear_queue(q: queue.Queue):
     """Remove everything from a Queue in a thread-safe way."""
@@ -85,6 +85,9 @@ def render_conversation_history_display(all_messages, subagent_states, enable_de
 # One-turn attachments live here until the user sends a message
 if "pending_images" not in st.session_state:
     st.session_state["pending_images"] = []
+
+if "uploaded_pdfs" not in st.session_state:
+    st.session_state["uploaded_pdfs"] = []  # ← track saved PDF uploads
 
 # Modal for image upload (opened by the ➕ button)
 # image_modal = Modal("Add image(s)", key="image_modal", max_width=500)
@@ -169,7 +172,7 @@ with st.sidebar:
 
     with col2:
         enable_debug = st.checkbox("Enable Debug Output", value=True)
-    
+    ########## Image Uploader ##########
     st.markdown("---")
     st.caption("Attach image(s) to send with your next message.")
     image_files = st.file_uploader(
@@ -207,6 +210,46 @@ with st.sidebar:
         st.caption(f"Pending images: {pending_names}")
     else:
         st.caption("No images attached yet.")
+    
+    ########## PDF Uploader ##########
+    st.markdown("---")
+    st.caption("Upload PDF document(s) for the agent to reference.")
+    pdf_files = st.file_uploader(
+        "Upload PDF Inputs:",
+        type=["pdf"],
+        accept_multiple_files=True,
+        key="sidebar_pdf_uploader",
+    )  # ← new PDF uploader lives under dataset/image sections
+
+    if pdf_files:
+        existing_pdfs = {
+            pdf_info["name"]: pdf_info["path"]
+            for pdf_info in st.session_state.get("uploaded_pdfs", [])
+            if Path(pdf_info["path"]).exists()
+        }
+        saved_pdfs = []
+        for pdf in pdf_files:
+            if pdf.name in existing_pdfs:
+                saved_pdfs.append({
+                    "name": pdf.name,
+                    "path": existing_pdfs[pdf.name],
+                })
+                continue
+
+            pdf_path = _next_available_path(PDF_UPLOADS_DIR, pdf.name)
+            pdf_path.write_bytes(pdf.getvalue())
+            saved_pdfs.append({
+                "name": pdf.name,
+                "path": str(pdf_path),
+            })
+
+        st.session_state["uploaded_pdfs"] = saved_pdfs
+
+    if st.session_state.get("uploaded_pdfs"):
+        pdf_names = ", ".join(pdf["name"] for pdf in st.session_state["uploaded_pdfs"])
+        st.caption(f"Saved PDFs: {pdf_names}")
+    else:
+        st.caption("No PDFs uploaded yet.")
 
 
 # ╔═══════════════════════╗
@@ -217,8 +260,10 @@ if "processed_files" not in st.session_state:
     # shutil.rmtree(DATA_DIR, ignore_errors=True)
     shutil.rmtree(DATASET_DIR, ignore_errors=True)
     st.session_state["processed_files"] = set()
-    # DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     DATASET_DIR.mkdir(parents=True, exist_ok=True)
+    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    PDF_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 if uploaded_files:
     for uploaded_file in uploaded_files:
@@ -237,16 +282,16 @@ if st.session_state.show_file_browser:
         """,
         unsafe_allow_html=True,
     )
+    st.caption(f"Browsing data files in: `{DATA_DIR}`")
     _ = st_file_browser(
-        # DATA_DIR,
-        str(DATASET_DIR),
+        str(DATA_DIR),
         key="file_browser_modal",
         show_preview=True,
         show_delete_file=True,
         show_download_file=True,
         show_upload_file=True
     )
-    st.stop()
+    # st.stop()
 else:
     st.markdown(
         """
@@ -308,36 +353,6 @@ render_conversation_history_display(
     st.session_state["subagent_states"],
     enable_debug
 )
-
-
-# # Floating plus button (NOT wrapping chat_input)
-# plus_placeholder = st.empty()
-# with plus_placeholder.container():
-#     st.markdown('<div class="floating-plus">', unsafe_allow_html=True)
-#     if st.button("➕", key="attach_btn", help="Attach image(s)"):
-#         image_modal.open()
-#     st.markdown('</div>', unsafe_allow_html=True)
-
-# # Show the modal when open; pick images and keep them for the next send
-# if image_modal.is_open():
-#     with image_modal.container():
-#         images = st.file_uploader(
-#             "Select image(s) to attach",
-#             type=["png", "jpg", "jpeg", "webp", "gif"],
-#             accept_multiple_files=True,
-#             key="img_files"
-#         )
-#         if images is not None:
-#             st.session_state["pending_images"] = images
-
-#         st.caption("Images will be sent with your next message.")
-
-#         # ⬅️ No on_click callback here
-#         done = st.button("Done")
-#         if done:
-#             image_modal.close()   # fine to call here
-#             st.rerun()            # top-level rerun is OK; not inside a callback
-
 
 # chat_input must be at the root (not inside columns/containers)
 prompt = st.chat_input("Ask the agent:")
