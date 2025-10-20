@@ -21,6 +21,7 @@ import queue
 import base64
 import mimetypes
 from html import escape
+from typing import Any
 from app_utils import LLMOptions, render_conversation_history as util_render_conversation_history
 from agents.manager_agent.tools import ManagerToolNames
 from agents.agent_utils import PythonREPLObj
@@ -35,6 +36,12 @@ def clear_queue(q: queue.Queue):
             q.get_nowait()
     except queue.Empty:
         pass
+
+def _safe_escape(value: Any, fallback: str = "") -> str:
+    """HTML-escape arbitrary values, substituting a fallback for None."""
+    if value is None:
+        return escape(fallback)
+    return escape(str(value))
 
 def _file_to_data_url(file_path: Path) -> str:
     """Convert a local file to a Base64 data URL for multimodal chat."""
@@ -213,16 +220,12 @@ def _build_session_html(messages, subagent_states) -> str:
             "tool": "role-tool",
         }.get(role, "role-unknown")
 
-        tool_name = getattr(message, "name", None)
-        if tool_name is None:
-            tool_name = "unknown"
-        else:
-            tool_name = str(tool_name)
+        tool_title = f"Tool — {_safe_escape(getattr(message, 'name', None), 'unknown')}"
 
         title = {
             "human": "User",
             "ai": "TissueAgent",
-            "tool": f"Tool — {escape(getattr(message, 'name', 'unknown'))}",
+            "tool": tool_title,
         }.get(role, escape(role.title()))
 
         rows.append(f"<div class=\"message {role_class}\">")
