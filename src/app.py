@@ -3,6 +3,7 @@ import logging
 import openai
 import os
 import shutil
+from pathlib import Path
 import streamlit as st
 import streamlit_nested_layout  
 
@@ -23,8 +24,8 @@ from agents.manager_agent.tools import ManagerToolNames
 from agents.agent_utils import PythonREPLObj
 from graph.graph import create_tissueagent_graph
 from graph.graph_utils import log_message
-from config import DATA_DIR, RECURSION_LIMIT
-
+# from config import DATA_DIR, RECURSION_LIMIT
+from config import DATA_DIR, DATASET_DIR, RECURSION_LIMIT, UPLOADS_DIR
 
 def clear_queue(q: queue.Queue):
     """Remove everything from a Queue in a thread-safe way."""
@@ -34,15 +35,28 @@ def clear_queue(q: queue.Queue):
     except queue.Empty:
         pass
 
-
-def _file_to_data_url(uploaded_file) -> str:
-    """Convert a Streamlit UploadedFile to a Base64 data URL for multimodal chat."""
-    mime, _ = mimetypes.guess_type(uploaded_file.name)
+def _file_to_data_url(file_path: Path) -> str:
+    """Convert a local file to a Base64 data URL for multimodal chat."""
+    mime, _ = mimetypes.guess_type(file_path.name)
     if mime is None:
         mime = "application/octet-stream"
-    b64 = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
+    b64 = base64.b64encode(file_path.read_bytes()).decode("utf-8")
     return f"data:{mime};base64,{b64}"
 
+def _next_available_path(directory: Path, filename: str) -> Path:
+    """Return a unique path inside directory by suffixing an index if needed."""
+    directory.mkdir(parents=True, exist_ok=True)
+    candidate = directory / filename
+    if not candidate.exists():
+        return candidate
+
+    stem = candidate.stem
+    suffix = candidate.suffix
+    for idx in range(1, 1000):
+        candidate = directory / f"{stem}_{idx}{suffix}"
+        if not candidate.exists():
+            return candidate
+    raise FileExistsError(f"Unable to allocate a unique filename for {filename}")
 
 # Strip images from messages when rendering the chat history (display-only)
 def _strip_images_for_display(messages):
@@ -61,13 +75,6 @@ def _strip_images_for_display(messages):
     return cleaned
 
 
-# def render_conversation_history_display(all_messages, subagent_states):
-#     # Call your existing renderer but with text-only copies so the UI doesn't show huge data URLs
-#     return util_render_conversation_history(
-#         _strip_images_for_display(all_messages),
-#         subagent_states
-#     )
-
 def render_conversation_history_display(all_messages, subagent_states, enable_debug):
     return util_render_conversation_history(
         _strip_images_for_display(all_messages),
@@ -80,7 +87,7 @@ if "pending_images" not in st.session_state:
     st.session_state["pending_images"] = []
 
 # Modal for image upload (opened by the ➕ button)
-image_modal = Modal("Add image(s)", key="image_modal", max_width=500)
+# image_modal = Modal("Add image(s)", key="image_modal", max_width=500)
 
 
 if "api_keys" not in st.session_state:
@@ -91,7 +98,7 @@ if "api_keys" not in st.session_state:
         "email": "",
     }
 
-file_browser_modal = Modal("File Browser", key="file_browser_modal")
+# file_browser_modal = Modal("File Browser", key="file_browser_modal")
 if "show_file_browser" not in st.session_state:
     st.session_state.show_file_browser = False
 
@@ -162,6 +169,44 @@ with st.sidebar:
 
     with col2:
         enable_debug = st.checkbox("Enable Debug Output", value=True)
+    
+    st.markdown("---")
+    st.caption("Attach image(s) to send with your next message.")
+    image_files = st.file_uploader(
+        "Upload Image Attachments:",
+        type=["png", "jpg", "jpeg", "webp", "gif"],
+        accept_multiple_files=True,
+        key="sidebar_image_uploader",
+    )
+
+    if image_files:
+        existing = {
+            img["name"]: img["path"]
+            for img in st.session_state.get("pending_images", [])
+        }
+        saved_images = []
+        for image in image_files:
+            if image.name in existing and Path(existing[image.name]).exists():
+                saved_images.append({
+                    "name": image.name,
+                    "path": existing[image.name],
+                })
+                continue
+
+            target_path = _next_available_path(UPLOADS_DIR, image.name)
+            target_path.write_bytes(image.getvalue())
+            saved_images.append({
+                "name": image.name,
+                "path": target_path,
+            })
+
+        st.session_state["pending_images"] = saved_images
+
+    if st.session_state.get("pending_images"):
+        pending_names = ", ".join(img["name"] for img in st.session_state["pending_images"])
+        st.caption(f"Pending images: {pending_names}")
+    else:
+        st.caption("No images attached yet.")
 
 
 # ╔═══════════════════════╗
@@ -169,15 +214,18 @@ with st.sidebar:
 # ╚═══════════════════════╝
 
 if "processed_files" not in st.session_state:
-    shutil.rmtree(DATA_DIR, ignore_errors=True)
+    # shutil.rmtree(DATA_DIR, ignore_errors=True)
+    shutil.rmtree(DATASET_DIR, ignore_errors=True)
     st.session_state["processed_files"] = set()
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    # DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DATASET_DIR.mkdir(parents=True, exist_ok=True)
 
 if uploaded_files:
     for uploaded_file in uploaded_files:
         if uploaded_file.name not in st.session_state["processed_files"]:
             st.session_state["processed_files"].add(uploaded_file.name)
-            file_path = DATA_DIR / uploaded_file.name
+            # file_path = DATA_DIR / uploaded_file.name
+            file_path = DATASET_DIR / uploaded_file.name
             file_path.write_bytes(uploaded_file.getvalue())
 
 if st.session_state.show_file_browser:
@@ -190,7 +238,8 @@ if st.session_state.show_file_browser:
         unsafe_allow_html=True,
     )
     _ = st_file_browser(
-        DATA_DIR,
+        # DATA_DIR,
+        str(DATASET_DIR),
         key="file_browser_modal",
         show_preview=True,
         show_delete_file=True,
@@ -203,30 +252,6 @@ else:
         """
         <style>
         .block-container { max-width: 720px; }
-
-        /* Pin the + button near the bottom-right corner of the chat input */
-        .floating-plus {
-        position: fixed;
-        bottom: 88px; /* tweak to sit nicely next to your chat box */
-        /* Align to the right edge of the centered 720px container */
-        right: calc((100vw - 720px)/2 + 8px);
-        z-index: 1000;
-        }
-        .floating-plus .stButton > button {
-        border-radius: 999px;
-        padding: 0.35rem 0.55rem;
-        line-height: 1;
-        font-size: 1.1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-
-        /* On narrow screens, just stick to the viewport edge */
-        @media (max-width: 760px) {
-        .floating-plus {
-            right: 16px;
-            bottom: 72px; /* a bit tighter on phones */
-        }
-        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -285,33 +310,33 @@ render_conversation_history_display(
 )
 
 
-# Floating plus button (NOT wrapping chat_input)
-plus_placeholder = st.empty()
-with plus_placeholder.container():
-    st.markdown('<div class="floating-plus">', unsafe_allow_html=True)
-    if st.button("➕", key="attach_btn", help="Attach image(s)"):
-        image_modal.open()
-    st.markdown('</div>', unsafe_allow_html=True)
+# # Floating plus button (NOT wrapping chat_input)
+# plus_placeholder = st.empty()
+# with plus_placeholder.container():
+#     st.markdown('<div class="floating-plus">', unsafe_allow_html=True)
+#     if st.button("➕", key="attach_btn", help="Attach image(s)"):
+#         image_modal.open()
+#     st.markdown('</div>', unsafe_allow_html=True)
 
-# Show the modal when open; pick images and keep them for the next send
-if image_modal.is_open():
-    with image_modal.container():
-        images = st.file_uploader(
-            "Select image(s) to attach",
-            type=["png", "jpg", "jpeg", "webp", "gif"],
-            accept_multiple_files=True,
-            key="img_files"
-        )
-        if images is not None:
-            st.session_state["pending_images"] = images
+# # Show the modal when open; pick images and keep them for the next send
+# if image_modal.is_open():
+#     with image_modal.container():
+#         images = st.file_uploader(
+#             "Select image(s) to attach",
+#             type=["png", "jpg", "jpeg", "webp", "gif"],
+#             accept_multiple_files=True,
+#             key="img_files"
+#         )
+#         if images is not None:
+#             st.session_state["pending_images"] = images
 
-        st.caption("Images will be sent with your next message.")
+#         st.caption("Images will be sent with your next message.")
 
-        # ⬅️ No on_click callback here
-        done = st.button("Done")
-        if done:
-            image_modal.close()   # fine to call here
-            st.rerun()            # top-level rerun is OK; not inside a callback
+#         # ⬅️ No on_click callback here
+#         done = st.button("Done")
+#         if done:
+#             image_modal.close()   # fine to call here
+#             st.rerun()            # top-level rerun is OK; not inside a callback
 
 
 # chat_input must be at the root (not inside columns/containers)
@@ -325,7 +350,7 @@ if prompt:
     for f in st.session_state.get("pending_images", []):
         content_parts.append({
             "type": "image_url",
-            "image_url": {"url": _file_to_data_url(f)}
+            "image_url": {"url": _file_to_data_url(f["path"])}
         })
 
     user_message = HumanMessage(content=content_parts)

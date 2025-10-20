@@ -129,6 +129,15 @@ def _split_route_and_body(content: str) -> Tuple[Optional[str], str]:
         return route_caption or None, body
     return None, content.strip()
 
+def _markdown_with_linebreaks(text: str) -> None:
+    """Render Markdown text while preserving single newlines as line breaks."""
+
+    if not text:
+        st.markdown("")
+        return
+
+    formatted = text.replace("\n", "\n\n") if "\n" in text else text
+    st.markdown(formatted)
 
 # ---------------------------------------------------------------------------
 # Rendering helpers
@@ -149,9 +158,9 @@ def render_subagent_history(messages: Sequence[BaseMessage]) -> None:
 
             if tool_names:
                 tool_list = ", ".join(tool_names)
-                st.markdown(f"**[{agent_name}]** → `{tool_list}`")
+                _markdown_with_linebreaks(f"**[{agent_name}]** → `{tool_list}`")
             elif content:
-                st.markdown(f"**[{agent_name}]**:\n\n{content}")
+                _markdown_with_linebreaks(f"**[{agent_name}]**:\n\n{content}")
  
         elif isinstance(message, ToolMessage):
             tool_call_id = getattr(message, "tool_call_id", None)
@@ -170,7 +179,7 @@ def _render_manager_tool_message(message: ToolMessage) -> None:
 
     avatar, role_label = _lookup_agent_badge("manager_agent")
     with st.chat_message("assistant", avatar=avatar):
-        st.markdown(f"**{role_label} Tool:** `{message.name}`")
+        _markdown_with_linebreaks(f"**{role_label} Tool:** `{message.name}`")
         tool_output = _stringify_chat_content(message.content)
         with st.expander("Output", expanded=False):
             st.code(tool_output or "<empty>")
@@ -185,7 +194,7 @@ def _render_subagent_tool_message(
     avatar = SUBAGENT_BADGES.get(agent_name, SUBAGENT_DEFAULT_AVATAR)
 
     with st.chat_message("assistant", avatar=avatar):
-        st.markdown(f"**{agent_name}**")
+        _markdown_with_linebreaks(f"**{agent_name}**")
 
         if isinstance(agent_state, Mapping) and agent_state.get("messages"):
             render_subagent_history(agent_state["messages"])
@@ -205,7 +214,7 @@ def render_conversation_history(
         if isinstance(message, HumanMessage):
 
             with st.chat_message("user", avatar=USER_AVATAR):
-                st.markdown(content or "")
+                _markdown_with_linebreaks(content or "")
             continue
  
         if isinstance(message, AIMessage):
@@ -213,9 +222,9 @@ def render_conversation_history(
                 continue
             avatar, role_label = _lookup_agent_badge(message.name)
             with st.chat_message("assistant", avatar=avatar):
-                st.markdown(f"**{role_label}**")
+                _markdown_with_linebreaks(f"**{role_label}**")
                 route_caption, body = _split_route_and_body(content)
-                st.markdown(body)
+                _markdown_with_linebreaks(body)
                 if route_caption:
                     st.caption(f"Route → {route_caption}")
             continue
