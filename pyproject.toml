@@ -36,4 +36,5 @@ dependencies = [
     "dask==2024.8.0",
     "xarray-datatree==0.0.15",
     "cellxgene-census>=1.17.0",
+    "cell2location>=0.1.4",
 ]
