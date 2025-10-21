@@ -21,7 +21,6 @@ from app_utils import (
     render_conversation_history as util_render_conversation_history,
     save_current_session,
     load_session_from_path,
-    _format_session_label,
     _session_option_label,
     build_session_html,
     render_conversation_history_display,
@@ -78,8 +77,6 @@ def _reset_data_directories() -> None:
 
 SESSION_FILENAME_PREFIX = "session_"
 SESSION_FILENAME_SUFFIX = ".json"
-
-
 
 
 # One-turn attachments live here until the user sends a message
@@ -349,11 +346,9 @@ render_conversation_history_display(
 # chat_input must be at the root (not inside columns/containers)
 prompt = st.chat_input("Ask the agent:")
 
-# Build and send a multimodal HumanMessage when user submits text
 if prompt:
     content_parts = [{"type": "text", "text": prompt}]
 
-    # attach any pending images
     for f in st.session_state.get("pending_images", []):
         content_parts.append({  # type: ignore
             "type": "image_url",

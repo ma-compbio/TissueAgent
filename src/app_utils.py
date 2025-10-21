@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import streamlit as st
+import re
 from copy import deepcopy
 from datetime import datetime
 from html import escape
@@ -341,6 +342,30 @@ def _split_route_and_body(content: str) -> Tuple[Optional[str], str]:
     return None, content.strip()
 
 
+def _extract_html_tags(content: str) -> Optional[Dict[str, str]]:
+    """
+    Check for HTML tags <execute>, <response>, <scratchpad>, or <plan> (case insensitive).
+    Returns a dictionary mapping tag name to content, or None if no tags found.
+    Handles unclosed tags by taking content to the end of the string.
+    """
+    
+    allowed_tags = ['execute', 'response', 'scratchpad', 'plan']
+    
+    pattern = r'<(' + '|'.join(re.escape(tag) for tag in allowed_tags) + r')>(.*?)(?:</\1>|$)' 
+    pattern = re.compile(pattern, re.IGNORECASE | re.DOTALL)
+    
+    matches = pattern.findall(content)
+    
+    if not matches:
+        return None
+    
+    result = {}
+    for tag, content_text in matches:
+        result[tag.lower()] = content_text.strip()
+    
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Rendering helpers
 # ---------------------------------------------------------------------------
@@ -415,24 +440,27 @@ def render_conversation_history(
         content = _stringify_chat_content(message.content)
 
         if isinstance(message, HumanMessage):
-
             with st.chat_message("user", avatar=USER_AVATAR):
-                st.text(content or "")
-            continue
+                st.markdown(content or "")
  
-        if isinstance(message, AIMessage):
+        elif isinstance(message, AIMessage):
             if not content:
                 continue
             avatar, role_label = _lookup_agent_badge(message.name)
             with st.chat_message("assistant", avatar=avatar):
-                st.text(f"**{role_label}**")
+                st.markdown(f"**{role_label}**")
                 route_caption, body = _split_route_and_body(content)
-                st.text(body)
+                html_tags = _extract_html_tags(body)
+                if html_tags:
+                    for tag, content in html_tags.items():
+                        st.markdown(f"**{tag}**")
+                        st.markdown(content)
+                else:
+                    st.markdown(body)
                 if route_caption:
                     st.caption(f"Route → {route_caption}")
-            continue
 
-        if isinstance(message, ToolMessage) and enable_debug:
+        elif isinstance(message, ToolMessage) and enable_debug:
             if message.name in ManagerToolNames:
                 _render_manager_tool_message(message)
             else:
