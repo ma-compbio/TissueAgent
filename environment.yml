@@ -17,6 +17,8 @@ dependencies:
       - pydantic==2.10.6
       - scanpy==1.10.3
       - scipy==1.13.1
+      - scikit-learn==1.5.2
+      - sentence-transformers==3.3.1
       - seaborn==0.13.2
       - spatialdata-io==0.1.5
       - squidpy==1.6.1

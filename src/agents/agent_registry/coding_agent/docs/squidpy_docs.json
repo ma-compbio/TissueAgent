@@ -1,0 +1,2608 @@
+[
+  {
+    "method": "squidpy.datasets.visium_hne_image",
+    "signature": "squidpy.datasets.visium_hne_image(path=None, **kwargs)",
+    "description": "H&E image from 10x Genomics Visium dataset. The shape of this image is (11757, 11291).",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike, str | str",
+        "desc": "Path where to save the .tiff image."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for squidpy.im.ImageContainer.add_img()"
+      }
+    ],
+    "misc": "Returns an instance of squidpy.im.ImageContainer which contains the image data."
+  },
+  {
+    "method": "squidpy.datasets.slideseqv2",
+    "signature": "squidpy.datasets.slideseqv2(path=None, **kwargs)",
+    "description": "Pre-processed SlideseqV2 dataset from Stickles et al. The shape of this anndata.AnnData object is (41786, 4000).",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the dataset."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for scanpy.read()."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "The dataset."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.pl.ligrec",
+    "signature": "squidpy.pl.ligrec(adata, cluster_key=None, source_groups=None, target_groups=None, means_range=(-inf, inf), pvalue_threshold=1.0, remove_empty_interactions=True, remove_nonsig_interactions=False, dendrogram=None, alpha=0.001, swap_axes=False, title=None, figsize=None, dpi=None, save=None, **kwargs)",
+    "description": "Plot the result of a receptor-ligand permutation test.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData | Mapping[str, DataFrame]",
+        "desc": "Annotated data object. It can also be a dict, as returned by squidpy.gr.ligrec()."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str | None",
+        "desc": "Key in anndata.AnnData.obs where clustering is stored. Only used when adata is of type AnnData."
+      },
+      {
+        "name": "source_groups",
+        "type": "str | Sequence[str] | None",
+        "desc": "Source interaction clusters. If None, select all clusters."
+      },
+      {
+        "name": "target_groups",
+        "type": "str | Sequence[str] | None",
+        "desc": "Target interaction clusters. If None, select all clusters."
+      },
+      {
+        "name": "means_range",
+        "type": "tuple[float, float]",
+        "desc": "Only show interactions whose means are within this closed interval."
+      },
+      {
+        "name": "pvalue_threshold",
+        "type": "float",
+        "desc": "Only show interactions with p-value <= pvalue_threshold."
+      },
+      {
+        "name": "remove_empty_interactions",
+        "type": "bool",
+        "desc": "Remove rows and columns that only contain interactions with NaN values."
+      },
+      {
+        "name": "remove_nonsig_interactions",
+        "type": "bool",
+        "desc": "Remove rows and columns that only contain interactions that are larger than alpha."
+      },
+      {
+        "name": "dendrogram",
+        "type": "str | None",
+        "desc": "How to cluster based on the p-values. Valid options are: None - do not perform clustering., 'interacting_molecules' - cluster the interacting molecules., 'interacting_clusters' - cluster the interacting clusters., 'both' - cluster both rows and columns. Note that in this case, the dendrogram is not shown."
+      },
+      {
+        "name": "alpha",
+        "type": "float | None",
+        "desc": "Significance threshold. All elements with p-values <= alpha will be marked by tori instead of dots."
+      },
+      {
+        "name": "swap_axes",
+        "type": "bool",
+        "desc": "Whether to show the cluster combinations as rows and the interacting pairs as columns."
+      },
+      {
+        "name": "title",
+        "type": "str | None",
+        "desc": "Title of the plot."
+      },
+      {
+        "name": "figsize",
+        "type": "tuple[float, float] | None",
+        "desc": "Size of the figure in inches."
+      },
+      {
+        "name": "dpi",
+        "type": "int | None",
+        "desc": "Dots per inch."
+      },
+      {
+        "name": "save",
+        "type": "str | Path | None",
+        "desc": "Whether to save the plot."
+      },
+      {
+        "name": "scalebar_kwargs",
+        "type": "",
+        "desc": "Keyword arguments for matplotlib_scalebar.ScaleBar()."
+      },
+      {
+        "name": "edges_kwargs",
+        "type": "",
+        "desc": "Keyword arguments for networkx.draw_networkx_edges()."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for matplotlib.pyplot.scatter() or matplotlib.pyplot.imshow()."
+      },
+      {
+        "name": "kwargs",
+        "type": "",
+        "desc": "Keyword arguments for scanpy.pl.DotPlot.style() or scanpy.pl.DotPlot.legend()."
+      },
+      {
+        "name": "return",
+        "type": "None",
+        "desc": "Nothing, just plots the figure and optionally saves the plot."
+      }
+    ],
+    "misc": "\n$molecule_1$ belongs to the source clusters displayed on the top (or on the right, if `swap_axes = True`, whereas $molecule_2$ belongs to the target clusters."
+  },
+  {
+    "method": "squidpy.gr.mask_graph",
+    "signature": "squidpy.gr.mask_graph(sdata, table_key, polygon_mask, negative_mask=False, spatial_key='spatial', key_added='mask', copy=False)",
+    "description": "Mask the graph based on a polygon mask.",
+    "params": [
+      {
+        "name": "sdata",
+        "type": "SpatialData",
+        "desc": "The spatial data object."
+      },
+      {
+        "name": "table_key",
+        "type": "str",
+        "desc": "The key of the table containing the spatial data."
+      },
+      {
+        "name": "polygon_mask",
+        "type": "Polygon | MultiPolygon",
+        "desc": "The shapely.Polygon or shapely.MultiPolygon to be used as mask."
+      },
+      {
+        "name": "negative_mask",
+        "type": "bool",
+        "desc": "Whether to keep the edges within the polygon mask or outside. Note that when `negative_mask = True`, only the edges fully contained in the polygon are removed. If edges are partially contained in the polygon, they are kept."
+      },
+      {
+        "name": "spatial_key",
+        "type": "str",
+        "desc": "Key in anndata.AnnData.obsm where spatial coordinates are stored."
+      },
+      {
+        "name": "key_added",
+        "type": "str",
+        "desc": "Key which controls where the results are saved if `copy = False`."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If `True`, return the result, otherwise save it to the `adata` object."
+      },
+      {
+        "name": "return",
+        "type": "SpatialData",
+        "desc": "If `copy = True`, returns a tuple with the masked spatial connectivities and masked distances matrices. Otherwise, modifies the `adata` with the following keys: - anndata.AnnData.obsp ['{{key_added}}_{{spatial_key}}_connectivities'] - the spatial connectivities. - anndata.AnnData.obsp ['{{key_added}}_{{spatial_key}}_distances'] - the spatial distances. - anndata.AnnData.uns ['{{key_added}}_{{spatial_key}}'] - dict containing parameters."
+      }
+    ],
+    "misc": "The polygon_mask must be in the same coordinate_systems of the spatial graph, but no check is performed to assess this."
+  },
+  {
+    "method": "squidpy.gr.centrality_scores",
+    "signature": "squidpy.gr.centrality_scores(adata, cluster_key, score=None, connectivity_key=None, copy=False, n_jobs=None, backend='loky', show_progress_bar=False)",
+    "description": "Compute centrality scores per cluster or cell type.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData | SpatialData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obs` where clustering is stored."
+      },
+      {
+        "name": "score",
+        "type": "str | Iterable[str] | None",
+        "desc": "Centrality measures as described in `networkx.algorithms.centrality`. If None, use all the options below."
+      },
+      {
+        "name": "connectivity_key",
+        "type": "str | None",
+        "desc": "Key in `anndata.AnnData.obsp` where spatial connectivities are stored. Default is `['spatial_connectivities']`."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If `True`, return the result, otherwise save it to the `adata` object."
+      },
+      {
+        "name": "n_jobs",
+        "type": "int | None",
+        "desc": "Number of parallel jobs."
+      },
+      {
+        "name": "backend",
+        "type": "str",
+        "desc": "Parallelization backend to use."
+      },
+      {
+        "name": "show_progress_bar",
+        "type": "bool",
+        "desc": "Whether to show the progress bar or not."
+      },
+      {
+        "name": "return",
+        "type": "DataFrame | None",
+        "desc": "If `copy = True`, returns a pandas DataFrame. Otherwise, modifies the `adata`."
+      }
+    ],
+    "misc": "Inspired by usage in Gene Regulatory Networks (GRNs) in Kamimoto et al., 2020."
+  },
+  {
+    "method": "squidpy.datasets.sc_mouse_cortex",
+    "signature": "squidpy.datasets.sc_mouse_cortex(path=None, **kwargs)",
+    "description": "Pre-processed scRNA-seq mouse cortex dataset.",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike or str",
+        "desc": "Path where to save the dataset."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for scanpy.read()."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "The dataset."
+      }
+    ],
+    "misc": "The shape of the anndata.AnnData object is (21697, 36826)."
+  },
+  {
+    "method": "squidpy.tl.var_by_distance",
+    "signature": "squidpy.tl.var_by_distance(adata, groups, cluster_key=None, library_key=None, library_id=None, design_matrix_key='design_matrix', covariates=None, metric='euclidean', spatial_key='spatial', copy=False)",
+    "description": "Build a design matrix consisting of distance measurements to selected anchor point(s) for each observation.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "groups",
+        "type": "str | list[str] | ndarray[tuple[int, ...], dtype[Any]]",
+        "desc": "Anchor point(s) to calculate distances to. Can be a single or multiple observations as long as they are annotated in an .obs column with name given by cluster_key. Alternatively, a numpy array of coordinates can be passed."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str | None",
+        "desc": "Name of annotation column in .obs where the observation used as anchor points are located."
+      },
+      {
+        "name": "library_key",
+        "type": "str | None",
+        "desc": "If multiple library_id, column in anndata.AnnData.obs which stores mapping between library_id and obs."
+      },
+      {
+        "name": "library_id",
+        "type": "str | list[str] | None",
+        "desc": "Name of the Z-dimension(s) that this function should be applied to. For not specified Z-dimensions, the identity function is applied."
+      },
+      {
+        "name": "design_matrix_key",
+        "type": "str",
+        "desc": "Name of the design matrix saved to .obsm."
+      },
+      {
+        "name": "covariates",
+        "type": "str | list[str] | None",
+        "desc": "Additional covariates from .obs to include in the design matrix."
+      },
+      {
+        "name": "metric",
+        "type": "str",
+        "desc": "Distance metric, defaults to 'euclidean'."
+      },
+      {
+        "name": "spatial_key",
+        "type": "str",
+        "desc": "Key in anndata.AnnData.obsm where spatial coordinates are stored."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If True, return the result, otherwise save it to the adata object."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "If copy = True, returns the design_matrix with the distances to an anchor point. Otherwise, stores design_matrix in .obsm."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.datasets.four_i",
+    "signature": "squidpy.datasets.four_i(path=None, **kwargs)",
+    "description": "Pre-processed subset 4i dataset from Gut et al. The shape of this anndata.AnnData object is (270876, 43).",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the dataset."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for scanpy.read()."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "The dataset."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.pl.spatial_segment",
+    "signature": "squidpy.pl.spatial_segment(adata, color=None, groups=None, library_id=None, library_key=None, spatial_key='spatial', img=True, img_res_key='hires', img_alpha=None, img_cmap=None, img_channel=None, seg=None, seg_key='segmentation', seg_cell_id=None, seg_contourpx=None, seg_outline=False, use_raw=None, layer=None, alt_var=None, crop_coord=None, cmap=None, palette=None, alpha=1.0, norm=None, na_color=(0, 0, 0, 0), connectivity_key=None, edges_width=1.0, edges_color='grey', library_first=True, frameon=None, wspace=None, hspace=0.25, ncols=4, outline=False, outline_color=('black', 'white'), outline_width=(0.3, 0.05), legend_loc='right margin', legend_fontsize=None, legend_fontweight='bold', legend_fontoutline=None, legend_na=True, colorbar=True, scalebar_dx=None, scalebar_units=None, title=None, axis_label=None, fig=None, ax=None, return_ax=False, figsize=None, dpi=None, save=None, scalebar_kwargs=mappingproxy({}), edges_kwargs=mappingproxy({}), **kwargs)",
+    "description": "Plot spatial omics data with segmentation masks on top.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "color",
+        "type": "str | Sequence[str | None] | None",
+        "desc": "Key for annotations in `anndata.AnnData.obs` or variables/genes."
+      },
+      {
+        "name": "groups",
+        "type": "str | Sequence[str] | None",
+        "desc": "For discrete annotation in `color`, select which values to plot (other values are set to NAs)."
+      },
+      {
+        "name": "library_id",
+        "type": "str | Sequence[str] | None",
+        "desc": "Name of the Z-dimension(s) that this function should be applied to. For not specified Z-dimensions, the identity function is applied."
+      },
+      {
+        "name": "library_key",
+        "type": "str | None",
+        "desc": "If multiple library_id, column in `anndata.AnnData.obs` which stores mapping between `library_id` and obs."
+      },
+      {
+        "name": "spatial_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obsm` where spatial coordinates are stored."
+      },
+      {
+        "name": "img",
+        "type": "bool | ndarray[tuple[int, ...], dtype[Any]] | Sequence[ndarray[tuple[int, ...], dtype[Any]]] | None",
+        "desc": "Whether to plot the image. One (or more) `numpy.ndarray` can also be passed for plotting."
+      },
+      {
+        "name": "img_res_key",
+        "type": "str | None",
+        "desc": "Key for image resolution, used to get `img` and `scale_factor` from `'images'` and `'scalefactors'` entries for this library."
+      },
+      {
+        "name": "img_alpha",
+        "type": "float | None",
+        "desc": "Alpha value for the underlying image."
+      },
+      {
+        "name": "img_cmap",
+        "type": "Any",
+        "desc": "Colormap for the image, see `matplotlib.colors.Colormap`."
+      },
+      {
+        "name": "img_channel",
+        "type": "int | list[int] | None",
+        "desc": "To select which channel to plot (all by default)."
+      },
+      {
+        "name": "seg",
+        "type": "bool | ndarray[tuple[int, ...], dtype[Any]] | Sequence[ndarray[tuple[int, ...], dtype[Any]]] | None",
+        "desc": "Whether to plot the segmentation mask. One (or more) `numpy.ndarray` can also be passed for plotting."
+      },
+      {
+        "name": "seg_key",
+        "type": "str | None",
+        "desc": "Key of segmentation mask in `anndata.AnnData.uns`."
+      },
+      {
+        "name": "seg_cell_id",
+        "type": "str | None",
+        "desc": "Column in `anndata.AnnData.obs` with unique segmentation mask ids. Required to filter valid segmentation masks."
+      },
+      {
+        "name": "seg_contourpx",
+        "type": "int | None",
+        "desc": "Draw contour of specified width for each segment. If None, fills entire segment."
+      },
+      {
+        "name": "seg_outline",
+        "type": "bool",
+        "desc": "Whether to plot boundaries around segmentation masks."
+      },
+      {
+        "name": "use_raw",
+        "type": "bool | None",
+        "desc": "If True, use `anndata.AnnData.raw`."
+      },
+      {
+        "name": "layer",
+        "type": "str | None",
+        "desc": "Key in `anndata.AnnData.layers` or None for `anndata.AnnData.X`."
+      },
+      {
+        "name": "alt_var",
+        "type": "str | None",
+        "desc": "Which column to use in `anndata.AnnData.var` to select alternative `var_name`."
+      },
+      {
+        "name": "crop_coord",
+        "type": "tuple[int, int, int, int] | Sequence[tuple[int, int, int, int]] | None",
+        "desc": "Coordinates to use for cropping the image (left, right, top, bottom). These coordinates are expected to be in pixel space (same as `spatial`) and will be transformed by `scale_factor`. If not provided, image is automatically cropped to bounds of `spatial`, plus a border."
+      },
+      {
+        "name": "cmap",
+        "type": "str | Colormap | None",
+        "desc": "Colormap for continuous annotations, see `matplotlib.colors.Colormap`."
+      },
+      {
+        "name": "palette",
+        "type": "str | ListedColormap | None",
+        "desc": "Palette for discrete annotations, see `matplotlib.colors.Colormap`."
+      },
+      {
+        "name": "alpha",
+        "type": "float",
+        "desc": "Alpha value for scatter point/shape."
+      },
+      {
+        "name": "norm",
+        "type": "Normalize | Sequence[Normalize] | None",
+        "desc": "Colormap normalization for continuous annotations, see `matplotlib.colors.Normalize`."
+      },
+      {
+        "name": "na_color",
+        "type": "str | tuple[float, ...]",
+        "desc": "Color to be used for NAs values, if present."
+      },
+      {
+        "name": "connectivity_key",
+        "type": "str | None",
+        "desc": "Key for neighbors graph to plot. Default is: `anndata.AnnData.obsp` `['spatial_connectivities']`."
+      },
+      {
+        "name": "edges_width",
+        "type": "float",
+        "desc": "Width of the edges. Only used when `connectivity_key != None` ."
+      },
+      {
+        "name": "edges_color",
+        "type": "str | Sequence[str] | Sequence[float]",
+        "desc": "Color of the edges."
+      },
+      {
+        "name": "library_first",
+        "type": "bool",
+        "desc": "If multiple libraries are plotted, set the plotting order with respect to `color`."
+      },
+      {
+        "name": "frameon",
+        "type": "bool | None",
+        "desc": "If True, draw a frame around the panels."
+      },
+      {
+        "name": "wspace",
+        "type": "float | None",
+        "desc": "Width space between panels."
+      },
+      {
+        "name": "hspace",
+        "type": "float",
+        "desc": "Height space between panels."
+      },
+      {
+        "name": "ncols",
+        "type": "int",
+        "desc": "Number of panels per row."
+      },
+      {
+        "name": "outline",
+        "type": "bool",
+        "desc": "If True, a thin border around points/shapes is plotted."
+      },
+      {
+        "name": "outline_color",
+        "type": "tuple[str, str]",
+        "desc": "Color of the border."
+      },
+      {
+        "name": "outline_width",
+        "type": "tuple[float, float]",
+        "desc": "Width of the border."
+      },
+      {
+        "name": "legend_loc",
+        "type": "str | None",
+        "desc": "Location of the legend, see `matplotlib.legend.Legend`."
+      },
+      {
+        "name": "legend_fontsize",
+        "type": "Union[int, float, Literal['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'], None]",
+        "desc": "Font size of the legend, see `matplotlib.text.Text.set_fontsize()`."
+      },
+      {
+        "name": "legend_fontweight",
+        "type": "Union[int, Literal['light', 'normal', 'medium', 'semibold', 'bold', 'heavy', 'black']]",
+        "desc": "Font weight of the legend, see `matplotlib.text.Text.set_fontweight()`."
+      },
+      {
+        "name": "legend_fontoutline",
+        "type": "int | None",
+        "desc": "Font outline of the legend, see `matplotlib.patheffects.withStroke`."
+      },
+      {
+        "name": "legend_na",
+        "type": "bool",
+        "desc": "Whether to show NA values in the legend."
+      },
+      {
+        "name": "colorbar",
+        "type": "bool",
+        "desc": "Whether to show the colorbar, see `matplotlib.pyplot.colorbar()`."
+      },
+      {
+        "name": "scalebar_dx",
+        "type": "float | Sequence[float] | None",
+        "desc": "Size of one pixel in units specified by `scalebar_units`."
+      },
+      {
+        "name": "scalebar_units",
+        "type": "str | Sequence[str] | None",
+        "desc": "Units of `scalebar_dx`."
+      },
+      {
+        "name": "title",
+        "type": "str | Sequence[str] | None",
+        "desc": "Panel titles."
+      },
+      {
+        "name": "axis_label",
+        "type": "str | Sequence[str] | None",
+        "desc": "Panel axis labels."
+      },
+      {
+        "name": "fig",
+        "type": "Figure | None",
+        "desc": "Optional `matplotlib.figure.Figure` to use."
+      },
+      {
+        "name": "ax",
+        "type": "Axes | Sequence[Axes] | None",
+        "desc": "Optional `matplotlib.axes.Axes` to use."
+      },
+      {
+        "name": "return_ax",
+        "type": "bool",
+        "desc": "Whether to return `matplotlib.axes.Axes` object(s)."
+      },
+      {
+        "name": "figsize",
+        "type": "tuple[float, float] | None",
+        "desc": "Size of the figure in inches."
+      },
+      {
+        "name": "dpi",
+        "type": "int | None",
+        "desc": "Dots per inch."
+      },
+      {
+        "name": "save",
+        "type": "str | Path | None",
+        "desc": "Whether to save the plot."
+      },
+      {
+        "name": "scalebar_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Keyword arguments for `matplotlib_scalebar.ScaleBar()`."
+      },
+      {
+        "name": "edges_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Keyword arguments for `networkx.draw_networkx_edges()`."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `matplotlib.pyplot.scatter()` or `matplotlib.pyplot.imshow()`."
+      },
+      {
+        "name": "return",
+        "type": "Axes | Sequence[Axes] | None",
+        "desc": "Nothing, just plots the figure and optionally saves the plot."
+      }
+    ],
+    "misc": "SEE ALSO - `squidpy.pl.spatial_scatter()` on how to plot spatial data with overlayed data on top."
+  },
+  {
+    "method": "squidpy.datasets.visium_hne_image_crop",
+    "signature": "squidpy.datasets.visium_hne_image_crop(path=None, **kwargs)",
+    "description": "Cropped H&E image from 10x Genomics Visium dataset.\nThe shape of this image is (3527, 3527).",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the .tiff image."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for squidpy.im.ImageContainer.add_img()."
+      },
+      {
+        "name": "return",
+        "type": "squidpy.im.ImageContainer",
+        "desc": "The image data."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.im.segment",
+    "signature": "squidpy.im.segment(img, layer=None, library_id=None, method='watershed', channel=0, chunks=None, lazy=False, layer_added=None, copy=False, **kwargs)",
+    "description": "Segment an image.",
+    "params": [
+      {
+        "name": "img",
+        "type": "ImageContainer",
+        "desc": "High-resolution image."
+      },
+      {
+        "name": "layer",
+        "type": "str | None",
+        "desc": "Image layer in `img` that should be processed. If None and only 1 layer is present, it will be selected."
+      },
+      {
+        "name": "library_id",
+        "type": "str | Sequence[str] | None",
+        "desc": "Name of the Z-dimension(s) that this function should be applied to. For not specified Z-dimensions, the identity function is applied. If None, all Z-dimensions are segmented separately."
+      },
+      {
+        "name": "method",
+        "type": "str | SegmentationModel | Callable[..., ndarray[tuple[int, ...], dtype[Any]]]",
+        "desc": "Segmentation method to use. Valid options are: 'watershed'. Alternatively, any callable can be passed as long as it has the following signature: `numpy.ndarray (height, width, channels) -> numpy.ndarray (height, width[, channels])`."
+      },
+      {
+        "name": "channel",
+        "type": "int | None",
+        "desc": "Channel index to use for segmentation. If None, use all channels."
+      },
+      {
+        "name": "chunks",
+        "type": "str | int | tuple[int, int] | None",
+        "desc": "Number of chunks for `dask`. For automatic chunking, use `chunks = 'auto'`."
+      },
+      {
+        "name": "lazy",
+        "type": "bool",
+        "desc": "Whether to lazily compute the result or not. Only used when `chunks != None`."
+      },
+      {
+        "name": "layer_added",
+        "type": "str | None",
+        "desc": "Layer of new image layer to add into `img` object. If None, use `'segmented_{model}'`."
+      },
+      {
+        "name": "thresh",
+        "type": "Any",
+        "desc": "Threshold for creation of masked image. The areas to segment should be contained in this mask. If None, it is determined by Otsu’s method. Only used if `method = 'watershed'`."
+      },
+      {
+        "name": "geq",
+        "type": "Any",
+        "desc": "Treat `thresh` as upper or lower bound for defining areas to segment. If `geq = True`, mask is defined as `mask = arr >= thresh`, meaning high values in `arr` denote areas to segment. Only used if `method = 'watershed'`."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If `True`, return the result, otherwise save it to the image container."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for the underlying model."
+      },
+      {
+        "name": "return",
+        "type": "ImageContainer | None",
+        "desc": "If `copy = True`, returns a new container with the segmented image in `'{layer_added}'`. Otherwise, modifies the `img` with the following key: `squidpy.im.ImageContainer['{layer_added}']` - the segmented image."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.pl.ripley",
+    "signature": "squidpy.pl.ripley(adata, cluster_key, mode='F', plot_sims=True, palette=None, figsize=None, dpi=None, save=None, ax=None, legend_kwargs=mappingproxy({}), **kwargs)",
+    "description": "Plot Ripley’s statistics for each cluster.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obs` where clustering is stored."
+      },
+      {
+        "name": "mode",
+        "type": "Literal['F', 'G', 'L']",
+        "desc": "Ripley’s statistics to be plotted."
+      },
+      {
+        "name": "plot_sims",
+        "type": "bool",
+        "desc": "Whether to overlay simulations in the plot."
+      },
+      {
+        "name": "palette",
+        "type": "str | ListedColormap | None",
+        "desc": "Categorical colormap for the clusters. If `None`, use `anndata.AnnData.uns['{cluster_key}_colors']`, if available."
+      },
+      {
+        "name": "figsize",
+        "type": "tuple[float, float] | None",
+        "desc": "Size of the figure in inches."
+      },
+      {
+        "name": "dpi",
+        "type": "int | None",
+        "desc": "Dots per inch."
+      },
+      {
+        "name": "save",
+        "type": "str | Path | None",
+        "desc": "Whether to save the plot."
+      },
+      {
+        "name": "scalebar_kwargs",
+        "type": "",
+        "desc": "Keyword arguments for `matplotlib_scalebar.ScaleBar()`."
+      },
+      {
+        "name": "edges_kwargs",
+        "type": "",
+        "desc": "Keyword arguments for `networkx.draw_networkx_edges()`."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `matplotlib.pyplot.scatter()` or `matplotlib.pyplot.imshow()`."
+      },
+      {
+        "name": "ax",
+        "type": "Axes | None",
+        "desc": "Axes, `matplotlib.axes.Axes`."
+      },
+      {
+        "name": "legend_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Keyword arguments for `matplotlib.pyplot.legend()`."
+      },
+      {
+        "name": "kwargs",
+        "type": "",
+        "desc": "Keyword arguments for `seaborn.lineplot()`."
+      },
+      {
+        "name": "return",
+        "type": "None",
+        "desc": "Nothing, just plots the figure and optionally saves the plot."
+      }
+    ],
+    "misc": "The estimate is computed by `squidpy.gr.ripley()`. The function draws Ripley's statistics for specified clusters within spatial transcriptomics data."
+  },
+  {
+    "method": "squidpy.read.vizgen",
+    "signature": "squidpy.read.vizgen(path, *, counts_file, meta_file, transformation_file=None, library_id='library', **kwargs)",
+    "description": "Read *Vizgen* formatted dataset. In addition to reading the regular *Vizgen* output, it loads the metadata file and optionally loads the transformation matrix.",
+    "params": [
+      {
+        "name": "path",
+        "type": "str | Path",
+        "desc": "Path to the root directory containing *Vizgen* files."
+      },
+      {
+        "name": "counts_file",
+        "type": "str",
+        "desc": "File containing the counts. Typically ends with *\\_cell_by_gene.csv*."
+      },
+      {
+        "name": "meta_file",
+        "type": "str",
+        "desc": "File containing the spatial coordinates and additional cell-level metadata."
+      },
+      {
+        "name": "transformation_file",
+        "type": "str | None",
+        "desc": "Transformation matrix file for converting micron coordinates into pixels in images."
+      },
+      {
+        "name": "library_id",
+        "type": "str",
+        "desc": "Identifier for the *Vizgen* library. Useful when concatenating multiple `anndata.AnnData` objects."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "Annotated data object with the following keys: \n- `anndata.AnnData.obsm['spatial']` - spatial spot coordinates in microns.\n- `anndata.AnnData.obsm['blank_genes']` - blank genes from Vizgen platform.\n- `anndata.AnnData.uns['spatial']['{library_id}']['scalefactors']['transformation_matrix']` - transformation matrix for converting micron coordinates to pixels. Only present if `transformation_file != None`."
+      }
+    ],
+    "misc": "SEE ALSO\n- Vizgen data release program.\n- `squidpy.pl.spatial_scatter()` on how to plot spatial data."
+  },
+  {
+    "method": "squidpy.im.calculate_image_features",
+    "signature": "squidpy.im.calculate_image_features(adata, img, layer=None, library_id=None, features='summary', features_kwargs=mappingproxy({}), key_added='img_features', copy=False, n_jobs=None, backend='loky', show_progress_bar=True, **kwargs)",
+    "description": "Calculate image features for all observations in 'adata'.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "img",
+        "type": "ImageContainer",
+        "desc": "High-resolution image."
+      },
+      {
+        "name": "layer",
+        "type": "str | None",
+        "desc": "Image layer in 'img' that should be processed. If None and only 1 layer is present, it will be selected."
+      },
+      {
+        "name": "library_id",
+        "type": "str | Sequence[str] | None",
+        "desc": "If None, there should only be one entry in anndata.AnnData.uns '['{spatial_key}']'. If a str, first search anndata.AnnData.obs '['{library_id}']' which contains the mapping from observations to library ids, then search anndata.AnnData.uns '['{spatial_key}']."
+      },
+      {
+        "name": "features",
+        "type": "str | Sequence[str]",
+        "desc": "Features to be calculated, like 'texture', 'summary', 'histogram', 'segmentation', 'custom'."
+      },
+      {
+        "name": "features_kwargs",
+        "type": "Mapping[str, Mapping[str, Any]]",
+        "desc": "Keyword arguments for the different features that should be generated, such as '{ 'texture': { ... }, ... }'."
+      },
+      {
+        "name": "key_added",
+        "type": "str",
+        "desc": "Key in anndata.AnnData.obsm where to store the calculated features."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If 'True', return the result, otherwise save it to the 'adata' object."
+      },
+      {
+        "name": "n_jobs",
+        "type": "int | None",
+        "desc": "Number of parallel jobs."
+      },
+      {
+        "name": "backend",
+        "type": "str",
+        "desc": "Parallelization backend to use. See joblib.Parallel for available options."
+      },
+      {
+        "name": "show_progress_bar",
+        "type": "bool",
+        "desc": "Whether to show the progress bar or not."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for squidpy.im.ImageContainer.generate_spot_crops()."
+      },
+      {
+        "name": "return",
+        "type": "DataFrame | None",
+        "desc": "If 'copy = True', returns a pandas.DataFrame where columns correspond to the calculated features. Otherwise, modifies the 'adata' object with the following key: anndata.AnnData.uns '['{key_added}']' - the above mentioned dataframe."
+      }
+    ],
+    "misc": "Raises: ValueError – If a feature is not known."
+  },
+  {
+    "method": "squidpy.pl.var_by_distance",
+    "signature": "squidpy.pl.var_by_distance(adata, var, anchor_key, design_matrix_key='design_matrix', stack_vars=False, covariate=None, order=5, show_scatter=True, color=None, line_palette=None, scatter_palette='viridis', dpi=None, figsize=None, save=None, title=None, axis_label=None, return_ax=None, regplot_kwargs=mappingproxy({}), scatterplot_kwargs=mappingproxy({}))",
+    "description": "Plot a variable using a smooth regression line with increasing distance to an anchor point.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "var",
+        "type": "str | list[str]",
+        "desc": "Variables to plot on y-axis."
+      },
+      {
+        "name": "anchor_key",
+        "type": "str | list[str]",
+        "desc": "Anchor point column from which distances are taken."
+      },
+      {
+        "name": "design_matrix_key",
+        "type": "str",
+        "desc": "Name of the design matrix, previously computed with `squidpy.tl.var_by_distance()`, to use."
+      },
+      {
+        "name": "stack_vars",
+        "type": "bool",
+        "desc": "Whether to show multiple variables on the same plot. Only works if ‘covariate’ is not specified."
+      },
+      {
+        "name": "covariate",
+        "type": "str | None",
+        "desc": "A covariate for which separate regression lines are plotted for each category."
+      },
+      {
+        "name": "order",
+        "type": "int",
+        "desc": "Order of the polynomial fit for `seaborn.regplot()`."
+      },
+      {
+        "name": "show_scatter",
+        "type": "bool",
+        "desc": "Whether to show a scatter plot underlying the regression line."
+      },
+      {
+        "name": "color",
+        "type": "str | None",
+        "desc": "Variables in adata.obs to plot if ‘show_scatter==True’."
+      },
+      {
+        "name": "line_palette",
+        "type": "str | Sequence[str] | Cycler | None",
+        "desc": "Categorical color palette used in case a covariate is specified."
+      },
+      {
+        "name": "scatter_palette",
+        "type": "str | Sequence[str] | Cycler | None",
+        "desc": "Color palette for the scatter plot underlying the `seaborn.regplot()`."
+      },
+      {
+        "name": "dpi",
+        "type": "int | None",
+        "desc": "Dots per inch."
+      },
+      {
+        "name": "figsize",
+        "type": "tuple[int, int] | None",
+        "desc": "Size of the figure in inches."
+      },
+      {
+        "name": "save",
+        "type": "str | Path | None",
+        "desc": "Whether to save the plot."
+      },
+      {
+        "name": "title",
+        "type": "str | None",
+        "desc": "Panel titles."
+      },
+      {
+        "name": "axis_label",
+        "type": "str | None",
+        "desc": "Panel axis labels."
+      },
+      {
+        "name": "return_ax",
+        "type": "bool | None",
+        "desc": "Whether to return `matplotlib.axes.Axes` object(s)."
+      },
+      {
+        "name": "regplot_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Kwargs for `seaborn.regplot()`."
+      },
+      {
+        "name": "scatterplot_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Kwargs for `matplotlib.pyplot.scatter()`."
+      },
+      {
+        "name": "return",
+        "type": "Axes | None",
+        "desc": "Nothing, just plots the figure and optionally saves the plot."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.gr.nhood_enrichment",
+    "signature": "squidpy.gr.nhood_enrichment(adata, cluster_key, library_key=None, connectivity_key=None, n_perms=1000, numba_parallel=False, seed=None, copy=False, n_jobs=None, backend='loky', show_progress_bar=True)",
+    "description": "Compute neighborhood enrichment by permutation test.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData | SpatialData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obs` where clustering is stored."
+      },
+      {
+        "name": "library_key",
+        "type": "str | None",
+        "desc": "If multiple library_id, column in `anndata.AnnData.obs` which stores mapping between `library_id` and obs."
+      },
+      {
+        "name": "connectivity_key",
+        "type": "str | None",
+        "desc": "Key in `anndata.AnnData.obsp` where spatial connectivities are stored. Default is: `['spatial_connectivities']`."
+      },
+      {
+        "name": "n_perms",
+        "type": "int",
+        "desc": "Number of permutations for the permutation test."
+      },
+      {
+        "name": "numba_parallel",
+        "type": "bool",
+        "desc": "Whether to use `numba.prange` or not. If None, it is determined automatically. For small datasets or small number of interactions, it’s recommended to set this to False."
+      },
+      {
+        "name": "seed",
+        "type": "int | None",
+        "desc": "Random seed for reproducibility."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If `True`, return the result, otherwise save it to the `adata` object."
+      },
+      {
+        "name": "n_jobs",
+        "type": "int | None",
+        "desc": "Number of parallel jobs."
+      },
+      {
+        "name": "backend",
+        "type": "str",
+        "desc": "Parallelization backend to use."
+      },
+      {
+        "name": "show_progress_bar",
+        "type": "bool",
+        "desc": "Whether to show the progress bar or not."
+      },
+      {
+        "name": "return",
+        "type": "tuple[ndarray[tuple[int, ...], dtype[Any]], ndarray[tuple[int, ...], dtype[Any]]] | None",
+        "desc": "If `copy = True`, returns a tuple with the z-score and the enrichment count.\n\nOtherwise, modifies the `adata` with the following keys:\n- `anndata.AnnData.uns['{cluster_key}_nhood_enrichment']['zscore']` - the enrichment z-score.\n- `anndata.AnnData.uns['{cluster_key}_nhood_enrichment']['count']` - the enrichment count."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.pl.centrality_scores",
+    "signature": "squidpy.pl.centrality_scores(adata, cluster_key, score=None, legend_kwargs=mappingproxy({}), palette=None, figsize=None, dpi=None, save=None, **kwargs)",
+    "description": "Plot centrality scores.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obs` where clustering is stored."
+      },
+      {
+        "name": "score",
+        "type": "str | Sequence[str] | None",
+        "desc": "Whether to plot all scores or only selected ones."
+      },
+      {
+        "name": "legend_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Keyword arguments for `matplotlib.pyplot.legend()`."
+      },
+      {
+        "name": "palette",
+        "type": "str | ListedColormap | None",
+        "desc": "Categorical colormap for the clusters. If `None`, use `anndata.AnnData.uns` `['{cluster_key}_colors']`, if available."
+      },
+      {
+        "name": "figsize",
+        "type": "tuple[float, float] | None",
+        "desc": "Size of the figure in inches."
+      },
+      {
+        "name": "dpi",
+        "type": "int | None",
+        "desc": "Dots per inch."
+      },
+      {
+        "name": "save",
+        "type": "str | Path | None",
+        "desc": "Whether to save the plot."
+      },
+      {
+        "name": "scalebar_kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `matplotlib_scalebar.ScaleBar()`."
+      },
+      {
+        "name": "edges_kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `networkx.draw_networkx_edges()`."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `matplotlib.pyplot.scatter()` or `matplotlib.pyplot.imshow()`."
+      },
+      {
+        "name": "return",
+        "type": "None",
+        "desc": "Nothing, just plots the figure and optionally saves the plot."
+      }
+    ],
+    "misc": "The centrality scores are computed by `squidpy.gr.centrality_scores()`. "
+  },
+  {
+    "method": "squidpy.datasets.seqfish",
+    "signature": "squidpy.datasets.seqfish(path=None, **kwargs)",
+    "description": "Pre-processed subset seqFISH dataset from Lohoff et al. The shape of this anndata.AnnData object (19416, 351).",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the dataset."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for scanpy.read()."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "The dataset."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.gr.spatial_autocorr",
+    "signature": "squidpy.gr.spatial_autocorr(adata, connectivity_key='spatial_connectivities', genes=None, mode='moran', transformation=True, n_perms=None, two_tailed=False, corr_method='fdr_bh', attr='X', layer=None, seed=None, use_raw=False, copy=False, n_jobs=None, backend='loky', show_progress_bar=True)",
+    "description": "Calculate Global Autocorrelation Statistic (Moran’s I or Geary’s C).",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData | SpatialData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "connectivity_key",
+        "type": "str",
+        "desc": "Key in anndata.AnnData.obsp where spatial connectivities are stored. Default is: anndata.AnnData.obsp ['spatial_connectivities']."
+      },
+      {
+        "name": "genes",
+        "type": "str | int | Sequence[str] | Sequence[int] | None",
+        "desc": "Depending on the attr:\n> - if `attr = 'X'`, it corresponds to genes stored in anndata.AnnData.var_names.\n>   If None, it’s computed anndata.AnnData.var ['highly_variable'],\n>   if present. Otherwise, it’s computed for all genes.\n> - if `attr = 'obs'`, it corresponds to a list of columns in anndata.AnnData.obs.\n>   If None, use all numerical columns.\n> - if `attr = 'obsm'`, it corresponds to indices in anndata.AnnData.obsm ['{layer}'].\n>   If None, all indices are used."
+      },
+      {
+        "name": "mode",
+        "type": "Union[SpatialAutocorr, Literal['moran', 'geary']]",
+        "desc": "Mode of score calculation:\n> - ’moran’ - Moran’s I autocorrelation.\n> - ’geary’ - Geary’s C autocorrelation."
+      },
+      {
+        "name": "transformation",
+        "type": "bool",
+        "desc": "If True, weights in anndata.AnnData.obsp ['spatial_connectivities'] are row-normalized, advised for analytic p-value calculation."
+      },
+      {
+        "name": "n_perms",
+        "type": "int | None",
+        "desc": "Number of permutations for the permutation test. If None, only p-values under normality assumption are computed."
+      },
+      {
+        "name": "two_tailed",
+        "type": "bool",
+        "desc": "If True, p-values are two-tailed, otherwise they are one-tailed."
+      },
+      {
+        "name": "corr_method",
+        "type": "str | None",
+        "desc": "Correction method for multiple testing. See statsmodels.stats.multitest.multipletests() for valid options."
+      },
+      {
+        "name": "use_raw",
+        "type": "bool",
+        "desc": "Whether to access anndata.AnnData.raw. Only used when `attr = 'X'`."
+      },
+      {
+        "name": "layer",
+        "type": "str | None",
+        "desc": "Depending on `attr`: Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X."
+      },
+      {
+        "name": "attr",
+        "type": "Literal['obs', 'X', 'obsm']",
+        "desc": "Which attribute of AnnData to access. See `genes` parameter for more information."
+      },
+      {
+        "name": "seed",
+        "type": "int | None",
+        "desc": "Random seed for reproducibility."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If `True`, return the result, otherwise save it to the `adata` object."
+      },
+      {
+        "name": "n_jobs",
+        "type": "int | None",
+        "desc": "Number of parallel jobs."
+      },
+      {
+        "name": "backend",
+        "type": "str",
+        "desc": "Parallelization backend to use. See joblib.Parallel for available options."
+      },
+      {
+        "name": "show_progress_bar",
+        "type": "bool",
+        "desc": "Whether to show the progress bar or not."
+      },
+      {
+        "name": "return",
+        "type": "DataFrame | None",
+        "desc": "If `copy = True`, returns a pandas.DataFrame with the following keys:\n> - ’I’ or ‘C’ - Moran’s I or Geary’s C statistic.\n> - ’pval_norm’ - p-value under normality assumption.\n> - ’var_norm’ - variance of ‘score’ under normality assumption.\n> - ’{p_val}_{corr_method}’ - the corrected p-values if `corr_method != None` .\n\nIf `n_perms != None`, additionally returns the following columns:\n> - ’pval_z_sim’ - p-value based on standard normal approximation from permutations.\n> - ’pval_sim’ - p-value based on permutations.\n> - ’var_sim’ - variance of ‘score’ from permutations.\n\nOtherwise, modifies the `adata` with the following key:\n> - anndata.AnnData.uns ['moranI'] - the above mentioned dataframe, if `mode = 'moran'`.\n> - anndata.AnnData.uns ['gearyC'] - the above mentioned dataframe, if `mode = 'geary'`."
+      }
+    ],
+    "misc": "See Rey and Anselin, 2010 for reference."
+  },
+  {
+    "method": "squidpy.im.process",
+    "signature": "squidpy.im.process(img, layer=None, library_id=None, method='smooth', chunks=None, lazy=False, layer_added=None, channel_dim=None, copy=False, apply_kwargs=mappingproxy({}), **kwargs)",
+    "description": "Process an image by applying a transformation.",
+    "params": [
+      {
+        "name": "img",
+        "type": "ImageContainer",
+        "desc": "High-resolution image."
+      },
+      {
+        "name": "layer",
+        "type": "str | None",
+        "desc": "Image layer in `img` that should be processed. If None and only 1 layer is present, it will be selected."
+      },
+      {
+        "name": "library_id",
+        "type": "str | Sequence[str] | None",
+        "desc": "Name of the Z-dimension(s) that this function should be applied to. For not specified Z-dimensions, the identity function is applied. If None, all Z-dimensions are processed at once, treating the image as a 3D volume."
+      },
+      {
+        "name": "method",
+        "type": "str | Callable[..., ndarray[tuple[int, ...], dtype[Any]]]",
+        "desc": "Processing method to use. Valid options are:\n> - ’smooth’ - `skimage.filters.gaussian()`.\n> - ’gray’ - `skimage.color.rgb2gray()`.\nAlternatively, any `callable()` can be passed as long as it has the following signature:\n`numpy.ndarray (height, width, channels) -> numpy.ndarray (height, width[, channels])`."
+      },
+      {
+        "name": "chunks",
+        "type": "int | None",
+        "desc": "Number of chunks for `dask`. For automatic chunking, use `chunks = 'auto'`."
+      },
+      {
+        "name": "lazy",
+        "type": "bool",
+        "desc": "Whether to lazily compute the result or not. Only used when `chunks != None`."
+      },
+      {
+        "name": "layer_added",
+        "type": "str | None",
+        "desc": "Layer of new image layer to add into `img` object. If None, use `'{layer}_{method}'`."
+      },
+      {
+        "name": "channel_dim",
+        "type": "str | None",
+        "desc": "Name of the channel dimension of the new image layer. Default is the same as the original, if the processing function does not change the number of channels, and `'{channel}_{processing}'` otherwise."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If `True`, return the result, otherwise save it to the image container."
+      },
+      {
+        "name": "apply_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Keyword arguments for `squidpy.im.ImageContainer.apply()`."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `method`."
+      },
+      {
+        "name": "return",
+        "type": "ImageContainer | None",
+        "desc": "If `copy = True`, returns a new container with the processed image in `'{layer_added}'.\n\nOtherwise, modifies the `img` with the following key:\n> - `squidpy.im.ImageContainer ['{layer_added}']` - the processed image."
+      }
+    ],
+    "misc": "Raises: **NotImplementedError** – If `method` has not been implemented."
+  },
+  {
+    "method": "squidpy.gr.co_occurrence",
+    "signature": "squidpy.gr.co_occurrence(adata, cluster_key, spatial_key='spatial', interval=50, copy=False, n_splits=None, n_jobs=None, backend='loky', show_progress_bar=True)",
+    "description": "Compute co-occurrence probability of clusters.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData | SpatialData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obs` where clustering is stored."
+      },
+      {
+        "name": "spatial_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obsm` where spatial coordinates are stored."
+      },
+      {
+        "name": "interval",
+        "type": "int | ndarray | tuple[int, ...]",
+        "desc": "Distances interval at which co-occurrence is computed. If `int`, uniformly spaced interval of the given size will be used."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If `True`, return the result, otherwise save it to the `adata` object."
+      },
+      {
+        "name": "n_splits",
+        "type": "int | None",
+        "desc": "Number of splits in which to divide the spatial coordinates in `anndata.AnnData.obsm` `['{spatial_key}']`."
+      },
+      {
+        "name": "n_jobs",
+        "type": "int | None",
+        "desc": "Number of parallel jobs."
+      },
+      {
+        "name": "backend",
+        "type": "str",
+        "desc": "Parallelization backend to use."
+      },
+      {
+        "name": "show_progress_bar",
+        "type": "bool",
+        "desc": "Whether to show the progress bar or not."
+      },
+      {
+        "name": "return",
+        "type": "tuple[ndarray, ndarray] | None",
+        "desc": "If `copy = True`, returns the co-occurrence probability and the distance thresholds intervals.\n\n  Otherwise, modifies the `adata` with the following keys: - `anndata.AnnData.uns['{cluster_key}_co_occurrence']['occ']` - the co-occurrence probabilities across interval thresholds. - `anndata.AnnData.uns['{cluster_key}_co_occurrence']['interval']` - the distance thresholds computed at `interval`."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.datasets.visium_fluo_image_crop",
+    "signature": "squidpy.datasets.visium_fluo_image_crop(path=None, **kwargs)",
+    "description": "Cropped Fluorescent image from 10x Genomics Visium dataset. The shape of this image is `(7272, 7272)`.",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the .tiff image."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `squidpy.im.ImageContainer.add_img()`."
+      },
+      {
+        "name": "return",
+        "type": "squidpy.im.ImageContainer",
+        "desc": "The image data."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.gr.spatial_neighbors",
+    "signature": "squidpy.gr.spatial_neighbors(adata, spatial_key='spatial', elements_to_coordinate_systems=None, table_key=None, library_key=None, coord_type=None, n_neighs=6, radius=None, delaunay=False, n_rings=1, percentile=None, transform=None, set_diag=False, key_added='spatial', copy=False)",
+    "description": "Create a graph from spatial coordinates.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData | SpatialData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "spatial_key",
+        "type": "str",
+        "desc": "Key in anndata.AnnData.obsm where spatial coordinates are stored. If adata is a spatialdata.SpatialData, the coordinates of the centroids will be stored in the adata with this key."
+      },
+      {
+        "name": "elements_to_coordinate_systems",
+        "type": "dict[str, str] | None",
+        "desc": "A dictionary mapping element names of the SpatialData object to coordinate systems. The elements can be either Shapes or Labels. For compatibility, the spatialdata table must annotate all regions keys. Must not be None if adata is a spatialdata.SpatialData."
+      },
+      {
+        "name": "table_key",
+        "type": "str | None",
+        "desc": "Key in spatialdata.SpatialData.tables where the spatialdata table is stored. Must not be None if adata is a spatialdata.SpatialData."
+      },
+      {
+        "name": "mask_polygon",
+        "type": "Param not fully specified",
+        "desc": "The Polygon or MultiPolygon element."
+      },
+      {
+        "name": "library_key",
+        "type": "str | None",
+        "desc": "If multiple library_id, column in anndata.AnnData.obs which stores mapping between library_id and obs."
+      },
+      {
+        "name": "coord_type",
+        "type": "str | CoordType | None",
+        "desc": "Type of coordinate system. Valid options are:\n- 'grid' - grid coordinates.\n- 'generic' - generic coordinates.\n- None - 'grid' if spatial_key is in anndata.AnnData.uns with n_neighs = 6 (Visium), otherwise use 'generic'."
+      },
+      {
+        "name": "n_neighs",
+        "type": "int",
+        "desc": "Depending on the coord_type:\n- 'grid' - number of neighboring tiles.\n- 'generic' - number of neighborhoods for non-grid data. Only used when delaunay = False."
+      },
+      {
+        "name": "radius",
+        "type": "float | tuple[float, float] | None",
+        "desc": "Only available when coord_type = 'generic'. Depending on the type:\n- float - compute the graph based on neighborhood radius.\n- tuple - prune the final graph to only contain edges in interval [min(radius), max(radius)]."
+      },
+      {
+        "name": "delaunay",
+        "type": "bool",
+        "desc": "Whether to compute the graph from Delaunay triangulation. Only used when coord_type = 'generic'."
+      },
+      {
+        "name": "n_rings",
+        "type": "int",
+        "desc": "Number of rings of neighbors for grid data. Only used when coord_type = 'grid'."
+      },
+      {
+        "name": "percentile",
+        "type": "float | None",
+        "desc": "Percentile of the distances to use as threshold. Only used when coord_type = 'generic'."
+      },
+      {
+        "name": "transform",
+        "type": "str | Transform | None",
+        "desc": "Type of adjacency matrix transform. Valid options are:\n- 'spectral' - spectral transformation of the adjacency matrix.\n- 'cosine' - cosine transformation of the adjacency matrix.\n- None - no transformation of the adjacency matrix."
+      },
+      {
+        "name": "set_diag",
+        "type": "bool",
+        "desc": "Whether to set the diagonal of the spatial connectivities to 1.0."
+      },
+      {
+        "name": "key_added",
+        "type": "str",
+        "desc": "Key which controls where the results are saved if copy = False."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If True, return the result, otherwise save it to the adata object."
+      },
+      {
+        "name": "return",
+        "type": "tuple[csr_matrix, csr_matrix] | None",
+        "desc": "If copy = True, returns a tuple with the spatial connectivities and distances matrices. Otherwise, modifies the adata with the following keys:\n- anndata.AnnData.obsp ['{key_added}_connectivities'] - the spatial connectivities.\n- anndata.AnnData.obsp ['{key_added}_distances'] - the spatial distances.\n- anndata.AnnData.uns ['{key_added}'] - dict containing parameters."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.pl.spatial_scatter",
+    "signature": "squidpy.pl.spatial_scatter(adata, shape=None, color=None, groups=None, library_id=None, library_key=None, spatial_key='spatial', img=True, img_res_key='hires', img_alpha=None, img_cmap=None, img_channel=None, use_raw=None, layer=None, alt_var=None, size=None, size_key='spot_diameter_fullres', scale_factor=None, crop_coord=None, cmap=None, palette=None, alpha=1.0, norm=None, na_color=(0, 0, 0, 0), connectivity_key=None, edges_width=1.0, edges_color='grey', library_first=True, frameon=None, wspace=None, hspace=0.25, ncols=4, outline=False, outline_color=('black', 'white'), outline_width=(0.3, 0.05), legend_loc='right margin', legend_fontsize=None, legend_fontweight='bold', legend_fontoutline=None, legend_na=True, colorbar=True, scalebar_dx=None, scalebar_units=None, title=None, axis_label=None, fig=None, ax=None, return_ax=False, figsize=None, dpi=None, save=None, scalebar_kwargs=mappingproxy({}), edges_kwargs=mappingproxy({}), **kwargs)",
+    "description": "Plot spatial omics data with data overlayed on top. The plotted shapes (circles, squares or hexagons) have a real “size” with respect to their coordinate space, which can be specified via the `size` or `size_key` argument.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "shape",
+        "type": "Optional[Literal['circle', 'square', 'hex']]",
+        "desc": "Whether to plot scatter plot of points or regular polygons."
+      },
+      {
+        "name": "color",
+        "type": "str | Sequence[str | None] | None",
+        "desc": "Key for annotations in `anndata.AnnData.obs` or variables/genes."
+      },
+      {
+        "name": "groups",
+        "type": "str | Sequence[str] | None",
+        "desc": "For discrete annotation in `color`, select which values to plot (other values are set to NAs)."
+      },
+      {
+        "name": "library_id",
+        "type": "str | Sequence[str] | None",
+        "desc": "Name of the Z-dimension(s) that this function should be applied to."
+      },
+      {
+        "name": "library_key",
+        "type": "str | None",
+        "desc": "If multiple library_id, column in `anndata.AnnData.obs` which stores mapping between `library_id` and obs."
+      },
+      {
+        "name": "spatial_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obsm` where spatial coordinates are stored."
+      },
+      {
+        "name": "img",
+        "type": "bool | ndarray[tuple[int, ...], dtype[Any]] | Sequence[ndarray[tuple[int, ...], dtype[Any]]] | None",
+        "desc": "Whether to plot the image. One (or more) `numpy.ndarray` can also be passed for plotting."
+      },
+      {
+        "name": "img_res_key",
+        "type": "str | None",
+        "desc": "Key for image resolution, used to get `img` and `scale_factor` from `'images'` and `'scalefactors'` entries for this library."
+      },
+      {
+        "name": "img_alpha",
+        "type": "float | None",
+        "desc": "Alpha value for the underlying image."
+      },
+      {
+        "name": "img_cmap",
+        "type": "Any",
+        "desc": "Colormap for the image, see `matplotlib.colors.Colormap`."
+      },
+      {
+        "name": "img_channel",
+        "type": "int | list[int] | None",
+        "desc": "To select which channel to plot (all by default)."
+      },
+      {
+        "name": "use_raw",
+        "type": "bool | None",
+        "desc": "If True, use `anndata.AnnData.raw`."
+      },
+      {
+        "name": "layer",
+        "type": "str | None",
+        "desc": "Key in `anndata.AnnData.layers` or None for `anndata.AnnData.X`."
+      },
+      {
+        "name": "alt_var",
+        "type": "str | None",
+        "desc": "Which column to use in `anndata.AnnData.var` to select alternative `var_name`."
+      },
+      {
+        "name": "size",
+        "type": "float | Sequence[float] | None",
+        "desc": "Size of the scatter point/shape. In case of `spatial_shape` it represents to the scaling factor for shape (accessed via `size_key`). In case of `spatial_point`, it represents the `size` argument in `matplotlib.pyplot.scatter()`."
+      },
+      {
+        "name": "size_key",
+        "type": "str | None",
+        "desc": "Key of of pixel size of shapes to be plotted, stored in `anndata.AnnData.uns`."
+      },
+      {
+        "name": "scale_factor",
+        "type": "float | Sequence[float] | None",
+        "desc": "Scaling factor used to map from coordinate space to pixel space."
+      },
+      {
+        "name": "crop_coord",
+        "type": "tuple[int, int, int, int] | Sequence[tuple[int, int, int, int]] | None",
+        "desc": "Coordinates to use for cropping the image (left, right, top, bottom)."
+      },
+      {
+        "name": "cmap",
+        "type": "str | Colormap | None",
+        "desc": "Colormap for continuous annotations, see `matplotlib.colors.Colormap`."
+      },
+      {
+        "name": "palette",
+        "type": "str | ListedColormap | None",
+        "desc": "Palette for discrete annotations, see `matplotlib.colors.Colormap`."
+      },
+      {
+        "name": "alpha",
+        "type": "float",
+        "desc": "Alpha value for scatter point/shape."
+      },
+      {
+        "name": "norm",
+        "type": "Normalize | Sequence[Normalize] | None",
+        "desc": "Colormap normalization for continuous annotations, see `matplotlib.colors.Normalize`."
+      },
+      {
+        "name": "na_color",
+        "type": "str | tuple[float, ...]",
+        "desc": "Color to be used for NAs values, if present."
+      },
+      {
+        "name": "connectivity_key",
+        "type": "str | None",
+        "desc": "Key for neighbors graph to plot. Default is: `anndata.AnnData.obsp` `['spatial_connectivities']`."
+      },
+      {
+        "name": "edges_width",
+        "type": "float",
+        "desc": "Width of the edges. Only used when `connectivity_key != None` ."
+      },
+      {
+        "name": "edges_color",
+        "type": "str | Sequence[str] | Sequence[float]",
+        "desc": "Color of the edges."
+      },
+      {
+        "name": "library_first",
+        "type": "bool",
+        "desc": "If multiple libraries are plotted, set the plotting order with respect to `color`."
+      },
+      {
+        "name": "frameon",
+        "type": "bool | None",
+        "desc": "If True, draw a frame around the panels."
+      },
+      {
+        "name": "wspace",
+        "type": "float | None",
+        "desc": "Width space between panels."
+      },
+      {
+        "name": "hspace",
+        "type": "float",
+        "desc": "Height space between panels."
+      },
+      {
+        "name": "ncols",
+        "type": "int",
+        "desc": "Number of panels per row."
+      },
+      {
+        "name": "outline",
+        "type": "bool",
+        "desc": "If True, a thin border around points/shapes is plotted."
+      },
+      {
+        "name": "outline_color",
+        "type": "tuple[str, str]",
+        "desc": "Color of the border."
+      },
+      {
+        "name": "outline_width",
+        "type": "tuple[float, float]",
+        "desc": "Width of the border."
+      },
+      {
+        "name": "legend_loc",
+        "type": "str | None",
+        "desc": "Location of the legend, see `matplotlib.legend.Legend`."
+      },
+      {
+        "name": "legend_fontsize",
+        "type": "Union[int, float, Literal['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'], None]",
+        "desc": "Font size of the legend, see `matplotlib.text.Text.set_fontsize()`."
+      },
+      {
+        "name": "legend_fontweight",
+        "type": "Union[int, Literal['light', 'normal', 'medium', 'semibold', 'bold', 'heavy', 'black']]",
+        "desc": "Font weight of the legend, see `matplotlib.text.Text.set_fontweight()`."
+      },
+      {
+        "name": "legend_fontoutline",
+        "type": "int | None",
+        "desc": "Font outline of the legend, see `matplotlib.patheffects.withStroke`."
+      },
+      {
+        "name": "legend_na",
+        "type": "bool",
+        "desc": "Whether to show NA values in the legend."
+      },
+      {
+        "name": "colorbar",
+        "type": "bool",
+        "desc": "Whether to show the colorbar, see `matplotlib.pyplot.colorbar()`."
+      },
+      {
+        "name": "scalebar_dx",
+        "type": "float | Sequence[float] | None",
+        "desc": "Size of one pixel in units specified by `scalebar_units`."
+      },
+      {
+        "name": "scalebar_units",
+        "type": "str | Sequence[str] | None",
+        "desc": "Units of `scalebar_dx`."
+      },
+      {
+        "name": "title",
+        "type": "str | Sequence[str] | None",
+        "desc": "Panel titles."
+      },
+      {
+        "name": "axis_label",
+        "type": "str | Sequence[str] | None",
+        "desc": "Panel axis labels."
+      },
+      {
+        "name": "fig",
+        "type": "Figure | None",
+        "desc": "Optional `matplotlib.figure.Figure` to use."
+      },
+      {
+        "name": "ax",
+        "type": "Axes | Sequence[Axes] | None",
+        "desc": "Optional `matplotlib.axes.Axes` to use."
+      },
+      {
+        "name": "return_ax",
+        "type": "bool",
+        "desc": "Whether to return `matplotlib.axes.Axes` object(s)."
+      },
+      {
+        "name": "figsize",
+        "type": "tuple[float, float] | None",
+        "desc": "Size of the figure in inches."
+      },
+      {
+        "name": "dpi",
+        "type": "int | None",
+        "desc": "Dots per inch."
+      },
+      {
+        "name": "save",
+        "type": "str | Path | None",
+        "desc": "Whether to save the plot."
+      },
+      {
+        "name": "scalebar_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Keyword arguments for `matplotlib_scalebar.ScaleBar()`."
+      },
+      {
+        "name": "edges_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Keyword arguments for `networkx.draw_networkx_edges()`."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `matplotlib.pyplot.scatter()` or `matplotlib.pyplot.imshow()`."
+      },
+      {
+        "name": "return",
+        "type": "Axes | Sequence[Axes] | None",
+        "desc": "Nothing, just plots the figure and optionally saves the plot."
+      }
+    ],
+    "misc": "#### SEE ALSO\n- `squidpy.pl.spatial_segment()` on how to plot spatial data with segmentation masks on top."
+  },
+  {
+    "method": "squidpy.pl.nhood_enrichment",
+    "signature": "squidpy.pl.nhood_enrichment(adata, cluster_key, mode='zscore', annotate=False, method=None, title=None, cmap='viridis', palette=None, cbar_kwargs=mappingproxy({}), figsize=None, dpi=None, save=None, ax=None, **kwargs)",
+    "description": "Plot neighborhood enrichment. The enrichment is computed by `squidpy.gr.nhood_enrichment()`.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obs` where clustering is stored."
+      },
+      {
+        "name": "mode",
+        "type": "Literal['zscore', 'count']",
+        "desc": "Which `squidpy.gr.nhood_enrichment()` result to plot. Valid options are:\n> - ’zscore’ - z-score values of enrichment statistic.\n> - ’count’ - enrichment count."
+      },
+      {
+        "name": "annotate",
+        "type": "bool",
+        "desc": "Whether to annotate the cells of the heatmap."
+      },
+      {
+        "name": "method",
+        "type": "str | None",
+        "desc": "The linkage method to be used for dendrogram/clustering, see `scipy.cluster.hierarchy.linkage()`."
+      },
+      {
+        "name": "title",
+        "type": "str | None",
+        "desc": "The title of the plot."
+      },
+      {
+        "name": "cmap",
+        "type": "str",
+        "desc": "Continuous colormap to use."
+      },
+      {
+        "name": "palette",
+        "type": "str | ListedColormap | None",
+        "desc": "Categorical colormap for the clusters. If None, use `anndata.AnnData.uns['{cluster_key}_colors']`, if available."
+      },
+      {
+        "name": "cbar_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Keyword arguments for `matplotlib.figure.Figure.colorbar()`."
+      },
+      {
+        "name": "figsize",
+        "type": "tuple[float, float] | None",
+        "desc": "Size of the figure in inches."
+      },
+      {
+        "name": "dpi",
+        "type": "int | None",
+        "desc": "Dots per inch."
+      },
+      {
+        "name": "save",
+        "type": "str | Path | None",
+        "desc": "Whether to save the plot."
+      },
+      {
+        "name": "ax",
+        "type": "Axes | None",
+        "desc": "Axes, `matplotlib.axes.Axes`."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `matplotlib.pyplot.text()`."
+      },
+      {
+        "name": "return",
+        "type": "None",
+        "desc": "Nothing, just plots the figure and optionally saves the plot."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.gr.ripley",
+    "signature": "squidpy.gr.ripley(adata, cluster_key, mode='F', spatial_key='spatial', metric='euclidean', n_neigh=2, n_simulations=100, n_observations=1000, max_dist=None, n_steps=50, seed=None, copy=False)",
+    "description": "Calculate various Ripley's statistics for point processes.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData | SpatialData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str",
+        "desc": "Key in anndata.AnnData.obs where clustering is stored."
+      },
+      {
+        "name": "mode",
+        "type": "Literal['F', 'G', 'L']",
+        "desc": "Which Ripley’s statistic to compute."
+      },
+      {
+        "name": "spatial_key",
+        "type": "str",
+        "desc": "Key in anndata.AnnData.obsm where spatial coordinates are stored."
+      },
+      {
+        "name": "metric",
+        "type": "str",
+        "desc": "Which metric to use for computing distances. For available metrics, check out sklearn.neighbors.DistanceMetric."
+      },
+      {
+        "name": "n_neigh",
+        "type": "int",
+        "desc": "Number of neighbors to consider for the KNN graph."
+      },
+      {
+        "name": "n_simulations",
+        "type": "int",
+        "desc": "How many simulations to run for computing p-values."
+      },
+      {
+        "name": "n_observations",
+        "type": "int",
+        "desc": "How many observations to generate for the Spatial Poisson Point Process."
+      },
+      {
+        "name": "max_dist",
+        "type": "float | None",
+        "desc": "Maximum distances for the support. If None, max_dist=\\(\\sqrt{area \\over 2}\\)."
+      },
+      {
+        "name": "n_steps",
+        "type": "int",
+        "desc": "Number of steps for the support."
+      },
+      {
+        "name": "seed",
+        "type": "int | None",
+        "desc": "Random seed for reproducibility."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If True, return the result, otherwise save it to the adata object."
+      },
+      {
+        "name": "return",
+        "type": "dict[str, DataFrame | ndarray[tuple[int, ...], dtype[Any]]]",
+        "desc": "If copy = True, returns a dict with keys:\n- ‘{mode}_stat’ - DataFrame containing the statistics of choice for the real observations.\n- ‘sims_stat’ - DataFrame containing the statistics of choice for the simulations.\n- ‘bins’ - ndarray containing the support.\n- ‘pvalues’ - ndarray containing the p-values for the statistics of interest.\nOtherwise, modifies the adata object with the following key:\n- anndata.AnnData.uns ['{key_added}'] - the above mentioned dict.\nStatistics and p-values are computed for each cluster anndata.AnnData.obs ['{cluster_key}'] separately."
+      }
+    ],
+    "misc": "For reference, Ripley's statistics can be found on Wikipedia or in the paper by Baddeley et al., 2015."
+  },
+  {
+    "method": "squidpy.pl.interaction_matrix",
+    "signature": "squidpy.pl.interaction_matrix(adata, cluster_key, annotate=False, method=None, title=None, cmap='viridis', palette=None, cbar_kwargs=mappingproxy({}), figsize=None, dpi=None, save=None, ax=None, **kwargs)",
+    "description": "Plot cluster interaction matrix.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obs` where clustering is stored."
+      },
+      {
+        "name": "annotate",
+        "type": "bool",
+        "desc": "Whether to annotate the cells of the heatmap."
+      },
+      {
+        "name": "method",
+        "type": "str | None",
+        "desc": "The linkage method to be used for dendrogram/clustering."
+      },
+      {
+        "name": "title",
+        "type": "str | None",
+        "desc": "The title of the plot."
+      },
+      {
+        "name": "cmap",
+        "type": "str",
+        "desc": "Continuous colormap to use."
+      },
+      {
+        "name": "cbar_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Keyword arguments for `matplotlib.figure.Figure.colorbar()`."
+      },
+      {
+        "name": "palette",
+        "type": "str | ListedColormap | None",
+        "desc": "Categorical colormap for the clusters. If None, use `anndata.AnnData.uns['{cluster_key}_colors']`, if available."
+      },
+      {
+        "name": "figsize",
+        "type": "tuple[float, float] | None",
+        "desc": "Size of the figure in inches."
+      },
+      {
+        "name": "dpi",
+        "type": "int | None",
+        "desc": "Dots per inch."
+      },
+      {
+        "name": "save",
+        "type": "str | Path | None",
+        "desc": "Whether to save the plot."
+      },
+      {
+        "name": "ax",
+        "type": "Axes | None",
+        "desc": "Axes, `matplotlib.axes.Axes`."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `matplotlib.pyplot.text()`."
+      },
+      {
+        "name": "return",
+        "type": "None",
+        "desc": "Nothing, just plots the figure and optionally saves the plot."
+      }
+    ],
+    "misc": "The interaction matrix is computed by `squidpy.gr.interaction_matrix()`."
+  },
+  {
+    "method": "squidpy.read.visium",
+    "signature": "squidpy.read.visium(path, *, counts_file='filtered_feature_bc_matrix.h5', library_id=None, load_images=True, source_image_path=None, **kwargs)",
+    "description": "Read *10x Genomics* Visium formatted dataset. In addition to reading the regular *Visium* output, it looks for the *spatial* directory and loads the images, spatial coordinates and scale factors.",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path to the root directory containing *Visium* files."
+      },
+      {
+        "name": "counts_file",
+        "type": "str",
+        "desc": "Which file in the passed directory to use as the count file. Typically either *filtered_feature_bc_matrix.h5* or *raw_feature_bc_matrix.h5*."
+      },
+      {
+        "name": "library_id",
+        "type": "str | None",
+        "desc": "Identifier for the *Visium* library. Useful when concatenating multiple anndata.AnnData objects."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for scanpy.read_10x_h5(), anndata.read_mtx() or read_text()."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "Annotated data object with the following keys: anndata.AnnData.obsm ['spatial'] - spatial spot coordinates; anndata.AnnData.uns ['spatial']['{library_id}']['images'] - *hires* and *lowres* images; anndata.AnnData.uns ['spatial']['{library_id}']['scalefactors'] - scale factors for the spots; anndata.AnnData.uns ['spatial']['{library_id}']['metadata'] - various metadata."
+      }
+    ],
+    "misc": "SEE ALSO\n- Space Ranger output\n- squidpy.pl.spatial_scatter() on how to plot spatial data."
+  },
+  {
+    "method": "squidpy.gr.ligrec",
+    "signature": "squidpy.gr.ligrec(adata, cluster_key, interactions=None, complex_policy='min', threshold=0.01, corr_method=None, corr_axis='clusters', use_raw=True, copy=False, key_added=None, gene_symbols=None, **kwargs)",
+    "description": "Perform the permutation test as described in Efremova et al., 2020.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData | SpatialData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obs` where clustering is stored."
+      },
+      {
+        "name": "interactions",
+        "type": "DataFrame | Mapping[str, Sequence[str]] | Sequence[str] | tuple[Sequence[str], Sequence[str]] | Sequence[tuple[str, str]] | None",
+        "desc": "Interaction to test. The type can be one of these specified formats. If None, the interactions are extracted from `omnipath`."
+      },
+      {
+        "name": "complex_policy",
+        "type": "Literal['min', 'all']",
+        "desc": "Policy on how to handle complexes. Valid options are: 'min' for selecting gene with minimum average expression; 'all' for selecting all possible combinations between 'source' and 'target' complexes."
+      },
+      {
+        "name": "threshold",
+        "type": "float",
+        "desc": "Do not perform permutation test if any of the interacting components is being expressed in less than `threshold` percent of cells within a given cluster."
+      },
+      {
+        "name": "corr_method",
+        "type": "str | None",
+        "desc": "Correction method for multiple testing."
+      },
+      {
+        "name": "corr_axis",
+        "type": "Literal['interactions', 'clusters']",
+        "desc": "Axis over which to perform the FDR correction. Only used when `corr_method != None`."
+      },
+      {
+        "name": "use_raw",
+        "type": "bool",
+        "desc": "Whether to access `anndata.AnnData.raw`."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If `True`, return the result, otherwise save it to the `adata` object."
+      },
+      {
+        "name": "key_added",
+        "type": "str | None",
+        "desc": "Key in `anndata.AnnData.uns` where the result is stored if `copy = False`. If None, `'{cluster_key}_ligrec'` will be used."
+      },
+      {
+        "name": "gene_symbols",
+        "type": "str | None",
+        "desc": "Key in `anndata.AnnData.var` to use instead of `anndata.AnnData.var_names`."
+      },
+      {
+        "name": "return",
+        "type": "Mapping[str, DataFrame] | None",
+        "desc": "If `copy = True`, returns a dict with following keys: 'means', 'pvalues', and 'metadata'. Otherwise, modifies the `adata` object with the key: `anndata.AnnData.uns` ['{key_added}']."
+      }
+    ],
+    "misc": "NaN p-values mark combinations for which the mean expression of one of the interacting components was 0 or it didn’t pass the `threshold` percentage of cells being expressed within a given cluster."
+  },
+  {
+    "method": "squidpy.datasets.visium_hne_adata_crop",
+    "signature": "squidpy.datasets.visium_hne_adata_crop(path=None, **kwargs)",
+    "description": "Pre-processed subset 10x Genomics Visium H&E dataset.",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the dataset."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `scanpy.read()`."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "The dataset."
+      }
+    ],
+    "misc": "The shape of this `anndata.AnnData` object `(684, 18078)`. Contains data from a 10x Genomics Visium H&E dataset."
+  },
+  {
+    "method": "squidpy.datasets.visium_fluo_adata_crop",
+    "signature": "squidpy.datasets.visium_fluo_adata_crop(path=None, **kwargs)",
+    "description": "Pre-processed subset 10x Genomics Visium Fluorescent dataset. The shape of this `anndata.AnnData` object `(704, 16562)`.",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the dataset."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `scanpy.read()`."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "The dataset."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.datasets.imc",
+    "signature": "squidpy.datasets.imc(path=None, **kwargs)",
+    "description": "Pre-processed subset IMC dataset from Jackson et al. The shape of this anndata.AnnData object (4668, 34).",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the dataset."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for scanpy.read()."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "The dataset."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.datasets.merfish",
+    "signature": "squidpy.datasets.merfish(path=None, **kwargs)",
+    "description": "Pre-processed MERFISH dataset from Moffitt et al.",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the dataset."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for scanpy.read()."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "The dataset."
+      }
+    ],
+    "misc": "The shape of this anndata.AnnData object (73655, 161)."
+  },
+  {
+    "method": "squidpy.read.nanostring",
+    "signature": "squidpy.read.nanostring(path, *, counts_file, meta_file, fov_file=None)",
+    "description": "Read *Nanostring* formatted dataset.\n\nIn addition to reading the regular *Nanostring* output, it loads the metadata file, if present *CellComposite* and *CellLabels* directories containing the images and optionally the field of view file.",
+    "params": [
+      {
+        "name": "path",
+        "type": "str | Path",
+        "desc": "Path to the root directory containing *Nanostring* files."
+      },
+      {
+        "name": "counts_file",
+        "type": "str",
+        "desc": "File containing the counts. Typically ends with  *_exprMat_file.csv*."
+      },
+      {
+        "name": "meta_file",
+        "type": "str",
+        "desc": "File containing the spatial coordinates and additional cell-level metadata. Typically ends with  *_metadata_file.csv*."
+      },
+      {
+        "name": "fov_file",
+        "type": "str | None",
+        "desc": "File containing the coordinates of all the fields of view."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "Annotated data object with the following keys:\n- `AnnData.obsm['spatial']` - local coordinates of the centers of cells.\n- `AnnData.obsm['spatial_fov']` - global coordinates of the centers of cells in the field of view.\n- `AnnData.uns['spatial']['{fov}']['images']` - *hires* and *segmentation* images.\n- `AnnData.uns['spatial']['{fov}']['metadata']]['{x,y}_global_px']` - coordinates of the field of view. Only present if `fov_file != None`."
+      }
+    ],
+    "misc": "SEE ALSO\n- Nanostring Spatial Molecular Imager.\n- `squidpy.pl.spatial_scatter()` on how to plot spatial data."
+  },
+  {
+    "method": "squidpy.datasets.visium_hne_adata",
+    "signature": "squidpy.datasets.visium_hne_adata(path=None, **kwargs)",
+    "description": "Pre-processed 10x Genomics Visium H&E dataset.",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the dataset."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for scanpy.read()."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "The dataset."
+      }
+    ],
+    "misc": "The shape of this anndata.AnnData object (2688, 18078)."
+  },
+  {
+    "method": "squidpy.gr.sepal",
+    "signature": "squidpy.gr.sepal(adata, max_neighs, genes=None, n_iter=30000, dt=0.001, thresh=1e-08, connectivity_key='spatial_connectivities', spatial_key='spatial', layer=None, use_raw=False, copy=False, n_jobs=None, backend='loky', show_progress_bar=True)",
+    "description": "Identify spatially variable genes with Sepal. Sepal is a method that simulates a diffusion process to quantify spatial structure in tissue.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData | SpatialData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "max_neighs",
+        "type": "Literal[4, 6]",
+        "desc": "Maximum number of neighbors of a node in the graph. Valid options are: 4 - for a square-grid (ST, Dbit-seq). 6 - for a hexagonal-grid (Visium)."
+      },
+      {
+        "name": "genes",
+        "type": "str | Sequence[str] | None",
+        "desc": "List of gene names, used to compute sepal score. If None, it’s computed based on available data."
+      },
+      {
+        "name": "n_iter",
+        "type": "int | None",
+        "desc": "Maximum number of iterations for the diffusion simulation. If n_iter iterations are reached, the simulation will terminate even though convergence has not been achieved."
+      },
+      {
+        "name": "dt",
+        "type": "float",
+        "desc": "Time step in diffusion simulation."
+      },
+      {
+        "name": "thresh",
+        "type": "float",
+        "desc": "Entropy threshold for convergence of diffusion simulation."
+      },
+      {
+        "name": "connectivity_key",
+        "type": "str",
+        "desc": "Key where spatial connectivities are stored. Default is 'spatial_connectivities'."
+      },
+      {
+        "name": "spatial_key",
+        "type": "str",
+        "desc": "Key where spatial coordinates are stored."
+      },
+      {
+        "name": "layer",
+        "type": "str | None",
+        "desc": "Layer to use. If None, use default data."
+      },
+      {
+        "name": "use_raw",
+        "type": "bool",
+        "desc": "Whether to access raw data."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If True, return the result, otherwise save it to the adata object."
+      },
+      {
+        "name": "n_jobs",
+        "type": "int | None",
+        "desc": "Number of parallel jobs."
+      },
+      {
+        "name": "backend",
+        "type": "str",
+        "desc": "Parallelization backend to use."
+      },
+      {
+        "name": "show_progress_bar",
+        "type": "bool",
+        "desc": "Whether to show the progress bar or not."
+      },
+      {
+        "name": "return",
+        "type": "DataFrame | None",
+        "desc": "If copy = True, returns a DataFrame with the sepal scores. Otherwise, modifies the adata with the sepal scores."
+      }
+    ],
+    "misc": "If some genes in `anndata.AnnData.uns['sepal_score']` are NaN, consider re-running the function with increased `n_iter`."
+  },
+  {
+    "method": "squidpy.datasets.visium",
+    "signature": "squidpy.datasets.visium(sample_id, *, include_hires_tiff=False, base_dir=None)",
+    "description": "Download Visium datasets from 10x Genomics.",
+    "params": [
+      {
+        "name": "sample_id",
+        "type": "Literal['V1_Breast_Cancer_Block_A_Section_1', 'V1_Breast_Cancer_Block_A_Section_2', 'V1_Human_Heart', 'V1_Human_Lymph_Node', 'V1_Mouse_Kidney', 'V1_Adult_Mouse_Brain', 'V1_Mouse_Brain_Sagittal_Posterior', 'V1_Mouse_Brain_Sagittal_Posterior_Section_2', 'V1_Mouse_Brain_Sagittal_Anterior', 'V1_Mouse_Brain_Sagittal_Anterior_Section_2', 'V1_Human_Brain_Section_1', 'V1_Human_Brain_Section_2', 'V1_Adult_Mouse_Brain_Coronal_Section_1', 'V1_Adult_Mouse_Brain_Coronal_Section_2', 'Targeted_Visium_Human_Cerebellum_Neuroscience', 'Parent_Visium_Human_Cerebellum', 'Targeted_Visium_Human_SpinalCord_Neuroscience', 'Parent_Visium_Human_SpinalCord', 'Targeted_Visium_Human_Glioblastoma_Pan_Cancer', 'Parent_Visium_Human_Glioblastoma', 'Targeted_Visium_Human_BreastCancer_Immunology', 'Parent_Visium_Human_BreastCancer', 'Targeted_Visium_Human_OvarianCancer_Pan_Cancer', 'Targeted_Visium_Human_OvarianCancer_Immunology', 'Parent_Visium_Human_OvarianCancer', 'Targeted_Visium_Human_ColorectalCancer_GeneSignature', 'Parent_Visium_Human_ColorectalCancer', 'Visium_FFPE_Mouse_Brain', 'Visium_FFPE_Mouse_Brain_IF', 'Visium_FFPE_Mouse_Kidney', 'Visium_FFPE_Human_Breast_Cancer', 'Visium_FFPE_Human_Prostate_Acinar_Cell_Carcinoma', 'Visium_FFPE_Human_Prostate_Cancer', 'Visium_FFPE_Human_Prostate_IF', 'Visium_FFPE_Human_Normal_Prostate']",
+        "desc": "Name of the Visium dataset."
+      },
+      {
+        "name": "include_hires_tiff",
+        "type": "bool",
+        "desc": "Whether to download the high-resolution tissue section into `anndata.AnnData.uns ['spatial']['{sample_id}']['metadata']['source_image_path']`."
+      },
+      {
+        "name": "base_dir",
+        "type": "PathLike[str] | str | None",
+        "desc": "Directory where to download the data. If None, use `scanpy._settings.ScanpyConfig.datasetdir`."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "Spatial `anndata.AnnData`."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.gr.interaction_matrix",
+    "signature": "squidpy.gr.interaction_matrix(adata, cluster_key, connectivity_key=None, normalized=False, copy=False, weights=False)",
+    "description": "Compute interaction matrix for clusters.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData or SpatialData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str",
+        "desc": "Key in anndata.AnnData.obs where clustering is stored."
+      },
+      {
+        "name": "connectivity_key",
+        "type": "str or None",
+        "desc": "Key in anndata.AnnData.obsp where spatial connectivities are stored. Default is: anndata.AnnData.obsp['spatial_connectivities']."
+      },
+      {
+        "name": "normalized",
+        "type": "bool",
+        "desc": "If True, each row is normalized to sum to 1."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "If True, return the result, otherwise save it to the adata object."
+      },
+      {
+        "name": "weights",
+        "type": "bool",
+        "desc": "Whether to use edge weights or binarize."
+      },
+      {
+        "name": "return",
+        "type": "ndarray or None",
+        "desc": "If copy = True, returns the interaction matrix. Otherwise, modifies the adata with the following key: - anndata.AnnData.uns['{cluster_key}_interactions'] - the interaction matrix."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.datasets.mibitof",
+    "signature": "squidpy.datasets.mibitof(path=None, **kwargs)",
+    "description": "Pre-processed MIBI-TOF dataset from Hartmann et al. The shape of this anndata.AnnData object is (3309, 36).",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the dataset."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for scanpy.read()."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "The dataset."
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "squidpy.pl.extract",
+    "signature": "squidpy.pl.extract(adata, obsm_key='img_features', prefix=None)",
+    "description": "Create a temporary AnnData object for plotting by moving columns from AnnData.obsm to AnnData.obs to enable the use of scanpy.plotting functions.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "obsm_key",
+        "type": "list[str] | str",
+        "desc": "Entries in AnnData.obsm that should be moved to AnnData.obs."
+      },
+      {
+        "name": "prefix",
+        "type": "list[str] | str | None",
+        "desc": "Prefix to prepend to each column name. Should be a list if obsm_key is a list. If None, use the original column names."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "Temporary AnnData object with desired entries in AnnData.obs."
+      }
+    ],
+    "misc": "Raises ValueError if number of prefixes does not fit to number of obsm_keys. If AnnData.obs['{column}'] already exists, it will be overwritten and a warning will be issued."
+  },
+  {
+    "method": "squidpy.datasets.visium_fluo_adata",
+    "signature": "squidpy.datasets.visium_fluo_adata(path=None, **kwargs)",
+    "description": "Pre-processed 10x Genomics Visium Fluorecent dataset.",
+    "params": [
+      {
+        "name": "path",
+        "type": "PathLike[str] | str",
+        "desc": "Path where to save the dataset."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `scanpy.read()`."
+      },
+      {
+        "name": "return",
+        "type": "AnnData",
+        "desc": "The dataset."
+      }
+    ],
+    "misc": "The shape of this `anndata.AnnData` object is `(2800, 16562)`. "
+  },
+  {
+    "method": "squidpy.pl.co_occurrence",
+    "signature": "squidpy.pl.co_occurrence(adata, cluster_key, palette=None, clusters=None, figsize=None, dpi=None, save=None, legend_kwargs=mappingproxy({}), **kwargs)",
+    "description": "Plot co-occurrence probability ratio for each cluster.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Annotated data object."
+      },
+      {
+        "name": "cluster_key",
+        "type": "str",
+        "desc": "Key in `anndata.AnnData.obs` where clustering is stored."
+      },
+      {
+        "name": "clusters",
+        "type": "str | Sequence[str] | None",
+        "desc": "Cluster instances for which to plot conditional probability."
+      },
+      {
+        "name": "palette",
+        "type": "str | ListedColormap | None",
+        "desc": "Categorical colormap for the clusters. If `None`, use `anndata.AnnData.uns['{cluster_key}_colors']`, if available."
+      },
+      {
+        "name": "figsize",
+        "type": "tuple[float, float] | None",
+        "desc": "Size of the figure in inches."
+      },
+      {
+        "name": "dpi",
+        "type": "int | None",
+        "desc": "Dots per inch."
+      },
+      {
+        "name": "save",
+        "type": "str | Path | None",
+        "desc": "Whether to save the plot."
+      },
+      {
+        "name": "scalebar_kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `matplotlib_scalebar.ScaleBar()`."
+      },
+      {
+        "name": "edges_kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `networkx.draw_networkx_edges()`."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `matplotlib.pyplot.scatter()` or `matplotlib.pyplot.imshow()`."
+      },
+      {
+        "name": "legend_kwargs",
+        "type": "Mapping[str, Any]",
+        "desc": "Keyword arguments for `matplotlib.pyplot.legend()`."
+      },
+      {
+        "name": "kwargs",
+        "type": "Any",
+        "desc": "Keyword arguments for `seaborn.lineplot()`."
+      },
+      {
+        "name": "return",
+        "type": "None",
+        "desc": "Nothing, just plots the figure and optionally saves the plot."
+      }
+    ],
+    "misc": "The co-occurrence is computed by `squidpy.gr.co_occurrence()`."
+  }
+]

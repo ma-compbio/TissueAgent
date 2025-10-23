@@ -1,208 +1,32 @@
-import ast
-import builtins
-import contextlib
-import copy
-import inspect
-import io
 import logging
-from functools import partial
-from pathlib import Path
 from queue import Queue
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Optional
 
 from langchain.tools import StructuredTool
 from langgraph.types import Command
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 from langgraph.graph import END, MessagesState, START, StateGraph
 
-# from agents.agent_utils import extract_block
-from agents.agent_utils import PythonREPLObj, extract_block
+from agents.agent_utils import extract_block
+from langchain_experimental.utilities import PythonREPL
 from agents.agent_registry.coding_agent.tools_impl.documentation_index import DocumentationIndex
+from agents.agent_registry.coding_agent.tools_impl.tutorial_index import TutorialIndex
+from agents.agent_registry.coding_agent.tools_impl.tutorial_rag import TutorialRAG
+from agents.agent_registry.coding_agent.params import model_ctor, doc_filepaths, tutorial_directories
+from agents.agent_registry.coding_agent.prompt import CodingAgentBasePrompt, CodingAgentDescription
 from graph.graph_utils import log_message
 
 from config import DATA_DIR, NOTEBOOK_DIR
-from agents.reporter_agent.tools_impl.jupyternb_generator_tool import jupyternb_generator_tool
-
-CodingAgentBasePrompt = f"""
-You are the Coding Agent, an expert bioinformatics engineer who solves programming and analysis tasks inside a shared Python REPL.
-
-Goals
-- Deliver correct, reproducible code and artifacts for the user’s task.
-- Prefer minimal, transparent solutions that surface critical shapes, keys, and assumptions.
-- When computation is truly unnecessary (pure factual Q&A), provide a direct answer instead of running code.
-
-Execution Policy
-- If a task mentions loading, reading, writing, saving, plotting, computing, file formats (e.g., .h5ad, .zarr), “Outputs expected,” or “artifacts,” you must run code. Direct, code-free answers are forbidden for these tasks.
-- For any such task, produce exactly one <scratchpad> immediately followed by exactly one <execute>, then a plain-text final summary that follows the Output Schema.
-- If any required path is missing or is outside DATA_DIR, stop and return a constraint violation in the final summary. Never fabricate values or artifacts.
-
-Workplace
-- DATA_DIR = "{DATA_DIR}" (a pathlib.Path bound in the REPL). Use DATA_DIR / "subdir".
-- DATA_DIR_PATH mirrors the same location as a string.
-- NOTEBOOK_DIR = "{NOTEBOOK_DIR}".
-- Never touch the filesystem outside DATA_DIR; create subfolders within DATA_DIR as needed.
-
-Tools (available inside <execute>)
-- documentation_index_tool(query: str) -> List[Result]
-- jupyternb_generator_tool(filename: Optional[str | Path] = None) -> str
-
-Interaction Protocol
-- Computation/file-I/O tasks:
-  1) <scratchpad> with a numbered minimal plan:
-     - Inputs to verify
-     - Minimal probes
-     - Main ops/analysis
-     - Validation checks
-     - Save/return artifacts
-  2) <execute> containing only Python that performs the plan.
-  3) Final plain-text answer conforming to Output Schema.
-- Pure factual Q&A with no files, no artifacts, and no computations may be answered directly without blocks.
-
-REPL Guidelines
-- The REPL state persists; manage variables deliberately.
-- Print values you need to inspect.
-- Keep code concise and free of comments.
-- Only valid Python is allowed inside <execute>.
-
-Doc Usage Policy (align with GPT-5 Prompting Guide: verify API calls)
-- When uncertain about any method/class/function/parameter, call documentation_index_tool before using it.
-- Prefer quick verification for scanpy/squidpy/AnnData APIs.
-
-Validation & Safety
-- Pre-flight checklist (must be executed for computation/file-I/O tasks):
-  - Confirm the provided input paths exist and are inside DATA_DIR.
-  - Load AnnData with backed=False when requested.
-  - Inspect and print shapes and available keys: .obs columns, .var columns, .obsm keys, presence of .raw.
-- Post-flight checklist (must be executed):
-  - Verify artifact files exist at expected locations and report absolute paths.
-  - Print selected key values and core dimensions relevant to the task.
-  - Call jupyternb_generator_tool to persist the session.
-
-Error Handling
-- If inputs are missing, outside DATA_DIR, or assumptions fail, do not guess. Return a clear constraint violation with explicit remedy steps in the final summary.
-
-Output Schema (final plain-text; no code, no XML tags)
-- Summary of findings: include the key task-specific selections/results.
-- Artifacts: bullet list of absolute paths that were actually created.
-- If failing: start with "Constraint violation:" and list the specific issues and how to fix.
-
-Format Guardrails
-- Computation path requires exactly one <scratchpad> then exactly one <execute>; both are mandatory.
-- Never embed commentary inside <execute>.
-- Do not fabricate outputs or print values you did not compute or inspect.
-- The agent exits only after emitting the final plain-text summary that matches the Output Schema.
-
-Examples
-
-User: Load X.h5ad, detect the cell-type column, and save a UMAP colored by cell type. Outputs expected: a PNG path.
-Assistant:
-<scratchpad>1) Verify path inside DATA_DIR. 2) Read AnnData. 3) Infer cell-type column via common name patterns. 4) Verify embedding; compute UMAP if missing. 5) Plot and save. 6) Validate artifacts and print checks.</scratchpad>
-<execute>import anndata as ad, scanpy as sc, json, os
-from pathlib import Path
-p = DATA_DIR / "dataset" / "X.h5ad"
-assert str(p).startswith(str(DATA_DIR))
-assert p.exists()
-adata = ad.read_h5ad(str(p))
-cands = ["cell_type","celltype","cluster","celltype_major","annotation"]
-sel = next((c for c in adata.obs.columns if c.lower() in cands), None)
-if "X_umap" not in adata.obsm:
-    sc.pp.pca(adata)
-    sc.pp.neighbors(adata)
-    sc.tl.umap(adata, random_state=0)
-outdir = DATA_DIR / "plots"
-outdir.mkdir(parents=True, exist_ok=True)
-figpath = outdir / "umap_celltype.png"
-sc.pl.umap(adata, color=sel, show=False)
-import matplotlib.pyplot as plt
-plt.savefig(figpath, dpi=150, bbox_inches="tight")
-plt.close()
-print(sel)
-print(adata.n_obs, adata.n_vars)
-print(figpath.resolve())
-nb = jupyternb_generator_tool()</execute>
-Summary of findings: selected_color=<printed>, n_obs=<printed>, n_vars=<printed>.
-Artifacts:
-- <absolute path printed above>
-
-User: What is scanpy.pl.embedding used for?
-Assistant:
-scanpy.pl.embedding renders 2D embeddings such as UMAP or t-SNE from AnnData and supports coloring by .obs. Use it when coordinates already exist and you want a plotting-only call without additional preprocessing.
-"""
-
-CodingAgentDescription = """
-Expert coder equipped with spatial transcriptomics analysis tools.
-""".strip()
-
-def python_repl_eval(
-    code: str,
-    _locals: Dict[str, Any]
-) -> Tuple[str, Dict[str, Any], Dict[str, Any], Set[str]]:
-    original_keys = set(_locals.keys())
-    originals = {}
-    for k in original_keys:
-        try:
-            originals[k] = copy.deepcopy(_locals[k])
-        except Exception:
-            originals[k] = _locals[k]
-    try:
-        tree = ast.parse(code, mode='exec')
-        is_expr_last = bool(tree.body) and isinstance(tree.body[-1], ast.Expr)
-        pre_tree = ast.Module(body=tree.body[:-1] if is_expr_last else tree.body, type_ignores=[])
-        last_expr = (ast.Expression(tree.body[-1].value) if is_expr_last else None)
-        with contextlib.redirect_stdout(io.StringIO()) as f:
-            exec(
-                compile(pre_tree, "<string>", "exec"),
-                builtins.__dict__, _locals
-            )
-            if is_expr_last:
-                value = eval(
-                    compile(last_expr, "<string>", "eval"),
-                    builtins.__dict__, _locals
-                )
-                f.write(repr(value) + "\n")
-        result = f.getvalue() or "<code ran, no output printed to stdout>"
-    except Exception as e:
-        result = f"Error during execution: {repr(e)}"
-    finally:
-        PythonREPLObj.record_execution(code, result)
-    current_keys = set(_locals.keys())
-    new_vars = {k: _locals[k] for k in current_keys - original_keys}
-    deleted_keys = original_keys - current_keys
-    modified_vars = {}
-    for k in original_keys & current_keys:
-        old = originals[k]; new = _locals[k]
-        try:
-            if hasattr(new, '__array__') and hasattr(old, '__array__'):
-                try:
-                    import numpy as np
-                    changed = not np.array_equal(new, old)
-                except Exception:
-                    changed = id(new) != id(old)
-            else:
-                changed = new != old
-        except Exception:
-            changed = id(new) != id(old)
-        if changed:
-            modified_vars[k] = new
-    return result, new_vars, modified_vars, deleted_keys
+# from agents.reporter_agent.tools_impl.jupyternb_generator_tool import jupyternb_generator_tool
 
 
 class CodeActState(MessagesState):
     status_block: str # content of <execute> or <response> block
-    context: Dict[str, Any]
+    repl: Optional[PythonREPL]
     
 def create_coding_agent(state_queue: Queue):
     graph = StateGraph(CodeActState)
     id = "coding_agent"
-
-    ### Hyperparameters
-
-    model_ctor = partial(ChatOpenAI, model="gpt-5", reasoning_effort="high")
-
-    doc_filepaths = [
-        Path(__file__).resolve().parent / "docs/scanpy_squidpy_docs.json"
-    ]
 
     ### Tools
 
@@ -210,17 +34,29 @@ def create_coding_agent(state_queue: Queue):
     documentation_index_tool = StructuredTool.from_function(
         func = documentation_index.search,
         name = "documentation_index_tool",
-        description = "Semantic search tool for specialized methods for spatial transcriptomics"
+        description = "Semantic search tool for specialized methods for spatial transcriptomics. Use library parameter to search specific libraries like 'scanpy' or 'squidpy'."
     )
 
-    # tools = [documentation_index_tool]
-    tools = [documentation_index_tool, jupyternb_generator_tool]
+    tutorial_index = TutorialIndex(tutorial_directories)
+    tutorial_index_tool = StructuredTool.from_function(
+        func = tutorial_index.search,
+        name = "tutorial_index_tool",
+        description = "Search tool for tutorial files that returns entire file content. Use library parameter to search specific libraries like 'liana' or 'squidpy'."
+    )
+
+    # tutorial_rag = TutorialRAG(tutorial_directories)
+    # tutorial_rag_tool = StructuredTool.from_function(
+    #     func = tutorial_rag.search,
+    #     name = "tutorial_rag_tool",
+    #     description = "Semantic search tool for tutorial files that returns relevant chunks of content. Use library parameter to search specific libraries like 'liana' or 'squidpy'."
+    # )
+
+    tools = [documentation_index_tool, tutorial_index_tool]
 
     ### Implementation
 
     model = model_ctor()
 
-    tools_context = {tool.name: tool.func for tool in tools}
     agent_node_id = "agent_node"
     exec_node_id = "exec_node"
 
@@ -256,24 +92,25 @@ def create_coding_agent(state_queue: Queue):
         last_message = messages[-1]
         code_block = extract_block("execute", str(last_message.content))
 
-        existing_context = state.get("context", {})
-        context = {**existing_context, **tools_context, "DATA_DIR": DATA_DIR, "NOTEBOOK_DIR": NOTEBOOK_DIR}
-
         logging.info(f"executing exec_node")
 
         assert code_block is not None
-        output, new_vars, modified_vars, deleted_keys = python_repl_eval(code_block, context)
+        
+        repl = state.get("repl")
+        if repl is None:
+            repl = PythonREPL()
+            tools_context = {tool.name: tool.func for tool in tools}
+            initial_context = {**tools_context, "DATA_DIR": DATA_DIR, "NOTEBOOK_DIR": NOTEBOOK_DIR}
+
+            for key, value in initial_context.items():
+                repl.globals[key] = value
+        
+        output = repl.run(code_block)
 
         logging.info(f"finished exec_node")
 
-        new_context = {**context}
-        new_context.update(new_vars)
-        new_context.update(modified_vars)
-        for k in deleted_keys:
-            new_context.pop(k, None)
-
         log_message(HumanMessage("Python Output:\n" + output))
-        return {"messages": [HumanMessage(output)], "context": new_context}
+        return {"messages": [HumanMessage(output)], "repl": repl}
 
     graph.add_node(agent_node_id, agent_node)
     graph.add_node(exec_node_id, exec_node)
@@ -284,7 +121,6 @@ def create_coding_agent(state_queue: Queue):
 
     def agent_invocation_tool(prompt: str) -> str:
         logging.info(f"Invoking agent `{id}`")
-        PythonREPLObj.reset()
         final_state = agent.invoke({"messages": [HumanMessage(prompt)]})
         state_queue.put((id, final_state))
         return final_state["messages"][-1].content

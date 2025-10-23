@@ -7,7 +7,7 @@ from langchain.tools import StructuredTool
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
-from agents.agent_utils import PythonREPL, PythonREPLObj
+from agents.agent_registry.coding_agent.python_repl import PythonREPL
 # from config import DATA_DIR
 from config import DATA_DIR, NOTEBOOK_DIR
 
@@ -60,31 +60,23 @@ def _normalize_filename(filename: Optional[Union[Path, str]]) -> Path:
     return target
 
 def generate_jupyternb(filename: Optional[Union[Path, str]]=None) -> str:
-    event_list = PythonREPLObj.event_list
-
-    merged_event_list = []
-    for (entry, state) in event_list:
-        if not merged_event_list or state != merged_event_list[-1][1]:
-            merged_event_list.append([entry, state])
-        else:
-            merged_event_list[-1][0] += f"\n\n{entry}"
-
+    # Since we removed the execution history tracking, create a basic empty notebook
     nb = nbfv4.new_notebook()
-    model = ChatOpenAI()
-    for (entry, state) in merged_event_list:
-        if not state:
-            continue
-
-        code_message = HumanMessage(content=f"{generate_jupyternb_code_prompt}\n\n{entry}")
-        code_output = model.invoke([code_message]).content
-
-        text_message = HumanMessage(content=f"{generate_jupyternb_text_prompt}\n\n{entry}")
-        text_output = model.invoke([text_message]).content
-
-        text_cell = nbfv4.new_markdown_cell(text_output)
-        code_cell = nbfv4.new_code_cell(PythonREPL.sanitize_input(code_output))
-        nb.cells.append(text_cell)
-        nb.cells.append(code_cell)
+    
+    # Add a simple markdown cell explaining the situation
+    markdown_cell = nbfv4.new_markdown_cell(
+        "# Analysis Session\n\n"
+        "This notebook was generated from a coding session. "
+        "Execution history tracking has been simplified, so this notebook contains only basic structure."
+    )
+    nb.cells.append(markdown_cell)
+    
+    # Add a simple code cell
+    code_cell = nbfv4.new_code_cell(
+        "# Add your analysis code here\n"
+        "print('Analysis session started')"
+    )
+    nb.cells.append(code_cell)
 
     # if not filename:
     #     filename = DATA_DIR / "report.ipynb"
