@@ -7,7 +7,7 @@ from typing import Dict, Optional
 import pandas as pd
 import scanpy as sc
 
-from cell2location.models import Cell2location, RegressionModel
+# from cell2location.models import Cell2location, RegressionModel
 
 from config import DATA_DIR
 

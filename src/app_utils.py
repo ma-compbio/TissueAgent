@@ -38,6 +38,11 @@ def _safe_pretty_json(obj: Any) -> str:
         return str(obj)
 
 
+def _preserve_newlines(text: str) -> str:
+    """Return text formatted so Streamlit respects intentional line breaks."""
+    return text.replace("\n", "  \n") if text else ""
+
+
 def _message_to_serializable(message):
     """Convert a message to a serializable format for saving."""
     data = message.model_dump()
@@ -255,6 +260,7 @@ SUBAGENT_BADGES: Dict[str, str] = {
     "Coding Agent": "💻",
     "Searcher Agent": "🔍",
     "Single Cell Agent": "🧫",
+    "Gene Agent": "🧬",
 }
 
 DEFAULT_AGENT_AVATAR = "🤖"
@@ -441,7 +447,7 @@ def render_conversation_history(
 
         if isinstance(message, HumanMessage):
             with st.chat_message("user", avatar=USER_AVATAR):
-                st.markdown(content or "")
+                st.markdown(_preserve_newlines(content))
  
         elif isinstance(message, AIMessage):
             if not content:
@@ -454,9 +460,9 @@ def render_conversation_history(
                 if html_tags:
                     for tag, content in html_tags.items():
                         st.markdown(f"**{tag}**")
-                        st.markdown(content)
+                        st.markdown(_preserve_newlines(content))
                 else:
-                    st.markdown(body)
+                    st.markdown(_preserve_newlines(body))
                 if route_caption:
                     st.caption(f"Route → {route_caption}")
 

@@ -84,6 +84,9 @@ from agents.agent_registry.searcher_agent.prompt import SearcherPrompt, Searcher
 from agents.agent_registry.searcher_agent.tools import SearcherTools
 from agents.agent_registry.single_cell_agent.prompt import SingleCellPrompt, SingleCellDescription
 from agents.agent_registry.single_cell_agent.tools import SingleCellTools
+from agents.agent_registry.gene_agent.prompt import GeneAgentPrompt, GeneAgentDescription
+from agents.agent_registry.gene_agent.tools import GeneAgentTools
+
 
 AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
     CustomAgent(
@@ -108,4 +111,13 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         tools       = SingleCellTools,
         model_ctor  = DefaultModelCtor,
     ),
+    ReActAgent(
+        id          = "gene_agent",
+        name        = "Gene Agent",
+        description = GeneAgentDescription,
+        prompt      = GeneAgentPrompt,
+        tools       = GeneAgentTools,
+        model_ctor  = DefaultModelCtor,
+
+    )
 ]

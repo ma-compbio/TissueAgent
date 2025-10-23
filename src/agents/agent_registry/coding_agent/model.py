@@ -134,10 +134,98 @@ CodingAgentDescription = """
 Expert coder equipped with spatial transcriptomics analysis tools.
 """.strip()
 
+
+def _values_differ(old: Any, new: Any) -> bool:
+    """Heuristic equality check that avoids ambiguous truth values for array-like objects."""
+    if old is new:
+        return False
+
+    # Fast path for simple immutable scalars
+    scalar_types = (str, bytes, int, float, complex, bool, type(None))
+    if isinstance(new, scalar_types) and isinstance(old, scalar_types):
+        return new != old
+
+    np = None
+    try:
+        import numpy as np  # type: ignore
+    except Exception:
+        np = None
+
+    if np is not None and isinstance(old, np.ndarray) and isinstance(new, np.ndarray):
+        try:
+            return not np.array_equal(old, new)
+        except Exception:
+            pass
+
+    pd = None
+    try:
+        import pandas as pd  # type: ignore
+    except Exception:
+        pd = None
+
+    if pd is not None:
+        if isinstance(old, pd.Series) and isinstance(new, pd.Series):
+            try:
+                return not new.equals(old)
+            except Exception:
+                pass
+        if isinstance(old, pd.DataFrame) and isinstance(new, pd.DataFrame):
+            try:
+                return not new.equals(old)
+            except Exception:
+                pass
+
+    sp = None
+    try:
+        import scipy.sparse as sp  # type: ignore
+    except Exception:
+        sp = None
+
+    if sp is not None and sp.issparse(old) and sp.issparse(new):
+        try:
+            diff = old != new
+            return diff.nnz != 0  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    if np is not None and hasattr(new, "__array__") and hasattr(old, "__array__"):
+        try:
+            return not np.array_equal(np.asarray(old), np.asarray(new))
+        except Exception:
+            pass
+
+    try:
+        result = new != old
+    except Exception:
+        return id(new) != id(old)
+
+    if isinstance(result, bool):
+        return result
+
+    if hasattr(result, "nnz"):
+        try:
+            return result.nnz != 0  # type: ignore[attr-defined]
+        except Exception:
+            return id(new) != id(old)
+
+    if hasattr(result, "any"):
+        try:
+            return bool(result.any())
+        except Exception:
+            return id(new) != id(old)
+
+    return id(new) != id(old)
+
+
 def python_repl_eval(
     code: str,
     _locals: Dict[str, Any]
 ) -> Tuple[str, Dict[str, Any], Dict[str, Any], Set[str]]:
+    # Ensure core workspace paths are always present, even if the upstream context omitted them.
+    _locals.setdefault("DATA_DIR", DATA_DIR)
+    _locals.setdefault("NOTEBOOK_DIR", NOTEBOOK_DIR)
+    _locals.setdefault("DATA_DIR_PATH", str(DATA_DIR.resolve()))
+
     original_keys = set(_locals.keys())
     originals = {}
     for k in original_keys:
@@ -172,18 +260,7 @@ def python_repl_eval(
     modified_vars = {}
     for k in original_keys & current_keys:
         old = originals[k]; new = _locals[k]
-        try:
-            if hasattr(new, '__array__') and hasattr(old, '__array__'):
-                try:
-                    import numpy as np
-                    changed = not np.array_equal(new, old)
-                except Exception:
-                    changed = id(new) != id(old)
-            else:
-                changed = new != old
-        except Exception:
-            changed = id(new) != id(old)
-        if changed:
+        if _values_differ(old, new):
             modified_vars[k] = new
     return result, new_vars, modified_vars, deleted_keys
 
@@ -257,7 +334,13 @@ def create_coding_agent(state_queue: Queue):
         code_block = extract_block("execute", str(last_message.content))
 
         existing_context = state.get("context", {})
-        context = {**existing_context, **tools_context, "DATA_DIR": DATA_DIR, "NOTEBOOK_DIR": NOTEBOOK_DIR}
+        context = {
+            **existing_context,
+            **tools_context,
+            "DATA_DIR": DATA_DIR,
+            "NOTEBOOK_DIR": NOTEBOOK_DIR,
+            "DATA_DIR_PATH": str(DATA_DIR.resolve()),
+        }
 
         logging.info(f"executing exec_node")
 

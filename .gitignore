@@ -2,8 +2,6 @@ __pycache__/
 __marimo__/
 .ipynb_checkpoints/
 
-src/agents/agent_registry/geneagent
-
 
 .venv/
 
