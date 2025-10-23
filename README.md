@@ -18,9 +18,10 @@
 
 ### Known Issues
 
-- Agent and Tool outputs from `coding agent` are not displayed to streamlit UI
+
 - `coding agent` often takes several tries to format responses correctly; prompt needs fine-tuning.
-- Lots of deprecated or unused code left in the code base
 - `evaluator agent` does not support multi-modal input and does not inspect the contents of artifacts produced. Results in ill-formed artifacts, e.g. plots with the legend covering up most of the content.
+- `gene agent` or `searcher agent` cannot generate expected files
+- pdf understanding not tested
 - (minor) Prompt format differs between agents (e.g. `planner agent` and `coding agent`)
 - (minor) All agents use GPT-5 as a default. Agents that don't require a lot of reasonsing capabilities can use a weaker LLM to save on API tokens.

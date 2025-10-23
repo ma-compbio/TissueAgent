@@ -26,7 +26,6 @@ from app_utils import (
     render_conversation_history_display,
 )
 from agents.manager_agent.tools import ManagerToolNames
-from agents.agent_utils import PythonREPLObj
 from graph.graph import create_tissueagent_graph
 from graph.graph_utils import log_message
 from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, RECURSION_LIMIT, SESSIONS_DIR, UPLOADS_DIR
@@ -356,7 +355,6 @@ if prompt:
         })
 
     user_message = HumanMessage(content=content_parts)  # type: ignore
-    PythonREPLObj.add_text(f"[User]: {prompt}")
     log_message(user_message)
 
     st.session_state["agent_state"]["messages"].append(user_message)
