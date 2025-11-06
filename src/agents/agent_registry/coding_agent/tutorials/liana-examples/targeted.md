@@ -1,3 +1,19 @@
+---
+title: "Differential Expression Analysis for CCC & Downstream Signalling Networks"
+keywords:
+  - "ccc"
+  - "differential expression"
+  - "pseudobulk"
+  - "pydeseq2"
+  - "ligand-receptor"
+  - "decoupler"
+  - "progeny"
+  - "omnipath"
+  - "causal networks"
+  - "corneto"
+  - "carnival"
+  - "gurobi"
+---
 # Differential Expression Analysis for CCC & Downstream Signalling Networks
 
 ## Background

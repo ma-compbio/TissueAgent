@@ -42,11 +42,16 @@ class TutorialIndex:
             for md_file in md_files:
                 with md_file.open("r", encoding="utf-8") as f:
                     content = f.read()
-                    
+                # Try to parse frontmatter for title/keywords
+                fm = self._parse_frontmatter(content)
+                title = fm.get("title") or self._extract_title(content)
+                keywords = fm.get("keywords") or []
+
                 entry = {
                     "filename": md_file.name,
                     "content": content,
-                    "title": self._extract_title(content)
+                    "title": title,
+                    "keywords": keywords,
                 }
                 entries.append(entry)
                 self._library_mapping[entry_index] = library_name
@@ -56,7 +61,9 @@ class TutorialIndex:
         self._texts: List[str] = []
         for entry in entries:
             self._docs.append(entry)
-            search_text = f"{entry['title']} | {entry['content'][:500]}"
+            # Include keywords in the searchable text to boost matches
+            kw_text = " ".join(entry.get("keywords", []))
+            search_text = f"{entry['title']} | {kw_text} | {entry['content'][:500]}"
             self._texts.append(search_text)
 
         self._model = SentenceTransformer(embedder_name)
@@ -80,13 +87,145 @@ class TutorialIndex:
                 return line.strip()[2:].strip()
         return "Untitled"
 
+    def _parse_frontmatter(self, content: str) -> Dict[str, Any]:
+        """Parse minimal YAML frontmatter block and return a dict with optional
+        'title' and 'keywords'. Avoids external YAML dependency by handling the
+        common subset we use in tutorials.
+        """
+        lines = content.split("\n")
+        if not lines or lines[0].strip() != "---":
+            return {}
+        # Find the end of the frontmatter
+        end_idx = None
+        for i in range(1, min(len(lines), 200)):
+            if lines[i].strip() == "---":
+                end_idx = i
+                break
+        if end_idx is None:
+            return {}
+        fm_lines = lines[1:end_idx]
+        result: Dict[str, Any] = {}
+        i = 0
+        while i < len(fm_lines):
+            line = fm_lines[i]
+            if not line.strip():
+                i += 1
+                continue
+            if ":" in line:
+                key, val = line.split(":", 1)
+                key = key.strip()
+                val = val.strip().strip('"')
+                if key == "title":
+                    # Title may be quoted or not; if empty, try next line
+                    if val:
+                        result["title"] = val.strip('"')
+                    else:
+                        # Next non-empty line could be the title
+                        j = i + 1
+                        while j < len(fm_lines) and not fm_lines[j].strip():
+                            j += 1
+                        if j < len(fm_lines):
+                            result["title"] = fm_lines[j].strip().strip('"')
+                            i = j
+                elif key == "keywords":
+                    # Parse list starting at next lines with leading '-'
+                    kws: List[str] = []
+                    j = i + 1
+                    while j < len(fm_lines):
+                        item = fm_lines[j].strip()
+                        if item.startswith("-"):
+                            kw = item[1:].strip()
+                            kw = kw.strip('"')
+                            if kw:
+                                kws.append(kw)
+                            j += 1
+                        elif not item:
+                            j += 1
+                        else:
+                            break
+                    if kws:
+                        result["keywords"] = kws
+                    i = j - 1
+                else:
+                    # Unused key; skip
+                    pass
+            i += 1
+        return result
+
+    def list_tutorial_names(self, *, library: str | None = None) -> List[str]:
+        """Return the list of tutorial titles.
+        
+        Args:
+            library: Optional library name to filter results (e.g., 'liana', 'squidpy').
+        
+        Returns:
+            A sorted list of tutorial titles.
+        """
+        names: List[str] = []
+        for i, doc in enumerate(self._docs):
+            if library is not None and self._library_mapping[i] != library:
+                continue
+            names.append(doc["title"])
+        return sorted(names)
+
+    def list_keywords(self, *, library: str | None = None) -> List[str]:
+        """Return a sorted list of unique keywords across tutorials.
+        
+        Args:
+            library: Optional library filter.
+        """
+        seen = set()
+        for i, doc in enumerate(self._docs):
+            if library is not None and self._library_mapping[i] != library:
+                continue
+            for kw in doc.get("keywords", []) or []:
+                seen.add(kw)
+        return sorted(seen, key=lambda s: s.lower())
+
+    def get_tutorial_by_name(self, name: str, *, library: str | None = None) -> Dict[str, Any] | None:
+        """Retrieve a tutorial by its title.
+        
+        Args:
+            name: Exact title of the tutorial (as extracted from the markdown).
+            library: Optional library name to filter results.
+        
+        Returns:
+            A dictionary with keys 'doc' and 'library' if found, otherwise None.
+        """
+        for i, doc in enumerate(self._docs):
+            if library is not None and self._library_mapping[i] != library:
+                continue
+            if doc["title"] == name:
+                return {"doc": doc, "library": self._library_mapping[i]}
+        return None
+
+    def get_tutorials_by_keyword(self, keyword: str, *, library: str | None = None) -> List[Dict[str, Any]]:
+        """Retrieve tutorials whose frontmatter keywords match a query.
+        Matching is case-insensitive and accepts substring matches within a keyword.
+        
+        Returns a list of {doc, library} dictionaries.
+        """
+        if not keyword:
+            return []
+        q = keyword.lower().strip()
+        results: List[Dict[str, Any]] = []
+        for i, doc in enumerate(self._docs):
+            if library is not None and self._library_mapping[i] != library:
+                continue
+            kws = [k for k in (doc.get("keywords", []) or [])]
+            for kw in kws:
+                if q in kw.lower():
+                    results.append({"doc": doc, "library": self._library_mapping[i]})
+                    break
+        return results
+
     def search(
         self,
         query_text: str,
         *,
         library: str | None = None,
         k: int = 8,
-        alpha: float = 0.6,
+        alpha: float = 0.2,
     ) -> List[Dict[str, Any]]:
         """Runs hybrid retrieval over tutorial content.
         

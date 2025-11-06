@@ -1,0 +1,831 @@
+[
+  {
+    "method": "liana.method.fun._causalnet.build_prior_network",
+    "signature": "build_prior_network(ppis, input_nodes, output_nodes, lr_sep=None, verbose=False)",
+    "description": "Build Prior Network from PPIs and input/output nodes.",
+    "params": [
+      {
+        "name": "ppis",
+        "type": "list of tuples or pandas DataFrame",
+        "desc": "The PPIs to use for the prior network. If a pandas DataFrame is provided, it must have the columns"
+      },
+      {
+        "name": "input_nodes",
+        "type": "dict",
+        "desc": "A dictionary of input nodes. The keys are the node names, the values are the node scores."
+      },
+      {
+        "name": "output_nodes",
+        "type": "dict",
+        "desc": "A dictionary of output nodes. The keys are the node names, the values are the node scores."
+      },
+      {
+        "name": "lr_sep",
+        "type": "str, optional",
+        "desc": "The separator to use to split the input nodes into ligand and receptor. If None, the input nodes will be used as is."
+      },
+      {
+        "name": "verbose",
+        "type": "bool, optional",
+        "desc": "Whether to print progress information. Default: True"
+      },
+      {
+        "name": "return",
+        "type": "corneto.Graph",
+        "desc": ""
+      }
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.method.fun._causalnet.find_causalnet",
+    "signature": "find_causalnet(prior_graph, input_node_scores, output_node_scores, node_weights=None, node_cutoff=0.1, min_penalty=0.01, max_penalty=1.0, missing_penalty=10, edge_penalty=0.01, solver=None, seed=1337, max_runs=1, stable_runs=5, verbose=True, **kwargs)",
+    "description": "Find the causal network that best explains the input/output node scores.",
+    "params": [
+      {"name": "prior_graph", "type": "corneto.Graph", "desc": "The prior graph to use for the search."},
+      {"name": "input_node_scores", "type": "dict", "desc": "A dictionary of input node scores."},
+      {"name": "output_node_scores", "type": "dict", "desc": "A dictionary of output node scores."},
+      {"name": "node_weights", "type": "dict, optional", "desc": "A dictionary of node weights. The keys are the node names, the values are the weights. If None, all nodes will have the same weight."},
+      {"name": "node_cutoff", "type": "float", "desc": "The cutoff to use for the node weights. Nodes with a weight below this cutoff will be assigned the max_penalty, nodes with a weight above this cutoff will be assigned the min_penalty. Only used if node_weights is not None. Default: 0.1"},
+      {"name": "min_penalty", "type": "float", "desc": "The minimum penalty to assign to nodes with a weight above the cutoff. Only used if node_weights is not None. Default: 0.01"},
+      {"name": "max_penalty", "type": "float", "desc": "The maximum penalty to assign to nodes with a weight below the cutoff Only used if node_weights is not None. Default: 1.0"},
+      {"name": "missing_penalty", "type": "float", "desc": "The penalty to assign to nodes that are not measured. Default: 10"},
+      {"name": "edge_penalty", "type": "float", "desc": "The penalty to assign to edges. Default: 0.01"},
+      {"name": "solver", "type": "str, optional", "desc": "The solver to use. If None, the default solver will be used. Default: None It will default to the solver included in SCIPY, if no other solver is available."},
+      {"name": "seed", "type": "int, optional", "desc": "The seed to use for the random number generator. Default: 1337"},
+      {"name": "max_runs", "type": "int, optional", "desc": "The maximum number of runs to perform. Consider increasing this value if the solver does not converge. In each run, the noise added to the edge and node penalties is perturbed slightly (iterating over the seed). By default, only 1 run is performed."},
+      {"name": "stable_runs", "type": "int, optional", "desc": "The number of consecutive stable solutions requires to interrupt the iteration over max_runs. Only used if max_runs is not == 1. Default: 5"},
+      {"name": "verbose", "type": "bool, optional", "desc": "Whether to print progress information. Default: True"},
+      {"name": "**kwargs", "type": "dict, optional", "desc": "Additional arguments to pass to the solver."},
+      {"name": "return", "type": "", "desc": "Not specified."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.method.fun._estimate_metalinks.estimate_metalinks",
+    "signature": "estimate_metalinks(adata, resource, pd_net, t_net=None, x_name='metabolite', y_name='receptor', use_raw=True, layer=None, verbose=False, **kwargs)",
+    "description": "Estimate Metabolites from anndata object, and return a MuData object of metabolites and receptors.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data matrix."},
+      {"name": "resource", "type": "", "desc": "Resource to use for ligand-receptor inference."},
+      {"name": "pd_net", "type": "", "desc": "Metabolic production-degradation network to use."},
+      {"name": "t_net", "type": "", "desc": "Transport set to use."},
+      {"name": "x_name", "type": "", "desc": "Name of the metabolite modality."},
+      {"name": "y_name", "type": "", "desc": "Name of the receptor modality. Must be present as a column in the resource."},
+      {"name": "use_raw", "type": "", "desc": "Use raw attribute of adata if present."},
+      {"name": "layer", "type": "", "desc": "Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "**kwargs", "type": "", "desc": "Additional arguments to pass to the decoupler-py functions. Method-specific arguments are not supported."},
+      {"name": "return", "type": "", "desc": "A MuData object with metabolite & receptor assays."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.method.sc._Method.Method.__call__",
+    "signature": "Method.__call__(adata: 'an.AnnData | MuData', groupby: 'str', resource_name: 'str' = 'consensus', expr_prop: 'float' = 0.1, min_cells: 'int' = 5, groupby_pairs: 'DataFrame | None' = None, base: 'float' = np.float64(2.718281828459045), supp_columns: 'list | None' = None, return_all_lrs: 'bool' = False, key_added: 'str' = 'liana_res', use_raw: 'bool | None' = True, layer: 'str | None' = None, de_method: 'str' = 't-test', n_perms: 'int' = 1000, seed: 'int' = 1337, n_jobs: 'int' = 1, resource: 'DataFrame | None' = None, interactions: 'list | None' = None, mdata_kwargs: 'dict | None' = None, inplace: 'bool' = True, verbose: 'bool | None' = False)",
+    "description": "Run a ligand-receptor method.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "groupby", "type": "", "desc": "Key to be used for grouping."},
+      {"name": "resource_name", "type": "", "desc": "Name of the resource to be used for ligand-receptor inference. See `li.rs.show_resources()` for available resources."},
+      {"name": "expr_prop", "type": "", "desc": "Minimum expression proportion for the ligands and receptors (+ their subunits) in the corresponding cell identities. Set to 0 to return unfiltered results."},
+      {"name": "min_cells", "type": "", "desc": "Minimum cells (per cell identity if grouped by `groupby`) to be considered for downstream analysis."},
+      {"name": "groupby_pairs", "type": "", "desc": "A DataFrame with columns `source` and `target` to be used to subset the possible combinations of interacting cell types. If None, all possible combinations are used."},
+      {"name": "base", "type": "", "desc": "Exponent base used to reverse the log-transformation of the matrix. Relevant only for the `logfc` method."},
+      {"name": "supp_columns", "type": "", "desc": "Additional columns to be added from any of the methods implemented in liana, or any of the columns returned by `scanpy.tl.rank_genes_groups`, each starting with ligand_* or receptor_*. For example, ['ligand_pvals', 'receptor_pvals']. None by default."},
+      {"name": "return_all_lrs", "type": "", "desc": "Bool whether to return all ligand-receptor pairs, or only those that surpass the `expr_prop` threshold. Ligand-receptor pairs that do not pass the `expr_prop` threshold will be assigned to the worst score of the ones that do. False by default."},
+      {"name": "key_added", "type": "", "desc": "Key under which the results will be stored in `adata.uns` if `inplace` is True."},
+      {"name": "use_raw", "type": "", "desc": "Use raw attribute of adata if present."},
+      {"name": "layer", "type": "", "desc": "Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X."},
+      {"name": "de_method", "type": "", "desc": "Differential expression method. `scanpy.tl.rank_genes_groups` is used to rank genes according to 1vsRest. The default method is 't-test'."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "n_perms", "type": "", "desc": "Number of permutations for the permutation test. Relevant only for permutation-based methods (e.g., CellPhoneDB). If None is passed, no permutation testing is performed."},
+      {"name": "seed", "type": "", "desc": "Random seed for reproducibility."},
+      {"name": "n_jobs", "type": "", "desc": "Number of jobs to run in parallel."},
+      {"name": "resource", "type": "", "desc": "A pandas dataframe with [ligand, receptor] columns. If provided will overrule the resource requested via resource_name"},
+      {"name": "interactions", "type": "", "desc": "List of tuples with ligand-receptor pairs [(ligand, receptor), ...] to be used for the analysis. If passed, it will overrule the resource requested via resource and resource_name."},
+      {"name": "mdata_kwargs", "type": "", "desc": "Keyword arguments to be passed to li.fun.mdata_to_anndata if adata is an instance of MuData. If an AnnData object is passed, these arguments are ignored."},
+      {"name": "inplace", "type": "", "desc": "Whether to store results in place, or else to return them."},
+      {"name": "return", "type": "", "desc": "If inplace = False, returns a DataFrame with ligand-receptor results. Otherwise, modifies the adata object with the following key: anndata.AnnData.uns [key_added] with the aforementioned DataFrame"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.method.sc._rank_aggregate.AggregateClass.__call__",
+    "signature": "AggregateClass.__call__(adata: 'an.AnnData | MuData', groupby: 'str', resource_name: 'str' = 'consensus', expr_prop: 'float' = 0.1, min_cells: 'int' = 5, groupby_pairs: 'DataFrame | None' = None, base: 'float' = np.float64(2.718281828459045), aggregate_method: 'str' = 'rra', consensus_opts: 'list | None' = None, return_all_lrs: 'bool' = False, key_added: 'str' = 'liana_res', use_raw: 'bool | None' = True, layer: 'str | None' = None, de_method: 'str' = 't-test', n_perms: 'int' = 1000, seed: 'int' = 1337, n_jobs: 'int' = 1, resource: 'DataFrame | None' = None, interactions: 'list | None' = None, mdata_kwargs: 'dict | None' = None, inplace: 'bool' = True, verbose: 'bool | None' = False)",
+    "description": "Get an aggregate of ligand-receptor scores from multiple methods.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "groupby", "type": "", "desc": "Key to be used for grouping."},
+      {"name": "resource_name", "type": "", "desc": "Name of the resource to be used for ligand-receptor inference. See `li.rs.show_resources()` for available resources."},
+      {"name": "expr_prop", "type": "", "desc": "Minimum expression proportion for the ligands and receptors (+ their subunits) in the corresponding cell identities. Set to 0 to return unfiltered results."},
+      {"name": "min_cells", "type": "", "desc": "Minimum cells (per cell identity if grouped by `groupby`) to be considered for downstream analysis."},
+      {"name": "groupby_pairs", "type": "", "desc": "A DataFrame with columns `source` and `target` to be used to subset the possible combinations of interacting cell types. If None, all possible combinations are used."},
+      {"name": "base", "type": "", "desc": "Exponent base used to reverse the log-transformation of the matrix. Relevant only for the `logfc` method."},
+      {"name": "aggregate_method", "type": "", "desc": "Method aggregation approach, one of ['mean', 'rra'], where mean represents the mean rank, while 'rra' is the RobustRankAggregate (Kolde et al., 2014) of the interactions"},
+      {"name": "consensus_opts", "type": "", "desc": "Strategies to aggregate interactions across methods. Default is None - i.e. ['Specificity', 'Magnitude'] and both specificity and magnitude are aggregated."},
+      {"name": "return_all_lrs", "type": "", "desc": "Bool whether to return all ligand-receptor pairs, or only those that surpass the expr_prop threshold. Ligand-receptor pairs that do not pass the expr_prop threshold will be assigned to the worst score of the ones that do. False by default."},
+      {"name": "key_added", "type": "", "desc": "Key under which the results will be stored in adata.uns if inplace is True."},
+      {"name": "use_raw", "type": "", "desc": "Use raw attribute of adata if present."},
+      {"name": "layer", "type": "", "desc": "Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X."},
+      {"name": "de_method", "type": "", "desc": "Differential expression method. scanpy.tl.rank_genes_groups is used to rank genes according to 1vsRest. The default method is 't-test'."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "n_perms", "type": "", "desc": "Number of permutations for the permutation test. Relevant only for permutation-based methods (e.g., CellPhoneDB). If None is passed, no permutation testing is performed."},
+      {"name": "seed", "type": "", "desc": "Random seed for reproducibility."},
+      {"name": "n_jobs", "type": "", "desc": "Number of jobs to run in parallel."},
+      {"name": "resource", "type": "", "desc": "A pandas dataframe with [ligand, receptor] columns. If provided will overrule the resource requested via resource_name"},
+      {"name": "interactions", "type": "", "desc": "List of tuples with ligand-receptor pairs [(ligand, receptor), ...] to be used for the analysis. If passed, it will overrule the resource requested via resource and resource_name."},
+      {"name": "mdata_kwargs", "type": "", "desc": "Keyword arguments to be passed to li.fun.mdata_to_anndata if adata is an instance of MuData. If an AnnData object is passed, these arguments are ignored."},
+      {"name": "inplace", "type": "", "desc": "Whether to store results in place, or else to return them."},
+      {"name": "return", "type": "", "desc": "If inplace = False, returns a DataFrame with ligand-receptor results Otherwise, modifies the adata object with the following key: anndata.AnnData.uns ['liana_res'] with the aforementioned DataFrame"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.method.sp._bivariate._spatial_bivariate.SpatialBivariate.__call__",
+    "signature": "SpatialBivariate.__call__(mdata: 'MuData | AnnData', local_name: 'str | None' = 'cosine', global_name: 'None | str | list' = None, resource_name: 'str' = None, resource: 'pd.DataFrame | None' = None, interactions: 'list' = None, connectivity_key: 'str' = 'spatial_connectivities', mask_negatives: 'bool' = False, add_categories: 'bool' = False, n_perms: 'int' = None, seed: 'int' = 1337, nz_prop: 'float' = 0.05, remove_self_interactions: 'bool' = True, complex_sep: 'None | str' = '_', xy_sep: 'str' = '^', verbose: 'bool' = False, **kwargs) -> 'AnnData | pd.DataFrame | None'",
+    "description": "A method for bivariate local spatial metrics.",
+    "params": [
+      {"name": "mdata", "type": "", "desc": "MuData (multimodal) data object."},
+      {"name": "local_name", "type": "", "desc": "Name of the local function to use for the analysis. Passing None will return only the Global scores."},
+      {"name": "global_name", "type": "", "desc": "Name or names (list) of the global function(s) to use for the analysis. Passing None will not calculate any global scores"},
+      {"name": "interactions", "type": "", "desc": "List of tuples with ligand-receptor pairs [(ligand, receptor), ...] to be used for the analysis. If passed, it will overrule the resource requested via resource and resource_name."},
+      {"name": "resource", "type": "", "desc": "A pandas dataframe with [ligand, receptor] columns. If provided will overrule the resource requested via resource_name"},
+      {"name": "resource_name", "type": "", "desc": "Name of the resource to be used for ligand-receptor inference. See li.rs.show_resources() for available resources."},
+      {"name": "connectivity_key", "type": "", "desc": "Key in adata.obsp that contains the spatial connectivity matrix. Default is 'spatial_connectivity'."},
+      {"name": "mask_negatives", "type": "", "desc": "Whether to mask negative-negative (low-low) or uncategorized interactions."},
+      {"name": "add_categories", "type": "", "desc": "Whether to add categories about the local scores."},
+      {"name": "n_perms", "type": "", "desc": "Number of permutations for the permutation test. If None, no p-values are computed."},
+      {"name": "seed", "type": "", "desc": "Random seed for reproducibility."},
+      {"name": "nz_prop", "type": "float", "desc": "Minimum proportion of non-zero values for each features. For example, if working with gene expression data, this would be the proportion of cells expressing a gene. Both features must have a proportion greater than nz_prop to be considered in the analysis."},
+      {"name": "complex_sep", "type": "str", "desc": "Separator to use for complex names."},
+      {"name": "xy_sep", "type": "str", "desc": "Separator to use for interaction names."},
+      {"name": "remove_self_interactions", "type": "bool", "desc": "Whether to remove self-interactions. True by default."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "**kwargs", "type": "dict, optional", "desc": "Additional keyword arguments."},
+      {"name": "return", "type": "AnnData | pd.DataFrame | None", "desc": "An AnnData object, (optionally) with multiple layers which correspond categories/p-values, and the actual scores are stored in .X. Moreover, global stats are stored in .var."}
+    ],
+    "misc": "Additional kwargs may include for AnnData: x_name (Name of the x-variable; default 'ligand'), y_name (Name of the y-variable; default 'receptor'); for MuData: x_mod, y_mod, x_name (default 'x'), y_name (default 'y'), x_use_raw, y_use_raw, x_layer, y_layer, x_transform, y_transform."
+  },
+  {
+    "method": "liana.method.sp._misty._misty_constructs.genericMistyData",
+    "signature": "genericMistyData(intra, intra_use_raw=False, intra_layer=None, extra=None, extra_use_raw=False, extra_layer=None, nz_threshold=0.1, add_para=True, spatial_key='spatial', set_diag=False, kernel='misty_rbf', bandwidth=100, zoi=0, cutoff=0.1, add_juxta=True, n_neighs=6, max_neighs=18, verbose=False)",
+    "description": "Construct a MistyData object from an AnnData object with views as presented in the manuscript.",
+    "params": [
+      {"name": "intra", "type": "anndata.AnnData", "desc": "AnnData object with the intraview"},
+      {"name": "intra_use_raw", "type": "bool", "desc": "Whether to use the raw data of the intraview."},
+      {"name": "intra_layer", "type": "str", "desc": "The layer of the intraview to use."},
+      {"name": "extra", "type": "anndata.AnnData", "desc": "AnnData object with the extraview(s). If None, the extraview is set to be the same as the intraview."},
+      {"name": "extra_use_raw", "type": "bool", "desc": "Whether to use the raw data of the extraview."},
+      {"name": "extra_layer", "type": "str", "desc": "The layer of the extraview(s) to use."},
+      {"name": "nz_threshold", "type": "float", "desc": "The threshold for the number of non-zero entries in each view."},
+      {"name": "add_para", "type": "bool", "desc": "Whether to add the paraview."},
+      {"name": "spatial_key", "type": "str", "desc": "The key in adata.obsm where the spatial coordinates are stored."},
+      {"name": "set_diag", "type": "bool", "desc": "Whether to set the diagonal of the connectivity matrix to 1."},
+      {"name": "kernel", "type": "str", "desc": "A radial basis function kernel to use for the generation of the connectivity matrix for the paraview. Default is 'misty_rbf', a kernel derivative of a Gaussian kernel."},
+      {"name": "bandwidth", "type": "float", "desc": "The bandwidth of the kernel."},
+      {"name": "zoi", "type": "float", "desc": "The zone of indifference of the kernel, i.e. the kernel is set to 0 for distances smaller than zoi."},
+      {"name": "cutoff", "type": "float", "desc": "The cutoff for the connectivity matrix."},
+      {"name": "add_juxta", "type": "bool", "desc": "Whether to add the juxtaview. The juxtaview is constructed using only the nearest neighbors. A bandwidth of 5 times the bandwidth of the paraview is used to ensure that the nearest neighbors within the radius."},
+      {"name": "n_neighs", "type": "int", "desc": "The number of neighbors to consider when constructing the juxtaview."},
+      {"name": "max_neighs", "type": "int", "desc": "The maximum number of neighbors to consider when constructing the Paraview."},
+      {"name": "verbose", "type": "bool", "desc": "Whether to print progress."},
+      {"name": "return", "type": "MistyData", "desc": "MistyData object with the intra view, and two fixed extra view(s): para and juxta."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.method.sp._misty._misty_constructs.lrMistyData",
+    "signature": "lrMistyData(adata, resource_name='consensus', resource=None, nz_threshold=0.1, use_raw=False, layer=None, spatial_key='spatial', kernel='misty_rbf', bandwidth=100, set_diag=False, cutoff=0.1, zoi=0, verbose=False)",
+    "description": "Generate a MistyData object from an AnnData object in ligand-receptor format.",
+    "params": [
+      {"name": "adata", "type": "anndata.AnnData", "desc": "AnnData object"},
+      {"name": "resource_name", "type": "str", "desc": "The name of the resource to use. See show_resources for available resources."},
+      {"name": "resource", "type": "pandas.DataFrame", "desc": "A resource in the form of a pandas DataFrame. If None, the resource is selected using select_resource."},
+      {"name": "nz_threshold", "type": "float", "desc": "The threshold for the number of non-zero entries in each view."},
+      {"name": "use_raw", "type": "bool", "desc": "Whether to use the raw data of the AnnData object."},
+      {"name": "layer", "type": "str", "desc": "The layer of the AnnData object to use."},
+      {"name": "spatial_key", "type": "str", "desc": "The key in adata.obsm where the spatial coordinates are stored."},
+      {"name": "kernel", "type": "str", "desc": "A radial basis function kernel to use for the generation of the connectivity matrix for the extra view. Default is 'misty_rbf', a kernel derivative of a Gaussian kernel."},
+      {"name": "bandwidth", "type": "float", "desc": "The bandwidth of the kernel."},
+      {"name": "set_diag", "type": "bool", "desc": "Whether to set the diagonal of the connectivity matrix to 1."},
+      {"name": "cutoff", "type": "float", "desc": "The minimum value cutoff for the connectivity matrix."},
+      {"name": "zoi", "type": "float", "desc": "Zone of indifference of the kernel, i.e. the kernel is set to 0 for distances smaller than zoi."},
+      {"name": "verbose", "type": "bool", "desc": "Whether to print progress."},
+      {"name": "return", "type": "MistyData", "desc": "A MistyData object with receptors in the intra view & ligands in the extra view."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.method.sp._misty._Misty.MistyData",
+    "signature": "MistyData(data: 'dict | MuData', obs: 'pd.DataFrame | None' = None, spatial_key: 'str' = 'spatial', enforce_obs: 'bool' = True, **kwargs)",
+    "description": "MistyData Class used to construct multi-view objects",
+    "params": [
+      {"name": "data", "type": "dict | MuData", "desc": ""},
+      {"name": "obs", "type": "pd.DataFrame | None", "desc": ""},
+      {"name": "spatial_key", "type": "str", "desc": ""},
+      {"name": "enforce_obs", "type": "bool", "desc": ""},
+      {"name": "**kwargs", "type": "", "desc": ""},
+      {"name": "return", "type": "", "desc": "Not specified."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.multi._nmf.nmf",
+    "signature": "nmf(adata: 'AnnData' = None, df: 'pd.DataFrame' = None, n_components: 'int or None' = None, k_range: 'range' = range(1, 11), use_raw: 'bool' = False, layer: 'str or None' = None, inplace: 'bool' = True, verbose: 'bool' = False, **kwargs)",
+    "description": "Fits NMF to an AnnData object.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "n_components", "type": "int, None", "desc": "Number of components to use. If None, the number of components is estimated using the elbow method."},
+      {"name": "k_range", "type": "range", "desc": "Range of components to test. Default: range(1, 10)."},
+      {"name": "use_raw", "type": "", "desc": "Use raw attribute of adata if present."},
+      {"name": "layer", "type": "", "desc": "Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X."},
+      {"name": "inplace", "type": "", "desc": "Whether to store results in place, or else to return them."},
+      {"name": "**kwargs", "type": "dict", "desc": "Keyword arguments to pass to sklearn.decomposition.NMF."},
+      {"name": "return", "type": "", "desc": "If inplace is True, it will add NMF_W and NMF_H to the adata.obsm and adata.varm. If n_components is None, it will also add nfm_errors and nfm_rank to adata.uns. If inplace is False, it will return W and H, and if n_components is None, it will also return errors and n_components. If n_components is None and inplace, errors and n_components will be assigned to adata.uns. If df is provided, inplace is always False."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.multi._nmf.estimate_elbow",
+    "signature": "estimate_elbow(X, k_range, verbose=False, **kwargs)",
+    "description": "",
+    "params": [
+      {"name": "X", "type": "", "desc": ""},
+      {"name": "k_range", "type": "", "desc": ""},
+      {"name": "verbose", "type": "", "desc": ""},
+      {"name": "**kwargs", "type": "", "desc": ""},
+      {"name": "return", "type": "", "desc": "Not specified."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.multi.df_to_lr.df_to_lr",
+    "signature": "df_to_lr(adata, dea_df, groupby, stat_keys, resource_name='consensus', resource=None, interactions=None, groupby_pairs=None, layer=None, use_raw=None, expr_prop=0.1, min_cells=5, complex_col=None, return_all_lrs=False, source_labels=None, target_labels=None, lr_sep='^', verbose=False)",
+    "description": "Convert DEA results to ligand-receptor pairs.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "dea_df", "type": "pd.DataFrame", "desc": "DEA results. Index must match adata.var_names"},
+      {"name": "groupby", "type": "", "desc": "Key to be used for grouping."},
+      {"name": "stat_keys", "type": "list", "desc": "List of statistics to be used for ligand-receptor pairs"},
+      {"name": "resource_name", "type": "", "desc": "Name of the resource to be used for ligand-receptor inference. See li.rs.show_resources() for available resources."},
+      {"name": "resource", "type": "", "desc": "A pandas dataframe with [ligand, receptor] columns. If provided will overrule the resource requested via resource_name"},
+      {"name": "interactions", "type": "", "desc": "List of tuples with ligand-receptor pairs [(ligand, receptor), ...] to be used for the analysis. If passed, it will overrule the resource requested via resource and resource_name."},
+      {"name": "groupby_pairs", "type": "", "desc": ""},
+      {"name": "layer", "type": "", "desc": "Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X."},
+      {"name": "use_raw", "type": "", "desc": "Use raw attribute of adata if present."},
+      {"name": "expr_prop", "type": "", "desc": "Minimum expression proportion for the ligands and receptors (+ their subunits) in the corresponding cell identities. Set to 0 to return unfiltered results."},
+      {"name": "min_cells", "type": "", "desc": "Minimum cells (per cell identity if grouped by groupby) to be considered for downstream analysis."},
+      {"name": "complex_col", "type": "str, optional", "desc": "Column in dea_df to use for complex expression. If None, will use mean expression ('expr') calculated per group in groupby."},
+      {"name": "return_all_lrs", "type": "bool", "desc": "Whether to return all ligand-receptor pairs, or only those that surpass expr_prop threshold. Pairs that do not pass expr_prop will be assigned to the worst score of the ones that do."},
+      {"name": "source_labels", "type": "", "desc": "List of labels to use as source, the rest are filtered out."},
+      {"name": "target_labels", "type": "", "desc": "List of labels to use as target, the rest are filtered out."},
+      {"name": "lr_sep", "type": "", "desc": "Separator to use when joining ligand and receptor names into interactions."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "return", "type": "pd.DataFrame", "desc": "Returns a pd.DataFrame with joined ligand-receptor pairs and statistics."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.multi.to_mudata.adata_to_views",
+    "signature": "adata_to_views(adata: 'AnnData', groupby: 'str', sample_key: 'str', obs_keys: 'list' = None, view_sep: 'str' = ':', keep_stats: 'bool' = False, verbose: 'bool' = False, psbulk_kwargs: 'dict' = None, filter_samples_kwargs: 'dict' = None, filter_by_expr_kwargs: 'dict' = None, filter_by_prop_kwargs: 'dict' = None)",
+    "description": "Converts an AnnData object to a MuData object with views that represent an aggregate for each entity in adata.obs[groupby].",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "groupby", "type": "", "desc": "Key to be used for grouping."},
+      {"name": "sample_key", "type": "", "desc": "key in adata.obs to use for grouping by sample or context."},
+      {"name": "obs_keys", "type": "", "desc": "Column names in adata.obs to merge with the MuData object"},
+      {"name": "view_sep", "type": "", "desc": "Separator to use when assigning adata.var_names to views"},
+      {"name": "min_count", "type": "", "desc": "Minimum number of counts per gene per sample to be included in the pseudobulk."},
+      {"name": "min_total_count", "type": "", "desc": "Minimum number of counts per sample to be included in the pseudobulk."},
+      {"name": "large_n", "type": "", "desc": "Number of samples per group that is considered to be \"large\"."},
+      {"name": "min_prop", "type": "", "desc": "Minimum proportion of samples that must have a count for a gene to be included in the pseudobulk."},
+      {"name": "keep_stats", "type": "", "desc": "If True, keep the pseudobulk statistics in mdata.uns['psbulk_stats']. Default is False."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "psbulk_kwargs", "type": "", "desc": "Arguments to pass to dc.pp.pseudobulk for pseudobulking. See decoupler documentation for more details."},
+      {"name": "filter_samples_kwargs", "type": "", "desc": "Arguments to pass to dc.pp.filter_samples for filtering samples. See decoupler documentation for more details. If None, won't filter."},
+      {"name": "filter_by_expr_kwargs", "type": "", "desc": "Optional mapping of arguments to pass to dc.pp.filter_by_expr for gene filtering by expression. If None, won't filter."},
+      {"name": "filter_by_prop_kwargs", "type": "", "desc": "Optional mapping of arguments to pass to dc.pp.filter_by_prop for gene filtering by proportion of cells that express the gene. If None, won't filter."},
+      {"name": "return", "type": "MuData", "desc": "Returns a MuData object with views that represent an aggregate for each entity in adata.obs[groupby]."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.multi.to_mudata.lrs_to_views",
+    "signature": "lrs_to_views(adata: 'AnnData', score_key: 'str or None' = None, inverse_fun: 'callable' = <function DefaultValues.inverse_fun at 0x127b427a0>, obs_keys: 'list or None' = None, lr_prop: 'float' = 0.5, lr_fill: 'np.nan' = nan, lrs_per_view: 'int' = 20, lrs_per_sample: 'int' = 10, samples_per_view: 'int' = 3, min_variance: 'int' = 0, min_var_nbatches=1, batch_key=None, lr_sep: 'str' = '^', cell_sep: 'str' = '&', var_sep: 'str' = ':', uns_key: 'str' = 'liana_res', sample_key: 'str' = 'sample', source_key: 'str' = 'source', target_key: 'str' = 'target', ligand_key: 'str' = 'ligand_complex', receptor_key: 'str' = 'receptor_complex', verbose: 'bool' = False)",
+    "description": "Converts a LIANA result to a MuData object with views that represent an aggregate for each entity in adata.obs[groupby].",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "score_key", "type": "", "desc": "Column name of the score in liana_res. If None, the score is inferred from the method."},
+      {"name": "inverse_fun", "type": "callable", "desc": "Function that is applied to the scores before building the views. Default is lambda x: 1 - x which is used to invert the scores reflect probabilities (e.g. magnitude_rank), i.e. such for which lower values reflect higher relevance. This is handled automatically for the scores in liana."},
+      {"name": "obs_keys", "type": "list or None", "desc": "List of keys in adata.obs that should be included in the MuData object. These columns should correspond to the number of samples in adata.obs[sample_key]."},
+      {"name": "lr_prop", "type": "float", "desc": "Reflects the minimum required proportion of samples for an interaction to be considered for building the views."},
+      {"name": "lr_fill", "type": "", "desc": "Value to fill in for interactions that are not present in a view. Default is np.nan."},
+      {"name": "lrs_per_sample", "type": "int", "desc": "Reflects the minimum required number of interactions in a sample to be considered when building a specific view."},
+      {"name": "lrs_per_view", "type": "int", "desc": "Reflects the minimum required number of interactions in a view to be considered for building the views."},
+      {"name": "samples_per_view", "type": "int", "desc": "Reflects the minimum required samples to keep a view."},
+      {"name": "min_variance", "type": "int", "desc": "Reflects the minimum required variance across samples for each interaction in each view. NaNs are ignored when computing the variance."},
+      {"name": "batch_key", "type": "", "desc": "Key in adata.obs that represents the batch information. Used solely when computing the variance. If batch_key is not None, the variance is computed per batch."},
+      {"name": "min_var_nbatches", "type": "", "desc": "Reflect the minimum number of batches (>=) that must have a variance above min_variance for an interaction to be included in the view."},
+      {"name": "lr_sep", "type": "str", "desc": "Separator to use when joining ligand and receptor names into interactions."},
+      {"name": "cell_sep", "type": "str", "desc": "Separator to use for the cell names in the views."},
+      {"name": "var_sep", "type": "str", "desc": "Separator to use for the variable names in the views."},
+      {"name": "uns_key", "type": "str", "desc": "Key in adata.uns that contains the LIANA results. Default is 'liana_res'."},
+      {"name": "sample_key", "type": "str", "desc": "key in adata.obs to use for grouping by sample or context."},
+      {"name": "source_key", "type": "str", "desc": "Column name of the sender/source cell types in liana_res."},
+      {"name": "target_key", "type": "str", "desc": "Column name of the receiver/target cell types in liana_res."},
+      {"name": "ligand_key", "type": "str", "desc": "Column name of the ligand in liana_res."},
+      {"name": "receptor_key", "type": "str", "desc": "Column name of the receptor in liana_res."},
+      {"name": "verbose", "type": "bool", "desc": "Verbosity flag."},
+      {"name": "return", "type": "MuData", "desc": "Returns a MuData object with views that represent an aggregate for each entity in adata.obs[groupby]."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.multi.to_tensor_c2c.to_tensor_c2c",
+    "signature": "to_tensor_c2c(adata: 'AnnData' = None, sample_key: 'str' = None, score_key: 'str' = None, liana_res: 'DataFrame or None' = None, source_key: 'str' = 'source', target_key: 'str' = 'target', ligand_key: 'str' = 'ligand_complex', receptor_key: 'str' = 'receptor_complex', uns_key: 'str' = 'liana_res', non_expressed_fill: 'float or None' = None, inverse_fun: 'callable' = <function DefaultValues.inverse_fun at 0x127b427a0>, non_negative: 'bool' = True, return_dict: 'bool' = False, **kwargs)",
+    "description": "Function to convert a LIANA result to a tensor for cell2cell analysis.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "sample_key", "type": "", "desc": "key in adata.obs to use for grouping by sample or context."},
+      {"name": "score_key", "type": "", "desc": "Column name of the score in liana_res. If None, the score is inferred from the method."},
+      {"name": "liana_res", "type": "", "desc": "A dataframe with the LIANA results. If None, it will be taken from adata.uns[uns_key]."},
+      {"name": "source_key", "type": "", "desc": "Column name of the sender/source cell types in liana_res."},
+      {"name": "target_key", "type": "", "desc": "Column name of the receiver/target cell types in liana_res."},
+      {"name": "ligand_key", "type": "", "desc": "Column name of the ligand in liana_res."},
+      {"name": "receptor_key", "type": "", "desc": "Column name of the receptor in liana_res."},
+      {"name": "uns_key", "type": "", "desc": "Key in adata.uns that contains the LIANA results. Default is 'liana_res'."},
+      {"name": "inverse_fun", "type": "callable", "desc": "Function that is applied to the scores before building the views. Default is lambda x: 1 - x which is used to invert the scores reflect probabilities (e.g. magnitude_rank), i.e. such for which lower values reflect higher relevance. This is handled automatically for the scores in liana."},
+      {"name": "non_expressed_fill", "type": "float", "desc": "Value to fill for non-expressed ligand-receptor pairs."},
+      {"name": "non_negative", "type": "bool", "desc": "Whether to make the tensor non-negative."},
+      {"name": "return_dict", "type": "bool", "desc": "Whether to return a dictionary of tensors."},
+      {"name": "**kwargs", "type": "", "desc": "keyword arguments to pass to Tensor-cell2cell's cell2cell.tensor.external_scores.dataframes_to_tensor function."},
+      {"name": "return", "type": "", "desc": "Returns a tensor of shape (n_samples, n_senders, n_receivers, n_interactions) or a dictionary of tensors if return_dict is True."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.plotting._connectivity_plot.connectivity",
+    "signature": "connectivity(adata: anndata._core.anndata.AnnData, idx: int, spatial_key='spatial', connectivity_key='spatial_connectivities', size=1, figure_size=(5.4, 5), return_fig: bool = True)",
+    "description": "Plot spatial connectivity weights.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "spatial_key", "type": "", "desc": "Key in adata.obsm that contains the spatial coordinates. Default is 'spatial'."},
+      {"name": "connectivity_key", "type": "", "desc": "Key in adata.obsp that contains the spatial connectivity matrix. Default is 'spatial_connectivity'."},
+      {"name": "size", "type": "", "desc": "Size of the points"},
+      {"name": "figure_size", "type": "", "desc": "Figure x,y size"},
+      {"name": "return_fig", "type": "bool", "desc": "bool whether to return the fig object."},
+      {"name": "return", "type": "ggplot", "desc": "A plotnine.ggplot instance"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.plotting._dotplot.dotplot",
+    "signature": "dotplot(adata: 'anndata.AnnData' = None, uns_key='liana_res', liana_res: 'pandas.DataFrame' = None, colour: 'str' = None, size: 'str' = None, source_labels: 'list' = None, target_labels: 'list' = None, top_n: 'int' = None, orderby: 'str | None' = None, orderby_ascending: 'bool | None' = None, orderby_absolute: 'bool' = False, filter_fun: 'callable' = None, ligand_complex: 'str | None' = None, receptor_complex: 'str | None' = None, inverse_colour: 'bool' = False, inverse_size: 'bool' = False, cmap: 'str' = 'viridis', size_range: 'tuple' = (2, 9), figure_size: 'tuple' = (8, 6), return_fig=True) -> 'ggplot'",
+    "description": "Dotplot interactions by source and target cells",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "uns_key", "type": "", "desc": "Key in adata.uns that contains the LIANA results. Default is 'liana_res'."},
+      {"name": "liana_res", "type": "", "desc": "liana_res a DataFrame in liana's format."},
+      {"name": "colour", "type": "", "desc": "column in liana_res to define the colours of the dots."},
+      {"name": "size", "type": "", "desc": "column in liana_res to define the size of the dots."},
+      {"name": "source_labels", "type": "", "desc": "List of labels to use as source, the rest are filtered out."},
+      {"name": "target_labels", "type": "", "desc": "List of labels to use as target, the rest are filtered out."},
+      {"name": "top_n", "type": "", "desc": "top_n entities to plot."},
+      {"name": "orderby", "type": "", "desc": "If top_n is not None, order the interactions by this column"},
+      {"name": "orderby_ascending", "type": "", "desc": "If top_n is not None, specify how to order the interactions"},
+      {"name": "orderby_absolute", "type": "", "desc": "If top_n is not None, whether to order by the absolute value of the orderby column."},
+      {"name": "filter_fun", "type": "", "desc": "A function, applied along the columns (axis=1), used to filter the results to be plotted."},
+      {"name": "ligand_complex", "type": "", "desc": "list of ligand complexes to filter the interactions to be plotted. Defaults to None."},
+      {"name": "receptor_complex", "type": "", "desc": "list of receptor complexes to filter the interactions to be plotted. Defaults to None."},
+      {"name": "inverse_colour", "type": "", "desc": "Whether to -log10 the colour column for plotting. False by default."},
+      {"name": "inverse_size", "type": "", "desc": "Whether to -log10 the size column for plotting. False by default."},
+      {"name": "cmap", "type": "", "desc": "Colour map to use for plotting."},
+      {"name": "size_range", "type": "", "desc": "Define size range. Tuple of (min, max) integers."},
+      {"name": "figure_size", "type": "", "desc": "Figure x,y size"},
+      {"name": "return", "type": "ggplot", "desc": "A plotnine.ggplot instance"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.plotting._dotplot.dotplot_by_sample",
+    "signature": "dotplot_by_sample(adata: 'anndata.AnnData' = None, uns_key: 'str' = 'liana_res', liana_res: 'pandas.DataFrame' = None, sample_key: 'str' = 'sample', colour: 'str' = None, size: 'str' = None, inverse_colour: 'bool' = False, inverse_size: 'bool' = False, source_labels: 'str | None' = None, target_labels: 'str | None' = None, ligand_complex: 'list | str | None' = None, receptor_complex: 'list | str | None' = None, size_range: 'tuple' = (2, 9), cmap: 'str' = 'viridis', figure_size: 'tuple' = (8, 6), return_fig: 'bool' = True)",
+    "description": "A dotplot of interactions by sample",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "uns_key", "type": "", "desc": "Key in adata.uns that contains the LIANA results. Default is 'liana_res'."},
+      {"name": "liana_res", "type": "", "desc": "liana_res a DataFrame in liana's format."},
+      {"name": "sample_key", "type": "", "desc": "sample_key used to group different samples/contexts from liana_res. Defaults to 'sample'."},
+      {"name": "colour", "type": "", "desc": "column in liana_res to define the colours of the dots."},
+      {"name": "size", "type": "", "desc": "column in liana_res to define the size of the dots."},
+      {"name": "inverse_colour", "type": "", "desc": "Whether to -log10 the colour column for plotting. False by default."},
+      {"name": "inverse_size", "type": "", "desc": "Whether to -log10 the size column for plotting. False by default."},
+      {"name": "source_labels", "type": "", "desc": "List of labels to use as source, the rest are filtered out."},
+      {"name": "target_labels", "type": "", "desc": "List of labels to use as target, the rest are filtered out."},
+      {"name": "ligand_complex", "type": "", "desc": "list of ligand complexes to filter the interactions to be plotted. Defaults to None."},
+      {"name": "receptor_complex", "type": "", "desc": "list of receptor complexes to filter the interactions to be plotted. Defaults to None."},
+      {"name": "size_range", "type": "", "desc": "Define size range. Tuple of (min, max) integers."},
+      {"name": "cmap", "type": "", "desc": "Colour map to use for plotting."},
+      {"name": "figure_size", "type": "", "desc": "Figure x,y size"},
+      {"name": "return", "type": "ggplot", "desc": "Returns a ggplot for the specified interactions by sample."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.plotting._misty_plots.contributions",
+    "signature": "contributions(misty=None, target_metrics=None, view_names: list = None, filter_fun: <built-in function callable> = None, aggregate_fun: <built-in function callable> = None, figure_size: tuple = (5, 5), return_fig: bool = True)",
+    "description": "Plot view contributions per target.",
+    "params": [
+      {"name": "misty", "type": "", "desc": "MistyData object with modelling results"},
+      {"name": "target_metrics", "type": "", "desc": "A target_metrics DataFrame"},
+      {"name": "view_names", "type": "list", "desc": "A list of view names to plot"},
+      {"name": "aggregate_fun", "type": "callable", "desc": "A function used to aggregate the results to be plotted."},
+      {"name": "figure_size", "type": "tuple", "desc": "Figure x,y size"},
+      {"name": "return_fig", "type": "bool", "desc": "bool whether to return the fig object."},
+      {"name": "return", "type": "plotnine", "desc": "A plotnine plot."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.plotting._misty_plots.interactions",
+    "signature": "interactions(misty=None, interactions=None, view=None, top_n=None, ascending=False, key=None, filter_fun: <built-in function callable> = None, aggregate_fun: <built-in function callable> = None, figure_size: tuple = (5, 5), return_fig: bool = True)",
+    "description": "Plot interaction importances.",
+    "params": [
+      {"name": "misty", "type": "", "desc": "MistyData object with modelling results"},
+      {"name": "view", "type": "str", "desc": "A view to plot"},
+      {"name": "top_n", "type": "", "desc": "top_n entities to plot."},
+      {"name": "ascending", "type": "bool", "desc": "Whether to sort interactions in ascending order"},
+      {"name": "key", "type": "str", "desc": "Key to use when sorting interactions"},
+      {"name": "filter_fun", "type": "", "desc": "A function, applied along the columns (axis=1), used to filter the results to be plotted."},
+      {"name": "aggregate_fun", "type": "", "desc": "A function used to aggregate the results to be plotted."},
+      {"name": "figure_size", "type": "tuple", "desc": "Figure x,y size"},
+      {"name": "return_fig", "type": "bool", "desc": "bool whether to return the fig object."},
+      {"name": "return", "type": "plotnine", "desc": "A plotnine plot."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.plotting._misty_plots.target_metrics",
+    "signature": "target_metrics(misty=None, stat=None, target_metrics=None, top_n=None, ascending=False, key=None, filter_fun: <built-in function callable> = None, figure_size: tuple = (5, 5), aggregate_fun=None, return_fig: bool = True)",
+    "description": "Plot target metrics.",
+    "params": [
+      {"name": "misty", "type": "", "desc": "MistyData object with modelling results"},
+      {"name": "stat", "type": "str", "desc": "Statistic to plot"},
+      {"name": "target_metrics", "type": "", "desc": "A target_metrics DataFrame"},
+      {"name": "top_n", "type": "", "desc": "top_n entities to plot."},
+      {"name": "ascending", "type": "bool", "desc": "Whether to sort in ascending order"},
+      {"name": "key", "type": "callable", "desc": "Function to use to sort the dataframe"},
+      {"name": "filter_fun", "type": "", "desc": "A function, applied along the columns (axis=1), used to filter the results to be plotted."},
+      {"name": "aggregate_fun", "type": "", "desc": "A function used to aggregate the results to be plotted."},
+      {"name": "figure_size", "type": "tuple", "desc": "Figure x,y size"},
+      {"name": "return_fig", "type": "bool", "desc": "bool whether to return the fig object."},
+      {"name": "return", "type": "plotnine", "desc": "Returns a plotnine plot."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.plotting._tileplot.tileplot",
+    "signature": "tileplot(adata: anndata._core.anndata.AnnData = None, liana_res: pandas.core.frame.DataFrame = None, fill: str = None, label: str = None, label_fun: <built-in function callable> = None, source_labels: str | list[str] = None, target_labels: str | list[str] = None, ligand_complex: str | list[str] = None, receptor_complex: str | list[str] = None, uns_key: str = 'liana_res', top_n: int = None, orderby: str = None, orderby_ascending: bool = False, orderby_absolute: bool = True, filter_fun: <built-in function callable> = None, source_title=None, target_title=None, cmap: str = 'viridis', figure_size: tuple[float, float] = (5, 5), label_size: int = 12, return_fig: bool = True)",
+    "description": "Tileplot interactions by source and target cells",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "liana_res", "type": "", "desc": "liana_res a DataFrame in liana's format."},
+      {"name": "fill", "type": "", "desc": "column in liana_res to define the fill of the tiles"},
+      {"name": "label", "type": "", "desc": "column in liana_res to define the label of the tiles"},
+      {"name": "label_fun", "type": "callable", "desc": "callable to apply to the label column"},
+      {"name": "source_labels", "type": "", "desc": "List of labels to use as source, the rest are filtered out."},
+      {"name": "target_labels", "type": "", "desc": "List of labels to use as target, the rest are filtered out."},
+      {"name": "ligand_complex", "type": "", "desc": "list of ligand complexes to filter the interactions to be plotted. Defaults to None."},
+      {"name": "receptor_complex", "type": "", "desc": "list of receptor complexes to filter the interactions to be plotted. Defaults to None."},
+      {"name": "uns_key", "type": "", "desc": "Key in adata.uns that contains the LIANA results. Default is 'liana_res'."},
+      {"name": "top_n", "type": "", "desc": "top_n entities to plot."},
+      {"name": "orderby", "type": "", "desc": "If top_n is not None, order the interactions by this column"},
+      {"name": "orderby_ascending", "type": "", "desc": "If top_n is not None, specify how to order the interactions"},
+      {"name": "orderby_absolute", "type": "", "desc": "If top_n is not None, whether to order by the absolute value of the orderby column."},
+      {"name": "filter_fun", "type": "", "desc": "A function, applied along the columns (axis=1), used to filter the results to be plotted."},
+      {"name": "source_title", "type": "", "desc": "Title for the source facet. Default is 'Source'"},
+      {"name": "target_title", "type": "", "desc": "Title for the target facet. Default is 'Target'"},
+      {"name": "cmap", "type": "", "desc": "Colour map to use for plotting."},
+      {"name": "label_size", "type": "int", "desc": "Size of the label text"},
+      {"name": "figure_size", "type": "", "desc": "Figure x,y size"},
+      {"name": "return", "type": "ggplot", "desc": "A plotnine.ggplot instance"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.resource._reassemble_complexes.explode_complexes",
+    "signature": "explode_complexes(resource: 'pd.DataFrame', SOURCE='ligand', TARGET='receptor') -> 'pd.DataFrame'",
+    "description": "Function to explode ligand-receptor complexes",
+    "params": [
+      {"name": "resource", "type": "", "desc": "Ligand-receptor resource"},
+      {"name": "SOURCE", "type": "", "desc": "Name of the source (typically ligand) column"},
+      {"name": "TARGET", "type": "", "desc": "Name of the target (typically receptor) column"},
+      {"name": "return", "type": "pd.DataFrame", "desc": "A resource with exploded complexes"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.resource.get_metalinks.describe_metalinks",
+    "signature": "describe_metalinks(db_path: str | None = None, return_output: bool = False)",
+    "description": "Prints the schema information and foreign key details for all tables in the specified SQLite database.",
+    "params": [
+      {"name": "db_path", "type": "str", "desc": "Path to the SQLite database file. If None, the database will be downloaded to the current working directory."},
+      {"name": "return_output", "type": "bool", "desc": ""},
+      {"name": "return", "type": "", "desc": "Not specified."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.resource.get_metalinks.get_metalinks_values",
+    "signature": "get_metalinks_values(table_name, column_name, db_path: str | None = None)",
+    "description": "Fetches distinct values from a specified column in a specified table.",
+    "params": [
+      {"name": "db_path", "type": "str", "desc": "Path to the SQLite database file. If None, the database will be downloaded to the current working directory."},
+      {"name": "table_name", "type": "str", "desc": "Name of the table from which to fetch distinct values."},
+      {"name": "column_name", "type": "str", "desc": "Name of the column from which to fetch distinct values."},
+      {"name": "return", "type": "list", "desc": "A list of distinct values from the specified column."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.resource.get_metalinks.get_metalinks",
+    "signature": "get_metalinks(db_path: str | None = None, types: list[str] | None = None, cell_location: list[str] | None = None, tissue_location: list[str] | None = None, biospecimen_location: list[str] | None = None, disease: list[str] | None = None, pathway: list[str] | None = None, hmdb_ids: list[str] | None = None, uniprot_ids: list[str] | None = None, source: list[str] | None = None)",
+    "description": "Fetches edges of metabolite-proteins with specified annotations, applying filters if they are not None. Allows filtering by lists of hmdb and uniprot IDs and avoids duplicate column names, and returns the results as a pandas DataFrame. Filters are applied using INNER JOINs and WHERE clauses - i.e. the results are the intersection of the filters.",
+    "params": [
+      {"name": "db_path", "type": "", "desc": "Path to the SQLite database file. If None, the database will be downloaded to the current working directory."},
+      {"name": "types", "type": "", "desc": "Desired edge types. Options are: ['lr', 'pd'], where 'lr' stands for 'ligand-receptor' and 'pd' stands for 'production-degradation'."},
+      {"name": "cell_location", "type": "", "desc": "Desired metabolite cell locations."},
+      {"name": "tissue_location", "type": "", "desc": "Desired metabolite tissue locations."},
+      {"name": "biospecimen_location", "type": "", "desc": "Desired metabolite biospecimen locations."},
+      {"name": "disease", "type": "", "desc": "Desired metabolite diseases."},
+      {"name": "pathway", "type": "", "desc": "Desired metabolite pathways."},
+      {"name": "hmdb_ids", "type": "", "desc": "Desired HMDB IDs."},
+      {"name": "uniprot_ids", "type": "", "desc": "Desired UniProt IDs."},
+      {"name": "source", "type": "", "desc": ""},
+      {"name": "return", "type": "pandas.DataFrame", "desc": "A pandas DataFrame containing the query results without the source column."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.resource.select_resource.select_resource",
+    "signature": "select_resource(resource_name: str = 'consensus') -> pandas.core.frame.DataFrame",
+    "description": "Read resource of choice from the pre-generated resources in LIANA.",
+    "params": [
+      {"name": "resource_name", "type": "", "desc": "Name of the resource to be loaded and use for ligand-receptor inference."},
+      {"name": "return", "type": "DataFrame", "desc": "A dataframe with ['ligand', 'receptor'] columns"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.resource.select_resource.show_resources",
+    "signature": "show_resources()",
+    "description": "Show available resources.",
+    "params": [
+      {"name": "return", "type": "list", "desc": "A list of resource names available via liana.resource.select_resource"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.utils._getters.get_factor_scores",
+    "signature": "get_factor_scores(adata: 'AnnData | MuData', obsm_key: 'str' = None, obs_keys: 'str | None' = None)",
+    "description": "Extract factor scores from an AnnData object.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "obsm_key", "type": "str", "desc": "Key to use when extracting factor scores from adata.obsm"},
+      {"name": "obs_keys", "type": "list", "desc": "List of keys to use when extracting metadata from adata.obs If None, no metadata is extracted. Default is None."},
+      {"name": "return", "type": "pandas.DataFrame", "desc": "Returns a pandas DataFrame with the factor scores."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.utils._getters.get_variable_loadings",
+    "signature": "get_variable_loadings(adata: 'AnnData | MuData', varm_key: 'str' = None, view_sep: 'str | None' = None, variable_sep: 'str | None' = None, pair_sep: 'str | None' = None, var_names: 'list' = None, pair_names: 'list' = None, drop_columns: 'bool' = True)",
+    "description": "Extract variable loadings from an AnnData object.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "varm_key", "type": "str", "desc": "Key to use when extracting variable loadings from mdata.varm"},
+      {"name": "view_sep", "type": "str", "desc": "Separator to use when splitting view:variable names into view and variable"},
+      {"name": "variable_sep", "type": "str", "desc": "Separator to use when splitting variable names into var_names ('ligand_complex' and 'receptor_complex' by default)"},
+      {"name": "pair_sep", "type": "str", "desc": "Separator to use when splitting view names into pair_names ('source' and 'target' by default)"},
+      {"name": "drop_columns", "type": "bool", "desc": "If True, drop the view:variable column"},
+      {"name": "var_names", "type": "list", "desc": ""},
+      {"name": "pair_names", "type": "list", "desc": ""},
+      {"name": "return", "type": "pandas.DataFrame", "desc": "Returns a pandas DataFrame with the variable loadings for the specified index."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.utils.interpolate_adata.interpolate_adata",
+    "signature": "interpolate_adata(target: anndata._core.anndata.AnnData, reference: anndata._core.anndata.AnnData, spatial_key: str, layer=None, use_raw=True, method: str = 'linear', fill_value: float = 0, verbose=False) -> anndata._core.anndata.AnnData",
+    "description": "Interpolates spatial data from a target AnnData object to a reference AnnData object based on spatial coordinates. The function creates a new AnnData object where the .X attribute is filled with interpolated data using the specified method.",
+    "params": [
+      {"name": "target", "type": "", "desc": "The AnnData object to be interpolated."},
+      {"name": "reference", "type": "", "desc": "The AnnData object to be used as reference."},
+      {"name": "spatial_key", "type": "", "desc": "Key in adata.obsm that contains the spatial coordinates. Default is 'spatial'."},
+      {"name": "layer", "type": "", "desc": "Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X."},
+      {"name": "use_raw", "type": "", "desc": "Use raw attribute of adata if present."},
+      {"name": "method", "type": "", "desc": "Interpolation method. See scipy.interpolate.griddata for more information."},
+      {"name": "fill_value", "type": "", "desc": "Value to fill in for points outside of the convex hull of the input points."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "return", "type": "AnnData", "desc": "A new AnnData object with the same metadata as the reference but with interpolated spatial data in .X."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.utils.mdata_to_anndata.mdata_to_anndata",
+    "signature": "mdata_to_anndata(mdata, x_mod, y_mod, x_layer=None, y_layer=None, x_use_raw=False, y_use_raw=False, x_transform=None, y_transform=None, verbose=True)",
+    "description": "Convert a MultiData object to an AnnData object.",
+    "params": [
+      {"name": "mdata", "type": "", "desc": "MuData object."},
+      {"name": "x_mod", "type": "", "desc": "Name of the modality to be used as x."},
+      {"name": "y_mod", "type": "", "desc": "Name of the modality to be used as y."},
+      {"name": "x_layer", "type": "", "desc": "Layer to be used for modality x."},
+      {"name": "y_layer", "type": "", "desc": "Layer to be used for modality y."},
+      {"name": "x_use_raw", "type": "", "desc": "Whether to use raw counts for modality x."},
+      {"name": "y_use_raw", "type": "", "desc": "Whether to use raw counts for modality y."},
+      {"name": "x_transform", "type": "", "desc": "Transformation function to be applied to modality x."},
+      {"name": "y_transform", "type": "", "desc": "Transformation function to be applied to modality y."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "return", "type": "AnnData", "desc": "An AnnData object with the two modalities concatenated. Information related to observations (obs, obsp, obsm) and .uns are copied from the original MuData object."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.utils.obsm_to_adata.obsm_to_adata",
+    "signature": "obsm_to_adata(adata: 'AnnData', obsm_key: 'str', df: 'pd.DataFrame | None' = None, _uns: 'pd.DataFrame | None' = None, _obsm: 'pd.DataFrame | None' = None, _var: 'pd.DataFrame | None' = None)",
+    "description": "Extracts a dataframe from adata.obsm and returns a new AnnData object with the values stored in X.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "obsm_key", "type": "", "desc": ".osbm key to extract."},
+      {"name": "df", "type": "", "desc": "Dataframe with stats per cell/spot. If None, it will be extracted from adata.obsm[obsm_key]."},
+      {"name": "_uns", "type": "", "desc": "Dictionary with uns data. If None, it will be extracted from adata.uns."},
+      {"name": "_obsm", "type": "", "desc": "Dictionary with obsm data. If None, it will be extracted from adata.obsm."},
+      {"name": "return", "type": "AnnData", "desc": "An AnnData object with the values stored in X."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.utils.spatial_neighbors.spatial_neighbors",
+    "signature": "spatial_neighbors(adata: anndata._core.anndata.AnnData, bandwidth=None, cutoff=0.1, max_neighbours=100, kernel='gaussian', set_diag=False, zoi=0, standardize=False, reference=None, spatial_key='spatial', key_added='spatial', inplace=True)",
+    "description": "Generate spatial connectivity weights using Euclidean distance.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "bandwidth", "type": "", "desc": "Denotes signaling length (l) and controls the maximum distance at which two spots are considered. Corresponds to the units in which spatial coordinates are expressed."},
+      {"name": "cutoff", "type": "", "desc": "Values below this cutoff will be set to 0."},
+      {"name": "max_neighbours", "type": "", "desc": "Maximum nearest neighbours to be considered when generating spatial connectivity weights. Essentially, the maximum number of edges in the spatial connectivity graph."},
+      {"name": "kernel", "type": "", "desc": "Kernel function used to generate connectivity weights. It controls the shape of the connectivity weights. The following options are available: ['gaussian', 'exponential', 'linear', 'misty_rbf']"},
+      {"name": "set_diag", "type": "", "desc": "Logical, sets connectivity diagonal to 0 if False. Default is True."},
+      {"name": "zoi", "type": "", "desc": "Zone of indifference. Values below this cutoff will be set to np.inf."},
+      {"name": "standardize", "type": "", "desc": "Whether to (l1) standardize spatial proximities (connectivities) so that they sum to 1. This plays a role when weighing border regions prior to downstream methods, as the number of spots in the border region (and hence the sum of proximities) is smaller than the number of spots in the center. Relevant for methods with unstandardized scores (e.g. product). Default is False."},
+      {"name": "reference", "type": "", "desc": "Reference coordinates to use when generating spatial connectivity weights. If None, uses the spatial coordinates in adata.obsm[spatial_key]. This is only relevant if you want to use a different set of coordinates to generate spatial connectivity weights."},
+      {"name": "spatial_key", "type": "", "desc": "Key in adata.obsm that contains the spatial coordinates. Default is 'spatial'."},
+      {"name": "key_added", "type": "", "desc": "Key to add to adata.obsp if inplace = True. If reference is not None, key will be added to adata.obsm."},
+      {"name": "inplace", "type": "", "desc": "Whether to store results in place, or else to return them."},
+      {"name": "return", "type": "", "desc": "If inplace = False, returns an np.array with spatial connectivity weights. Otherwise, modifies the adata object with the following key: anndata.AnnData.obsp ['{key_added}_connectivities'] with the aforementioned array"}
+    ],
+    "misc": "Notes: This function is adapted from mistyR, and is set to be consistent with the squidpy.gr.spatial_neighbors function in the squidpy package."
+  },
+  {
+    "method": "liana.utils.transform.neg_to_zero",
+    "signature": "neg_to_zero(X, cutoff=0)",
+    "description": "Set negative values to 0.",
+    "params": [
+      {"name": "X", "type": "array-like", "desc": "Data to be transformed."},
+      {"name": "cutoff", "type": "float", "desc": "Cutoff value for zero-inflation - values less than this are set to 0. Default is 0."},
+      {"name": "return", "type": "csr_matrix", "desc": "A csr_matrix."}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.utils.transform.zi_minmax",
+    "signature": "zi_minmax(X, cutoff=0.5)",
+    "description": "Zero-inflated min-max scaling, adopted from CiteFuse (Kim et al., 2020; https://academic.oup.com/bioinformatics/article/36/14/4137/5827474). This function scales the data to the range [0, 1] and sets values below a specified cutoff to 0.",
+    "params": [
+      {"name": "X", "type": "array-like", "desc": "Data to be scaled."},
+      {"name": "cutoff", "type": "float", "desc": "Cutoff value for zero-inflation - values less than this are set to 0. Default is 0.5."},
+      {"name": "return", "type": "csr_matrix", "desc": "X : csr_matrix"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.method.cellchat.__call__",
+    "signature": "cellchat.__call__(adata: 'an.AnnData | MuData', groupby: 'str', resource_name: 'str' = 'consensus', expr_prop: 'float' = 0.1, min_cells: 'int' = 5, groupby_pairs: 'DataFrame | None' = None, base: 'float' = np.float64(2.718281828459045), supp_columns: 'list | None' = None, return_all_lrs: 'bool' = False, key_added: 'str' = 'liana_res', use_raw: 'bool | None' = True, layer: 'str | None' = None, de_method: 'str' = 't-test', n_perms: 'int' = 1000, seed: 'int' = 1337, n_jobs: 'int' = 1, resource: 'DataFrame | None' = None, interactions: 'list | None' = None, mdata_kwargs: 'dict | None' = None, inplace: 'bool' = True, verbose: 'bool | None' = False)",
+    "description": "Run a ligand-receptor method.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "groupby", "type": "", "desc": "Key to be used for grouping."},
+      {"name": "resource_name", "type": "", "desc": "Name of the resource to be used for ligand-receptor inference. See `li.rs.show_resources()` for available resources."},
+      {"name": "expr_prop", "type": "", "desc": "Minimum expression proportion for the ligands and receptors (+ their subunits) in the corresponding cell identities. Set to 0 to return unfiltered results."},
+      {"name": "min_cells", "type": "", "desc": "Minimum cells (per cell identity if grouped by `groupby`) to be considered for downstream analysis."},
+      {"name": "groupby_pairs", "type": "", "desc": "A DataFrame with columns `source` and `target` to be used to subset the possible combinations of interacting cell types. If None, all possible combinations are used."},
+      {"name": "base", "type": "", "desc": "Exponent base used to reverse the log-transformation of the matrix. Relevant only for the `logfc` method."},
+      {"name": "supp_columns", "type": "", "desc": "Additional columns to be added from any of the methods implemented in liana, or any of the columns returned by `scanpy.tl.rank_genes_groups`, each starting with ligand_* or receptor_*. For example, ['ligand_pvals', 'receptor_pvals']. None by default."},
+      {"name": "return_all_lrs", "type": "", "desc": "Bool whether to return all ligand-receptor pairs, or only those that surpass the `expr_prop` threshold. Ligand-receptor pairs that do not pass the `expr_prop` threshold will be assigned to the worst score of the ones that do. False by default."},
+      {"name": "key_added", "type": "", "desc": "Key under which the results will be stored in `adata.uns` if `inplace` is True."},
+      {"name": "use_raw", "type": "", "desc": "Use raw attribute of adata if present."},
+      {"name": "layer", "type": "", "desc": "Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X."},
+      {"name": "de_method", "type": "", "desc": "Differential expression method. `scanpy.tl.rank_genes_groups` is used to rank genes according to 1vsRest. The default method is 't-test'."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "n_perms", "type": "", "desc": "Number of permutations for the permutation test. Relevant only for permutation-based methods (e.g., CellPhoneDB). If None is passed, no permutation testing is performed."},
+      {"name": "seed", "type": "", "desc": "Random seed for reproducibility."},
+      {"name": "n_jobs", "type": "", "desc": "Number of jobs to run in parallel."},
+      {"name": "resource", "type": "", "desc": "A pandas dataframe with [ligand, receptor] columns. If provided will overrule the resource requested via resource_name"},
+      {"name": "interactions", "type": "", "desc": "List of tuples with ligand-receptor pairs [(ligand, receptor), ...] to be used for the analysis. If passed, it will overrule the resource requested via resource and resource_name."},
+      {"name": "mdata_kwargs", "type": "", "desc": "Keyword arguments to be passed to li.fun.mdata_to_anndata if adata is an instance of MuData. If an AnnData object is passed, these arguments are ignored."},
+      {"name": "inplace", "type": "", "desc": "Whether to store results in place, or else to return them."},
+      {"name": "return", "type": "", "desc": "If inplace = False, returns a DataFrame with ligand-receptor results Otherwise, modifies the adata object with the following key: anndata.AnnData.uns [key_added] with the aforementioned DataFrame"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.method.cellphonedb.__call__",
+    "signature": "cellphonedb.__call__(adata: 'an.AnnData | MuData', groupby: 'str', resource_name: 'str' = 'consensus', expr_prop: 'float' = 0.1, min_cells: 'int' = 5, groupby_pairs: 'DataFrame | None' = None, base: 'float' = np.float64(2.718281828459045), supp_columns: 'list | None' = None, return_all_lrs: 'bool' = False, key_added: 'str' = 'liana_res', use_raw: 'bool | None' = True, layer: 'str | None' = None, de_method: 'str' = 't-test', n_perms: 'int' = 1000, seed: 'int' = 1337, n_jobs: 'int' = 1, resource: 'DataFrame | None' = None, interactions: 'list | None' = None, mdata_kwargs: 'dict | None' = None, inplace: 'bool' = True, verbose: 'bool | None' = False)",
+    "description": "Run a ligand-receptor method.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "groupby", "type": "", "desc": "Key to be used for grouping."},
+      {"name": "resource_name", "type": "", "desc": "Name of the resource to be used for ligand-receptor inference. See `li.rs.show_resources()` for available resources."},
+      {"name": "expr_prop", "type": "", "desc": "Minimum expression proportion for the ligands and receptors (+ their subunits) in the corresponding cell identities. Set to 0 to return unfiltered results."},
+      {"name": "min_cells", "type": "", "desc": "Minimum cells (per cell identity if grouped by `groupby`) to be considered for downstream analysis."},
+      {"name": "groupby_pairs", "type": "", "desc": "A DataFrame with columns `source` and `target` to be used to subset the possible combinations of interacting cell types. If None, all possible combinations are used."},
+      {"name": "base", "type": "", "desc": "Exponent base used to reverse the log-transformation of the matrix. Relevant only for the `logfc` method."},
+      {"name": "supp_columns", "type": "", "desc": "Additional columns to be added from any of the methods implemented in liana, or any of the columns returned by `scanpy.tl.rank_genes_groups`, each starting with ligand_* or receptor_*. For example, ['ligand_pvals', 'receptor_pvals']. None by default."},
+      {"name": "return_all_lrs", "type": "", "desc": "Bool whether to return all ligand-receptor pairs, or only those that surpass the `expr_prop` threshold. Ligand-receptor pairs that do not pass the `expr_prop` threshold will be assigned to the worst score of the ones that do. False by default."},
+      {"name": "key_added", "type": "", "desc": "Key under which the results will be stored in `adata.uns` if `inplace` is True."},
+      {"name": "use_raw", "type": "", "desc": "Use raw attribute of adata if present."},
+      {"name": "layer", "type": "", "desc": "Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X."},
+      {"name": "de_method", "type": "", "desc": "Differential expression method. `scanpy.tl.rank_genes_groups` is used to rank genes according to 1vsRest. The default method is 't-test'."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "n_perms", "type": "", "desc": "Number of permutations for the permutation test. Relevant only for permutation-based methods (e.g., CellPhoneDB). If None is passed, no permutation testing is performed."},
+      {"name": "seed", "type": "", "desc": "Random seed for reproducibility."},
+      {"name": "n_jobs", "type": "", "desc": "Number of jobs to run in parallel."},
+      {"name": "resource", "type": "", "desc": "A pandas dataframe with [ligand, receptor] columns. If provided will overrule the resource requested via resource_name"},
+      {"name": "interactions", "type": "", "desc": "List of tuples with ligand-receptor pairs [(ligand, receptor), ...] to be used for the analysis. If passed, it will overrule the resource requested via resource and resource_name."},
+      {"name": "mdata_kwargs", "type": "", "desc": "Keyword arguments to be passed to li.fun.mdata_to_anndata if adata is an instance of MuData. If an AnnData object is passed, these arguments are ignored."},
+      {"name": "inplace", "type": "", "desc": "Whether to store results in place, or else to return them."},
+      {"name": "return", "type": "", "desc": "If inplace = False, returns a DataFrame with ligand-receptor results Otherwise, modifies the adata object with the following key: anndata.AnnData.uns [key_added] with the aforementioned DataFrame"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.method.rank_aggregate.__call__",
+    "signature": "rank_aggregate.__call__(adata: 'an.AnnData | MuData', groupby: 'str', resource_name: 'str' = 'consensus', expr_prop: 'float' = 0.1, min_cells: 'int' = 5, groupby_pairs: 'DataFrame | None' = None, base: 'float' = np.float64(2.718281828459045), aggregate_method: 'str' = 'rra', consensus_opts: 'list | None' = None, return_all_lrs: 'bool' = False, key_added: 'str' = 'liana_res', use_raw: 'bool | None' = True, layer: 'str | None' = None, de_method: 'str' = 't-test', n_perms: 'int' = 1000, seed: 'int' = 1337, n_jobs: 'int' = 1, resource: 'DataFrame | None' = None, interactions: 'list | None' = None, mdata_kwargs: 'dict | None' = None, inplace: 'bool' = True, verbose: 'bool | None' = False)",
+    "description": "Get an aggregate of ligand-receptor scores from multiple methods.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "groupby", "type": "", "desc": "Key to be used for grouping."},
+      {"name": "resource_name", "type": "", "desc": "Name of the resource to be used for ligand-receptor inference. See `li.rs.show_resources()` for available resources."},
+      {"name": "expr_prop", "type": "", "desc": "Minimum expression proportion for the ligands and receptors (+ their subunits) in the corresponding cell identities. Set to 0 to return unfiltered results."},
+      {"name": "min_cells", "type": "", "desc": "Minimum cells (per cell identity if grouped by `groupby`) to be considered for downstream analysis."},
+      {"name": "groupby_pairs", "type": "", "desc": "A DataFrame with columns `source` and `target` to be used to subset the possible combinations of interacting cell types. If None, all possible combinations are used."},
+      {"name": "base", "type": "", "desc": "Exponent base used to reverse the log-transformation of the matrix. Relevant only for the `logfc` method."},
+      {"name": "aggregate_method", "type": "", "desc": "Method aggregation approach, one of ['mean', 'rra'], where mean represents the mean rank, while 'rra' is the RobustRankAggregate (Kolde et al., 2014) of the interactions"},
+      {"name": "consensus_opts", "type": "", "desc": "Strategies to aggregate interactions across methods. Default is None - i.e. ['Specificity', 'Magnitude'] and both specificity and magnitude are aggregated."},
+      {"name": "return_all_lrs", "type": "", "desc": "Bool whether to return all ligand-receptor pairs, or only those that surpass the `expr_prop` threshold. Ligand-receptor pairs that do not pass the `expr_prop` threshold will be assigned to the worst score of the ones that do. False by default."},
+      {"name": "key_added", "type": "", "desc": "Key under which the results will be stored in adata.uns if inplace is True."},
+      {"name": "use_raw", "type": "", "desc": "Use raw attribute of adata if present."},
+      {"name": "layer", "type": "", "desc": "Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X."},
+      {"name": "de_method", "type": "", "desc": "Differential expression method. `scanpy.tl.rank_genes_groups` is used to rank genes according to 1vsRest. The default method is 't-test'."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "n_perms", "type": "", "desc": "Number of permutations for the permutation test. Relevant only for permutation-based methods (e.g., CellPhoneDB). If None is passed, no permutation testing is performed."},
+      {"name": "seed", "type": "", "desc": "Random seed for reproducibility."},
+      {"name": "n_jobs", "type": "", "desc": "Number of jobs to run in parallel."},
+      {"name": "resource", "type": "", "desc": "A pandas dataframe with [ligand, receptor] columns. If provided will overrule the resource requested via resource_name"},
+      {"name": "interactions", "type": "", "desc": "List of tuples with ligand-receptor pairs [(ligand, receptor), ...] to be used for the analysis. If passed, it will overrule the resource requested via resource and resource_name."},
+      {"name": "mdata_kwargs", "type": "", "desc": "Keyword arguments to be passed to li.fun.mdata_to_anndata if adata is an instance of MuData. If an AnnData object is passed, these arguments are ignored."},
+      {"name": "inplace", "type": "", "desc": "Whether to store results in place, or else to return them."},
+      {"name": "return", "type": "", "desc": "If inplace = False, returns a DataFrame with ligand-receptor results Otherwise, modifies the adata object with the following key: anndata.AnnData.uns ['liana_res'] with the aforementioned DataFrame"}
+    ],
+    "misc": ""
+  },
+  {
+    "method": "liana.method.geometric_mean.__call__",
+    "signature": "geometric_mean.__call__(adata: 'an.AnnData | MuData', groupby: 'str', resource_name: 'str' = 'consensus', expr_prop: 'float' = 0.1, min_cells: 'int' = 5, groupby_pairs: 'DataFrame | None' = None, base: 'float' = np.float64(2.718281828459045), supp_columns: 'list | None' = None, return_all_lrs: 'bool' = False, key_added: 'str' = 'liana_res', use_raw: 'bool | None' = True, layer: 'str | None' = None, de_method: 'str' = 't-test', n_perms: 'int' = 1000, seed: 'int' = 1337, n_jobs: 'int' = 1, resource: 'DataFrame | None' = None, interactions: 'list | None' = None, mdata_kwargs: 'dict | None' = None, inplace: 'bool' = True, verbose: 'bool | None' = False)",
+    "description": "Run a ligand-receptor method.",
+    "params": [
+      {"name": "adata", "type": "", "desc": "Annotated data object."},
+      {"name": "groupby", "type": "", "desc": "Key to be used for grouping."},
+      {"name": "resource_name", "type": "", "desc": "Name of the resource to be used for ligand-receptor inference. See `li.rs.show_resources()` for available resources."},
+      {"name": "expr_prop", "type": "", "desc": "Minimum expression proportion for the ligands and receptors (+ their subunits) in the corresponding cell identities. Set to 0 to return unfiltered results."},
+      {"name": "min_cells", "type": "", "desc": "Minimum cells (per cell identity if grouped by `groupby`) to be considered for downstream analysis."},
+      {"name": "groupby_pairs", "type": "", "desc": "A DataFrame with columns `source` and `target` to be used to subset the possible combinations of interacting cell types. If None, all possible combinations are used."},
+      {"name": "base", "type": "", "desc": "Exponent base used to reverse the log-transformation of the matrix. Relevant only for the `logfc` method."},
+      {"name": "supp_columns", "type": "", "desc": "Additional columns to be added from any of the methods implemented in liana, or any of the columns returned by `scanpy.tl.rank_genes_groups`, each starting with ligand_* or receptor_*. For example, ['ligand_pvals', 'receptor_pvals']. None by default."},
+      {"name": "return_all_lrs", "type": "", "desc": "Bool whether to return all ligand-receptor pairs, or only those that surpass the `expr_prop` threshold. Ligand-receptor pairs that do not pass the `expr_prop` threshold will be assigned to the worst score of the ones that do. False by default."},
+      {"name": "key_added", "type": "", "desc": "Key under which the results will be stored in `adata.uns` if `inplace` is True."},
+      {"name": "use_raw", "type": "", "desc": "Use raw attribute of adata if present."},
+      {"name": "layer", "type": "", "desc": "Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X."},
+      {"name": "de_method", "type": "", "desc": "Differential expression method. `scanpy.tl.rank_genes_groups` is used to rank genes according to 1vsRest. The default method is 't-test'."},
+      {"name": "verbose", "type": "", "desc": "Verbosity flag."},
+      {"name": "n_perms", "type": "", "desc": "Number of permutations for the permutation test. Relevant only for permutation-based methods (e.g., CellPhoneDB). If None is passed, no permutation testing is performed."},
+      {"name": "seed", "type": "", "desc": "Random seed for reproducibility."},
+      {"name": "n_jobs", "type": "", "desc": "Number of jobs to run in parallel."},
+      {"name": "resource", "type": "", "desc": "A pandas dataframe with [ligand, receptor] columns. If provided will overrule the resource requested via resource_name"},
+      {"name": "interactions", "type": "", "desc": "List of tuples with ligand-receptor pairs [(ligand, receptor), ...] to be used for the analysis. If passed, it will overrule the resource requested via resource and resource_name."},
+      {"name": "mdata_kwargs", "type": "", "desc": "Keyword arguments to be passed to li.fun.mdata_to_anndata if adata is an instance of MuData. If an AnnData object is passed, these arguments are ignored."},
+      {"name": "inplace", "type": "", "desc": "Whether to store results in place, or else to return them."},
+      {"name": "return", "type": "", "desc": "If inplace = False, returns a DataFrame with ligand-receptor results Otherwise, modifies the adata object with the following key: anndata.AnnData.uns [key_added] with the aforementioned DataFrame"}
+    ],
+    "misc": ""
+  }
+]

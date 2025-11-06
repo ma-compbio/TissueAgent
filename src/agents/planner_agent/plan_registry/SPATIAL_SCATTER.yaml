@@ -1,5 +1,5 @@
 template_id: SPATIAL_SCATTER
-task: Plooting spatial coordinates scatterplot
+task: Plotting spatial coordinates scatterplot
 version: "1.0"
 last_updated: 2025-09-25
 tags: [spatial, visualization, scatterplot]

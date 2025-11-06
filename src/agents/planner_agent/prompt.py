@@ -19,6 +19,14 @@ If you generate a <Plan>, it will be passed to a recruiter agent to assign speci
   - ROUTE: CLARIFY (Stuck / Missing Data): Use only if 1-2 critical inputs are missing.
   - ROUTE: PLAN (Complex / Artifact): Use when producing artifacts and ≥2 steps are needed.
 
+## Template-first policy for ROUTE: PLAN
+- Before drafting steps, you must call plan_registry_tool to list available templates and scan titles, tags, and step sketches for relevance to the user task.
+- If a clearly relevant exists, adapt its structure to this query (≤4 steps preferred).
+  - Insert any template details as per-step notes in the plan under a "notes:" field.
+  - Keep the original meaning/content; you may split details across steps as appropriate.
+- If no relevant template is found, create a new plan using the Granularity Rules and Quality Gates below.
+- Keep the output human-readable; do not include tool calls, YAML, or implementation details.
+
 ## Granularity Rules for <PLAN>
 - Prefer 2-4 steps total; never exceed 6.
 - Group related actions together that achieve a common sub-goal. 
@@ -41,6 +49,8 @@ If you generate a <Plan>, it will be passed to a recruiter agent to assign speci
 
 ## Tools
 - file_retriever_tool — list/read run manifests and artifact directories.
+- plan_registry_tool — list available plan templates. It has no arguments and
+  defaults to the planner's internal plan registry.
 
 ## ROUTING
 Choose exactly one route:
@@ -66,6 +76,7 @@ Steps:
     step: [Specific action, one action per step]
     reason: [Why this step is needed]
     expected artifacts: [Files, figures, tables, summaries]
+    notes: [Only include when plan comes from a template; otherwise leave blank]
 
 Here is a breakdown of the complenents you need to include in each step as well as their specific instructions:
 - <N>: The step number, starting from 1 and incrementing by 1 for each subsequent step.
@@ -85,6 +96,9 @@ Here is a breakdown of the complenents you need to include in each step as well 
     This should include specific file paths, figures, tables, webpages, paper summaries, or any other tangible outputs that will result from completing the action in this step.   
     For purely informational routes (e.g., literature or web searches) the artifact can be the written summary itself.
     You may skip this field entirely if no artifact is required.
+- notes: If this plan is adapted from a registry template, copy the template's relevant
+    details into the appropriate step(s) here, preserving their meaning. If the plan is
+    not template-based, either omit this field or leave it blank.
 
 Keep each line ≤100 chars.
 

@@ -1,3 +1,19 @@
+---
+title: "Spatially-informed Bivariate Metrics"
+keywords:
+  - "liana+"
+  - "spatial"
+  - "bivariate"
+  - "moran's r"
+  - "cosine similarity"
+  - "jaccard"
+  - "spearman"
+  - "permutation"
+  - "visium"
+  - "nmf"
+  - "transcription factors"
+  - "cell type compositions"
+---
 # Spatially-informed Bivariate Metrics
 
 This tutorial provides an overview of the local scores implemented in LIANA+. These scores are used to identify spatially co-expressed ligand-receptor pairs. However, there also applicable to other types of spatially-informed bivariate analyses.

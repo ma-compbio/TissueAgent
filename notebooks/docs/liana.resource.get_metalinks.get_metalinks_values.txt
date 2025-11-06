@@ -1,0 +1,17 @@
+get_metalinks_values(table_name, column_name, db_path: str | None = None)
+
+Fetches distinct values from a specified column in a specified table.
+
+Parameters
+----------
+db_path : str
+    Path to the SQLite database file. If None, the database will be downloaded to the current working directory.
+table_name : str
+    Name of the table from which to fetch distinct values.
+column_name : str
+    Name of the column from which to fetch distinct values.
+
+Returns
+-------
+list
+    A list of distinct values from the specified column.

@@ -1,0 +1,16 @@
+explode_complexes(resource: 'pd.DataFrame', SOURCE='ligand', TARGET='receptor') -> 'pd.DataFrame'
+
+Function to explode ligand-receptor complexes
+
+Parameters
+----------
+resource
+    Ligand-receptor resource
+SOURCE
+    Name of the source (typically ligand) column
+TARGET
+    Name of the target (typically receptor) column
+
+Returns
+-------
+A resource with exploded complexes

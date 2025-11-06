@@ -1,0 +1,8 @@
+describe_metalinks(db_path: str | None = None, return_output: bool = False)
+
+Prints the schema information and foreign key details for all tables in the specified SQLite database.
+
+Parameters
+----------
+db_path : str
+    Path to the SQLite database file. If None, the database will be downloaded to the current working directory.

@@ -1,0 +1,28 @@
+interpolate_adata(target: anndata._core.anndata.AnnData, reference: anndata._core.anndata.AnnData, spatial_key: str, layer=None, use_raw=True, method: str = 'linear', fill_value: float = 0, verbose=False) -> anndata._core.anndata.AnnData
+
+Interpolates spatial data from a target AnnData object to a reference AnnData object based on spatial coordinates.
+
+The function creates a new AnnData object where the `.X` attribute is filled with interpolated data using the specified method.
+
+Parameters
+----------
+target
+    The AnnData object to be interpolated.
+reference
+    The AnnData object to be used as reference.
+spatial_key
+    Key in `adata.obsm` that contains the spatial coordinates. Default is `'spatial'`.
+layer
+    Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X.
+use_raw
+    Use raw attribute of adata if present.
+method
+    Interpolation method. See `scipy.interpolate.griddata` for more information.
+fill_value
+    Value to fill in for points outside of the convex hull of the input points.
+verbose
+    Verbosity flag.
+
+Returns
+-------
+AnnData: A new AnnData object with the same metadata as the reference but with interpolated spatial data in `.X`.
