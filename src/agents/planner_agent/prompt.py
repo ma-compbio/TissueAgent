@@ -28,7 +28,7 @@ If you generate a <Plan>, it will be passed to a recruiter agent to assign speci
 - Keep the output human-readable; do not include tool calls, YAML, or implementation details.
 
 ## Granularity Rules for <PLAN>
-- Prefer 2-4 steps total; never exceed 6.
+- Prefer 1-4 steps total; never exceed 6.
 - Group related actions together that achieve a common sub-goal. 
     Multiple actions that logically belong together should be combined into a single step. 
 - Merge micro-steps that are setup/selection/validation into one "Prepare" step.
