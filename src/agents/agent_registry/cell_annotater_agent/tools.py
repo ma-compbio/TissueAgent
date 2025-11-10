@@ -2,25 +2,11 @@ from typing import List
 
 from langchain.tools import StructuredTool
 
-from agents.agent_registry.cell_annotater_agent.tools_impl.preprocessing_tool import (
-    preprocess_spatial_data_tool,
-)
 from agents.agent_registry.cell_annotater_agent.tools_impl.harmony_transfer import (
     harmony_transfer_tool,
 )
 
 CellAnnotaterTools: List[StructuredTool] = [
-    StructuredTool.from_function(
-        func=preprocess_spatial_data_tool,
-        name="preprocess_spatial_data_tool",
-        description=(
-            "Automates preprocessing of spatial transcriptomics data using Scanpy. "
-            "Filters low-quality cells and genes, normalizes expression values, applies log transformation, "
-            "selects highly variable genes, performs PCA, computes neighborhood graphs, and generates UMAP embeddings. "
-            "Standardizes gene naming conventions and saves processed dataset in .h5ad format. "
-            "Returns preprocessing statistics and output path."
-        ),
-    ),
     StructuredTool.from_function(
         func=harmony_transfer_tool,
         name="harmony_transfer_tool",

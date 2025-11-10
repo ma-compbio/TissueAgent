@@ -15,6 +15,7 @@ from agents.reporter_agent.prompt import ReporterPrompt
 from agents.reporter_agent.tools import ReporterTools
 
 
+
 @dataclass
 class ReActAgent:
     id: str
@@ -86,6 +87,8 @@ from agents.agent_registry.single_cell_agent.prompt import SingleCellPrompt, Sin
 from agents.agent_registry.single_cell_agent.tools import SingleCellTools
 from agents.agent_registry.gene_agent.prompt import GeneAgentPrompt, GeneAgentDescription
 from agents.agent_registry.gene_agent.tools import GeneAgentTools
+from agents.agent_registry.cell_annotater_agent.prompt import CellTissueAnnotationPrompt, CellTissueAnnotationDescription
+from agents.agent_registry.cell_annotater_agent.tools import CellAnnotaterTools
 
 
 AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
@@ -118,6 +121,13 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         prompt      = GeneAgentPrompt,
         tools       = GeneAgentTools,
         model_ctor  = DefaultModelCtor,
-
-    )
+    ),
+    ReActAgent(
+        id          = "cell_annotater",
+        name        = "Cell Annotater Agent",
+        description = CellTissueAnnotationDescription,
+        prompt      = CellTissueAnnotationPrompt,
+        tools       = CellAnnotaterTools,
+        model_ctor  = DefaultModelCtor,
+    ),
 ]

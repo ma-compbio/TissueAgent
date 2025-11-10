@@ -51,6 +51,9 @@ dependencies = [
     "decoupler>=2.1.1",
     "ipython>=8.37.0",
     "ipykernel>=7.1.0",
+    "mygene==3.2.2",
+    "harmonypy==0.0.10",
+    "tiledbsoma==1.17.1"
 ]
 
 [tool.setuptools]
