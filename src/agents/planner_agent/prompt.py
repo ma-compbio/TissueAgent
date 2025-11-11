@@ -137,4 +137,21 @@ Steps:
     step: Write brief; include 5 bullets, 3 figures, and 3 limitations
     reason: Produce the final artifact concisely
     expected artifacts: briefs/paper_brief.md, figures/figure_thumbs.png
+
+
+Example D: Cell type annotation for spatial transcriptomics dataset
+ROUTE: PLAN
+PLAN
+Task: Run the cell annotation agent that uses harmony integration to infer cell types for the spatial transcriptomics dataset of interest
+Steps:
+[] step 1:
+    step: Find a reference single cell transcriptomics dataset that is similar to the spatial transcriptomics dataset of interest. A reference dataset with the largest number of different cell types related to the spatial transcriptomics data should be selected. Then download this reference dataset. Expected artifacts: dataset/reference_dataset.h5ad
+[] step 2:
+    step: Run harmony integration to infer the cell types in the spatial transcriptomics data from the reference dataset
+    reason: Single execution step creates the main outputs
+    expected artifacts: the harmonized h5ad files for both the spatial and reference datasets, the spatial dataset should also have a column in its .obs that has the inferred cell types
+[] step 3:
+    step: Optional: if the user asks for a visualization of the inferred cell types then run UMAP on the raw transcriptomes from the spatial dataset, store them in the updated spatial adata file that has the inferred cell type annotations, and create a plot using the umap features and cell type labels.
+    expected artifacts: the spatial adata file updated with umap features and a plot of the cell types with those umap features in /data/figures
+
 """.strip()
