@@ -1,3 +1,18 @@
+---
+title: "Multi-Modal Ligand-Receptor Inference"
+keywords:
+  - "liana+"
+  - "multimodal"
+  - "cite-seq"
+  - "rna"
+  - "protein"
+  - "ligand-receptor"
+  - "min-max normalization"
+  - "rank aggregate"
+  - "dotplot"
+  - "metabolite-receptor"
+  - "metalinksdb"
+---
 # Multi-Modal Ligand-Receptor Inference
 
 This notebook shows how to 1. analyse single-cell cite-seq data; 2. how to infer metabolite-receptor interactions from transcriptomics data.

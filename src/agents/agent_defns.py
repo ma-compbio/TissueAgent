@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 
 from agents.agent_utils import file_retriever_tool
 from agents.planner_agent.prompt import PlannerPrompt
+from agents.planner_agent.tools import PlannerTools
 from agents.recruiter_agent.prompt import RecruiterPrompt
 from agents.manager_agent.prompt import ManagerPrompt
 from agents.evaluator_agent.prompt import EvaluatorPrompt
@@ -40,7 +41,7 @@ PlannerAgent = ReActAgent(
     name        = "Planner Agent",
     description = "",
     prompt      = PlannerPrompt,
-    tools       = [file_retriever_tool],
+    tools       = PlannerTools,
     model_ctor  = DefaultModelCtor,
 )
 
@@ -81,6 +82,7 @@ ReporterAgent = ReActAgent(
 )
 
 import agents.agent_registry.coding_agent.model as CodingAgent
+from agents.agent_registry.coding_agent.prompt import CodingAgentDescription
 from agents.agent_registry.searcher_agent.prompt import SearcherPrompt, SearcherDescription
 from agents.agent_registry.searcher_agent.tools import SearcherTools
 from agents.agent_registry.single_cell_agent.prompt import SingleCellPrompt, SingleCellDescription
@@ -95,7 +97,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
     CustomAgent(
         id          = "coding",
         name        = "Coding Agent",
-        description = CodingAgent.CodingAgentDescription,
+        description = CodingAgentDescription,
         ctor        = CodingAgent.create_coding_agent,
     ),
     ReActAgent(

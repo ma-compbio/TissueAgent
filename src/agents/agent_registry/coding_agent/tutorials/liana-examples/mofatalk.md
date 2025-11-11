@@ -1,3 +1,18 @@
+---
+title: "Intercellular Context Factorization with MOFA"
+keywords:
+  - "mofa"
+  - "intercellular"
+  - "ligand-receptor"
+  - "multi-view"
+  - "lrs_to_views"
+  - "factorization"
+  - "pbmcs"
+  - "ifn-beta"
+  - "decoupler"
+  - "enrichment"
+  - "variance explained"
+---
 # Intercellular Context Factorization with MOFA
 
 ## Background

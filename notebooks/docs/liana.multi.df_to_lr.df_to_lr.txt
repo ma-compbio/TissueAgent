@@ -1,0 +1,53 @@
+df_to_lr(adata, dea_df, groupby, stat_keys, resource_name='consensus', resource=None, interactions=None, groupby_pairs=None, layer=None, use_raw=None, expr_prop=0.1, min_cells=5, complex_col=None, return_all_lrs=False, source_labels=None, target_labels=None, lr_sep='^', verbose=False)
+
+Convert DEA results to ligand-receptor pairs.
+
+Parameters
+----------
+adata
+    Annotated data object.
+dea_df : pd.DataFrame
+    DEA results. Index must match adata.var_names
+groupby
+    Key to be used for grouping.
+stat_keys : list
+    List of statistics to be used for ligand-receptor pairs
+resource_name
+    Name of the resource to be used for ligand-receptor inference. See `li.rs.show_resources()` for available resources.
+resource
+    A pandas dataframe with [`ligand`, `receptor`] columns.
+    If provided will overrule the resource requested via `resource_name`
+interactions
+    List of tuples with ligand-receptor pairs `[(ligand, receptor), ...]` to be used for the analysis.
+    If passed, it will overrule the resource requested via `resource` and `resource_name`.
+layer
+    Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X.
+use_raw
+    Use raw attribute of adata if present.
+expr_prop
+    Minimum expression proportion for the ligands and receptors (+ their subunits) in the
+    corresponding cell identities. Set to 0 to return unfiltered results.
+min_cells
+    Minimum cells (per cell identity if grouped by `groupby`) to be considered for downstream analysis.
+complex_col : str, optional
+    Column in `dea_df` to use for complex expression. Default is None.
+    If None, will use mean expression ('expr') calculated per group in `groupby`.
+return_all_lrs
+    Bool whether to return all ligand-receptor pairs, or only those that surpass the `expr_prop`
+    threshold. Ligand-receptor pairs that do not pass the `expr_prop` threshold will be assigned
+    to the *worst* score of the ones that do. `False` by default.
+source_labels
+    List of labels to use as `source`, the rest are filtered out.
+
+target_labels
+    List of labels to use as `target`, the rest are filtered out.
+
+lr_sep
+    Separator to use when joining ligand and receptor names into interactions.
+
+verbose
+    Verbosity flag.
+
+Returns
+-------
+Returns a pd.DataFrame with joined ligand-receptor pairs and statistics.

@@ -1,3 +1,18 @@
+---
+title: "Steady-state Ligand-Receptor inference"
+keywords:
+  - "liana"
+  - "ligand-receptor"
+  - "cell-cell communication"
+  - "single-cell"
+  - "anndata"
+  - "scanpy"
+  - "rank aggregate"
+  - "cellphonedb"
+  - "visualization"
+  - "dotplot"
+  - "tileplot"
+---
 # Steady-state Ligand-Receptor inference
 
 `liana` provides different statistical methods to infer `ligand-receptor` interactions from single-cell transcriptomics data omics data using prior knowledge.

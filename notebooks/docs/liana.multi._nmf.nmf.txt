@@ -1,0 +1,29 @@
+nmf(adata: 'AnnData' = None, df: 'pd.DataFrame' = None, n_components: 'int or None' = None, k_range: 'range' = range(1, 11), use_raw: 'bool' = False, layer: 'str or None' = None, inplace: 'bool' = True, verbose: 'bool' = False, **kwargs)
+
+Fits NMF to an AnnData object.
+
+Parameters
+----------
+adata
+    Annotated data object.
+n_components : int, None
+    Number of components to use. If None, the number of components is estimated using the elbow method.
+k_range : range
+    Range of components to test. Default: range(1, 10).
+use_raw
+    Use raw attribute of adata if present.
+layer
+    Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X.
+inplace
+    Whether to store results in place, or else to return them.
+**kwargs : dict
+    Keyword arguments to pass to ``sklearn.decomposition.NMF``.
+
+Returns
+-------
+If inplace is True, it will add ``NMF_W`` and ``NMF_H`` to the ``adata.obsm`` and ``adata.varm``.
+If n_components is None, it will also add ``nfm_errors`` and ``nfm_rank`` to ``adata.uns``.
+
+If inplace is False, it will return ``W`` and ``H``, and if n_components is None, it will also return ``errors`` and ``n_components``.
+If n_components is None and inplace, ``errors`` and ``n_components`` will be assigned to ``adata.uns``.
+If ``df`` is provided, inplace is always False.

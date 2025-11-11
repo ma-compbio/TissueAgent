@@ -1,0 +1,25 @@
+estimate_metalinks(adata, resource, pd_net, t_net=None, x_name='metabolite', y_name='receptor', use_raw=True, layer=None, verbose=False, **kwargs)
+
+Estimate Metabolites from anndata object, and return a MuData object of metabolites and receptors.
+
+Parameters
+----------
+adata
+    Annotated data matrix.
+resource
+    Resource to use for ligand-receptor inference.
+pd_net
+    Metabolic production-degradation network to use.
+t_net
+    Transport set to use.
+x_name
+    Name of the metabolite modality.
+y_name
+    Name of the receptor modality. Must be present as a column in the resource.
+**kwargs
+    Additional arguments to pass to the decoupler-py functions.
+    Method-specific arguments are not supported.
+
+Returns
+-------
+A MuData object with metabolite & receptor assays.

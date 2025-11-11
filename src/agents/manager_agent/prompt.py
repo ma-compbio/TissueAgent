@@ -37,6 +37,12 @@ Task Instruction Guidelines
 - Trust subagents to persist until the task is completed rather than requiring step-by-step guidance.
 - Work with the information provided in the plan rather than adding supplementary guidance.
 
+Dataset Artifact Persistence
+- When a step produces a processed dataset, instruct the subagent to:
+  - save the dataset file under `dataset/` (relative to DATA_DIR), not in a temp location;
+  - use the format requested in the plan (e.g., .h5ad, .parquet) and a descriptive, deterministic filename reflecting the dataset and step;
+  - return the saved relative path(s) under DATA_DIR as the execution artifacts.
+
 Plan Adherence Guidelines
 - Work strictly within the constraints and instructions already present in the plan.
 - Do not add additional suggestions, recommendations, or instructions beyond what is explicitly stated in the plan.

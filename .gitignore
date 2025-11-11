@@ -11,5 +11,6 @@ temp/
 test/
 data/
 logs/
+eval/
 
 sessions/
