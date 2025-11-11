@@ -1,0 +1,36 @@
+template_id: CELL_ANNOTATION
+task: Annotating cells in a spatial transcriptomics dataset
+version: "1.0"
+last_updated: 2025-11-11
+tags: [spatial, cell type annotation, inference]
+
+inputs:
+  - spatial AnnData(.h5ad)
+  - reference AnnData(.h5ad) to do cell type transfer
+
+outputs:
+  - updated spatial AnnData(.h5ad) object with cell type columns in .obs
+  - .png of umap features of spatial AnnData(.h5ad) labeled by inferred cell types
+
+# one-line sketch for the planner's lookup
+step_sketch: >
+  find reference dataset → use harmony transfer to infer cell types in spatial dataset → run umap on spatial dataset → create plot of umap features labeled by inferred cell type
+# eval: ["file_exists(spatial_scatterplot.png)", "n_points>0", "n_nan==0", "aspect≈1"]
+
+# default params the Manager/Executor may adapt
+defaults:
+  # coord_priority: ["obsm:spatial", "obs:x,y"]
+  # color_key_preference: ["cluster", "cell_type", "sample_id"]
+  # figure:
+  #   size_px: [2400, 2400]   
+  #   point_size: 3
+  #   alpha: 0.7
+
+# checklist lines the Planner can adapt/emit (≤160 chars each)
+checklist:
+  # - "Locate coordinates (.obsm['spatial'] or obs['x','y'])"
+  # - ""
+  # - "Choose color field (cluster/cell_type/gene); record choice in meta.json"
+  # - "Render scatter (equal aspect, axis off); save spatial_points.png + thumb"
+  # - "Export spatial_points.csv with [x,y,<color_key>,sample_id?]"
+  # - "Run sanity checks (n>0, no NaN, aspect~1); write viz_checks.json"
