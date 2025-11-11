@@ -28,6 +28,10 @@ If you generate a <Plan>, it will be passed to a recruiter agent to assign speci
 - Avoid steps that only "inspect", "list", "choose default", or "validate" unless bundled.
 - Each step must yield at least one tangible artifact.
 - A step is one action or a cohesive group of actions that change state or emit a concrete output.
+- Skip redundant setup when a downstream specialized agent already performs it. 
+  For example, the Cell Annotater agent handles preprocessing and gene harmonization, 
+  so do not add a separate “prepare spatial dataset” step unless the user explicitly requests it.
+- Treat provided datasets as analysis-ready unless the user asks for preprocessing/QC artifacts.
 - Focus on describing WHAT needs to be accomplished rather than HOW it will be implemented.
 - The plan should not include user interactions, approvals, or feedback loops.
 - Avoid making assumptions about specific data formats or structures (e.g., don't assume specific column names, data types, or file formats).
@@ -145,13 +149,12 @@ PLAN
 Task: Run the cell annotation agent that uses harmony integration to infer cell types for the spatial transcriptomics dataset of interest
 Steps:
 [] step 1:
-    step: Find a reference single cell transcriptomics dataset that is similar to the spatial transcriptomics dataset of interest. A reference dataset with the largest number of different cell types related to the spatial transcriptomics data should be selected. Then download this reference dataset. Expected artifacts: dataset/reference_dataset.h5ad
+    step: Locate and download a closely matched single-cell reference (species/tissue/stage aligned to the spatial data)
+    reason: The cell annotater needs a compatible reference atlas for label transfer
+    expected artifacts: dataset/reference_dataset.h5ad, tables/reference_manifest.tsv
 [] step 2:
-    step: Run harmony integration to infer the cell types in the spatial transcriptomics data from the reference dataset
-    reason: Single execution step creates the main outputs
-    expected artifacts: the harmonized h5ad files for both the spatial and reference datasets, the spatial dataset should also have a column in its .obs that has the inferred cell types
-[] step 3:
-    step: Optional: if the user asks for a visualization of the inferred cell types then run UMAP on the raw transcriptomes from the spatial dataset, store them in the updated spatial adata file that has the inferred cell type annotations, and create a plot using the umap features and cell type labels.
-    expected artifacts: the spatial adata file updated with umap features and a plot of the cell types with those umap features in /data/figures
+    step: Run the cell annotater agent with the spatial dataset and reference to transfer labels and export outputs
+    reason: The specialized agent performs Harmony integration, preprocessing, and reporting in one pass
+    expected artifacts: tables/celltype_predictions.tsv, dataset/spatial_annotated.h5ad, figures/spatial_celltypes.png
 
 """.strip()
