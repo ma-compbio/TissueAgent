@@ -203,153 +203,19 @@ def harmony_transfer_tool(
         mlp.fit(X_ref_scaled, y_ref)
         
         # Predict cell types for spatial data
-        predictions = mlp.predict(X_spatial_scaled)
+        predicted_labels = mlp.predict(X_spatial_scaled)
         prediction_probs = mlp.predict_proba(X_spatial_scaled)
         
         # Get prediction confidence (max probability)
         prediction_confidence = np.max(prediction_probs, axis=1)
         
-        # # # Get predicted class names
-        predicted_labels = predictions
-        
-        # Save results to CSV
-        results_df = pd.DataFrame({
-            'cell_id': adata_spatial.obs_names,
-            'predicted_cell_type': predictions,
-            'prediction_confidence': prediction_confidence,
-        })
-
-
-        # # Save CSV
-        csv_path = output_dir_path / "harmony_transferred_labels.csv"
-        results_df.to_csv(csv_path, index=False)
-
-        # Create standardized TSV outputs
-        labels_tsv_path = output_dir_path / "labels.tsv"
-        labels_tsv_path.parent.mkdir(parents=True, exist_ok=True)
-        labels_df = results_df.rename(
-            columns={"cell_id": "spot_id", "predicted_cell_type": "label"}
-        )[["spot_id", "label"]]
-        labels_df.to_csv(labels_tsv_path, sep="\t", index=False)
-
-        tables_dir = DATA_DIR / "tables"
-        tables_dir.mkdir(parents=True, exist_ok=True)
-        confidence_tsv_path = tables_dir / "label_confidence.tsv"
-        confidence_df = results_df.rename(
-            columns={"cell_id": "spot_id", "prediction_confidence": "confidence"}
-        )[["spot_id", "confidence"]]
-        confidence_df.to_csv(confidence_tsv_path, sep="\t", index=False)
-
         # # # Add predictions to spatial AnnData and save
-        adata_spatial.obs['harmony_predicted_cell_type'] = predictions
+        adata_spatial.obs['harmony_predicted_cell_type'] = predicted_labels
         adata_spatial.obs['harmony_prediction_confidence'] = prediction_confidence
         adata_spatial.obs['label'] = adata_spatial.obs['harmony_predicted_cell_type']
-        
-        spatial_output_path = output_dir_path / "spatial_with_harmony_labels.h5ad"
-        adata_spatial.write(spatial_output_path, compression="gzip")
 
         annotated_output_path = output_dir_path / "annotated_object.h5ad"
         adata_spatial.write(annotated_output_path, compression="gzip")
-        
-        # Save reference with Harmony-corrected PCA
-        reference_output_path = output_dir_path / "reference_with_harmony_pca.h5ad"
-        adata_ref.obsm['X_pca_harmony'] = X_ref_pca
-        adata_ref.write(reference_output_path, compression="gzip")
-
-        # Generate spatial visualization
-        figures_dir = DATA_DIR / "figures"
-        figures_dir.mkdir(parents=True, exist_ok=True)
-        figure_path = figures_dir / "spatial_labels.png"
-
-        plot_labels = adata_spatial.obs['label'].astype(str)
-        coords = adata_spatial.obsm.get("spatial")
-        coords_array = None
-        if coords is not None:
-            coords_array = np.asarray(coords)
-
-        fig = None
-        if coords_array is not None and coords_array.shape[1] >= 2:
-            fig, ax = plt.subplots(figsize=(6, 6))
-            categories = plot_labels.astype("category").cat.categories.tolist()
-            palette = plt.get_cmap("tab20")
-            palette_colors = [
-                palette(i / max(1, len(categories) - 1)) for i in range(len(categories))
-            ]
-            color_map = dict(zip(categories, palette_colors))
-
-            max_points = 100000
-            if adata_spatial.n_obs > max_points:
-                sampled_indices = np.random.choice(
-                    adata_spatial.n_obs, size=max_points, replace=False
-                )
-                sample_coords = coords_array[sampled_indices]
-                sample_labels = plot_labels.iloc[sampled_indices]
-            else:
-                sample_coords = coords_array
-                sample_labels = plot_labels
-
-            for label in sample_labels.astype("category").cat.categories.tolist():
-                mask = sample_labels == label
-                if mask.sum() == 0:
-                    continue
-                ax.scatter(
-                    sample_coords[mask, 0],
-                    sample_coords[mask, 1],
-                    s=5,
-                    alpha=0.5,
-                    label=label,
-                    color=color_map.get(label, "#808080"),
-                )
-            ax.set_xlabel("spatial_x")
-            ax.set_ylabel("spatial_y")
-            ax.set_title("Spatial labels (sampled)")
-            ax.legend(markerscale=3, bbox_to_anchor=(1.05, 1), loc="upper left", fontsize="small")
-        else:
-            embedding_key = None
-            for key in ("X_umap", "X_pca", "X_tsne"):
-                if key in adata_spatial.obsm_keys():
-                    embedding_key = key
-                    break
-            if embedding_key is not None:
-                emb = adata_spatial.obsm[embedding_key]
-                fig, ax = plt.subplots(figsize=(6, 6))
-                categories = plot_labels.astype("category").cat.categories.tolist()
-                palette = plt.get_cmap("tab20")
-                palette_colors = [
-                    palette(i / max(1, len(categories) - 1)) for i in range(len(categories))
-                ]
-                color_map = dict(zip(categories, palette_colors))
-                for label in categories:
-                    mask = plot_labels == label
-                    if mask.sum() == 0:
-                        continue
-                    ax.scatter(
-                        emb[mask, 0],
-                        emb[mask, 1],
-                        s=5,
-                        alpha=0.5,
-                        label=label,
-                        color=color_map.get(label, "#808080"),
-                    )
-                ax.set_title(f"{embedding_key[2:].upper()} labels")
-                ax.set_xlabel("component_1")
-                ax.set_ylabel("component_2")
-                ax.legend(markerscale=3, bbox_to_anchor=(1.05, 1), loc="upper left", fontsize="small")
-            else:
-                fig, ax = plt.subplots(figsize=(6, 3))
-                ax.text(
-                    0.5,
-                    0.5,
-                    "No spatial/embedding coordinates available for plotting.",
-                    ha="center",
-                    va="center",
-                )
-                ax.axis("off")
-
-        if fig is not None:
-            fig.tight_layout()
-            fig.savefig(figure_path, dpi=200, bbox_inches="tight")
-            plt.close(fig)
 
         # Aggregate statistics for reporting
         cell_type_counts = pd.Series(predicted_labels).value_counts()
@@ -376,26 +242,14 @@ def harmony_transfer_tool(
             },
             "runtime": {
                 "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "library_versions": {
-                    "scanpy": sc.__version__,
-                    "anndata": ad.__version__,
-                    "pandas": pd.__version__,
-                    "numpy": np.__version__,
-                    "matplotlib": matplotlib.__version__,
-                },
+
             },
             "inputs": {
                 "spatial_anndata_path": _relative_to_data_dir(spatial_path),
                 "reference_anndata_path": _relative_to_data_dir(reference_path),
             },
             "outputs": {
-                "labels_csv": _relative_to_data_dir(csv_path),
-                "labels_tsv": _relative_to_data_dir(labels_tsv_path),
-                "label_confidence_tsv": _relative_to_data_dir(confidence_tsv_path),
-                "spatial_annotated_h5ad": _relative_to_data_dir(spatial_output_path),
                 "annotated_object_h5ad": _relative_to_data_dir(annotated_output_path),
-                "reference_harmony_h5ad": _relative_to_data_dir(reference_output_path),
-                "spatial_figure_png": _relative_to_data_dir(figure_path),
             },
             "summary": {
                 "n_cells_transferred": int(len(predicted_labels)),
@@ -410,13 +264,7 @@ def harmony_transfer_tool(
         return {
             "status": "success",
             "output_dir": _relative_to_data_dir(output_dir_path),
-            "transferred_labels_csv": _relative_to_data_dir(csv_path),
-            "spatial_annotated_h5ad": _relative_to_data_dir(spatial_output_path),
-            "reference_harmony_h5ad": _relative_to_data_dir(reference_output_path),
-            "labels_tsv": _relative_to_data_dir(labels_tsv_path),
             "annotated_object_h5ad": _relative_to_data_dir(annotated_output_path),
-            "label_confidence_tsv": _relative_to_data_dir(confidence_tsv_path),
-            "spatial_figure_png": _relative_to_data_dir(figure_path),
             "run_meta_json": _relative_to_data_dir(meta_path),
             "n_cells_transferred": len(predicted_labels),
             "n_unique_cell_types": len(cell_type_counts),
@@ -437,7 +285,6 @@ def _preprocess_dataset(
     min_cells: int,
     target_sum: float,
     n_top_genes: int,
-    dataset_name: str,
     percent_top = (50,100,200)
 ) -> sc.AnnData:
     """Preprocess a single dataset: filter, normalize, log transform, select HVGs."""
