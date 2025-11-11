@@ -351,6 +351,9 @@ def harmony_transfer_tool(
             fig.savefig(figure_path, dpi=200, bbox_inches="tight")
             plt.close(fig)
 
+        # Aggregate statistics for reporting
+        cell_type_counts = pd.Series(predicted_labels).value_counts()
+
         # Write run metadata
         logs_dir = DATA_DIR / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
@@ -403,10 +406,7 @@ def harmony_transfer_tool(
         }
         with meta_path.open("w", encoding="utf-8") as fh:
             json.dump(metadata, fh, indent=2)
-        
-        # Statistics
-        cell_type_counts = pd.Series(predicted_labels).value_counts()
-        
+
         return {
             "status": "success",
             "output_dir": _relative_to_data_dir(output_dir_path),
