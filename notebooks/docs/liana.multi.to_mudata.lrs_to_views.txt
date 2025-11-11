@@ -1,0 +1,60 @@
+lrs_to_views(adata: 'AnnData', score_key: 'str or None' = None, inverse_fun: 'callable' = <function DefaultValues.inverse_fun at 0x127b427a0>, obs_keys: 'list or None' = None, lr_prop: 'float' = 0.5, lr_fill: 'np.nan' = nan, lrs_per_view: 'int' = 20, lrs_per_sample: 'int' = 10, samples_per_view: 'int' = 3, min_variance: 'int' = 0, min_var_nbatches=1, batch_key=None, lr_sep: 'str' = '^', cell_sep: 'str' = '&', var_sep: 'str' = ':', uns_key: 'str' = 'liana_res', sample_key: 'str' = 'sample', source_key: 'str' = 'source', target_key: 'str' = 'target', ligand_key: 'str' = 'ligand_complex', receptor_key: 'str' = 'receptor_complex', verbose: 'bool' = False)
+
+Converts a LIANA result to a MuData object with views that represent an aggregate for each entity in `adata.obs[groupby]`.
+
+Parameters
+----------
+adata
+    Annotated data object.
+score_key
+    Column name of the score in `liana_res`. If None, the score is inferred from the method.
+inverse_fun
+    Function that is applied to the scores before building the views. Default is `lambda x: 1 - x` which is used to invert the scores
+    reflect probabilities (e.g. magnitude_rank), i.e. such for which lower values reflect higher relevance.
+    This is handled automatically for the scores in liana.
+obs_keys
+    List of keys in `adata.obs` that should be included in the MuData object.
+    These columns should correspond to the number of samples in `adata.obs[sample_key]`.
+lr_prop
+    Reflects the minimum required proportion of samples for an interaction to be considered for building the views.
+lr_fill
+    Value to fill in for interactions that are not present in a view. Default is `np.nan`.
+lrs_per_sample
+    Reflects the minimum required number of interactions in a sample to be considered when building a specific view.
+lrs_per_view
+    Reflects the minimum required number of interactions in a view to be considered for building the views.
+samples_per_view
+    Reflects the minimum required samples to keep a view.
+min_variance
+    Reflects the minimum required variance across samples for each interaction in each view.
+    NaNs are ignored when computing the variance.
+batch_key
+    Key in `adata.obs` that represents the batch information. Used solely when computing the variance.
+    If batch_key is not `None`, the variance is computed per batch, and the ``
+min_var_nbatches
+    Reflect the minimum number of batches (>=) that must have a variance above `min_variance` for an interaction to be included in the view.
+lr_sep
+    Separator to use when joining ligand and receptor names into interactions.
+
+cell_sep
+    Separator to use for the cell names in the views.
+var_sep
+    Separator to use for the variable names in the views.
+uns_key
+    Key in `adata.uns` that contains the LIANA results. Default is `'liana_res'`.
+sample_key
+    key in `adata.obs` to use for grouping by sample or context.
+source_key
+    Column name of the sender/source cell types in `liana_res`.
+target_key
+    Column name of the receiver/target cell types in `liana_res`.
+ligand_key
+    Column name of the ligand in `liana_res`.
+receptor_key
+    Column name of the receptor in `liana_res`.
+verbose
+    Verbosity flag.
+
+Returns
+-------
+Returns a MuData object with views that represent an aggregate for each entity in `adata.obs[groupby]`.

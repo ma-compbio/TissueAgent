@@ -1,0 +1,17 @@
+get_factor_scores(adata: 'AnnData | MuData', obsm_key: 'str' = None, obs_keys: 'str | None' = None)
+
+Extract factor scores from an AnnData object.
+
+Parameters
+----------
+adata
+    Annotated data object.
+obsm_key: str
+    Key to use when extracting factor scores from `adata.obsm`
+obs_keys: list
+    List of keys to use when extracting metadata from `adata.obs`
+    If None, no metadata is extracted. Default is None.
+
+Returns
+-------
+Returns a pandas DataFrame with the factor scores.

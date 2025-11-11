@@ -1,3 +1,18 @@
+---
+title: "Learning Spatial Relationships with MISTy"
+keywords:
+  - "liana"
+  - "misty"
+  - "spatial modeling"
+  - "views"
+  - "juxta"
+  - "para"
+  - "random forest"
+  - "linear model"
+  - "mudata"
+  - "progeny"
+  - "interactions"
+---
 # Learning Spatial Relationships with MISTy
 
 Here, we show how to use LIANA's implementation of [MISTy](https://github.com/saezlab/mistyR), a framework presented in [Tanevski et al., 2022](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02663-5).

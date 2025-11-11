@@ -1,0 +1,31 @@
+get_metalinks(db_path: str | None = None, types: list[str] | None = None, cell_location: list[str] | None = None, tissue_location: list[str] | None = None, biospecimen_location: list[str] | None = None, disease: list[str] | None = None, pathway: list[str] | None = None, hmdb_ids: list[str] | None = None, uniprot_ids: list[str] | None = None, source: list[str] | None = None)
+
+Fetches edges of metabolite-proteins with specified annotations, applying filters if they are not None.
+
+Allows filtering by lists of hmdb and uniprot IDs and avoids duplicate column names, and returns the results as a pandas DataFrame.
+Filters are applied using INNER JOINs and WHERE clauses - i.e. the results are the intersection of the filters.
+
+Parameters
+----------
+db_path
+    Path to the SQLite database file. If None, the database will be downloaded to the current working directory.
+types
+    Desired edge types. Options are: ['lr', 'pd'], where 'lr' stands for 'ligand-receptor' and 'pd' stands for 'production-degradation'.
+cell_location
+    Desired metabolite cell locations.
+tissue_location
+    Desired metabolite tissue locations.
+biospecimen_location
+    Desired metabolite biospecimen locations.
+disease
+    Desired metabolite diseases.
+pathway
+    Desired metabolite pathways.
+hmdb_ids
+    Desired HMDB IDs.
+uniprot_ids
+    Desired UniProt IDs.
+
+Returns
+-------
+A pandas DataFrame containing the query results without the source column.

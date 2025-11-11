@@ -46,4 +46,8 @@ dependencies = [
     "anndata>=0.11.4",
     "liana>=1.6.1",
     "decoupler>=2.1.1",
+    "notebook>=7.4.7",
+    "marimo>=0.17.2",
+    "ggplot>=0.11.5",
+    "plotnine>=0.15.0",
 ]

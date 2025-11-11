@@ -1,0 +1,26 @@
+contributions(misty=None, target_metrics=None, view_names: list = None, filter_fun: <built-in function callable> = None, aggregate_fun: <built-in function callable> = None, figure_size: tuple = (5, 5), return_fig: bool = True)
+
+Plot view contributions per target.
+
+Parameters
+----------
+misty
+    MistyData object with modelling results
+
+target_metrics
+    A target_metrics DataFrame
+view_names
+    A list of view names to plot
+aggregate_fun
+    A function used to aggregate the results to be plotted.
+
+figure_size
+    Figure x,y size
+
+return_fig
+    `bool` whether to return the fig object.
+
+
+Returns
+-------
+A plotnine plot.

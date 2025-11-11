@@ -1,3 +1,17 @@
+---
+title: "MOFAcellular - Multicellular Factor Analysis"
+keywords:
+  - "mofa"
+  - "mofa+"
+  - "multicellular"
+  - "multi-view"
+  - "pseudobulk"
+  - "mudata"
+  - "pbmcs"
+  - "latent factors"
+  - "decoupler"
+  - "variance explained"
+---
 # MOFAcellular - Multicellular Factor Analysis
 
 ## Background

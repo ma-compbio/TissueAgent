@@ -1,3 +1,18 @@
+---
+title: "Prior Knowledge"
+keywords:
+  - "liana+"
+  - "prior knowledge"
+  - "ligand-receptor resources"
+  - "omnipath"
+  - "homology mapping"
+  - "hcop"
+  - "progeny"
+  - "decoupler"
+  - "disease annotations"
+  - "metabolite-receptor"
+  - "metalinksdb"
+---
 # Prior Knowledge
 
 LIANA+ (typically) relies heavily on prior knowledge to infer intercellular communication and the intracellular signaling pathways that are activated in response to communication. This notebook provides a brief overview of the prior knowledge typically used by LIANA+. 

@@ -1,3 +1,18 @@
+---
+title: "Intercellular Context Factorization with Tensor-Cell2cell"
+keywords:
+  - "liana"
+  - "tensor-cell2cell"
+  - "tensor decomposition"
+  - "parafac"
+  - "multi-context"
+  - "pbmcs"
+  - "ifn-beta"
+  - "rank aggregate"
+  - "enrichment"
+  - "progeny"
+  - "decoupler"
+---
 # Intercellular Context Factorization with Tensor-Cell2cell
 
 <a href="https://colab.research.google.com/github/saezlab/liana-py/blob/main/docs/source/notebooks/liana_c2c.ipynb">

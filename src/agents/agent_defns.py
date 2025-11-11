@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 
 from agents.agent_utils import file_retriever_tool
 from agents.planner_agent.prompt import PlannerPrompt
+from agents.planner_agent.tools import PlannerTools
 from agents.recruiter_agent.prompt import RecruiterPrompt
 from agents.manager_agent.prompt import ManagerPrompt
 from agents.evaluator_agent.prompt import EvaluatorPrompt
@@ -39,7 +40,7 @@ PlannerAgent = ReActAgent(
     name        = "Planner Agent",
     description = "",
     prompt      = PlannerPrompt,
-    tools       = [file_retriever_tool],
+    tools       = PlannerTools,
     model_ctor  = DefaultModelCtor,
 )
 

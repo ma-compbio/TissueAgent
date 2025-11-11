@@ -1,3 +1,18 @@
+---
+title: "Integrating Multi-Modal Spatially-Resolved Technologies with LIANA+"
+keywords:
+  - "liana+"
+  - "spatial multi-omics"
+  - "maldi-msi"
+  - "visium"
+  - "dopamine"
+  - "misty"
+  - "local metrics"
+  - "interpolation"
+  - "hcop"
+  - "metabolite-receptor"
+  - "striatum"
+---
 # Integrating Multi-Modal Spatially-Resolved Technologies with LIANA+
 
 Here, we apply of LIANA+ on a spatially-resolved metabolite-transcriptome dataset from a recent murine Parkinson’s disease model [Vicari et al., 2023](https://www.nature.com/articles/s41587-023-01937-y). 

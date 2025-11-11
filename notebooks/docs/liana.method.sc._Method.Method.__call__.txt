@@ -1,0 +1,65 @@
+Method.__call__(adata: 'an.AnnData | MuData', groupby: 'str', resource_name: 'str' = 'consensus', expr_prop: 'float' = 0.1, min_cells: 'int' = 5, groupby_pairs: 'DataFrame | None' = None, base: 'float' = np.float64(2.718281828459045), supp_columns: 'list | None' = None, return_all_lrs: 'bool' = False, key_added: 'str' = 'liana_res', use_raw: 'bool | None' = True, layer: 'str | None' = None, de_method: 'str' = 't-test', n_perms: 'int' = 1000, seed: 'int' = 1337, n_jobs: 'int' = 1, resource: 'DataFrame | None' = None, interactions: 'list | None' = None, mdata_kwargs: 'dict | None' = None, inplace: 'bool' = True, verbose: 'bool | None' = False)
+
+Run a ligand-receptor method.
+
+Parameters
+----------
+adata
+    Annotated data object.
+groupby
+    Key to be used for grouping.
+resource_name
+    Name of the resource to be used for ligand-receptor inference. See `li.rs.show_resources()` for available resources.
+expr_prop
+    Minimum expression proportion for the ligands and receptors (+ their subunits) in the
+    corresponding cell identities. Set to 0 to return unfiltered results.
+min_cells
+    Minimum cells (per cell identity if grouped by `groupby`) to be considered for downstream analysis.
+groupby_pairs
+    A DataFrame with columns `source` and `target` to be used to subset the possible combinations of interacting cell types.
+    If None, all possible combinations are used.
+base
+    Exponent base used to reverse the log-transformation of the matrix. Relevant only for the `logfc` method.
+supp_columns
+    Additional columns to be added from any of the methods implemented in liana,
+    or any of the columns returned by `scanpy.tl.rank_genes_groups`, each starting with ligand_* or receptor_*.
+    For example, `['ligand_pvals', 'receptor_pvals']`. None by default.
+return_all_lrs
+    Bool whether to return all ligand-receptor pairs, or only those that surpass the `expr_prop`
+    threshold. Ligand-receptor pairs that do not pass the `expr_prop` threshold will be assigned
+    to the *worst* score of the ones that do. `False` by default.
+key_added
+    Key under which the results will be stored in `adata.uns` if `inplace` is True.
+use_raw
+    Use raw attribute of adata if present.
+layer
+    Layer in anndata.AnnData.layers to use. If None, use anndata.AnnData.X.
+de_method
+    Differential expression method. `scanpy.tl.rank_genes_groups` is used to rank genes
+    according to 1vsRest. The default method is 't-test'.
+verbose
+    Verbosity flag.
+n_perms
+    Number of permutations for the permutation test. Relevant only for permutation-based methods
+    (e.g., `CellPhoneDB`). If `None` is passed, no permutation testing is performed.
+seed
+    Random seed for reproducibility.
+n_jobs
+    Number of jobs to run in parallel.
+resource
+    A pandas dataframe with [`ligand`, `receptor`] columns.
+    If provided will overrule the resource requested via `resource_name`
+interactions
+    List of tuples with ligand-receptor pairs `[(ligand, receptor), ...]` to be used for the analysis.
+    If passed, it will overrule the resource requested via `resource` and `resource_name`.
+mdata_kwargs
+    Keyword arguments to be passed to `li.fun.mdata_to_anndata` if `adata` is an instance of `MuData`.
+    If an AnnData object is passed, these arguments are ignored.
+inplace
+    Whether to store results in place, or else to return them.
+
+Returns
+-------
+    If ``inplace = False``, returns a `DataFrame` with ligand-receptor results
+    Otherwise, modifies the ``adata`` object with the following key:
+    - :attr:`anndata.AnnData.uns` ``[`key_added`]`` with the aforementioned DataFrame
