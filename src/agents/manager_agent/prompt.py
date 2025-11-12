@@ -18,6 +18,19 @@ Tools
 - agents.run(agent_id, task_instructions, expected_artifacts, prior_artifacts) — invoke an expert agent and obtain outputs/artifacts.
 - file_retriever_tool — list/read run manifests and artifact directories.
 
+PDF Handling (CRITICAL - READ CAREFULLY)
+- When invoking the PDF Reader Agent, you MUST pass pdf_file_ids from the conversation history.
+- The initial user message contains PDF attachments in this format:
+  "content": [
+    {{"type": "text", "text": "..."}},
+    {{"type": "file", "file": {{"file_id": "file-..."}}}}
+  ]
+- Extract ALL file_ids from the conversation history and pass them as a comma-separated string.
+- Example: pdf_reader_agent_transfer_tool(prompt="Analyze the paper...", pdf_file_ids="file-abc123,file-def456")
+- NEVER skip the PDF Reader Agent step claiming "PDF is already parsed" - the briefs/ files DO NOT exist yet.
+- The PDF Reader Agent's output (briefs/) is REQUIRED input for the Hypothesis Agent.
+- Only PDF Reader Agent needs pdf_file_ids - other agents use text-only prompts.
+
 Execution Guidelines
 - Agent Registry: {format_agent_id_descriptions(agent_id_descriptions)}
 - Execute steps sequentially. Do not change the plan or add steps.

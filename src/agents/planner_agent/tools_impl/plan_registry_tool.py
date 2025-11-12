@@ -7,6 +7,9 @@ import yaml
 from pydantic import BaseModel, Field
 from langchain.tools import StructuredTool
 
+# Get the default registry directory relative to this file
+DEFAULT_REGISTRY_DIR = Path(__file__).parent.parent / "plan_registry"
+
 
 # ---------- internals ----------
 
@@ -40,12 +43,14 @@ def _make_index(templates: List[Dict[str, Any]]) -> str:
 
 class PlanRegistryArgs(BaseModel):
     registry_dir: str = Field(
-        default="plan_registry",
+        default=str(DEFAULT_REGISTRY_DIR),
         description="Directory containing YAML plan templates."
     )
 
-def _plan_registry_tool(*, registry_dir: str = "plan_registry") -> str:
+def _plan_registry_tool(*, registry_dir: str = None) -> str:
     """Return a compact, human-readable index of plan templates."""
+    if registry_dir is None:
+        registry_dir = str(DEFAULT_REGISTRY_DIR)
     templates = _load_templates(Path(registry_dir))
     return _make_index(templates) if templates else ""
 

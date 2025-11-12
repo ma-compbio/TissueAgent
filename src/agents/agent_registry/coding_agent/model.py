@@ -99,6 +99,8 @@ def create_coding_agent(state_queue: Queue):
         repl = state.get("repl")
         if repl is None:
             repl = PythonREPL()
+            # Keep globals/locals shared so imports & defs stay visible inside functions.
+            repl.locals = repl.globals
             tools_context = {tool.name: tool.func for tool in tools}
             initial_context = {**tools_context, "DATA_DIR": DATA_DIR, "NOTEBOOK_DIR": NOTEBOOK_DIR}
 

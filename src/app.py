@@ -47,6 +47,19 @@ def _file_to_data_url(file_path: Path) -> str:
     b64 = base64.b64encode(file_path.read_bytes()).decode("utf-8")
     return f"data:{mime};base64,{b64}"
 
+def _upload_pdf_to_openai(pdf_path: Path) -> str:
+    """Upload PDF to OpenAI Files API and return file_id."""
+    try:
+        file = openai.files.create(
+            file=open(pdf_path, "rb"),
+            purpose="user_data"
+        )
+        logging.info(f"Uploaded PDF {pdf_path.name} to OpenAI, file_id: {file.id}")
+        return file.id
+    except Exception as e:
+        logging.error(f"Failed to upload PDF {pdf_path.name}: {e}")
+        raise
+
 def _next_available_path(directory: Path, filename: str) -> Path:
     """Return a unique path inside directory by suffixing an index if needed."""
     directory.mkdir(parents=True, exist_ok=True)
@@ -161,18 +174,17 @@ with st.sidebar:
     )
 
     if pdf_files:
+        # Build lookup of existing PDFs with full metadata (not just path)
         existing_pdfs = {
-            pdf_info["name"]: pdf_info["path"]
+            pdf_info["name"]: pdf_info
             for pdf_info in st.session_state.get("uploaded_pdfs", [])
             if Path(pdf_info["path"]).exists()
         }
         saved_pdfs = []
         for pdf in pdf_files:
             if pdf.name in existing_pdfs:
-                saved_pdfs.append({
-                    "name": pdf.name,
-                    "path": existing_pdfs[pdf.name],
-                })
+                # Preserve existing PDF entry with all metadata (file_id, attached_to_conversation)
+                saved_pdfs.append(existing_pdfs[pdf.name])
                 continue
 
             pdf_path = _next_available_path(PDF_UPLOADS_DIR, pdf.name)
@@ -186,7 +198,11 @@ with st.sidebar:
 
     if st.session_state.get("uploaded_pdfs"):
         pdf_names = ", ".join(pdf["name"] for pdf in st.session_state["uploaded_pdfs"])
-        st.caption(f"Saved PDFs: {pdf_names}")
+        st.caption(f"📄 Saved PDFs: {pdf_names}")
+        # Show upload status for each PDF
+        for pdf in st.session_state["uploaded_pdfs"]:
+            if "file_id" in pdf:
+                st.caption(f"✅ {pdf['name']} ready (OpenAI file_id: {pdf['file_id'][:12]}...)")
     else:
         st.caption("No PDFs uploaded yet.")
 
@@ -317,7 +333,7 @@ state_queue = st.session_state["state_queue"]
 if "agent" not in st.session_state:
     bind_retry_fn = lambda model: model.with_retry(
         retry_if_exception_type=(openai.RateLimitError, anthropic.RateLimitError),
-        stop_after_attempt = 3,
+        stop_after_attempt = 6,
     )
     graph = create_tissueagent_graph(
         state_queue,
@@ -348,11 +364,32 @@ prompt = st.chat_input("Ask the agent:")
 if prompt:
     content_parts = [{"type": "text", "text": prompt}]
 
+    # Add image attachments
     for f in st.session_state.get("pending_images", []):
         content_parts.append({  # type: ignore
             "type": "image_url",
             "image_url": {"url": _file_to_data_url(Path(f["path"]))}
         })
+
+    # Add PDF attachments (only on first message after upload to avoid size limit)
+    for pdf in st.session_state.get("uploaded_pdfs", []):
+        # Check if already uploaded (has file_id cached)
+        if "file_id" not in pdf:
+            try:
+                file_id = _upload_pdf_to_openai(Path(pdf["path"]))
+                pdf["file_id"] = file_id  # Cache the file_id
+                pdf["attached_to_conversation"] = False  # Mark as not yet attached
+            except Exception as e:
+                st.error(f"Failed to upload PDF {pdf['name']}: {e}")
+                continue
+
+        # Only attach PDF to first message after upload to avoid 32MB cumulative limit
+        if not pdf.get("attached_to_conversation", False):
+            content_parts.append({  # type: ignore
+                "type": "file",
+                "file": {"file_id": pdf["file_id"]}
+            })
+            pdf["attached_to_conversation"] = True  # Mark as attached
 
     user_message = HumanMessage(content=content_parts)  # type: ignore
     log_message(user_message)

@@ -139,14 +139,46 @@ def create_agent_invocation_tool(
     agent_node_id: str,
     agent_name: str,
     agent: CompiledStateGraph,
-    state_queue: Queue
+    state_queue: Queue,
+    supports_pdf: bool = False
 ):
-    def agent_invocation_tool(prompt: str) -> str:
-        logging.info(f"Invoking agent `{agent_node_id}`")
-        final_state = agent.invoke({"messages": [HumanMessage(prompt)]})
-        state_queue.put((agent_name, final_state))
-        logging.info(f"Finished invoking agent `{agent_node_id}`")
-        return final_state["messages"][-1].content
+    if supports_pdf:
+        def agent_invocation_tool(prompt: str, pdf_file_ids: str = "") -> str:
+            """
+            Invoke agent with optional PDF file IDs.
+
+            Args:
+                prompt: Task instructions for the agent
+                pdf_file_ids: Comma-separated list of OpenAI file IDs (e.g. "file-abc123,file-def456")
+
+            Returns:
+                Agent's response
+            """
+            logging.info(f"Invoking PDF-capable agent `{agent_node_id}`")
+
+            # Build multimodal content if PDFs provided
+            content = [{"type": "text", "text": prompt}]
+
+            if pdf_file_ids and pdf_file_ids.strip():
+                file_ids = [fid.strip() for fid in pdf_file_ids.split(",") if fid.strip()]
+                logging.info(f"Attaching {len(file_ids)} PDF file(s) to agent invocation")
+                for file_id in file_ids:
+                    content.append({
+                        "type": "file",
+                        "file": {"file_id": file_id}
+                    })
+
+            final_state = agent.invoke({"messages": [HumanMessage(content=content)]})
+            state_queue.put((agent_name, final_state))
+            logging.info(f"Finished invoking PDF-capable agent `{agent_node_id}`")
+            return final_state["messages"][-1].content
+    else:
+        def agent_invocation_tool(prompt: str) -> str:
+            logging.info(f"Invoking agent `{agent_node_id}`")
+            final_state = agent.invoke({"messages": [HumanMessage(prompt)]})
+            state_queue.put((agent_name, final_state))
+            logging.info(f"Finished invoking agent `{agent_node_id}`")
+            return final_state["messages"][-1].content
 
     return StructuredTool.from_function(
         func=agent_invocation_tool,
