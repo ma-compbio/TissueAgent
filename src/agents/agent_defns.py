@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 
 from agents.agent_utils import file_retriever_tool
 from agents.planner_agent.prompt import PlannerPrompt
+from agents.planner_agent.tools import PlannerTools
 from agents.recruiter_agent.prompt import RecruiterPrompt
 from agents.manager_agent.prompt import ManagerPrompt
 from agents.evaluator_agent.prompt import EvaluatorPrompt
@@ -39,7 +40,7 @@ PlannerAgent = ReActAgent(
     name        = "Planner Agent",
     description = "",
     prompt      = PlannerPrompt,
-    tools       = [file_retriever_tool],
+    tools       = PlannerTools,
     model_ctor  = DefaultModelCtor,
 )
 
@@ -80,12 +81,19 @@ ReporterAgent = ReActAgent(
 )
 
 import agents.agent_registry.coding_agent.model as CodingAgent
+import agents.agent_registry.hypothesis_agent.model as HypothesisAgent
 from agents.agent_registry.searcher_agent.prompt import SearcherPrompt, SearcherDescription
 from agents.agent_registry.searcher_agent.tools import SearcherTools
 from agents.agent_registry.single_cell_agent.prompt import SingleCellPrompt, SingleCellDescription
 from agents.agent_registry.single_cell_agent.tools import SingleCellTools
-from agents.agent_registry.gene_agent.prompt import GeneAgentPrompt, GeneAgentDescription
-from agents.agent_registry.gene_agent.tools import GeneAgentTools
+from agents.agent_registry.pdf_reader_agent.prompt import PDFReaderAgentPrompt, PDFReaderAgentDescription
+from agents.agent_registry.pdf_reader_agent.tools import PDFReaderTools
+from agents.agent_registry.critic_agent.prompt import CriticAgentPrompt, CriticAgentDescription
+from agents.agent_registry.critic_agent.tools import CriticTools
+# Temporarily disabled - missing GeneAgent original repo
+# from agents.agent_registry.gene_agent.prompt import GeneAgentPrompt, GeneAgentDescription
+# from agents.agent_registry.gene_agent.tools import GeneAgentTools
+from agents.agent_registry.hypothesis_agent.prompt import HypothesisAgentDescription
 
 
 AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
@@ -94,6 +102,14 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         name        = "Coding Agent",
         description = CodingAgent.CodingAgentDescription,
         ctor        = CodingAgent.create_coding_agent,
+    ),
+    ReActAgent(
+        id          = "pdf_reader",
+        name        = "PDF Reader Agent",
+        description = PDFReaderAgentDescription,
+        prompt      = PDFReaderAgentPrompt,
+        tools       = PDFReaderTools,
+        model_ctor  = DefaultModelCtor,
     ),
     ReActAgent(
         id          = "searcher",
@@ -112,12 +128,26 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         model_ctor  = DefaultModelCtor,
     ),
     ReActAgent(
-        id          = "gene_agent",
-        name        = "Gene Agent",
-        description = GeneAgentDescription,
-        prompt      = GeneAgentPrompt,
-        tools       = GeneAgentTools,
+        id          = "critic",
+        name        = "Critic Agent",
+        description = CriticAgentDescription,
+        prompt      = CriticAgentPrompt,
+        tools       = CriticTools,
         model_ctor  = DefaultModelCtor,
-
-    )
+    ),
+    # Temporarily disabled - missing GeneAgent original repo
+    # ReActAgent(
+    #     id          = "gene_agent",
+    #     name        = "Gene Agent",
+    #     description = GeneAgentDescription,
+    #     prompt      = GeneAgentPrompt,
+    #     tools       = GeneAgentTools,
+    #     model_ctor  = DefaultModelCtor,
+    # ),
+    CustomAgent(
+        id          = "hypothesis",
+        name        = "Hypothesis Agent",
+        description = HypothesisAgentDescription,
+        ctor        = lambda state_queue: HypothesisAgent.create_hypothesis_agent(state_queue),
+    ),
 ]
