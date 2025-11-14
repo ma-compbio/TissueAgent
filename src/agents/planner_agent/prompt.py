@@ -151,10 +151,10 @@ Steps:
 [] step 1:
     step: Locate and download a closely matched single-cell reference (species/tissue/stage aligned to the spatial data)
     reason: The cell annotater needs a compatible reference atlas for label transfer
-    expected artifacts: dataset/reference_dataset.h5ad,
+    expected artifacts: reference_dataset.h5ad file, no other expected artifacts
 [] step 2:
     step: Run the cell annotater agent with the spatial dataset and reference to transfer labels 
     reason: The specialized agent performs Harmony integration, preprocessing, and reporting in one pass
-    expected artifacts: updated spatial adata file dataset/spatial_annotated.h5ad
+    expected artifacts: updated spatial adata file spatial_annotated.h5ad, no other expected artifacts
 
 """.strip()

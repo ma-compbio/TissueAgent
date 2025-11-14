@@ -5,16 +5,15 @@ last_updated: 2025-11-11
 tags: [spatial, cell type annotation, inference]
 
 inputs:
-  - spatial AnnData(.h5ad)
-  - reference AnnData(.h5ad) to do cell type transfer
+  - spatial AnnData(.h5ad) file path
 
 outputs:
-  - updated spatial AnnData(.h5ad) object with cell type columns in .obs
-  - .png of umap features of spatial AnnData(.h5ad) labeled by inferred cell types
+  - updated spatial AnnData(.h5ad) file with cell type column in .obs
+  - no other expected artifacts
 
 # one-line sketch for the planner's lookup
 step_sketch: >
-  find reference dataset → use harmony transfer to infer cell types in spatial dataset → run umap on spatial dataset → create plot of umap features labeled by inferred cell type
+  find reference dataset → use harmony transfer to infer cell types in spatial dataset
 # eval: ["file_exists(spatial_scatterplot.png)", "n_points>0", "n_nan==0", "aspect≈1"]
 
 # default params the Manager/Executor may adapt
