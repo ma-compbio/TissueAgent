@@ -9,8 +9,7 @@ inputs:
 
 outputs:
   - updated spatial AnnData(.h5ad) file with cell type column in .obs
-  - no other expected artifacts
-
+  - no other expected artifiacts, only the updated anndata file for the spatial dataset
 # one-line sketch for the planner's lookup
 step_sketch: >
   find reference dataset → use harmony transfer to infer cell types in spatial dataset

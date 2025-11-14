@@ -156,5 +156,5 @@ Steps:
     step: Run the cell annotater agent with the spatial dataset and reference to transfer labels 
     reason: The specialized agent performs Harmony integration, preprocessing, and reporting in one pass
     expected artifacts: updated spatial adata file spatial_annotated.h5ad, no other expected artifacts
-
+ Do not add any additional steps
 """.strip()
