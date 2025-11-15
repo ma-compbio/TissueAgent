@@ -52,8 +52,11 @@ def create_tissueagent_graph(
             agent_subgraph.add_edge(tool_node_id, agent_node_id)
             subagent = agent_subgraph.compile()
 
+            # Enable PDF support for PDF Reader Agent
+            supports_pdf = (agent.id == "pdf_reader")
+
             agent_invocation_tool = create_agent_invocation_tool(
-                agent_node_id, agent.name, subagent, state_queue
+                agent_node_id, agent.name, subagent, state_queue, supports_pdf=supports_pdf
             )
             agent_invocation_tools.append(agent_invocation_tool)
 

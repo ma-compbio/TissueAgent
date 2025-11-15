@@ -10,13 +10,16 @@ import yaml
 from pydantic import BaseModel, Field
 from langchain.tools import StructuredTool
 
+# Get the default registry directory relative to this file
+DEFAULT_REGISTRY_DIR = Path(__file__).parent.parent / "plan_registry"
+
 
 # ---------- internals ----------
 
 _STOP = {
     "a","an","the","and","or","of","to","for","in","on","by","with","from","at",
     "between","into","over","about","as","is","are","be","this","that","these","those",
-    "using","use","based","data","dataset","figure","plot","result","results","analysis"
+    "using","use","based","figure","plot","result","results"
 }
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_]+")
 
@@ -83,7 +86,7 @@ def _score_template(
 
 class TemplateSelectorArgs(BaseModel):
     query_text: str = Field(..., description="User's task description.")
-    registry_dir: str = Field(default="plan_registry", description="Directory of YAML templates.")
+    registry_dir: str = Field(default=str(DEFAULT_REGISTRY_DIR), description="Directory of YAML templates.")
     inputs_available: Optional[List[str]] = Field(
         default=None,
         description='Optional hints like ["AnnData(.h5ad)", "obsm:spatial", "obs:x,y"].'
@@ -92,7 +95,7 @@ class TemplateSelectorArgs(BaseModel):
 def _template_selector_tool(
     *,
     query_text: str,
-    registry_dir: str = "plan_registry",
+    registry_dir: str = None,
     inputs_available: Optional[List[str]] = None,
 ) -> str:
     """
@@ -100,8 +103,11 @@ def _template_selector_tool(
     Returns a JSON string:
       {decision: USE|ADAPT|NEW, template_id, score, scores, why, ranked}
     """
-    weights = {"tags": 0.35, "keywords": 0.35, "io": 0.20, "recency": 0.10}
-    thresholds = {"high": 0.62, "mid": 0.42}
+    if registry_dir is None:
+        registry_dir = str(DEFAULT_REGISTRY_DIR)
+
+    weights = {"tags": 0.40, "keywords": 0.40, "io": 0.10, "recency": 0.10}
+    thresholds = {"high": 0.35, "mid": 0.25}
 
     templates = _load_templates(Path(registry_dir))
     if not templates:
@@ -123,15 +129,12 @@ def _template_selector_tool(
     top_tpl, top_score, comps = scored[0]
     high, mid = thresholds["high"], thresholds["mid"]
 
-    if top_score >= high and comps.get("io", 0.0) >= 0.5:
-        decision, why = "USE", f"Strong match (score={top_score:.2f}); inputs compatible."
+    if top_score >= high:
+        decision, why = "USE", f"Strong match (score={top_score:.2f})."
     elif top_score >= mid:
         decision, why = "ADAPT", f"Partial match (score={top_score:.2f}); adapt parameters/IO."
     else:
         decision, why = "NEW", f"No sufficient match (score={top_score:.2f}); create new plan."
-
-    if decision == "USE" and comps.get("io", 0.0) < 0.5:
-        decision, why = "ADAPT", f"Good semantic match but low input compatibility (io={comps['io']:.2f})."
 
     ranked = [(t.get("template_id","<missing_id>"), round(s, 3)) for t, s, _ in scored[:5]]
 

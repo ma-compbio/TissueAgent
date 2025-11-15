@@ -78,6 +78,7 @@ def save_current_session(sessions_dir: Path, session_filename_prefix: str = "ses
         "saved_at": datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
         "messages": [_message_to_serializable(m) for m in messages],
         "subagent_states": st.session_state.get("subagent_states", {}),
+        "uploaded_pdfs": st.session_state.get("uploaded_pdfs", []),
     }
 
     sessions_dir.mkdir(parents=True, exist_ok=True)
@@ -122,7 +123,8 @@ def load_session_from_path(path: Path | None):
     st.session_state["agent_state"]["messages"] = restored_messages
     st.session_state["subagent_states"] = payload.get("subagent_states", {})
     st.session_state["pending_images"] = []
-    st.session_state["uploaded_pdfs"] = st.session_state.get("uploaded_pdfs", [])
+    # Restore uploaded_pdfs from saved session (preserves file_id and attached_to_conversation flags)
+    st.session_state["uploaded_pdfs"] = payload.get("uploaded_pdfs", [])
     from queue import Queue
     st.session_state["state_queue"] = Queue()
     st.session_state["selected_session_label"] = _session_option_label(path)

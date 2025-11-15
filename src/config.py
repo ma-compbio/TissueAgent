@@ -13,6 +13,6 @@ DATASET_DIR      = DATA_DIR / "dataset"
 UPLOADS_DIR      = DATA_DIR / "uploads" 
 PDF_UPLOADS_DIR  = DATA_DIR / "pdfs"
 SESSIONS_DIR     = ROOT / "sessions"
-RECURSION_LIMIT  = 50
+RECURSION_LIMIT  = 100
 LOG_TO_TERMINAL  = True
 LOG_TO_FILE      = ROOT / "logs" / (datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d_%H-%M-%S") + "_tissueagent.log")
