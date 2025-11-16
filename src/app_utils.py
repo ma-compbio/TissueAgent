@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import json
+from collections import deque
 import logging
 import streamlit as st
 import re
@@ -130,11 +131,15 @@ def load_session_from_path(path: Path | None):
     if "replan_history" in payload:
         st.session_state["agent_state"]["replan_history"] = payload["replan_history"]
     st.session_state["subagent_states"] = payload.get("subagent_states", {})
+    st.session_state["pending_subagent_states"] = deque()
+    st.session_state["display_messages"] = list(restored_messages)
+    st.session_state["display_message_ids"] = set()
     st.session_state["pending_images"] = []
     # Restore uploaded_pdfs from saved session (preserves file_id and attached_to_conversation flags)
     st.session_state["uploaded_pdfs"] = payload.get("uploaded_pdfs", [])
     from queue import Queue
     st.session_state["state_queue"] = Queue()
+    st.session_state["ui_event_queue"] = Queue()
     st.session_state["selected_session_label"] = _session_option_label(path)
     st.session_state["session_loader_select"] = st.session_state["selected_session_label"]
     st.toast(f"Loaded session from {path.name}", icon="📂")
@@ -231,7 +236,12 @@ def strip_images_for_display(messages):
     """Return deep-copied messages where list-style content is collapsed to text only."""
     cleaned = []
     for m in messages:
-        m2 = deepcopy(m)
+        if hasattr(m, "model_copy"):
+            m2 = m.model_copy(deep=True)
+        else:
+            m2 = deepcopy(m)
+        if hasattr(m, "name"):
+            setattr(m2, "name", getattr(m, "name", None))
         c = getattr(m2, "content", None)
         if isinstance(c, list):
             texts = []

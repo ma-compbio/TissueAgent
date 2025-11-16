@@ -1,25 +1,26 @@
 import anthropic
 import base64
+import json
 import logging
 import mimetypes
 import openai
-import queue
 import shutil
 import time
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from datetime import datetime
 from pathlib import Path
 import streamlit as st
-import streamlit_nested_layout  
+import streamlit_nested_layout
 from functools import partial
 from html import escape
 from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
 from streamlit_file_browser import st_file_browser
 from queue import Queue
-from typing import Any
+from typing import Any, Deque, Set
 
 from app_utils import (
-    render_conversation_history as util_render_conversation_history,
     save_current_session,
     load_session_from_path,
     _session_option_label,
@@ -28,16 +29,8 @@ from app_utils import (
 )
 from agents.manager_agent.tools import ManagerToolNames
 from graph.graph import create_tissueagent_graph
-from graph.graph_utils import log_message
+from graph.graph_utils import log_message, register_ui_event_queue
 from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, RECURSION_LIMIT, SESSIONS_DIR, UPLOADS_DIR
-
-def clear_queue(q: queue.Queue):
-    """Remove everything from a Queue in a thread-safe way."""
-    try:
-        while True:
-            q.get_nowait()
-    except queue.Empty:
-        pass
 
 
 def _file_to_data_url(file_path: Path) -> str:
@@ -87,6 +80,77 @@ def _reset_data_directories() -> None:
         SESSIONS_DIR,
     ):
         directory.mkdir(parents=True, exist_ok=True)
+
+
+def _message_identity(message: Any) -> str:
+    msg_id = getattr(message, "id", None)
+    if msg_id:
+        return str(msg_id)
+    try:
+        data = message.model_dump()
+    except AttributeError:
+        data = {
+            "type": getattr(message, "type", type(message).__name__),
+            "name": getattr(message, "name", None),
+            "content": getattr(message, "content", None),
+            "tool_calls": getattr(message, "tool_calls", None),
+        }
+    return json.dumps(data, sort_keys=True, default=str)
+
+
+def _ensure_display_state():
+    display_messages = st.session_state.setdefault(
+        "display_messages", list(st.session_state["agent_state"]["messages"])
+    )
+    ids = st.session_state.setdefault("display_message_ids", set())
+    if not ids:
+        ids.update(_message_identity(msg) for msg in display_messages)
+
+
+def _render_conversation(
+    placeholder: st.delta_generator.DeltaGenerator,
+    enable_debug: bool,
+):
+    placeholder.empty()
+    with placeholder.container():
+        render_conversation_history_display(
+            st.session_state["display_messages"],
+            st.session_state["subagent_states"],
+            enable_debug,
+        )
+
+
+def _append_display_message(
+    message: Any,
+    placeholder: st.delta_generator.DeltaGenerator,
+    enable_debug: bool,
+) -> bool:
+    msg_key = _message_identity(message)
+    ids: Set[str] = st.session_state["display_message_ids"]
+    if msg_key in ids:
+        return False
+    ids.add(msg_key)
+    st.session_state["display_messages"].append(message)
+    _render_conversation(placeholder, enable_debug)
+    return True
+
+
+def _drain_event_queue(
+    event_queue: Queue,
+    placeholder: st.delta_generator.DeltaGenerator,
+    enable_debug: bool,
+) -> None:
+    while not event_queue.empty():
+        message = event_queue.get()
+        _append_display_message(message, placeholder, enable_debug)
+
+
+def _drain_subagent_queue(
+    state_queue: Queue,
+    pending_states: Deque[Any],
+) -> None:
+    while not state_queue.empty():
+        pending_states.append(state_queue.get())
 
 SESSION_FILENAME_PREFIX = "session_"
 SESSION_FILENAME_SUFFIX = ".json"
@@ -331,6 +395,11 @@ if "state_queue" not in st.session_state:
     st.session_state["state_queue"] = Queue()
 state_queue = st.session_state["state_queue"]
 
+if "ui_event_queue" not in st.session_state:
+    st.session_state["ui_event_queue"] = Queue()
+register_ui_event_queue(st.session_state["ui_event_queue"])
+event_queue = st.session_state["ui_event_queue"]
+
 if "agent" not in st.session_state:
     bind_retry_fn = lambda model: model.with_retry(
         retry_if_exception_type=(openai.RateLimitError, anthropic.RateLimitError),
@@ -350,6 +419,16 @@ if "agent_state" not in st.session_state:
         "replan_history": [],
     }
     st.session_state["subagent_states"] = {}
+    st.session_state["pending_subagent_states"] = deque()
+    st.session_state["display_messages"] = []
+    st.session_state["display_message_ids"] = set()
+else:
+    st.session_state.setdefault("subagent_states", {})
+    st.session_state.setdefault("pending_subagent_states", deque())
+    st.session_state.setdefault("display_messages", [])
+    st.session_state.setdefault("display_message_ids", set())
+
+_ensure_display_state()
 
 
 # ╔═══════════════════════╗
@@ -357,11 +436,8 @@ if "agent_state" not in st.session_state:
 # ╚═══════════════════════╝
 
 # Initial render (text-only copy)
-render_conversation_history_display(
-    st.session_state["agent_state"]["messages"],
-    st.session_state["subagent_states"],
-    enable_debug
-)
+conversation_placeholder = st.empty()
+_render_conversation(conversation_placeholder, enable_debug)
 
 # chat_input must be at the root (not inside columns/containers)
 prompt = st.chat_input("Ask the agent:")
@@ -400,9 +476,7 @@ if prompt:
     log_message(user_message)
 
     st.session_state["agent_state"]["messages"].append(user_message)
-
-    # Re-render the just-sent message in text-only mode
-    render_conversation_history_display([user_message], {}, enable_debug)
+    _drain_event_queue(event_queue, conversation_placeholder, enable_debug)
 
     # clear one-shot attachments after sending
     st.session_state["pending_images"] = []
@@ -414,10 +488,25 @@ if prompt:
         with st.spinner("SpatialAgent is Thinking..."):
             st.session_state["agent_state"].setdefault("replan_count", 0)
             st.session_state["agent_state"].setdefault("replan_history", [])
-            st.session_state["agent_state"] = agent.invoke(
+            executor = ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(
+                agent.invoke,
                 st.session_state["agent_state"],
                 {"recursion_limit": RECURSION_LIMIT}
             )
+            try:
+                while True:
+                    try:
+                        st.session_state["agent_state"] = future.result(timeout=0.1)
+                        break
+                    except TimeoutError:
+                        _drain_event_queue(event_queue, conversation_placeholder, enable_debug)
+                        _drain_subagent_queue(
+                            state_queue,
+                            st.session_state["pending_subagent_states"],
+                        )
+            finally:
+                executor.shutdown(wait=False)
     except GraphRecursionError as e:
         st.error(f"Graph Recursion Error: {e}", icon="⚠️")
         logging.error("GraphRecursionError", exc_info=e)
@@ -430,8 +519,15 @@ if prompt:
     else:
         elapsed_seconds = time.perf_counter() - start_time
         st.caption(f"SpatialAgent finished in {elapsed_seconds:.1f} s.")
+    finally:
+        _drain_event_queue(event_queue, conversation_placeholder, enable_debug)
+        _drain_subagent_queue(
+            state_queue,
+            st.session_state["pending_subagent_states"],
+        )
 
     new_messages = st.session_state["agent_state"]["messages"][rendered_prefix:]
+    pending_state_queue = st.session_state["pending_subagent_states"]
     for message in new_messages:
         if not isinstance(message, ToolMessage):
             continue
@@ -443,19 +539,14 @@ if prompt:
                 continue
             if getattr(message, "status", None) == "error":
                 st.session_state["subagent_states"][tool_id] = (message.name, message.content)
-            elif state_queue.empty():
+            elif not pending_state_queue:
                 logging.error(f"No agent state found for following message {message}")
                 st.session_state["subagent_states"][tool_id] = ("agent not found", None)
             else:
-                agent_name, final_state = state_queue.get()
+                agent_name, final_state = pending_state_queue.popleft()
                 st.session_state["subagent_states"][tool_id] = (agent_name, final_state)
 
-    if not state_queue.empty():
-        st.exception(Exception("Display Error: This is likely caused by a concurrency or a parallelization issue."))
-        logging.error("Display Error: This is likely caused by a concurrency or a parallelization issue.")
-        clear_queue(state_queue)
-
-    render_conversation_history_display(
-        st.session_state["agent_state"]["messages"][rendered_prefix:],
-        st.session_state["subagent_states"], enable_debug
-    )
+    _render_conversation(conversation_placeholder, enable_debug)
+    if pending_state_queue:
+        logging.warning("Unmatched subagent states remaining after render; clearing queue.")
+        pending_state_queue.clear()

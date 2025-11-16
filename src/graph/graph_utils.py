@@ -11,6 +11,13 @@ from langgraph.types import Command
 
 from logger import logger
 
+_ui_event_queue: Optional[Queue] = None
+
+
+def register_ui_event_queue(event_queue: Queue) -> None:
+    global _ui_event_queue
+    _ui_event_queue = event_queue
+
 
 def standardize_message_format(
     message: AIMessage
@@ -93,6 +100,11 @@ def log_message(message: BaseMessage):
 
     full_message = "\n".join(lines)
     logger.info(full_message)
+    if _ui_event_queue is not None:
+        try:
+            _ui_event_queue.put_nowait(message)
+        except Exception:
+            pass
 
 def create_agent_node(
     agent_node_id: str,

@@ -79,7 +79,7 @@ Good-Enough Criteria (STOP EARLY)
 Formatting Rules
 - Start output with `Task`.
 - Do not change the task title.
-- Do not change any of: step text, reason, expected artifacts, assigned agent, assigned agent reason.
+- Do not change any of: step text, reason, expected artifacts, assigned agent, assignment rationale.
 - After each step, update the checklist visibly:
   - Replace [ ] with [✓] when succeeded.
   - Replace [ ] with [✗] when failed or skipped.
@@ -96,7 +96,7 @@ Steps:
     reason: [Dont change the reason from the input]
     expected artifacts: [Dont change the expected artifacts from the input]
     assigned agent: [Dont change the assigned agent from the input]
-    assigned agent reason: [Dont change the assigned agent reason from the input]
+    assignment rationale: [Dont change the assignment rationale from the input]
     execution result: [Success: ... | Failed: ... | Skipped: ...]
     execution artifacts: [ relative/path/one, relative/path/two, ... ] or None
 '''
