@@ -1,0 +1,40 @@
+template_id: PAPER_HYPOTHESIS_GENERATION
+title: hypothesis paper dataset
+task: Generate research hypotheses from paper and dataset
+version: "2.0"
+last_updated: 2025-01-11
+tags: [paper, hypothesis, hypotheses, generation, generate, pdf, spatial, transcriptomics, propose, explore, based]
+
+inputs:
+  - "PDF"
+
+outputs:
+  - briefs/paper_summary.txt
+  - briefs/paper_outline.md
+  - tables/data_inventory.tsv
+  - tables/categorical_values.tsv
+  - tables/paper_dataset_reconciliation.tsv
+  - hypotheses/hypotheses.json
+  - hypotheses/hypothesis_brief.md
+  # NOTE: No Jupyter notebook generated at this stage - only during hypothesis testing
+
+# one-line sketch for the planner's lookup
+step_sketch: >
+  PDF Reader Agent: analyze PDF (figures+text) → save briefs | Coding Agent: inventory dataset + validate paper entities → save tables | Hypothesis Agent: synthesize hypotheses from briefs+tables
+
+eval: ["paper_summary.txt exists", "paper_outline.md exists", "data_inventory.tsv exists", "categorical_values.tsv exists", "paper_dataset_reconciliation.tsv exists", "hypotheses.json exists", "1+ hypothesis generated"]
+
+# default params the Manager/Executor may adapt
+defaults:
+  hypothesis_count: 1
+  output_format: json
+  include_paper_summary: true
+
+# checklist lines the Planner can adapt/emit (≤160 chars each)
+checklist:
+  - "PDF Reader Agent: Analyze uploaded PDF (multimodal: text+figures), extract key findings and testable claims, save briefs/"
+  - "Coding Agent: Load .h5ad dataset, inventory genes/cells/annotations with categorical value lists, save tables/data_inventory.tsv"
+  - "Coding Agent: Cross-validate paper entities (from entities_and_markers.json) against dataset, save tables/paper_dataset_reconciliation.tsv"
+  - "Hypothesis Agent: Read briefs/ and tables/, synthesize 1-3 testable hypotheses using ONLY validated features, save hypotheses/"
+  - "PDF Reader Agent: Review hypotheses/hypotheses.json against paper claims, verify novelty and alignment, save hypotheses/verification.json"
+  - "Reporter Agent: Display generated hypotheses to user (NO notebook generation at this stage)"

@@ -7,8 +7,6 @@ from langchain.tools import StructuredTool
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
-from agents.agent_registry.coding_agent.python_repl import PythonREPL
-# from config import DATA_DIR
 from config import DATA_DIR, NOTEBOOK_DIR
 
 

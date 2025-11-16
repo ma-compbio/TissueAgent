@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import json
+from collections import deque
 import logging
 import streamlit as st
 import re
@@ -78,6 +79,9 @@ def save_current_session(sessions_dir: Path, session_filename_prefix: str = "ses
         "saved_at": datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
         "messages": [_message_to_serializable(m) for m in messages],
         "subagent_states": st.session_state.get("subagent_states", {}),
+        "uploaded_pdfs": st.session_state.get("uploaded_pdfs", []),
+        "replan_count": st.session_state.get("agent_state", {}).get("replan_count", 0),
+        "replan_history": st.session_state.get("agent_state", {}).get("replan_history", []),
     }
 
     sessions_dir.mkdir(parents=True, exist_ok=True)
@@ -120,11 +124,22 @@ def load_session_from_path(path: Path | None):
 
     st.session_state.setdefault("agent_state", {})
     st.session_state["agent_state"]["messages"] = restored_messages
+    st.session_state["agent_state"].setdefault("replan_count", 0)
+    st.session_state["agent_state"].setdefault("replan_history", [])
+    if "replan_count" in payload:
+        st.session_state["agent_state"]["replan_count"] = payload["replan_count"]
+    if "replan_history" in payload:
+        st.session_state["agent_state"]["replan_history"] = payload["replan_history"]
     st.session_state["subagent_states"] = payload.get("subagent_states", {})
+    st.session_state["pending_subagent_states"] = deque()
+    st.session_state["display_messages"] = list(restored_messages)
+    st.session_state["display_message_ids"] = set()
     st.session_state["pending_images"] = []
-    st.session_state["uploaded_pdfs"] = st.session_state.get("uploaded_pdfs", [])
+    # Restore uploaded_pdfs from saved session (preserves file_id and attached_to_conversation flags)
+    st.session_state["uploaded_pdfs"] = payload.get("uploaded_pdfs", [])
     from queue import Queue
     st.session_state["state_queue"] = Queue()
+    st.session_state["ui_event_queue"] = Queue()
     st.session_state["selected_session_label"] = _session_option_label(path)
     st.session_state["session_loader_select"] = st.session_state["selected_session_label"]
     st.toast(f"Loaded session from {path.name}", icon="📂")
@@ -161,67 +176,46 @@ def _format_message_content_for_html(content) -> str:
 
 
 def build_session_html(messages, subagent_states) -> str:
-    """Build HTML export of a chat session."""
-    rows = [
+    """Build HTML export of a chat session with formatting similar to the Streamlit view."""
+    rendered_blocks = _render_conversation_history_html(messages, subagent_states)
+    return "\n".join([
         "<html>",
         "<head>",
         "<meta charset=\"utf-8\" />",
         "<title>TissueAgent Session Export</title>",
         "<style>",
         "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 2rem; }",
-        ".message { margin-bottom: 1.5rem; padding: 1rem; border-radius: 0.75rem; }",
+        ".message { margin-bottom: 1.5rem; padding: 1rem; border-radius: 0.75rem; border: 1px solid #e0e0e0; }",
         ".role-user { background-color: #f0f4ff; }",
         ".role-ai { background-color: #f4fff0; }",
-        ".role-tool { background-color: #fef9e7; }",
-        ".message h3 { margin-top: 0; }",
-        "pre { white-space: pre-wrap; word-break: break-word; }",
-        "img { margin-top: 0.5rem; border: 1px solid #ccc; padding: 0.25rem; border-radius: 0.5rem; }",
+        ".role-tool { background-color: #fffaf0; }",
+        ".message h3 { margin-top: 0; margin-bottom: 0.5rem; }",
+        ".message p { margin: 0.3rem 0; }",
+        ".subagent-block { background-color: #ffffff; border: 1px dashed #d0d0d0; padding: 0.75rem; border-radius: 0.5rem; margin-top: 0.5rem; }",
+        ".subagent-block h4 { margin: 0 0 0.35rem 0; }",
+        ".route-pill { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; background: #e0e7ff; color: #1f2a44; font-size: 0.85rem; margin-top: 0.4rem; }",
+        ".tag-label { font-weight: 600; text-transform: capitalize; display: block; margin-top: 0.4rem; }",
+        "pre { white-space: pre-wrap; word-break: break-word; background: #fafafa; padding: 0.5rem; border-radius: 0.4rem; border: 1px solid #e3e3e3; }",
         "</style>",
         "</head>",
         "<body>",
         f"<h1>TissueAgent Session Export — {escape(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))}</h1>",
-    ]
-
-    for idx, message in enumerate(messages, start=1):
-        role = getattr(message, "type", "unknown")
-        role_class = {
-            "human": "role-user",
-            "ai": "role-ai",
-            "tool": "role-tool",
-        }.get(role, "role-unknown")
-
-        tool_title = f"Tool — {_safe_escape(getattr(message, 'name', None), 'unknown')}"
-
-        title = {
-            "human": "User",
-            "ai": "TissueAgent",
-            "tool": tool_title,
-        }.get(role, escape(role.title()))
-
-        rows.append(f"<div class=\"message {role_class}\">")
-        rows.append(f"<h3>{idx}. {title}</h3>")
-        rows.append(_format_message_content_for_html(getattr(message, "content", "")))
-
-        if role == "tool":
-            tool_id = getattr(message, "id", None)
-            if tool_id is not None and str(tool_id) in subagent_states:
-                agent_name, final_state = subagent_states[str(tool_id)]
-                rows.append("<details><summary>Subagent State</summary>")
-                rows.append(f"<p><strong>Agent:</strong> {escape(str(agent_name))}</p>")
-                rows.append(f"<pre>{escape(_safe_pretty_json(final_state))}</pre>")
-                rows.append("</details>")
-
-        rows.append("</div>")
-
-    rows.extend(["</body>", "</html>"])
-    return "\n".join(rows)
+        rendered_blocks,
+        "</body>",
+        "</html>",
+    ])
 
 
 def strip_images_for_display(messages):
     """Return deep-copied messages where list-style content is collapsed to text only."""
     cleaned = []
     for m in messages:
-        m2 = deepcopy(m)
+        if hasattr(m, "model_copy"):
+            m2 = m.model_copy(deep=True)
+        else:
+            m2 = deepcopy(m)
+        if hasattr(m, "name"):
+            setattr(m2, "name", getattr(m, "name", None))
         c = getattr(m2, "content", None)
         if isinstance(c, list):
             texts = []
@@ -242,6 +236,69 @@ def render_conversation_history_display(all_messages, subagent_states, enable_de
     )
 
 
+def _html_preserve_newlines(text: str) -> str:
+    if not text:
+        return ""
+    return "<br/>".join(escape(text).splitlines())
+
+
+def _subagent_state_to_html(agent_name: str, final_state: Any) -> str:
+    header = f"<div class=\"subagent-block\"><h4>{escape(agent_name or 'Subagent')}</h4>"
+    if not isinstance(final_state, Mapping):
+        return header + f"<p>{escape(str(final_state))}</p></div>"
+    messages = final_state.get("messages")
+    if not messages:
+        return header + "<p>No transcript available.</p></div>"
+    rows = []
+    for msg in messages:
+        role = getattr(msg, "type", "message").title()
+        body = _html_preserve_newlines(_stringify_chat_content(getattr(msg, "content", "")))
+        rows.append(f"<p><strong>{escape(role)}</strong>: {body}</p>")
+    return header + "".join(rows) + "</div>"
+
+
+def _render_conversation_history_html(
+    messages: Sequence[BaseMessage],
+    subagent_state: Mapping[str, Tuple[str, MessagesState]],
+) -> str:
+    blocks: List[str] = []
+    for idx, message in enumerate(messages, start=1):
+        if isinstance(message, HumanMessage):
+            content = _html_preserve_newlines(_stringify_chat_content(message.content))
+            body = f"<p>{content}</p>"
+            blocks.append(f"<div class=\"message role-user\"><h3>{idx}. User</h3>{body}</div>")
+            continue
+
+        if isinstance(message, AIMessage):
+            content_raw = _stringify_chat_content(message.content)
+            if not content_raw:
+                continue
+            avatar, role_label = _lookup_agent_badge(message.name)
+            route_caption, body_text = _split_route_and_body(content_raw)
+            body_parts = []
+            html_tags = _extract_html_tags(body_text)
+            if html_tags:
+                for tag, text in html_tags.items():
+                    body_parts.append(f"<span class=\"tag-label\">{escape(tag)}</span>")
+                    body_parts.append(f"<p>{_html_preserve_newlines(text)}</p>")
+            else:
+                body_parts.append(f"<p>{_html_preserve_newlines(body_text)}</p>")
+            if route_caption:
+                body_parts.append(f"<div class=\"route-pill\">{escape(route_caption)}</div>")
+            header = f"<h3>{idx}. {escape(role_label)}</h3>"
+            blocks.append(f"<div class=\"message role-ai\">{header}{''.join(body_parts)}</div>")
+            continue
+
+        if isinstance(message, ToolMessage):
+            tool_name = getattr(message, "name", "") or "Tool"
+            header = f"<h3>{idx}. Tool — {escape(tool_name)}</h3>"
+            body_parts = [f"<p>{_html_preserve_newlines(_stringify_chat_content(message.content))}</p>"]
+            tool_id = getattr(message, "id", None)
+            if tool_id is not None and str(tool_id) in subagent_state:
+                agent_name, final_state = subagent_state[str(tool_id)]
+                body_parts.append(_subagent_state_to_html(agent_name, final_state))
+            blocks.append(f"<div class=\"message role-tool\">{header}{''.join(body_parts)}</div>")
+    return "\n".join(blocks)
 # ---------------------------------------------------------------------------
 # Agent identity metadata
 # ---------------------------------------------------------------------------

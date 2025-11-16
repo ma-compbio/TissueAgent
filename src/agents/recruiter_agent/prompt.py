@@ -21,9 +21,10 @@ Use the following guidelines to assign agents effectively:
 - You may assign the same agent to multiple steps.
 - If no agent is suitable for a step, leave it unassigned and provide a brief explanation in the final output.
 
-You will need to output the updated <Plan> with assigned agents. For each step, add two new fields: <assigned agent> and <assigned agent reason> and do not change any of the existing fields.
+You will need to output the updated <Plan> with assigned agents. For each step, add two new fields: <assigned agent> and <assignment rationale> and do not change any of the existing fields.
 The final output should follow the following format exactly:
 '''
+PLAN
 Task: [Don't change the task title from the input]
 Steps: 
 [] step <N>: 
@@ -31,19 +32,19 @@ Steps:
     reason: [Dont change the reason from the input]
     expected artifacts: [Dont change the expected artifacts from the input]
     assigned agent: [The name of the assigned agent you selected from the <Agent Registry>]
-    assigned agent reason: [A brief explanation of why you assigned this agent to this step]
+    assignment rationale: [A brief explanation of why you assigned this agent to this step]
 '''
 
-Here is a breakdown of the two new fields <assigned agent> and <assigned agent reason> you need to include in each step as well as their specific instructions:
+Here is a breakdown of the two new fields <assigned agent> and <assignment rationale> you need to include in each step as well as their specific instructions:
 - <assigned agent>: The name of the specialized expert agent you selected from the <Agent Registry> to assign to this step. This should be the exact name as listed in the <Agent Registry>.
-- <assigned agent reason>: A brief explanation of why you assigned this particular agent to this step. This should be a concise justification based on the action, reasoning, and expected artifacts of the step, as well as the capabilities of the assigned agent.  
+- <assignment rationale>: A brief explanation of why you assigned this particular agent to this step. This should be a concise justification based on the action, reasoning, and expected artifacts of the step, as well as the capabilities of the assigned agent.  
 
 
 ## Formatting Rules
 - Start the output with <Plan>.
 - Do NOT change the title from the input.
 - Do Not change the reason, step, or expected artifacts of each step from the input.
-- For each step, add two new fields: <assigned agent> and <assigned agent reason>.
+- For each step, add two new fields: <assigned agent> and <assignment rationale>.
 
 
 """.strip()

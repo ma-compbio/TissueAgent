@@ -1,6 +1,6 @@
 import logging
 from queue import Queue
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from langchain.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -10,6 +10,13 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 
 from logger import logger
+
+_ui_event_queue: Optional[Queue] = None
+
+
+def register_ui_event_queue(event_queue: Queue) -> None:
+    global _ui_event_queue
+    _ui_event_queue = event_queue
 
 
 def standardize_message_format(
@@ -93,6 +100,11 @@ def log_message(message: BaseMessage):
 
     full_message = "\n".join(lines)
     logger.info(full_message)
+    if _ui_event_queue is not None:
+        try:
+            _ui_event_queue.put_nowait(message)
+        except Exception:
+            pass
 
 def create_agent_node(
     agent_node_id: str,
@@ -100,7 +112,8 @@ def create_agent_node(
     prompt: str,
     tool_node_id: str,
     exit_node_id: Optional[str] = None,
-    exit_node_id_fn: Optional[Callable[[str], str]] = None
+    exit_node_id_fn: Optional[Callable[[AIMessage, MessagesState], str]] = None,
+    state_update_fn: Optional[Callable[[AIMessage, MessagesState], Optional[Dict[str, Any]]]] = None,
 ) -> Callable[[MessagesState], Command]:
     
     def agent_node(state: MessagesState) -> Command:
@@ -111,10 +124,25 @@ def create_agent_node(
         response.name = agent_node_id
         log_message(response)
 
+        extra_update: Dict[str, Any] = {}
+        if state_update_fn:
+            maybe_update = state_update_fn(response, state) or {}
+            if maybe_update:
+                extra_update.update(maybe_update)
+
         next_node = tool_node_id if getattr(response, "tool_calls", []) else None
         if not next_node:
-            next_node = exit_node_id if exit_node_id else exit_node_id_fn(response.content)
-        return Command(goto=next_node, update={"messages": [response]})
+            if exit_node_id:
+                next_node = exit_node_id
+            elif exit_node_id_fn:
+                next_node = exit_node_id_fn(response, state)
+            else:
+                next_node = None
+
+        update_payload: Dict[str, Any] = {"messages": [response]}
+        if extra_update:
+            update_payload.update(extra_update)
+        return Command(goto=next_node, update=update_payload)
     return agent_node
 
 def create_tool_node(
@@ -139,14 +167,46 @@ def create_agent_invocation_tool(
     agent_node_id: str,
     agent_name: str,
     agent: CompiledStateGraph,
-    state_queue: Queue
+    state_queue: Queue,
+    supports_pdf: bool = False
 ):
-    def agent_invocation_tool(prompt: str) -> str:
-        logging.info(f"Invoking agent `{agent_node_id}`")
-        final_state = agent.invoke({"messages": [HumanMessage(prompt)]})
-        state_queue.put((agent_name, final_state))
-        logging.info(f"Finished invoking agent `{agent_node_id}`")
-        return final_state["messages"][-1].content
+    if supports_pdf:
+        def agent_invocation_tool(prompt: str, pdf_file_ids: str = "") -> str:
+            """
+            Invoke agent with optional PDF file IDs.
+
+            Args:
+                prompt: Task instructions for the agent
+                pdf_file_ids: Comma-separated list of OpenAI file IDs (e.g. "file-abc123,file-def456")
+
+            Returns:
+                Agent's response
+            """
+            logging.info(f"Invoking PDF-capable agent `{agent_node_id}`")
+
+            # Build multimodal content if PDFs provided
+            content = [{"type": "text", "text": prompt}]
+
+            if pdf_file_ids and pdf_file_ids.strip():
+                file_ids = [fid.strip() for fid in pdf_file_ids.split(",") if fid.strip()]
+                logging.info(f"Attaching {len(file_ids)} PDF file(s) to agent invocation")
+                for file_id in file_ids:
+                    content.append({
+                        "type": "file",
+                        "file": {"file_id": file_id}
+                    })
+
+            final_state = agent.invoke({"messages": [HumanMessage(content=content)]})
+            state_queue.put((agent_name, final_state))
+            logging.info(f"Finished invoking PDF-capable agent `{agent_node_id}`")
+            return final_state["messages"][-1].content
+    else:
+        def agent_invocation_tool(prompt: str) -> str:
+            logging.info(f"Invoking agent `{agent_node_id}`")
+            final_state = agent.invoke({"messages": [HumanMessage(prompt)]})
+            state_queue.put((agent_name, final_state))
+            logging.info(f"Finished invoking agent `{agent_node_id}`")
+            return final_state["messages"][-1].content
 
     return StructuredTool.from_function(
         func=agent_invocation_tool,

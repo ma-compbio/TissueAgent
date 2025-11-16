@@ -1,24 +1,26 @@
 import anthropic
 import base64
+import json
 import logging
 import mimetypes
 import openai
-import queue
 import shutil
+import time
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from datetime import datetime
 from pathlib import Path
 import streamlit as st
-import streamlit_nested_layout  
+import streamlit_nested_layout
 from functools import partial
 from html import escape
 from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
 from streamlit_file_browser import st_file_browser
 from queue import Queue
-from typing import Any
+from typing import Any, Deque, Set
 
 from app_utils import (
-    render_conversation_history as util_render_conversation_history,
     save_current_session,
     load_session_from_path,
     _session_option_label,
@@ -27,16 +29,8 @@ from app_utils import (
 )
 from agents.manager_agent.tools import ManagerToolNames
 from graph.graph import create_tissueagent_graph
-from graph.graph_utils import log_message
+from graph.graph_utils import log_message, register_ui_event_queue
 from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, RECURSION_LIMIT, SESSIONS_DIR, UPLOADS_DIR
-
-def clear_queue(q: queue.Queue):
-    """Remove everything from a Queue in a thread-safe way."""
-    try:
-        while True:
-            q.get_nowait()
-    except queue.Empty:
-        pass
 
 
 def _file_to_data_url(file_path: Path) -> str:
@@ -46,6 +40,19 @@ def _file_to_data_url(file_path: Path) -> str:
         mime = "application/octet-stream"
     b64 = base64.b64encode(file_path.read_bytes()).decode("utf-8")
     return f"data:{mime};base64,{b64}"
+
+def _upload_pdf_to_openai(pdf_path: Path) -> str:
+    """Upload PDF to OpenAI Files API and return file_id."""
+    try:
+        file = openai.files.create(
+            file=open(pdf_path, "rb"),
+            purpose="user_data"
+        )
+        logging.info(f"Uploaded PDF {pdf_path.name} to OpenAI, file_id: {file.id}")
+        return file.id
+    except Exception as e:
+        logging.error(f"Failed to upload PDF {pdf_path.name}: {e}")
+        raise
 
 def _next_available_path(directory: Path, filename: str) -> Path:
     """Return a unique path inside directory by suffixing an index if needed."""
@@ -73,6 +80,94 @@ def _reset_data_directories() -> None:
         SESSIONS_DIR,
     ):
         directory.mkdir(parents=True, exist_ok=True)
+
+
+def _message_identity(message: Any) -> str:
+    msg_id = getattr(message, "id", None)
+    if msg_id:
+        return str(msg_id)
+    try:
+        data = message.model_dump()
+    except AttributeError:
+        data = {
+            "type": getattr(message, "type", type(message).__name__),
+            "name": getattr(message, "name", None),
+            "content": getattr(message, "content", None),
+            "tool_calls": getattr(message, "tool_calls", None),
+        }
+    return json.dumps(data, sort_keys=True, default=str)
+
+
+def _should_hide_message(message: Any) -> bool:
+    from langchain_core.messages import ToolMessage as _ToolMessage
+
+    if isinstance(message, _ToolMessage):
+        name = getattr(message, "name", "") or ""
+        return name.endswith("_transfer_tool")
+    return False
+
+
+def _ensure_display_state():
+    existing_messages = [
+        msg for msg in st.session_state["agent_state"]["messages"]
+        if not _should_hide_message(msg)
+    ]
+    display_messages = st.session_state.setdefault(
+        "display_messages", existing_messages
+    )
+    if display_messages is not existing_messages:
+        display_messages[:] = existing_messages
+    ids = st.session_state.setdefault("display_message_ids", set())
+    if not ids:
+        ids.update(_message_identity(msg) for msg in display_messages)
+
+
+def _render_conversation(
+    placeholder: st.delta_generator.DeltaGenerator,
+    enable_debug: bool,
+):
+    placeholder.empty()
+    with placeholder.container():
+        render_conversation_history_display(
+            st.session_state["display_messages"],
+            st.session_state["subagent_states"],
+            enable_debug,
+        )
+
+
+def _append_display_message(
+    message: Any,
+    placeholder: st.delta_generator.DeltaGenerator,
+    enable_debug: bool,
+) -> bool:
+    if _should_hide_message(message):
+        return False
+    msg_key = _message_identity(message)
+    ids: Set[str] = st.session_state["display_message_ids"]
+    if msg_key in ids:
+        return False
+    ids.add(msg_key)
+    st.session_state["display_messages"].append(message)
+    _render_conversation(placeholder, enable_debug)
+    return True
+
+
+def _drain_event_queue(
+    event_queue: Queue,
+    placeholder: st.delta_generator.DeltaGenerator,
+    enable_debug: bool,
+) -> None:
+    while not event_queue.empty():
+        message = event_queue.get()
+        _append_display_message(message, placeholder, enable_debug)
+
+
+def _drain_subagent_queue(
+    state_queue: Queue,
+    pending_states: Deque[Any],
+) -> None:
+    while not state_queue.empty():
+        pending_states.append(state_queue.get())
 
 SESSION_FILENAME_PREFIX = "session_"
 SESSION_FILENAME_SUFFIX = ".json"
@@ -161,18 +256,17 @@ with st.sidebar:
     )
 
     if pdf_files:
+        # Build lookup of existing PDFs with full metadata (not just path)
         existing_pdfs = {
-            pdf_info["name"]: pdf_info["path"]
+            pdf_info["name"]: pdf_info
             for pdf_info in st.session_state.get("uploaded_pdfs", [])
             if Path(pdf_info["path"]).exists()
         }
         saved_pdfs = []
         for pdf in pdf_files:
             if pdf.name in existing_pdfs:
-                saved_pdfs.append({
-                    "name": pdf.name,
-                    "path": existing_pdfs[pdf.name],
-                })
+                # Preserve existing PDF entry with all metadata (file_id, attached_to_conversation)
+                saved_pdfs.append(existing_pdfs[pdf.name])
                 continue
 
             pdf_path = _next_available_path(PDF_UPLOADS_DIR, pdf.name)
@@ -186,7 +280,11 @@ with st.sidebar:
 
     if st.session_state.get("uploaded_pdfs"):
         pdf_names = ", ".join(pdf["name"] for pdf in st.session_state["uploaded_pdfs"])
-        st.caption(f"Saved PDFs: {pdf_names}")
+        st.caption(f"📄 Saved PDFs: {pdf_names}")
+        # Show upload status for each PDF
+        for pdf in st.session_state["uploaded_pdfs"]:
+            if "file_id" in pdf:
+                st.caption(f"✅ {pdf['name']} ready (OpenAI file_id: {pdf['file_id'][:12]}...)")
     else:
         st.caption("No PDFs uploaded yet.")
 
@@ -314,10 +412,15 @@ if "state_queue" not in st.session_state:
     st.session_state["state_queue"] = Queue()
 state_queue = st.session_state["state_queue"]
 
+if "ui_event_queue" not in st.session_state:
+    st.session_state["ui_event_queue"] = Queue()
+register_ui_event_queue(st.session_state["ui_event_queue"])
+event_queue = st.session_state["ui_event_queue"]
+
 if "agent" not in st.session_state:
     bind_retry_fn = lambda model: model.with_retry(
         retry_if_exception_type=(openai.RateLimitError, anthropic.RateLimitError),
-        stop_after_attempt = 3,
+        stop_after_attempt = 6,
     )
     graph = create_tissueagent_graph(
         state_queue,
@@ -327,8 +430,22 @@ if "agent" not in st.session_state:
 agent = st.session_state["agent"]
 
 if "agent_state" not in st.session_state:
-    st.session_state["agent_state"] = {"messages": []}
+    st.session_state["agent_state"] = {
+        "messages": [],
+        "replan_count": 0,
+        "replan_history": [],
+    }
     st.session_state["subagent_states"] = {}
+    st.session_state["pending_subagent_states"] = deque()
+    st.session_state["display_messages"] = []
+    st.session_state["display_message_ids"] = set()
+else:
+    st.session_state.setdefault("subagent_states", {})
+    st.session_state.setdefault("pending_subagent_states", deque())
+    st.session_state.setdefault("display_messages", [])
+    st.session_state.setdefault("display_message_ids", set())
+
+_ensure_display_state()
 
 
 # ╔═══════════════════════╗
@@ -336,11 +453,8 @@ if "agent_state" not in st.session_state:
 # ╚═══════════════════════╝
 
 # Initial render (text-only copy)
-render_conversation_history_display(
-    st.session_state["agent_state"]["messages"],
-    st.session_state["subagent_states"],
-    enable_debug
-)
+conversation_placeholder = st.empty()
+_render_conversation(conversation_placeholder, enable_debug)
 
 # chat_input must be at the root (not inside columns/containers)
 prompt = st.chat_input("Ask the agent:")
@@ -348,31 +462,68 @@ prompt = st.chat_input("Ask the agent:")
 if prompt:
     content_parts = [{"type": "text", "text": prompt}]
 
+    # Add image attachments
     for f in st.session_state.get("pending_images", []):
         content_parts.append({  # type: ignore
             "type": "image_url",
             "image_url": {"url": _file_to_data_url(Path(f["path"]))}
         })
 
+    # Add PDF attachments (only on first message after upload to avoid size limit)
+    for pdf in st.session_state.get("uploaded_pdfs", []):
+        # Check if already uploaded (has file_id cached)
+        if "file_id" not in pdf:
+            try:
+                file_id = _upload_pdf_to_openai(Path(pdf["path"]))
+                pdf["file_id"] = file_id  # Cache the file_id
+                pdf["attached_to_conversation"] = False  # Mark as not yet attached
+            except Exception as e:
+                st.error(f"Failed to upload PDF {pdf['name']}: {e}")
+                continue
+
+        # Only attach PDF to first message after upload to avoid 32MB cumulative limit
+        if not pdf.get("attached_to_conversation", False):
+            content_parts.append({  # type: ignore
+                "type": "file",
+                "file": {"file_id": pdf["file_id"]}
+            })
+            pdf["attached_to_conversation"] = True  # Mark as attached
+
     user_message = HumanMessage(content=content_parts)  # type: ignore
     log_message(user_message)
 
     st.session_state["agent_state"]["messages"].append(user_message)
-
-    # Re-render the just-sent message in text-only mode
-    render_conversation_history_display([user_message], {}, enable_debug)
+    _drain_event_queue(event_queue, conversation_placeholder, enable_debug)
 
     # clear one-shot attachments after sending
     st.session_state["pending_images"] = []
 
     rendered_prefix = len(st.session_state["agent_state"]["messages"])
 
+    start_time = time.perf_counter()
     try:
-        with st.spinner("SpatialAgent is Thinking...", show_time=True):
-            st.session_state["agent_state"] = agent.invoke(
+        with st.spinner("SpatialAgent is Thinking..."):
+            st.session_state["agent_state"].setdefault("replan_count", 0)
+            st.session_state["agent_state"].setdefault("replan_history", [])
+            executor = ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(
+                agent.invoke,
                 st.session_state["agent_state"],
                 {"recursion_limit": RECURSION_LIMIT}
             )
+            try:
+                while True:
+                    try:
+                        st.session_state["agent_state"] = future.result(timeout=0.1)
+                        break
+                    except TimeoutError:
+                        _drain_event_queue(event_queue, conversation_placeholder, enable_debug)
+                        _drain_subagent_queue(
+                            state_queue,
+                            st.session_state["pending_subagent_states"],
+                        )
+            finally:
+                executor.shutdown(wait=False)
     except GraphRecursionError as e:
         st.error(f"Graph Recursion Error: {e}", icon="⚠️")
         logging.error("GraphRecursionError", exc_info=e)
@@ -382,8 +533,19 @@ if prompt:
     except Exception as e:
         st.exception(e)
         logging.error("Unexpected error", exc_info=e)
+    else:
+        elapsed_seconds = time.perf_counter() - start_time
+        st.caption(f"SpatialAgent finished in {elapsed_seconds:.1f} s.")
+    finally:
+        _drain_event_queue(event_queue, conversation_placeholder, enable_debug)
+        _drain_subagent_queue(
+            state_queue,
+            st.session_state["pending_subagent_states"],
+        )
 
-    for message in st.session_state["agent_state"]["messages"]:
+    new_messages = st.session_state["agent_state"]["messages"][rendered_prefix:]
+    pending_state_queue = st.session_state["pending_subagent_states"]
+    for message in new_messages:
         if not isinstance(message, ToolMessage):
             continue
         if message.name in ManagerToolNames:
@@ -394,19 +556,14 @@ if prompt:
                 continue
             if getattr(message, "status", None) == "error":
                 st.session_state["subagent_states"][tool_id] = (message.name, message.content)
-            elif state_queue.empty():
+            elif not pending_state_queue:
                 logging.error(f"No agent state found for following message {message}")
                 st.session_state["subagent_states"][tool_id] = ("agent not found", None)
             else:
-                agent_name, final_state = state_queue.get()
+                agent_name, final_state = pending_state_queue.popleft()
                 st.session_state["subagent_states"][tool_id] = (agent_name, final_state)
 
-    if not state_queue.empty():
-        st.exception(Exception("Display Error: This is likely caused by a concurrency or a parallelization issue."))
-        logging.error("Display Error: This is likely caused by a concurrency or a parallelization issue.")
-        clear_queue(state_queue)
-
-    render_conversation_history_display(
-        st.session_state["agent_state"]["messages"][rendered_prefix:],
-        st.session_state["subagent_states"], enable_debug
-    )
+    _render_conversation(conversation_placeholder, enable_debug)
+    if pending_state_queue:
+        logging.warning("Unmatched subagent states remaining after render; clearing queue.")
+        pending_state_queue.clear()

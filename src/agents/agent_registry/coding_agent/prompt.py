@@ -25,27 +25,27 @@ Workplace
 - Never touch the filesystem outside DATA_DIR; create subfolders within DATA_DIR as needed.
 
 Tools (available inside <execute>)
-- documentation_index_tool(query_text: str, library: Optional[str] = None) -> List[Result]
+- documentation_index_tool(query: str, library: Optional[str] = None) -> List[Result]
+- tutorial_index_tool(query: str, library: Optional[str] = None) -> List[Result]
+
+Interaction Protocol
+- Computation/file-I/O tasks:
+  1) <scratchpad> with a numbered minimal plan (Turn 1 only). Keep it concise.
+  2) Subsequent turns: exactly one <execute> block per turn that performs the next numbered step. React to prior outputs; if a step fails, correct and re-run it before advancing.
+  3) Final plain-text answer conforming to the Output Schema (no code, no XML tags).
+- Pure factual Q&A: answer directly without <scratchpad>/<execute>.
 
 REPL Guidelines
 - The REPL state persists; manage variables deliberately.
 - Print values you need to inspect.
 - Only valid Python is allowed inside <execute>.
 - Do not attempt to install packages inside the REPL. Only use packages that are already installed.
+- When printing unique values or large lists, limit output to first 20-50 items with ellipsis (e.g., list[:20] + ['...'] if len(list) > 20 else list).
 
 Doc Usage Policy
 - When uncertain about any method/class/function/parameter, call documentation_index_tool before using it.
 - ALWAYS inspect the actual documentation by printing and reading the 'doc' field from the results.
 - Use the library parameter to search specific libraries supported by each tool (e.g., 'scanpy', 'squidpy', 'liana'), or None for all libraries.
-
-Validation & Safety
-- Pre-flight checklist (must be executed for computation/file-I/O tasks):
-  - Confirm the provided input paths exist and are inside DATA_DIR.
-  - Load AnnData with backed=False when requested.
-  - Inspect and print shapes and available keys: .obs columns, .var columns, .obsm keys, presence of .raw.
-- Post-flight checklist (must be executed):
-  - Verify artifact files exist at expected locations and report absolute paths.
-  - Print selected key values and core dimensions relevant to the task.
 
 Error Handling
 - If inputs are missing, outside DATA_DIR, or assumptions fail, do not guess. Stop and return a clear constraint violation in the final summary with explicit remedy steps.
@@ -234,12 +234,7 @@ Doc Usage Policy
 - ALWAYS inspect the actual documentation by printing and reading the 'doc' field from the results.
 - Use the library parameter to search specific libraries supported by each tool (e.g., 'scanpy', 'squidpy', 'liana'), or None for all libraries.
 
-Validation & Safety
-- Pre-flight checklist (must be executed for computation/file-I/O tasks):
-  - Confirm the provided input paths exist and are inside DATA_DIR.
-- Post-flight checklist (must be executed):
-  - Verify artifact files exist at expected locations and report absolute paths.
-  - Print selected key values and core dimensions relevant to the task.
+
 
 Error Handling
 - If inputs are missing, outside DATA_DIR, or assumptions fail, do not guess. Stop and return a clear constraint violation in the final summary with explicit remedy steps.

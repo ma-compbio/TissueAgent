@@ -17,6 +17,20 @@ Base Directory
 Tools
 - agents.run(agent_id, task_instructions, expected_artifacts, prior_artifacts) — invoke an expert agent and obtain outputs/artifacts.
 - file_retriever_tool — list/read run manifests and artifact directories.
+- text_artifact_writer_tool(relative_path, contents, mode='overwrite'|'append'|'error_if_exists') — persist textual outputs inside DATA_DIR when an agent response needs to become a file artifact.
+
+PDF Handling (CRITICAL - READ CAREFULLY)
+- When invoking the PDF Reader Agent, you MUST pass pdf_file_ids from the conversation history.
+- The initial user message contains PDF attachments in this format:
+  "content": [
+    {{"type": "text", "text": "..."}},
+    {{"type": "file", "file": {{"file_id": "file-..."}}}}
+  ]
+- Extract ALL file_ids from the conversation history and pass them as a comma-separated string.
+- Example: pdf_reader_agent_transfer_tool(prompt="Analyze the paper...", pdf_file_ids="file-abc123,file-def456")
+- NEVER skip the PDF Reader Agent step claiming "PDF is already parsed" - the briefs/ files DO NOT exist yet.
+- The PDF Reader Agent's output (briefs/) is REQUIRED input for the Hypothesis Agent.
+- Only PDF Reader Agent needs pdf_file_ids - other agents use text-only prompts.
 
 Execution Guidelines
 - Agent Registry: {format_agent_id_descriptions(agent_id_descriptions)}
@@ -25,7 +39,7 @@ Execution Guidelines
   1) Use the assigned agent. Do not substitute agents unless the step is explicitly duplicate or not needed.
   2) Invoke agents.run with task constraints and expected outcomes, allowing the agent autonomy in execution approach.
   3) Wait for the tool response. Do not mark the step successful without a tool response.
-  4) Validate that outputs match the expected artifacts by name/path/type. Paths must resolve inside DATA_DIR and be recorded as relative to DATA_DIR. If mismatched or missing, treat as failure.
+  4) Validate that outputs match the expected artifacts by name/path/type. Paths must resolve inside DATA_DIR and be recorded as relative to DATA_DIR. If an agent only returns text but the step requires a file, immediately persist it with text_artifact_writer_tool and record the returned relative path. If mismatched or missing, treat as failure.
   5) Retry once only if failed or mismatched. Adjust task constraints or inputs. Do not retry more than once.
   6) You may skip a step only if it is a duplicate of a completed step or not needed to reach Good-Enough.
 
@@ -65,7 +79,7 @@ Good-Enough Criteria (STOP EARLY)
 Formatting Rules
 - Start output with `Task`.
 - Do not change the task title.
-- Do not change any of: step text, reason, expected artifacts, assigned agent, assigned agent reason.
+- Do not change any of: step text, reason, expected artifacts, assigned agent, assignment rationale.
 - After each step, update the checklist visibly:
   - Replace [ ] with [✓] when succeeded.
   - Replace [ ] with [✗] when failed or skipped.
@@ -75,6 +89,7 @@ Formatting Rules
 
 Plan Update Template
 '''
+PLAN
 Task: [Don't change the task title from the input]
 Steps:
 [✓|✗] step <N>:
@@ -82,7 +97,7 @@ Steps:
     reason: [Dont change the reason from the input]
     expected artifacts: [Dont change the expected artifacts from the input]
     assigned agent: [Dont change the assigned agent from the input]
-    assigned agent reason: [Dont change the assigned agent reason from the input]
+    assignment rationale: [Dont change the assignment rationale from the input]
     execution result: [Success: ... | Failed: ... | Skipped: ...]
     execution artifacts: [ relative/path/one, relative/path/two, ... ] or None
 '''

@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime, timezone
 from queue import Queue
 from typing import Callable
 
@@ -10,6 +11,8 @@ from agents.agent_defns import (
     AgentDefns, CustomAgent, PlannerAgent, ManagerAgent, ReActAgent, RecruiterAgent, EvaluatorAgent, ReporterAgent
 )
 from graph.graph_utils import create_agent_node, create_tool_node, create_agent_invocation_tool
+
+MAX_REPLANS = 2
 
 
 def create_tissueagent_graph(
@@ -52,8 +55,11 @@ def create_tissueagent_graph(
             agent_subgraph.add_edge(tool_node_id, agent_node_id)
             subagent = agent_subgraph.compile()
 
+            # Enable PDF support for PDF Reader Agent
+            supports_pdf = (agent.id == "pdf_reader")
+
             agent_invocation_tool = create_agent_invocation_tool(
-                agent_node_id, agent.name, subagent, state_queue
+                agent_node_id, agent.name, subagent, state_queue, supports_pdf=supports_pdf
             )
             agent_invocation_tools.append(agent_invocation_tool)
 
@@ -149,9 +155,9 @@ def create_tissueagent_graph(
 
     planner_tool_node = create_tool_node(PlannerAgent.tools)
 
-    def planner_router(text: str) -> str:
+    def planner_router(response, state) -> str:
         """PlannerAgent transition fn"""
-        text = text.strip()
+        text = (response.content or "").strip()
         head = text.splitlines()[0].upper() if text else ""
         if head.startswith("ROUTE: DIRECT"):
             return END
@@ -195,11 +201,33 @@ def create_tissueagent_graph(
 
     evaluator_tool_node = create_tool_node(EvaluatorAgent.tools)
 
-    def evaluator_router(text: str) -> str:
+    def evaluator_state_update(response, state):
+        content = (response.content or "").strip()
+        head = content.splitlines()[0].upper() if content else ""
+        if head.startswith("ROUTE: REPLAN"):
+            prior = int(state.get("replan_count", 0) or 0)
+            new_count = prior + 1
+            history = list(state.get("replan_history", []))
+            history.append(datetime.now(timezone.utc).isoformat())
+            if new_count > MAX_REPLANS:
+                response.content = (
+                    "ROUTE: REPORT\n\n"
+                    "EVALUATION: Replan limit reached (maximum 2). Returning latest evaluator assessment.\n\n"
+                    "NOTE: The evaluator attempted to trigger replanning more than twice; "
+                    "please review earlier feedback for unresolved blockers."
+                )
+            return {"replan_count": new_count, "replan_history": history}
+        return {}
+
+    def evaluator_router(response, state) -> str:
         """EvaluatorAgent transition fn"""
-        text = text.strip()
+        text = (response.content or "").strip()
         head = text.splitlines()[0].upper() if text else ""
         if head.startswith("ROUTE: REPLAN"):
+            prior = int(state.get("replan_count", 0) or 0)
+            next_attempt = prior + 1
+            if next_attempt > MAX_REPLANS:
+                return reporter_node_id
             return planner_node_id
         # head.startswith("ROUTE: REPORT"):
         return reporter_node_id
@@ -209,7 +237,8 @@ def create_tissueagent_graph(
         evaluator_model,
         evaluator_prompt,
         evaluator_tool_node_id,
-        exit_node_id_fn=evaluator_router
+        exit_node_id_fn=evaluator_router,
+        state_update_fn=evaluator_state_update,
     )
 
     ### Reporter node
