@@ -1,6 +1,6 @@
 import logging
 from queue import Queue
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from langchain.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -100,7 +100,8 @@ def create_agent_node(
     prompt: str,
     tool_node_id: str,
     exit_node_id: Optional[str] = None,
-    exit_node_id_fn: Optional[Callable[[str], str]] = None
+    exit_node_id_fn: Optional[Callable[[AIMessage, MessagesState], str]] = None,
+    state_update_fn: Optional[Callable[[AIMessage, MessagesState], Optional[Dict[str, Any]]]] = None,
 ) -> Callable[[MessagesState], Command]:
     
     def agent_node(state: MessagesState) -> Command:
@@ -111,10 +112,25 @@ def create_agent_node(
         response.name = agent_node_id
         log_message(response)
 
+        extra_update: Dict[str, Any] = {}
+        if state_update_fn:
+            maybe_update = state_update_fn(response, state) or {}
+            if maybe_update:
+                extra_update.update(maybe_update)
+
         next_node = tool_node_id if getattr(response, "tool_calls", []) else None
         if not next_node:
-            next_node = exit_node_id if exit_node_id else exit_node_id_fn(response.content)
-        return Command(goto=next_node, update={"messages": [response]})
+            if exit_node_id:
+                next_node = exit_node_id
+            elif exit_node_id_fn:
+                next_node = exit_node_id_fn(response, state)
+            else:
+                next_node = None
+
+        update_payload: Dict[str, Any] = {"messages": [response]}
+        if extra_update:
+            update_payload.update(extra_update)
+        return Command(goto=next_node, update=update_payload)
     return agent_node
 
 def create_tool_node(

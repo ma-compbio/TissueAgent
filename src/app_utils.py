@@ -79,6 +79,8 @@ def save_current_session(sessions_dir: Path, session_filename_prefix: str = "ses
         "messages": [_message_to_serializable(m) for m in messages],
         "subagent_states": st.session_state.get("subagent_states", {}),
         "uploaded_pdfs": st.session_state.get("uploaded_pdfs", []),
+        "replan_count": st.session_state.get("agent_state", {}).get("replan_count", 0),
+        "replan_history": st.session_state.get("agent_state", {}).get("replan_history", []),
     }
 
     sessions_dir.mkdir(parents=True, exist_ok=True)
@@ -121,6 +123,12 @@ def load_session_from_path(path: Path | None):
 
     st.session_state.setdefault("agent_state", {})
     st.session_state["agent_state"]["messages"] = restored_messages
+    st.session_state["agent_state"].setdefault("replan_count", 0)
+    st.session_state["agent_state"].setdefault("replan_history", [])
+    if "replan_count" in payload:
+        st.session_state["agent_state"]["replan_count"] = payload["replan_count"]
+    if "replan_history" in payload:
+        st.session_state["agent_state"]["replan_history"] = payload["replan_history"]
     st.session_state["subagent_states"] = payload.get("subagent_states", {})
     st.session_state["pending_images"] = []
     # Restore uploaded_pdfs from saved session (preserves file_id and attached_to_conversation flags)

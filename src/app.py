@@ -344,7 +344,11 @@ if "agent" not in st.session_state:
 agent = st.session_state["agent"]
 
 if "agent_state" not in st.session_state:
-    st.session_state["agent_state"] = {"messages": []}
+    st.session_state["agent_state"] = {
+        "messages": [],
+        "replan_count": 0,
+        "replan_history": [],
+    }
     st.session_state["subagent_states"] = {}
 
 
@@ -408,6 +412,8 @@ if prompt:
     start_time = time.perf_counter()
     try:
         with st.spinner("SpatialAgent is Thinking..."):
+            st.session_state["agent_state"].setdefault("replan_count", 0)
+            st.session_state["agent_state"].setdefault("replan_history", [])
             st.session_state["agent_state"] = agent.invoke(
                 st.session_state["agent_state"],
                 {"recursion_limit": RECURSION_LIMIT}

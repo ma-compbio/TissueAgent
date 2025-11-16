@@ -11,6 +11,7 @@ from agents.planner_agent.prompt import PlannerPrompt
 from agents.planner_agent.tools import PlannerTools
 from agents.recruiter_agent.prompt import RecruiterPrompt
 from agents.manager_agent.prompt import ManagerPrompt
+from agents.manager_agent.tools import ManagerTool
 from agents.evaluator_agent.prompt import EvaluatorPrompt
 from agents.reporter_agent.prompt import ReporterPrompt
 from agents.reporter_agent.tools import ReporterTools
@@ -58,7 +59,7 @@ ManagerAgent = ReActAgent(
     name        = "Manager Agent",
     description = "",
     prompt      = ManagerPrompt,
-    tools       = [file_retriever_tool],
+    tools       = ManagerTool,
     model_ctor  = DefaultModelCtor,
 )
 
