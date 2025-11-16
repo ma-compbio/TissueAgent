@@ -47,8 +47,6 @@ Doc Usage Policy
 - ALWAYS inspect the actual documentation by printing and reading the 'doc' field from the results.
 - Use the library parameter to search specific libraries supported by each tool (e.g., 'scanpy', 'squidpy', 'liana'), or None for all libraries.
 
-
-
 Error Handling
 - If inputs are missing, outside DATA_DIR, or assumptions fail, do not guess. Stop and return a clear constraint violation in the final summary with explicit remedy steps.
 - If any step fails, debug and re-execute that step until success or a constraint violation is declared. Do not proceed to later steps while the current step is failing.

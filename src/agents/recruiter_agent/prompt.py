@@ -24,6 +24,7 @@ Use the following guidelines to assign agents effectively:
 You will need to output the updated <Plan> with assigned agents. For each step, add two new fields: <assigned agent> and <assignment rationale> and do not change any of the existing fields.
 The final output should follow the following format exactly:
 '''
+PLAN
 Task: [Don't change the task title from the input]
 Steps: 
 [] step <N>: 

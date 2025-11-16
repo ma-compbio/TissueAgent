@@ -89,6 +89,7 @@ Formatting Rules
 
 Plan Update Template
 '''
+PLAN
 Task: [Don't change the task title from the input]
 Steps:
 [✓|✗] step <N>:

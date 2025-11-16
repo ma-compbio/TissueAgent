@@ -98,10 +98,25 @@ def _message_identity(message: Any) -> str:
     return json.dumps(data, sort_keys=True, default=str)
 
 
+def _should_hide_message(message: Any) -> bool:
+    from langchain_core.messages import ToolMessage as _ToolMessage
+
+    if isinstance(message, _ToolMessage):
+        name = getattr(message, "name", "") or ""
+        return name.endswith("_transfer_tool")
+    return False
+
+
 def _ensure_display_state():
+    existing_messages = [
+        msg for msg in st.session_state["agent_state"]["messages"]
+        if not _should_hide_message(msg)
+    ]
     display_messages = st.session_state.setdefault(
-        "display_messages", list(st.session_state["agent_state"]["messages"])
+        "display_messages", existing_messages
     )
+    if display_messages is not existing_messages:
+        display_messages[:] = existing_messages
     ids = st.session_state.setdefault("display_message_ids", set())
     if not ids:
         ids.update(_message_identity(msg) for msg in display_messages)
@@ -125,6 +140,8 @@ def _append_display_message(
     placeholder: st.delta_generator.DeltaGenerator,
     enable_debug: bool,
 ) -> bool:
+    if _should_hide_message(message):
+        return False
     msg_key = _message_identity(message)
     ids: Set[str] = st.session_state["display_message_ids"]
     if msg_key in ids:
