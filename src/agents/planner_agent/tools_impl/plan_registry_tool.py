@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 import yaml
 from langchain.tools import StructuredTool
+from pydantic import BaseModel, Field
 
 # Get the default registry directory relative to this file
 DEFAULT_REGISTRY_DIR = Path(__file__).parent.parent / "plan_registry"

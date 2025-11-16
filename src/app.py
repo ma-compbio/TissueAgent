@@ -5,6 +5,7 @@ import mimetypes
 import openai
 import queue
 import shutil
+import time
 from datetime import datetime
 from pathlib import Path
 import streamlit as st
@@ -404,8 +405,9 @@ if prompt:
 
     rendered_prefix = len(st.session_state["agent_state"]["messages"])
 
+    start_time = time.perf_counter()
     try:
-        with st.spinner("SpatialAgent is Thinking...", show_time=True):
+        with st.spinner("SpatialAgent is Thinking..."):
             st.session_state["agent_state"] = agent.invoke(
                 st.session_state["agent_state"],
                 {"recursion_limit": RECURSION_LIMIT}
@@ -419,8 +421,12 @@ if prompt:
     except Exception as e:
         st.exception(e)
         logging.error("Unexpected error", exc_info=e)
+    else:
+        elapsed_seconds = time.perf_counter() - start_time
+        st.caption(f"SpatialAgent finished in {elapsed_seconds:.1f} s.")
 
-    for message in st.session_state["agent_state"]["messages"]:
+    new_messages = st.session_state["agent_state"]["messages"][rendered_prefix:]
+    for message in new_messages:
         if not isinstance(message, ToolMessage):
             continue
         if message.name in ManagerToolNames:
