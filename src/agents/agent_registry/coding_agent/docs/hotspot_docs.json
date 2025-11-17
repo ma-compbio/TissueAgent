@@ -1,0 +1,229 @@
+[
+    {
+      "method": "hotspot.Hotspot.__init__",
+      "signature": "__init__(self, adata, layer_key = None, model = 'danb', latent_obsm_key = None, distances_obsp_key = None, tree = None, umi_counts_obs_key = None)",
+      "description": "Initialize a Hotspot object for analysis  Either `latent` or `tree` or `distances` is required.",
+      "params": [
+        {
+          "name": "adata",
+          "type": "anndata.AnnData",
+          "desc": "Count matrix (shape is cells by genes)"
+        },
+        {
+          "name": "layer_key",
+          "type": "str",
+          "desc": "Key in adata.layers with count data, uses adata.X if None."
+        },
+        {
+          "name": "model",
+          "type": "string, optional",
+          "desc": "Specifies the null model to use for gene expression. Valid choices are:  - 'danb': Depth-Adjusted Negative Binomial - 'bernoulli': Models probability of detection - 'normal': Depth-Adjusted Normal - 'none': Assumes data has been pre-standardized"
+        },
+        {
+          "name": "latent_obsm_key",
+          "type": "string, optional",
+          "desc": "Latent space encoding cell-cell similarities with euclidean distances.  Shape is (cells x dims). Input is key in adata.obsm"
+        },
+        {
+          "name": "distances_obsp_key",
+          "type": "pandas.DataFrame, optional",
+          "desc": "Distances encoding cell-cell similarities directly Shape is (cells x cells). Input is key in adata.obsp"
+        },
+        {
+          "name": "tree",
+          "type": "ete3.coretype.tree.TreeNode",
+          "desc": "Root tree node.  Can be created using ete3.Tree"
+        }
+      ],
+      "misc": ""
+    },
+    {
+      "method": "hotspot.Hotspot.legacy_init",
+      "signature": "legacy_init(cls, counts, model = 'danb', latent = None, distances = None, tree = None, umi_counts = None)",
+      "description": "Initialize a Hotspot object for analysis using legacy method   Either `latent` or `tree` or `distances` is required.",
+      "params": [
+        {
+          "name": "counts",
+          "type": "pandas.DataFrame",
+          "desc": "Count matrix (shape is genes x cells)"
+        },
+        {
+          "name": "model",
+          "type": "string, optional",
+          "desc": "Specifies the null model to use for gene expression. Valid choices are: - 'danb': Depth-Adjusted Negative Binomial - 'bernoulli': Models probability of detection - 'normal': Depth-Adjusted Normal - 'none': Assumes data has been pre-standardized"
+        },
+        {
+          "name": "latent",
+          "type": "pandas.DataFrame, optional",
+          "desc": "Latent space encoding cell-cell similarities with euclidean distances.  Shape is (cells x dims)"
+        },
+        {
+          "name": "distances",
+          "type": "pandas.DataFrame, optional",
+          "desc": "Distances encoding cell-cell similarities directly Shape is (cells x cells)"
+        },
+        {
+          "name": "tree",
+          "type": "ete3.coretype.tree.TreeNode",
+          "desc": "Root tree node.  Can be created using ete3.Tree"
+        },
+        {
+          "name": "umi_counts",
+          "type": "pandas.Series, optional",
+          "desc": "Total umi count per cell.  Used as a size factor. If omitted, the sum over genes in the counts matrix is used"
+        }
+      ],
+      "misc": "--------\n>>> gene_exp = pd.read_csv(path, index_col=0) # genes by cells\n>>> latent = pd.read_csv(latent_path, index_col=0) # cells by dims\n>>> hs = hotspot.Hotspot.legacy_init(gene_exp, model=\"normal\", latent=latent)"
+    },
+    {
+      "method": "hotspot.Hotspot.create_knn_graph",
+      "signature": "create_knn_graph(self, weighted_graph = False, n_neighbors = 30, neighborhood_factor = 3, approx_neighbors = True)",
+      "description": "Create's the KNN graph and graph weights  The resulting matrices containing the neighbors and weights are stored in the object at `self.neighbors` and `self.weights`",
+      "params": [
+        {
+          "name": "weighted_graph",
+          "type": "bool",
+          "desc": "Whether or not to create a weighted graph"
+        },
+        {
+          "name": "n_neighbors",
+          "type": "int",
+          "desc": "Neighborhood size"
+        },
+        {
+          "name": "neighborhood_factor",
+          "type": "float",
+          "desc": "Used when creating a weighted graph.  Sets how quickly weights decay relative to the distances within the neighborhood.  The weight for a cell with a distance d will decay as exp(-d/D) where D is the distance to the `n_neighbors`/`neighborhood_factor`-th neighbor."
+        }
+      ],
+      "misc": ""
+    },
+    {
+      "method": "hotspot.Hotspot._compute_hotspot",
+      "signature": "_compute_hotspot(self, jobs = 1)",
+      "description": "Perform feature selection using local autocorrelation  In addition to returning output, this also stores the output in `self.results`.  Alias for `self.compute_autocorrelations`",
+      "params": [
+        {
+          "name": "jobs",
+          "type": "int",
+          "desc": "Number of parallel jobs to run"
+        },
+        {
+          "name": "return",
+          "type": "pandas.DataFrame",
+          "desc": "A dataframe with four columns:  - C: Scaled -1:1 autocorrelation coeficients - Z: Z-score for autocorrelation - Pval:  P-values computed from Z-scores - FDR:  Q-values using the Benjamini-Hochberg procedure  Gene ids are in the index"
+        }
+      ],
+      "misc": ""
+    },
+    {
+      "method": "hotspot.Hotspot.compute_autocorrelations",
+      "signature": "compute_autocorrelations(self, jobs = 1)",
+      "description": "Perform feature selection using local autocorrelation  In addition to returning output, this also stores the output in `self.results`",
+      "params": [
+        {
+          "name": "jobs",
+          "type": "int",
+          "desc": "Number of parallel jobs to run"
+        },
+        {
+          "name": "return",
+          "type": "pandas.DataFrame",
+          "desc": "A dataframe with four columns:  - C: Scaled -1:1 autocorrelation coeficients - Z: Z-score for autocorrelation - Pval:  P-values computed from Z-scores - FDR:  Q-values using the Benjamini-Hochberg procedure  Gene ids are in the index"
+        }
+      ],
+      "misc": ""
+    },
+    {
+      "method": "hotspot.Hotspot.compute_local_correlations",
+      "signature": "compute_local_correlations(self, genes, jobs = 1)",
+      "description": "Define gene-gene relationships with pair-wise local correlations  In addition to returning output, this method stores its result in `self.local_correlation_z`",
+      "params": [
+        {
+          "name": "genes",
+          "type": "iterable of str",
+          "desc": "gene identifies to compute local correlations on should be a smaller subset of all genes"
+        },
+        {
+          "name": "jobs",
+          "type": "int",
+          "desc": "Number of parallel jobs to run"
+        },
+        {
+          "name": "return",
+          "type": "pd.Dataframe",
+          "desc": "local correlation Z-scores between genes shape is genes x genes"
+        }
+      ],
+      "misc": ""
+    },
+    {
+      "method": "hotspot.Hotspot.create_modules",
+      "signature": "create_modules(self, min_gene_threshold = 20, core_only = True, fdr_threshold = 0.05)",
+      "description": "Groups genes into modules  In addition to being returned, the results of this method are retained in the object at `self.modules`.  Additionally, the linkage matrix (in the same form as that of scipy.cluster.hierarchy.linkage) is saved in `self.linkage` for plotting or manual clustering.",
+      "params": [
+        {
+          "name": "min_gene_threshold",
+          "type": "int",
+          "desc": "Controls how small modules can be.  Increase if there are too many modules being formed.  Decrease if substructre is not being captured"
+        },
+        {
+          "name": "core_only",
+          "type": "bool",
+          "desc": "Whether or not to assign ambiguous genes to a module or leave unassigned"
+        },
+        {
+          "name": "fdr_threshold",
+          "type": "float",
+          "desc": "Correlation theshold at which to stop assigning genes to modules"
+        },
+        {
+          "name": "return",
+          "type": "pandas.Series",
+          "desc": "Maps gene to module number.  Unassigned genes are indicated with -1"
+        }
+      ],
+      "misc": ""
+    },
+    {
+      "method": "hotspot.Hotspot.calculate_module_scores",
+      "signature": "calculate_module_scores(self)",
+      "description": "Calculate Module Scores  In addition to returning its result, this method stores its output in the object at `self.module_scores`",
+      "params": [
+        {
+          "name": "return",
+          "type": "pandas.DataFrame",
+          "desc": "Scores for each module for each gene Dimensions are genes x modules"
+        }
+      ],
+      "misc": ""
+    },
+    {
+      "method": "hotspot.Hotspot.plot_local_correlations",
+      "signature": "plot_local_correlations(self, mod_cmap = 'tab10', vmin = -8, vmax = 8, z_cmap = 'RdBu_r', yticklabels = False)",
+      "description": "Plots a clustergrid of the local correlation values",
+      "params": [
+        {
+          "name": "mod_cmap",
+          "type": "valid matplotlib colormap str or object",
+          "desc": "discrete colormap for module assignments on the left side"
+        },
+        {
+          "name": "vmin",
+          "type": "float",
+          "desc": "minimum value for colorscale for Z-scores"
+        },
+        {
+          "name": "vmax",
+          "type": "float",
+          "desc": "maximum value for colorscale for Z-scores"
+        },
+        {
+          "name": "z_cmap",
+          "type": "valid matplotlib colormap str or object",
+          "desc": "continuous colormap for correlation Z-scores"
+        }
+      ],
+      "misc": ""
+    }
+  ]
