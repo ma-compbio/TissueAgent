@@ -2,6 +2,7 @@ __pycache__/
 __marimo__/
 .ipynb_checkpoints/
 
+
 .venv/
 
 .DS_Store
