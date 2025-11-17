@@ -112,15 +112,35 @@ PLAN
 Task: Create a spatial scatterplot from the uploaded dataset
 Steps:
 [] step 1:
-    step: Prepare data: load dataset; identify spatial coordinate information; determine appropriate color mapping
-    reason: Combine discovery and choice so plotting has coordinates and a suitable color scheme ready
-    expected artifacts: tables/data_inventory.tsv, tables/plot_config.json
-[] step 2:
-    step: Plot and document: render scatter plot; save in multiple formats; write brief run metadata
-    reason: Produce the figure and light provenance in one pass
-    expected artifacts: figures/spatial_scatter.png, figures/spatial_scatter.svg, logs/run_meta.json
+    step: Prepare data: load dataset; identify appropriate color mapping; render scatter plot and save in multiple formats
+    reason: Prepare and load data for scatter plot generation. Minimal preprocessing is required, so combining preprocessing and plotting into one step.
+    expected artifacts: tables/data_inventory.tsv, tables/plot_config.json, figures/spatial_scatter.png, figures/spatial_scatter.svg
 
-Example B: Differential expression analysis between two groups
+Example B: Figure recreation (simple; 1 step)
+ROUTE: PLAN
+PLAN
+Task: Plot a UMAP of the uploaded dataset colored by cell type. Model it after the reference image.
+Steps:
+[] step 1:
+    step: Prepare + Render: load dataset; apply described styling/labels; render and save the figure
+    reason: No substantial preprocessing needed; combine preparation and plotting into a single step
+    expected artifacts: figures/fig2a.png, figures/fig2a.svg
+
+Example C: Figure recreation (requires preprocessing; 2 steps)
+ROUTE: PLAN
+PLAN
+Task: Plot a cell type heatmap displaying the relative enrichment toward integration and segregation of pairs of cell types in space. Cell types are clustered by their relative integration with others. Model it after the reference image.
+Steps:
+[] step 1:
+    step: Prepare: compute pairwise spatial enrichment/segregation; build celltype x celltype matrix; cluster order; record parameters
+    reason: Substantial preprocessing is needed before rendering; keep it separate from plotting stage.
+    expected artifacts: tables/ct_enrichment_matrix.tsv, tables/ct_pair_stats.tsv, configs/heatmap.json
+[] step 2:
+    step: Render: plot heatmap using ordered matrix; add colorbar/annotations; save PNG and SVG
+    reason: Final rendering produces the main artifact modeled after the reference
+    expected artifacts: figures/celltype_heatmap.png, figures/celltype_heatmap.svg
+
+Example D: Differential expression analysis between two groups
 ROUTE: PLAN
 PLAN
 Task: Run differential expression analysis between two groups and summarize results
@@ -138,7 +158,7 @@ Steps:
     reason: Add interpretability without splitting into micro-steps
     expected artifacts: tables/annotated_hits.tsv, reports/de_summary.md
 
-Example C: Summarize a paper PDF
+Example E: Summarize a paper PDF
 ROUTE: PLAN
 PLAN
 Task: Summarize a PDF into a 1-page brief with key figures and limitations

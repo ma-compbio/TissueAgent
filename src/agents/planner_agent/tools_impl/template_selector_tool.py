@@ -44,7 +44,9 @@ def _load_templates(registry_dir: Path) -> List[Dict[str, Any]]:
         return []
     docs: List[Dict[str, Any]] = []
     for p in sorted(registry_dir.glob("*.yaml")):
-        docs.append(yaml.safe_load(p.read_text()))
+        doc = yaml.safe_load(p.read_text())
+        if isinstance(doc, dict) and bool(doc.get("enabled", True)):
+            docs.append(doc)
     return docs
 
 def _score_template(

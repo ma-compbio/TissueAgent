@@ -347,6 +347,9 @@ prompt = st.chat_input("Ask the agent:")
 
 if prompt:
     content_parts = [{"type": "text", "text": prompt}]
+    overall_start_time = datetime.now()
+    agent_invoke_start_time = None
+    agent_invoke_duration_s = None
 
     for f in st.session_state.get("pending_images", []):
         content_parts.append({  # type: ignore
@@ -369,19 +372,27 @@ if prompt:
 
     try:
         with st.spinner("SpatialAgent is Thinking...", show_time=True):
+            agent_invoke_start_time = datetime.now()
             st.session_state["agent_state"] = agent.invoke(
                 st.session_state["agent_state"],
                 {"recursion_limit": RECURSION_LIMIT}
             )
+            agent_invoke_duration_s = (datetime.now() - agent_invoke_start_time).total_seconds()
     except GraphRecursionError as e:
         st.error(f"Graph Recursion Error: {e}", icon="⚠️")
         logging.error("GraphRecursionError", exc_info=e)
+        if agent_invoke_start_time is not None and agent_invoke_duration_s is None:
+            agent_invoke_duration_s = (datetime.now() - agent_invoke_start_time).total_seconds()
     except (anthropic.BadRequestError, openai.BadRequestError) as e:
         st.error(f"Bad Request Error: {e}", icon="⚠️")
         logging.error("BadRequestError", exc_info=e)
+        if agent_invoke_start_time is not None and agent_invoke_duration_s is None:
+            agent_invoke_duration_s = (datetime.now() - agent_invoke_start_time).total_seconds()
     except Exception as e:
         st.exception(e)
         logging.error("Unexpected error", exc_info=e)
+        if agent_invoke_start_time is not None and agent_invoke_duration_s is None:
+            agent_invoke_duration_s = (datetime.now() - agent_invoke_start_time).total_seconds()
 
     for message in st.session_state["agent_state"]["messages"]:
         if not isinstance(message, ToolMessage):
@@ -409,4 +420,12 @@ if prompt:
     render_conversation_history_display(
         st.session_state["agent_state"]["messages"][rendered_prefix:],
         st.session_state["subagent_states"], enable_debug
+    )
+    overall_duration_s = (datetime.now() - overall_start_time).total_seconds()
+    if agent_invoke_duration_s is None and agent_invoke_start_time is not None:
+        agent_invoke_duration_s = (datetime.now() - agent_invoke_start_time).total_seconds()
+    logging.info(
+        f"Query processed in {overall_duration_s:.3f}s" + (
+            f" (agent: {agent_invoke_duration_s:.3f}s)" if agent_invoke_duration_s is not None else ""
+        )
     )

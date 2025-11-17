@@ -32,20 +32,12 @@ REPL Guidelines
 - Print values you need to inspect.
 - Only valid Python is allowed inside <execute>.
 - Do not attempt to install packages inside the REPL. Only use packages that are already installed.
+- Do not use hardcoded values for variables. For example, instead of searching only for "cell_type" and "celltype" columns in the data, print out all available columns in the data and let the user choose the column name.
 
 Doc Usage Policy
 - When uncertain about any method/class/function/parameter, call documentation_index_tool before using it.
 - ALWAYS inspect the actual documentation by printing and reading the 'doc' field from the results.
 - Use the library parameter to search specific libraries supported by each tool (e.g., 'scanpy', 'squidpy', 'liana'), or None for all libraries.
-
-Validation & Safety
-- Pre-flight checklist (must be executed for computation/file-I/O tasks):
-  - Confirm the provided input paths exist and are inside DATA_DIR.
-  - Load AnnData with backed=False when requested.
-  - Inspect and print shapes and available keys: .obs columns, .var columns, .obsm keys, presence of .raw.
-- Post-flight checklist (must be executed):
-  - Verify artifact files exist at expected locations and report absolute paths.
-  - Print selected key values and core dimensions relevant to the task.
 
 Error Handling
 - If inputs are missing, outside DATA_DIR, or assumptions fail, do not guess. Stop and return a clear constraint violation in the final summary with explicit remedy steps.
@@ -94,21 +86,25 @@ print("Loaded AnnData:", adata.n_obs, adata.n_vars)
 
 Assistant (Turn 4):
 <execute>
-cands = ["cell_type","celltype","cluster","celltype_major","annotation"]
-sel = next((c for c in adata.obs.columns if c.lower() in cands), None)
-print("Selected cell type column:", sel)
-print("Available obs columns:", list(adata.obs.columns)[:20])
+obs_cols = [str(c) for c in adata.obs.columns]
+summary = {{c: {{"dtype": str(adata.obs[c].dtype), "n_unique": int(adata.obs[c].nunique())}} for c in obs_cols}}
+print("Available obs columns (first 20):", obs_cols[:20])
+print("obs summary (first 10):", list(summary.items())[:10])
 </execute>
 
 Assistant (Turn 5):
 <execute>
-import numpy as np
-import scanpy as sc
-if "X_umap" not in adata.obsm:
+cell_type_key = "cell_type" # infer this from output of Turn 4
+umap_key = "umap"           # infer this from output of Turn 4
+
+# run UMAP if key not present
+if umap_key not in adata.obsm:
     sc.pp.pca(adata)
     sc.pp.neighbors(adata)
     sc.tl.umap(adata, random_state=0)
-print("Has UMAP:", "X_umap" in adata.obsm)
+
+print("cell_type_key:", cell_type_key in adata.obs)
+print("umap_key     :", "X_umap" in adata.obsm)
 </execute>
 
 Assistant (Turn 6):
@@ -117,7 +113,6 @@ import matplotlib.pyplot as plt
 outdir = DATA_DIR / "plots"
 outdir.mkdir(parents=True, exist_ok=True)
 figpath = outdir / "umap_celltype.png"
-sc.pl.umap(adata, color=sel, show=False)
 plt.savefig(figpath, dpi=150, bbox_inches="tight")
 plt.close()
 print("Plot saved to:", str(figpath.resolve()))

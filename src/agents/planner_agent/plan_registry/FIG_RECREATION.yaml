@@ -1,0 +1,28 @@
+template_id: FIG_RECREATION
+enabled: true
+task: Recreate a figure from description and reference image
+version: "1.0"
+last_updated: 2025-11-12
+tags: [figure-recreation, figure, reproduction, visualization]
+
+inputs:
+  - "AnnData(.h5ad) with .obsm['spatial'] or obs['x','y']"
+  - "Reference image of figure(.png)/figure(.svg)"
+  - "(Optional) description of description (.png)"
+
+outputs:
+  - "Image of figure(.png) and figure(.svg)"
+
+step_sketch: >
+  directly preprocess and generate plot from description OR
+  run corresponding preprocessing steps → render and save plot
+eval: ["file_exists(plot_name.png)", "file_exists(plot_name.svg)"]
+
+# checklist lines the Planner can adapt/emit (≤160 chars each)
+checklist:
+  - "Determine plot type and perform necessary preprocessing steps"
+  - "Render and save plot"
+
+details:
+ - "Provide detailed description of the figure to be recreated. Include things like: plot type, position of legend, position of axes, etc."
+ - "Use one-step plan if plot type does not require significant preprocessing (e.g., simple log1p transformation or UMAP calculation). Use two steps otherwise with 'Prepare' then 'Render'."

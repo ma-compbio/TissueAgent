@@ -33,7 +33,7 @@ class CustomAgent:
     ctor: Callable[..., StructuredTool]
 
 
-DefaultModelCtor = partial(ChatOpenAI, model="gpt-5")
+DefaultModelCtor = partial(ChatOpenAI, model="gpt-5", reasoning_effort="low")
 
 PlannerAgent = ReActAgent(
     id          = "planner",
