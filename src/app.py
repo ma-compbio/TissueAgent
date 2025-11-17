@@ -502,7 +502,7 @@ if prompt:
 
     start_time = time.perf_counter()
     try:
-        with st.spinner("SpatialAgent is Thinking..."):
+        with st.spinner("TissueAgent is Thinking..."):
             st.session_state["agent_state"].setdefault("replan_count", 0)
             st.session_state["agent_state"].setdefault("replan_history", [])
             executor = ThreadPoolExecutor(max_workers=1)
