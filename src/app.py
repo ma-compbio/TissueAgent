@@ -29,7 +29,12 @@ from app_utils import (
 )
 from agents.manager_agent.tools import ManagerToolNames
 from graph.graph import create_tissueagent_graph
-from graph.graph_utils import log_message, register_ui_event_queue
+from graph.graph_utils import (
+    log_message,
+    record_user_message,
+    register_ui_event_queue,
+)
+from memori_integration import initialize_memori_context, memori_enabled
 from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, RECURSION_LIMIT, SESSIONS_DIR, UPLOADS_DIR
 
 
@@ -70,16 +75,21 @@ def _next_available_path(directory: Path, filename: str) -> Path:
     raise FileExistsError(f"Unable to allocate a unique filename for {filename}")
 
 def _reset_data_directories() -> None:
-    """Clear the entire data directory tree and recreate known subdirectories."""
-    shutil.rmtree(DATA_DIR, ignore_errors=True)
+    """
+    Clear runtime data folders while preserving persistent stores (e.g., data/memori).
+    """
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     for directory in (
-        DATA_DIR,
         DATASET_DIR,
         UPLOADS_DIR,
         PDF_UPLOADS_DIR,
         SESSIONS_DIR,
     ):
+        shutil.rmtree(directory, ignore_errors=True)
         directory.mkdir(parents=True, exist_ok=True)
+
+## Enable Memori long-term memory (if configured) before any LLM calls take place.
+initialize_memori_context()
 
 
 def _message_identity(message: Any) -> str:
@@ -188,6 +198,8 @@ if "show_file_browser" not in st.session_state:
     st.session_state.show_file_browser = False
 
 with st.sidebar:
+    memori_status = "🧠 Memori long-term memory: enabled" if memori_enabled() else "🧠 Memori long-term memory: disabled"
+    st.caption(memori_status)
 
     ### Upload Dataset
 
@@ -490,6 +502,7 @@ if prompt:
             pdf["attached_to_conversation"] = True  # Mark as attached
 
     user_message = HumanMessage(content=content_parts)  # type: ignore
+    record_user_message(user_message)
     log_message(user_message)
 
     st.session_state["agent_state"]["messages"].append(user_message)

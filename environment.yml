@@ -1,4 +1,4 @@
-name: spatialagent
+name: tissueagent
 channels:
   - conda-forge
   - defaults
@@ -28,3 +28,4 @@ dependencies:
       - streamlit-modal==0.1.2
       - google-search-results==2.4.2
       - pymed==0.8.9
+      - memorisdk>=2.3.0

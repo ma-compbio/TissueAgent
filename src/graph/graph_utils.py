@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from queue import Queue
 from typing import Any, Callable, Dict, List, Optional
 
@@ -12,11 +13,38 @@ from langgraph.types import Command
 from logger import logger
 
 _ui_event_queue: Optional[Queue] = None
+_latest_user_message_content: Optional[List[Any]] = None
 
 
 def register_ui_event_queue(event_queue: Queue) -> None:
     global _ui_event_queue
     _ui_event_queue = event_queue
+
+
+def record_user_message(message: BaseMessage) -> None:
+    """
+    Persist the latest user message content (including multimodal parts)
+    so downstream agent tools can access attachments like images.
+    """
+    global _latest_user_message_content
+    content = getattr(message, "content", None)
+    if isinstance(content, list):
+        _latest_user_message_content = deepcopy(content)
+    else:
+        _latest_user_message_content = None
+
+
+def get_latest_user_image_parts() -> List[Dict[str, Any]]:
+    """
+    Return copies of the latest user's image parts (if any) to avoid mutation.
+    """
+    if not isinstance(_latest_user_message_content, list):
+        return []
+    parts: List[Dict[str, Any]] = []
+    for part in _latest_user_message_content:
+        if isinstance(part, dict) and part.get("type") in {"image_url", "image"}:
+            parts.append(deepcopy(part))
+    return parts
 
 
 def standardize_message_format(
@@ -168,8 +196,24 @@ def create_agent_invocation_tool(
     agent_name: str,
     agent: CompiledStateGraph,
     state_queue: Queue,
-    supports_pdf: bool = False
+    supports_pdf: bool = False,
+    forward_user_images: bool = False,
 ):
+    def _build_multimodal_message(prompt: str, extra_parts: Optional[List[Dict[str, Any]]] = None):
+        if forward_user_images:
+            image_parts = get_latest_user_image_parts()
+        else:
+            image_parts = []
+        parts: List[Dict[str, Any]] = [{"type": "text", "text": prompt}]
+        if extra_parts:
+            parts.extend(extra_parts)
+        if image_parts:
+            parts.extend(image_parts)
+            return HumanMessage(content=parts)
+        if extra_parts:
+            return HumanMessage(content=parts)
+        return HumanMessage(prompt)
+
     if supports_pdf:
         def agent_invocation_tool(prompt: str, pdf_file_ids: str = "") -> str:
             """
@@ -185,7 +229,7 @@ def create_agent_invocation_tool(
             logging.info(f"Invoking PDF-capable agent `{agent_node_id}`")
 
             # Build multimodal content if PDFs provided
-            content = [{"type": "text", "text": prompt}]
+            content: List[Dict[str, Any]] = []
 
             if pdf_file_ids and pdf_file_ids.strip():
                 file_ids = [fid.strip() for fid in pdf_file_ids.split(",") if fid.strip()]
@@ -196,14 +240,16 @@ def create_agent_invocation_tool(
                         "file": {"file_id": file_id}
                     })
 
-            final_state = agent.invoke({"messages": [HumanMessage(content=content)]})
+            message = _build_multimodal_message(prompt, extra_parts=content)
+            final_state = agent.invoke({"messages": [message]})
             state_queue.put((agent_name, final_state))
             logging.info(f"Finished invoking PDF-capable agent `{agent_node_id}`")
             return final_state["messages"][-1].content
     else:
         def agent_invocation_tool(prompt: str) -> str:
             logging.info(f"Invoking agent `{agent_node_id}`")
-            final_state = agent.invoke({"messages": [HumanMessage(prompt)]})
+            message = _build_multimodal_message(prompt)
+            final_state = agent.invoke({"messages": [message]})
             state_queue.put((agent_name, final_state))
             logging.info(f"Finished invoking agent `{agent_node_id}`")
             return final_state["messages"][-1].content

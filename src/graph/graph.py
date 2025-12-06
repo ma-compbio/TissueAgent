@@ -11,6 +11,7 @@ from agents.agent_defns import (
     AgentDefns, CustomAgent, PlannerAgent, ManagerAgent, ReActAgent, RecruiterAgent, EvaluatorAgent, ReporterAgent
 )
 from graph.graph_utils import create_agent_node, create_tool_node, create_agent_invocation_tool
+from memori_integration import initialize_memori_context
 
 MAX_REPLANS = 2
 
@@ -19,6 +20,7 @@ def create_tissueagent_graph(
     state_queue: Queue,
     model_proc_fn: Callable[..., BaseChatModel]
 ) -> StateGraph:
+    initialize_memori_context()
     assign_agent_node_id = lambda id: f"{id}_agent"
     assign_tool_node_id = lambda id: f"{id}_tools"
 
@@ -58,8 +60,14 @@ def create_tissueagent_graph(
             # Enable PDF support for PDF Reader Agent
             supports_pdf = (agent.id == "pdf_reader")
 
+            forward_user_images = (agent.id == "coding")
             agent_invocation_tool = create_agent_invocation_tool(
-                agent_node_id, agent.name, subagent, state_queue, supports_pdf=supports_pdf
+                agent_node_id,
+                agent.name,
+                subagent,
+                state_queue,
+                supports_pdf=supports_pdf,
+                forward_user_images=forward_user_images,
             )
             agent_invocation_tools.append(agent_invocation_tool)
 

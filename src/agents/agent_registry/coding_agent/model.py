@@ -14,7 +14,7 @@ from agents.agent_registry.coding_agent.tools_impl.tutorial_index import Tutoria
 # from agents.agent_registry.coding_agent.tools_impl.tutorial_rag import TutorialRAG
 from agents.agent_registry.coding_agent.params import model_ctor, doc_filepaths, tutorial_directories
 from agents.agent_registry.coding_agent.prompt import CodingAgentBasePrompt
-from graph.graph_utils import log_message
+from graph.graph_utils import get_latest_user_image_parts, log_message
 
 from config import DATA_DIR, NOTEBOOK_DIR
 
@@ -154,7 +154,14 @@ def create_coding_agent(state_queue: Queue):
 
     def agent_invocation_tool(prompt: str) -> str:
         logging.info(f"Invoking agent `{id}`")
-        final_state = agent.invoke({"messages": [HumanMessage(prompt)]})
+        image_parts = get_latest_user_image_parts()
+        if image_parts:
+            logging.info("Forwarding latest user image attachments to coding agent.")
+            content = [{"type": "text", "text": prompt}, *image_parts]
+            message = HumanMessage(content=content)
+        else:
+            message = HumanMessage(prompt)
+        final_state = agent.invoke({"messages": [message]})
         state_queue.put((id, final_state))
         return final_state["messages"][-1].content
 

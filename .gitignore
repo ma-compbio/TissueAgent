@@ -5,11 +5,17 @@ __marimo__/
 
 .venv/
 
+cache
+
 .DS_Store
 
 temp/
 test/
-data/
+data/*
+!data/memori/
+data/memori/*
+!data/memori/.gitkeep
+
 logs/
 eval/
 

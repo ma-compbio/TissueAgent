@@ -1,5 +1,5 @@
 [project]
-name = "spatialagent"
+name = "tissueagent"
 version = "0.1.0"
 description = "autonomous AI agent for spatial transcriptomics research"
 readme = "README.md"
@@ -50,4 +50,5 @@ dependencies = [
     "marimo>=0.17.2",
     "ggplot>=0.11.5",
     "plotnine>=0.15.0",
+    "memorisdk==2.3.0",
 ]

@@ -3,7 +3,7 @@ from pathlib import Path
 from langchain_openai import ChatOpenAI
 
 # Model constructor configuration
-model_ctor = partial(ChatOpenAI, model="gpt-5", reasoning_effort="medium")
+model_ctor = partial(ChatOpenAI, model="gpt-5") # reasoning_effort="medium"
 # reasoning_effort: "low", "medium", "high"
 # note: reasoning tokens are counted in API cost
 
