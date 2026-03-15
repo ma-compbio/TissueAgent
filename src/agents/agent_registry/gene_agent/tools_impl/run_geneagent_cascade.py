@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import io
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -23,6 +24,35 @@ except ModuleNotFoundError as exc:  # pragma: no cover - defensive
     ) from exc
 
 
+_FINAL_RESPONSE_REL = Path("Outputs/GeneAgent/Cascade/MsigDB_Final_Response_GeneAgent.txt")
+_VERIFICATION_REL = Path("Verification Reports/Cascade/Claims_and_Verification_for_MsigDB.txt")
+_GPT4_REL = Path("Outputs/GPT-4/MsigDB_Response_GPT4.txt")
+
+
+def _read_text_if_exists(path: Path) -> str:
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+def _last_block(text: str, delimiter: str = "//") -> str:
+    parts = [part.strip() for part in text.split(delimiter) if part.strip()]
+    return parts[-1] if parts else ""
+
+
+def _extract_process_names(text: str) -> list[str]:
+    names = re.findall(r"^Process:\s*(.+)$", text, flags=re.MULTILINE)
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for name in names:
+        cleaned = name.strip()
+        key = cleaned.lower()
+        if cleaned and key not in seen:
+            seen.add(key)
+            ordered.append(cleaned)
+    return ordered
+
+
 def run_geneagent_cascade(
     gene_list: Sequence[str],
     request_id: str | None = None,
@@ -35,8 +65,8 @@ def run_geneagent_cascade(
         request_id: Optional identifier stored alongside the run. Defaults to a timestamp.
 
     Returns:
-        Dictionary containing the cascade outputs, including final summary text, process names,
-        artifact paths, and captured stdout.
+        Dictionary containing normalized cascade outputs, including final summary text,
+        process names, verification logs, artifact paths, and captured stdout.
     """
 
     genes = [gene.strip() for gene in gene_list if gene and gene.strip()]
@@ -52,22 +82,45 @@ def run_geneagent_cascade(
     try:
         os.chdir(run_directory)
         with contextlib.redirect_stdout(stdout_buffer):
-            result = _GeneAgentCascade(run_identifier, ",".join(genes))
+            raw_result = _GeneAgentCascade(run_identifier, ",".join(genes))
     finally:
         os.chdir(prev_cwd)
 
     stdout_text = stdout_buffer.getvalue()
+    final_response_path = run_directory / _FINAL_RESPONSE_REL
+    verification_path = run_directory / _VERIFICATION_REL
+    gpt4_path = run_directory / _GPT4_REL
 
-    if not isinstance(result, dict):
+    final_response_text = _read_text_if_exists(final_response_path)
+    verification_text = _read_text_if_exists(verification_path)
+    gpt4_text = _read_text_if_exists(gpt4_path)
+
+    artifact_paths = [
+        str(path.resolve())
+        for path in (final_response_path, verification_path, gpt4_path)
+        if path.exists()
+    ]
+
+    normalized_result: dict = {
+        "input_genes": genes,
+        "request_id": run_identifier,
+        "run_directory": str(run_directory.resolve()),
+        "stdout": stdout_text,
+        "final_summary": _last_block(final_response_text),
+        "process_names": _extract_process_names(final_response_text),
+        "verification_log": verification_text,
+        "gpt4_initial_summary": _last_block(gpt4_text),
+        "artifact_paths": artifact_paths,
+    }
+
+    if isinstance(raw_result, dict):
+        normalized_result["raw_result"] = raw_result
+
+    if not artifact_paths and not stdout_text.strip():
         raise RuntimeError(
-            "GeneAgent cascade completed without returning a result dictionary. "
-            "Inspect the captured stdout output for details."
+            "GeneAgent cascade returned no visible outputs. "
+            "Inspect the run directory for partial artifacts."
         )
 
-    result = {**result}
-    result["input_genes"] = genes
-    result["request_id"] = run_identifier
-    result["run_directory"] = str(run_directory.resolve())
-    result["stdout"] = stdout_text
-    return result
+    return normalized_result
 

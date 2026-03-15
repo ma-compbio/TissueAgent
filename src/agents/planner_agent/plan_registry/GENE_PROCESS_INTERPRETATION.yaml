@@ -1,0 +1,34 @@
+template_id: GENE_PROCESS_INTERPRETATION
+title: Gene list process interpretation (GeneAgent-compatible)
+task: Identify the most likely biological process from a gene list with concise evidence
+version: "1.0"
+last_updated: 2026-03-03
+tags: [gene, gene_list, interpretation, process_naming, evidence, geneagent, verification]
+
+inputs:
+  - "gene_list (canonical gene symbols; non-empty)"
+  - "optional context (organism, tissue, condition)"
+
+outputs:
+  - data/gene_agent/<request_id>/Outputs/GeneAgent/Cascade/MsigDB_Final_Response_GeneAgent.txt
+  - data/gene_agent/<request_id>/Verification Reports/Cascade/Claims_and_Verification_for_MsigDB.txt
+  - data/gene_agent/<request_id>/Outputs/GPT-4/MsigDB_Response_GPT4.txt
+
+step_sketch: >
+  normalize gene list input -> run GeneAgent process interpretation + self-verification
+  -> summarize top process call with evidence and artifact links
+
+eval:
+  - "file_exists(data/gene_agent/<request_id>/Outputs/GeneAgent/Cascade/MsigDB_Final_Response_GeneAgent.txt)"
+  - "file_exists(data/gene_agent/<request_id>/Verification Reports/Cascade/Claims_and_Verification_for_MsigDB.txt)"
+  - "GeneAgent run artifacts saved under data/gene_agent/<request_id>/"
+
+defaults:
+  require_evidence_bullets: true
+  include_limitations: true
+
+checklist:
+  - "Prepare gene list (trim, deduplicate, preserve canonical symbols where possible)"
+  - "Run GeneAgent interpretation cascade for process naming + verification"
+  - "Write concise process summary with key evidence and limitations"
+  - "Report absolute artifact paths from data/gene_agent/<request_id>/"

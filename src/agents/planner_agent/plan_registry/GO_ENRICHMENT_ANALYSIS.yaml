@@ -1,0 +1,37 @@
+template_id: GO_ENRICHMENT_ANALYSIS
+title: GO enrichment analysis from differential or ranked genes
+task: Run GO enrichment and produce tabular plus figure outputs for interpretation
+version: "1.0"
+last_updated: 2026-03-03
+tags: [go, enrichment, gsea, pathway, ontology, differential_expression, tsv, plot, dotplot]
+
+inputs:
+  - "foreground genes (from DE/top markers/ranked list)"
+  - "background universe or ranked statistic (if required by method)"
+  - "analysis configuration (GO branch, significance thresholds)"
+
+outputs:
+  - tables/go_enrichment.tsv
+  - figures/go_enrichment_dotplot.png
+  - reports/go_enrichment_summary.md
+
+step_sketch: >
+  prepare foreground/background gene sets with method parameters
+  -> run GO enrichment (ORA/GSEA as appropriate)
+  -> export enrichment table + dotplot and concise interpretation report
+
+eval:
+  - "tables/go_enrichment.tsv exists and has significant terms"
+  - "figures/go_enrichment_dotplot.png exists"
+  - "reports/go_enrichment_summary.md exists"
+
+defaults:
+  ontology: "BP"
+  fdr_threshold: 0.05
+  top_terms_for_plot: 20
+
+checklist:
+  - "Prepare valid foreground/background inputs (or ranked list) and record config"
+  - "Run GO enrichment with explicit ontology and multiple-testing correction"
+  - "Export enrichment results table and dotplot figure artifacts"
+  - "Summarize top enriched terms, effect direction, and caveats in report"
