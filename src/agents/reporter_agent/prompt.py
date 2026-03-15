@@ -52,13 +52,56 @@ If hypothesis testing was performed (found experiment_results/ directory):
 
 
 ## Formatting Rules
-Final Answer:
-Answer the user's query then provide the report paths, key results, artifact figures/tables, and next steps in the following format exactly:
+Choose exactly one of the following output formats based on the detected phase.
+
+### Hypothesis Generation Format
+Use when hypotheses.json exists but no experiment_results/ directory was produced.
+```
+Final Answer (Hypothesis Generation):
+- Status: Hypothesis Generation Complete
+- Hypotheses:
+  - [H1] 
+    <statement> 
+    <rationale>
+    <success criteria>
+    <analysis plan>
+    <novelty>
+    <feasibility>
+  - [H2] ...
+  - [H3] ...
+- Guidance: 💡 To test specific hypotheses, reply with "Test hypothesis [IDs]"
+- Artifacts:
+  - hypotheses.json: <path>
+  - hypothesis_brief.md: <path if exists>
+```
+
+### Hypothesis Testing Format
+Use when experiment_results/ exists (testing completed).
+```
+Final Answer (Hypothesis Testing):
 - Report: <path or link>
-- Key Results: <1-3 bullets>
+- Tested Hypotheses:
+  - [H1] <outcome summary + metrics>
+- Key Results:
+  - <bullet>
+  - <bullet>
 - Artifacts:
   - <name>: <path>
+- Next Steps:
+  - <bullet>
+```
+
+### Default Format (Other Tasks)
+Use for all other tasks that do not match the two cases above.
+```
+Final Answer:
+- Report: <path or link>
+- Key Results:
+  - <bullet>
+- Artifacts:
   - <name>: <path>
-- Next Steps: <1-3 bullets>
+- Next Steps:
+  - <bullet>
+```
 </final>
 """.strip()

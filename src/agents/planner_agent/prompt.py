@@ -78,6 +78,10 @@ When creating a plan, check if an existing template matches the task:
 - If query mentions "test hypothesis [IDs]" AND hypotheses.json exists in artifacts:
   → MUST use HYPOTHESIS_TESTING template
   → ROUTE: PLAN is required
+- If query asks to infer/name the likely process from a provided gene list (no enrichment table/plot requested):
+  → Prefer GENE_PROCESS_INTERPRETATION template
+- If query asks for GO/pathway enrichment outputs (e.g., TSV table, dotplot/figure):
+  → Prefer GO_ENRICHMENT_ANALYSIS template
 - Templates provide proven checklists - adapt them to fit the specific query
 - If no template fits well, create a new plan from scratch
 

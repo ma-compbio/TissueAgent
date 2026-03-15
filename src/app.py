@@ -87,7 +87,7 @@ def _reset_data_directories() -> None:
     # - For explicitly listed dirs: clear contents and recreate
     # - For any other subdirectory: delete entirely (do not recreate)
     for child in DATA_DIR.iterdir():
-        if not child.is_dir():
+        if child.name == "memori" or not child.is_dir():
             continue
         if child in keep_and_clear:
             shutil.rmtree(child, ignore_errors=True)
@@ -573,19 +573,23 @@ if prompt:
         if not isinstance(message, ToolMessage):
             continue
         if message.name in ManagerToolNames:
-            pass
+            continue  # manager tools already rendered directly
+
+        # Only linkage between tool output and sub-agent state should occur for transfer tools.
+        if not str(message.name or "").endswith("_transfer_tool"):
+            continue
+
+        tool_id = message.id
+        if tool_id in st.session_state["subagent_states"]:
+            continue
+        if getattr(message, "status", None) == "error":
+            st.session_state["subagent_states"][tool_id] = (message.name, message.content)
+        elif not pending_state_queue:
+            logging.error(f"No agent state found for following message {message}")
+            st.session_state["subagent_states"][tool_id] = ("agent not found", None)
         else:
-            tool_id = message.id
-            if tool_id in st.session_state["subagent_states"]:
-                continue
-            if getattr(message, "status", None) == "error":
-                st.session_state["subagent_states"][tool_id] = (message.name, message.content)
-            elif not pending_state_queue:
-                logging.error(f"No agent state found for following message {message}")
-                st.session_state["subagent_states"][tool_id] = ("agent not found", None)
-            else:
-                agent_name, final_state = pending_state_queue.popleft()
-                st.session_state["subagent_states"][tool_id] = (agent_name, final_state)
+            agent_name, final_state = pending_state_queue.popleft()
+            st.session_state["subagent_states"][tool_id] = (agent_name, final_state)
 
     _render_conversation(conversation_placeholder, enable_debug)
     if pending_state_queue:

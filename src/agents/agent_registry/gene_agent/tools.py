@@ -13,7 +13,8 @@ GeneAgentTools: List[StructuredTool] = [
         description=(
             "Runs the GeneAgent cascade to propose and verify biological process names for a gene set. "
             "Arguments: gene_list (List[str]), optional request_id (str). "
-            "Returns summaries, verification logs, and artifact paths."
+            "Returns process-summary artifacts (summaries, verification logs, artifact paths). "
+            "Does not produce enrichment-style tables/plots."
         ),
     )
 ]

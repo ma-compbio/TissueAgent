@@ -57,8 +57,12 @@ def _score_template(
     weights: Dict[str, float],
 ) -> Tuple[float, Dict[str, float]]:
     q = _tokens(query_text)
-    tag_toks = [str(x).lower() for x in tpl.get("tags", [])]
-    key_toks = _tokens(f"{tpl.get('title','')} {tpl.get('step_sketch','')}")
+    tags_text = " ".join(str(x) for x in tpl.get("tags", []))
+    io_text = " ".join(str(x) for x in tpl.get("inputs", [])) + " " + " ".join(
+        str(x) for x in tpl.get("outputs", [])
+    )
+    tag_toks = _tokens(tags_text)
+    key_toks = _tokens(f"{tpl.get('title','')} {tpl.get('step_sketch','')} {io_text}")
 
     s_tags = _jaccard(q, tag_toks)
     s_keywords = _jaccard(q, key_toks)
@@ -107,7 +111,7 @@ def _template_selector_tool(
         registry_dir = str(DEFAULT_REGISTRY_DIR)
 
     weights = {"tags": 0.40, "keywords": 0.40, "io": 0.10, "recency": 0.10}
-    thresholds = {"high": 0.35, "mid": 0.25}
+    thresholds = {"high": 0.2, "mid": 0.15}
 
     templates = _load_templates(Path(registry_dir))
     if not templates:
