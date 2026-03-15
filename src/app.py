@@ -76,17 +76,28 @@ def _next_available_path(directory: Path, filename: str) -> Path:
 
 def _reset_data_directories() -> None:
     """
-    Clear runtime data folders while preserving persistent stores (e.g., data/memori).
+    Clear and keep explicitly listed runtime folders, and delete all other subdirectories.
+    - Keeps (but clears): data/dataset, data/uploads, data/pdfs, sessions/
+    - Deletes entirely: any other subdirectories under data/
     """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    for directory in (
-        DATASET_DIR,
-        UPLOADS_DIR,
-        PDF_UPLOADS_DIR,
-        SESSIONS_DIR,
-    ):
-        shutil.rmtree(directory, ignore_errors=True)
-        directory.mkdir(parents=True, exist_ok=True)
+    keep_and_clear = {DATASET_DIR, UPLOADS_DIR, PDF_UPLOADS_DIR}
+
+    # Handle contents of DATA_DIR:
+    # - For explicitly listed dirs: clear contents and recreate
+    # - For any other subdirectory: delete entirely (do not recreate)
+    for child in DATA_DIR.iterdir():
+        if not child.is_dir():
+            continue
+        if child in keep_and_clear:
+            shutil.rmtree(child, ignore_errors=True)
+            child.mkdir(parents=True, exist_ok=True)
+        else:
+            shutil.rmtree(child, ignore_errors=True)
+
+    # Sessions directory is outside DATA_DIR; clear but keep it
+    shutil.rmtree(SESSIONS_DIR, ignore_errors=True)
+    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 
 ## Enable Memori long-term memory (if configured) before any LLM calls take place.
 initialize_memori_context()

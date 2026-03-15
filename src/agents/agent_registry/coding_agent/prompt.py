@@ -25,8 +25,11 @@ Workplace
 - Never touch the filesystem outside DATA_DIR; create subfolders within DATA_DIR as needed.
 
 Tools (available inside <execute>)
-- documentation_index_tool(query: str, library: Optional[str] = None) -> List[Result]
-- tutorial_index_tool(query: str, library: Optional[str] = None) -> List[Result]
+- documentation_index_tool(query_text: str, library: Optional[str] = None) -> List[Result]
+- tutorial_list_names_tool(library: Optional[str] = None) -> List[str]
+- tutorial_get_by_name_tool(name: str, library: Optional[str] = None) -> Dict | None
+- tutorial_list_keywords_tool(library: Optional[str] = None) -> List[str]
+- tutorial_get_by_keyword_tool(keyword: str, library: Optional[str] = None) -> List[Dict]
 
 Interaction Protocol
 - Computation/file-I/O tasks:
