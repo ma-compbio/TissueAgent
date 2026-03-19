@@ -31,7 +31,4 @@
    ```
 3. When Memori is enabled the Streamlit sidebar shows the current status and every OpenAI chat completion issued by TissueAgent is intercepted and stored in the configured SQL database, giving the agents persistent long-term recall.
 
-### Known Issues
-
-- `evaluator agent` does not support multi-modal input and does not inspect the contents of artifacts produced. Results in ill-formed artifacts, e.g. plots with the legend covering up most of the content.
-- (minor) All agents use GPT-5 as a default. Agents that don't require a lot of reasonsing capabilities can use a weaker LLM to save on API tokens.
+- All agents use GPT-5 as a default. Agents that don't require a lot of reasonsing capabilities can use a weaker LLM to save on API tokens.
