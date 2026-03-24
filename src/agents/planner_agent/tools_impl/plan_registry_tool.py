@@ -1,3 +1,5 @@
+"""Tool that lists available YAML plan templates from the plan registry."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,7 +15,9 @@ DEFAULT_REGISTRY_DIR = Path(__file__).parent.parent / "plan_registry"
 
 # ---------- internals ----------
 
+
 def _load_templates(registry_dir: Path) -> List[Dict[str, Any]]:
+    """Load all YAML plan templates from the given directory."""
     if not registry_dir.exists():
         return []
     docs: List[Dict[str, Any]] = []
@@ -21,7 +25,9 @@ def _load_templates(registry_dir: Path) -> List[Dict[str, Any]]:
         docs.append(yaml.safe_load(p.read_text()))
     return docs
 
+
 def _make_index(templates: List[Dict[str, Any]]) -> str:
+    """Format templates into a compact human-readable index string."""
     lines: List[str] = []
     for t in templates:
         template_id = t.get("template_id", "<missing_id>")
@@ -54,11 +60,15 @@ def _make_index(templates: List[Dict[str, Any]]) -> str:
 
 # ---------- tool ----------
 
+
 class PlanRegistryArgs(BaseModel):
+    """Input schema for the plan registry tool."""
+
     registry_dir: str = Field(
         default=str(DEFAULT_REGISTRY_DIR),
-        description="Directory containing YAML plan templates."
+        description="Directory containing YAML plan templates.",
     )
+
 
 def _plan_registry_tool(*, registry_dir: str = None) -> str:
     """Return a compact, human-readable index of plan templates."""
@@ -67,9 +77,11 @@ def _plan_registry_tool(*, registry_dir: str = None) -> str:
     templates = _load_templates(Path(registry_dir))
     return _make_index(templates) if templates else ""
 
+
 def _plan_registry_tool_noargs() -> str:
     """Wrapper exposing a no-arg tool interface with default registry."""
     return _plan_registry_tool()
+
 
 plan_registry_tool = StructuredTool.from_function(
     name="plan_registry_tool",

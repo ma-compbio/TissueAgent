@@ -6,6 +6,7 @@ from typing import Union
 
 from config import DATA_DIR
 
+
 def convert_to_h5ad(dataset_dir: Union[Path, str]) -> str:
     dataset_dir = Path(dataset_dir)
     if not dataset_dir.is_absolute():
@@ -20,17 +21,18 @@ def convert_to_h5ad(dataset_dir: Union[Path, str]) -> str:
     if len(counts_files) == 0:
         return f"Error: Did not find count matrix file in {dataset_dir}."
     elif len(counts_files) > 1:
-        return f"Error: Ambiguity in count file to be used."
-    
-    adata = sq.read.visium(str(dataset_dir),
-                           counts_file=str(counts_files[0]))
+        return "Error: Ambiguity in count file to be used."
+
+    adata = sq.read.visium(str(dataset_dir), counts_file=str(counts_files[0]))
     adata.write_h5ad(res_path)
-  
+
     return f"Success: Created file at path {res_path}."
+
 
 def main(args):
     path = Path(args.path).absolute() / "visium"
     print(convert_to_h5ad(dataset_dir=path))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

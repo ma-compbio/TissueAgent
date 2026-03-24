@@ -1,4 +1,4 @@
-# # src.agents.searcher_agent.prompt.py
+"""Prompt templates and description for the Searcher agent."""
 
 SearcherDescription = """
 Searches and retrieves scientific literature, and authoritative web sources.

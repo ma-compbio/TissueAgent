@@ -1,3 +1,4 @@
+"""Model and parameter configuration for the hypothesis agent."""
 from functools import partial
 from langchain_openai import ChatOpenAI
 

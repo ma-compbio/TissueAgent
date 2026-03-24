@@ -1,4 +1,4 @@
-# src.agents.reporter_agent.prompt.py
+"""Prompt templates and description for the reporter agent."""
 from config import DATA_DIR
 
 ReporterDescription = """

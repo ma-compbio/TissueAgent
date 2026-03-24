@@ -1,4 +1,4 @@
-# src/agents/recruiter_agent/prompt.py
+"""Prompt templates and description for the recruiter agent."""
 
 from agents.agent_utils import format_agent_id_descriptions
 

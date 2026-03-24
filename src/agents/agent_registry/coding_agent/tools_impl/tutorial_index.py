@@ -1,7 +1,8 @@
-import json
+"""Hybrid dense+sparse retrieval index over tutorial markdown files."""
+
 import numpy as np
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, cast
+from typing import Any, Dict, List, cast
 
 from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -9,10 +10,10 @@ from scipy.sparse import csr_matrix
 
 
 class TutorialIndex:
-    """Index for tutorial files that returns entire file content.
-    """
+    """Index for tutorial files that returns entire file content."""
 
     def _norm(self, x: np.ndarray) -> np.ndarray:
+        """L2-normalize row vectors."""
         n = np.linalg.norm(x, axis=1, keepdims=True) + 1e-9
         return x / n
 
@@ -23,22 +24,22 @@ class TutorialIndex:
         embedder_name: str = "sentence-transformers/all-MiniLM-L6-v2",
         show_progress: bool = False,
     ):
-        """Builds index from tutorial markdown files.
-        
+        """Build index from tutorial markdown files.
+
         Args:
             tutorial_directories: Dictionary mapping library names to paths to tutorial directories
                 containing markdown files.
             embedder_name: SentenceTransformer model name for dense embeddings.
+            show_progress: Whether to display a progress bar during encoding.
         """
-
         entries = []
         self._library_mapping = {}  # Maps entry index to library name
         entry_index = 0
-        
+
         for library_name, tutorial_dir in tutorial_directories.items():
             # Find all markdown files in the tutorial directory
             md_files = list(tutorial_dir.glob("*.md"))
-            
+
             for md_file in md_files:
                 with md_file.open("r", encoding="utf-8") as f:
                     content = f.read()
@@ -67,30 +68,32 @@ class TutorialIndex:
             self._texts.append(search_text)
 
         self._model = SentenceTransformer(embedder_name)
-        self._embedder = self._norm(self._model.encode(
-            self._texts, 
-            convert_to_numpy=True,
-            batch_size=64,
-            show_progress_bar=show_progress,
-        ))
+        self._embedder = self._norm(
+            self._model.encode(
+                self._texts,
+                convert_to_numpy=True,
+                batch_size=64,
+                show_progress_bar=show_progress,
+            )
+        )
 
         self._vect = TfidfVectorizer(ngram_range=(1, 2), min_df=1, max_df=0.9)
         self._tfidf = self._vect.fit_transform(self._texts)
 
     def _extract_title(self, content: str) -> str:
         """Extract title from markdown content (first line with # heading)."""
-        lines = content.split('\n')
-        if lines and lines[0].strip().startswith('# '):
+        lines = content.split("\n")
+        if lines and lines[0].strip().startswith("# "):
             return lines[0].strip()[2:].strip()
         for line in lines:
-            if line.strip().startswith('# '):
+            if line.strip().startswith("# "):
                 return line.strip()[2:].strip()
         return "Untitled"
 
     def _parse_frontmatter(self, content: str) -> Dict[str, Any]:
-        """Parse minimal YAML frontmatter block and return a dict with optional
-        'title' and 'keywords'. Avoids external YAML dependency by handling the
-        common subset we use in tutorials.
+        """Parse minimal YAML frontmatter block and return a dict with optional title/keywords.
+
+        Avoids external YAML dependency by handling the common subset we use in tutorials.
         """
         lines = content.split("\n")
         if not lines or lines[0].strip() != "---":
@@ -154,10 +157,10 @@ class TutorialIndex:
 
     def list_tutorial_names(self, *, library: str | None = None) -> List[str]:
         """Return the list of tutorial titles.
-        
+
         Args:
             library: Optional library name to filter results (e.g., 'liana', 'squidpy').
-        
+
         Returns:
             A sorted list of tutorial titles.
         """
@@ -170,7 +173,7 @@ class TutorialIndex:
 
     def list_keywords(self, *, library: str | None = None) -> List[str]:
         """Return a sorted list of unique keywords across tutorials.
-        
+
         Args:
             library: Optional library filter.
         """
@@ -182,13 +185,15 @@ class TutorialIndex:
                 seen.add(kw)
         return sorted(seen, key=lambda s: s.lower())
 
-    def get_tutorial_by_name(self, name: str, *, library: str | None = None) -> Dict[str, Any] | None:
+    def get_tutorial_by_name(
+        self, name: str, *, library: str | None = None
+    ) -> Dict[str, Any] | None:
         """Retrieve a tutorial by its title.
-        
+
         Args:
             name: Exact title of the tutorial (as extracted from the markdown).
             library: Optional library name to filter results.
-        
+
         Returns:
             A dictionary with keys 'doc' and 'library' if found, otherwise None.
         """
@@ -199,10 +204,12 @@ class TutorialIndex:
                 return {"doc": doc, "library": self._library_mapping[i]}
         return None
 
-    def get_tutorials_by_keyword(self, keyword: str, *, library: str | None = None) -> List[Dict[str, Any]]:
+    def get_tutorials_by_keyword(
+        self, keyword: str, *, library: str | None = None
+    ) -> List[Dict[str, Any]]:
         """Retrieve tutorials whose frontmatter keywords match a query.
+
         Matching is case-insensitive and accepts substring matches within a keyword.
-        
         Returns a list of {doc, library} dictionaries.
         """
         if not keyword:
@@ -228,18 +235,17 @@ class TutorialIndex:
         alpha: float = 0.2,
     ) -> List[Dict[str, Any]]:
         """Runs hybrid retrieval over tutorial content.
-        
+
         Args:
             query_text: Natural language or token-style query.
             library: Optional library name to filter results (e.g., 'liana', 'squidpy').
             k: Number of results to return.
             alpha: Blend weight for dense vs. sparse scores in [0,1].
-        
+
         Returns:
             A list of {score, doc, library} dictionaries ordered by relevance.
             The doc contains the entire file content.
         """
-
         qv = self._norm(self._model.encode([query_text], convert_to_numpy=True))
         dense_scores = (self._embedder @ qv.T).ravel()
 
@@ -249,7 +255,7 @@ class TutorialIndex:
             sparse_scores = sparse_scores / sparse_scores.max()
 
         scores = alpha * dense_scores + (1 - alpha) * sparse_scores
-        
+
         if library is not None:
             filtered_indices = [i for i, lib in self._library_mapping.items() if lib == library]
             if not filtered_indices:
@@ -259,15 +265,17 @@ class TutorialIndex:
             idx = [filtered_indices[i] for i in idx]
         else:
             idx = np.argsort(-scores)
-        
+
         out = []
         for i in idx:
             entry_library = self._library_mapping[i]
-            out.append({
-                "score": float(scores[i]), 
-                "doc": self._docs[i],
-                "library": entry_library
-            })
+            out.append(
+                {
+                    "score": float(scores[i]),
+                    "doc": self._docs[i],
+                    "library": entry_library,
+                }
+            )
             if len(out) >= k:
                 break
         return out

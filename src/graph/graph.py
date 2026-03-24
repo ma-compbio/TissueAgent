@@ -1,3 +1,14 @@
+"""LangGraph state-graph construction for the TissueAgent pipeline.
+
+Assembles the hierarchical multi-agent workflow:
+
+    Planner → Recruiter → Manager → Evaluator → Reporter
+
+Each main agent is wired as an agent-node / tool-node pair.  Specialized
+sub-agents from :data:`AgentDefns` are compiled into independent sub-graphs
+and exposed to the Manager as invocation tools.
+"""
+
 import json
 import logging
 from datetime import datetime, timezone
@@ -8,25 +19,49 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph import END, MessagesState, START, StateGraph
 
 from agents.agent_defns import (
-    AgentDefns, CustomAgent, PlannerAgent, ManagerAgent, ReActAgent, RecruiterAgent, EvaluatorAgent, ReporterAgent
+    AgentDefns,
+    CustomAgent,
+    PlannerAgent,
+    ManagerAgent,
+    ReActAgent,
+    RecruiterAgent,
+    EvaluatorAgent,
+    ReporterAgent,
 )
-from graph.graph_utils import create_agent_node, create_tool_node, create_agent_invocation_tool
+from graph.graph_utils import (
+    create_agent_node,
+    create_tool_node,
+    create_agent_invocation_tool,
+)
 from memori_integration import initialize_memori_context
 
 MAX_REPLANS = 2
 
 
 def create_tissueagent_graph(
-    state_queue: Queue,
-    model_proc_fn: Callable[..., BaseChatModel]
+    state_queue: Queue, model_proc_fn: Callable[..., BaseChatModel]
 ) -> StateGraph:
+    """Build the full TissueAgent state graph (uncompiled).
+
+    Constructs sub-agent graphs for each entry in :data:`AgentDefns`, then
+    wires the five main pipeline agents with conditional routing edges.
+    The caller is responsible for compiling the returned graph.
+
+    Args:
+        state_queue: Thread-safe queue where completed sub-agent states are
+            placed so the UI can render them.
+        model_proc_fn: Callable applied to every bound model (typically
+            adds retry logic for rate-limit errors).
+
+    Returns:
+        An uncompiled :class:`~langgraph.graph.StateGraph` ready to be
+        compiled via ``.compile()``.
+    """
     initialize_memori_context()
     assign_agent_node_id = lambda id: f"{id}_agent"
     assign_tool_node_id = lambda id: f"{id}_tools"
 
-    agent_id_descriptions = {
-        assign_agent_node_id(a.id): a.description for a in AgentDefns
-    }
+    agent_id_descriptions = {assign_agent_node_id(a.id): a.description for a in AgentDefns}
 
     logging.info(f"Agent ID Descriptions: {json.dumps(agent_id_descriptions, indent=4)}")
 
@@ -41,14 +76,10 @@ def create_tissueagent_graph(
             agent_node_id = assign_agent_node_id(agent.id)
             tool_node_id = assign_tool_node_id(agent.id)
             tool_node = create_tool_node(agent.tools)
-            
+
             assert isinstance(agent.prompt, str)
             agent_node = create_agent_node(
-                agent_node_id,
-                agent_model,
-                agent.prompt,
-                tool_node_id,
-                END
+                agent_node_id, agent_model, agent.prompt, tool_node_id, END
             )
 
             agent_subgraph.add_node(agent_node_id, agent_node)
@@ -58,9 +89,9 @@ def create_tissueagent_graph(
             subagent = agent_subgraph.compile()
 
             # Enable PDF support for PDF Reader Agent
-            supports_pdf = (agent.id == "pdf_reader")
+            supports_pdf = agent.id == "pdf_reader"
 
-            forward_user_images = (agent.id == "coding")
+            forward_user_images = agent.id == "coding"
             agent_invocation_tool = create_agent_invocation_tool(
                 agent_node_id,
                 agent.name,
@@ -71,31 +102,49 @@ def create_tissueagent_graph(
             )
             agent_invocation_tools.append(agent_invocation_tool)
 
-            logging.info("\n\n".join([
-                "ReAct Agent Info",
-                f"ID:          {agent.id}",
-                f"Name:        {agent.name}",
-                f"Description: {agent.description}",
-                f"Prompt:      {agent.prompt}",
-                f"Tools:       {[tool.name for tool in agent.tools]}",
-            ]))
+            logging.info(
+                "\n\n".join(
+                    [
+                        "ReAct Agent Info",
+                        f"ID:          {agent.id}",
+                        f"Name:        {agent.name}",
+                        f"Description: {agent.description}",
+                        f"Prompt:      {agent.prompt}",
+                        f"Tools:       {[tool.name for tool in agent.tools]}",
+                    ]
+                )
+            )
 
         elif isinstance(agent, CustomAgent):
             agent_invocation_tool = agent.ctor(state_queue)
             agent_invocation_tools.append(agent_invocation_tool)
 
-            logging.info("\n\n".join([
-                "Custom Agent Info",
-                f"ID:          {agent.id}",
-                f"Name:        {agent.name}",
-                f"Description: {agent.description}",
-            ]))
+            logging.info(
+                "\n\n".join(
+                    [
+                        "Custom Agent Info",
+                        f"ID:          {agent.id}",
+                        f"Name:        {agent.name}",
+                        f"Description: {agent.description}",
+                    ]
+                )
+            )
 
     ## Build Main Agents
 
-    for main_agent in [PlannerAgent, RecruiterAgent, ManagerAgent, EvaluatorAgent, ReporterAgent]:
+    for main_agent in [
+        PlannerAgent,
+        RecruiterAgent,
+        ManagerAgent,
+        EvaluatorAgent,
+        ReporterAgent,
+    ]:
         if isinstance(main_agent.prompt, str):
-            prompt_preview = main_agent.prompt if len(main_agent.prompt) < 600 else main_agent.prompt[:600] + "...[truncated]"
+            prompt_preview = (
+                main_agent.prompt
+                if len(main_agent.prompt) < 600
+                else main_agent.prompt[:600] + "...[truncated]"
+            )
         else:
             try:
                 prompt_preview = main_agent.prompt(agent_id_descriptions)
@@ -106,12 +155,16 @@ def create_tissueagent_graph(
         tool_names = [tool.name for tool in main_agent.tools]
         if main_agent == ManagerAgent:
             tool_names += [tool.name for tool in agent_invocation_tools]
-        logging.info("\n".join([
-            f"Main Agent: {main_agent.name} (ID: {main_agent.id})",
-            f"Prompt:",
-            prompt_preview,
-            f"Available tools: {tool_names}",
-        ]))
+        logging.info(
+            "\n".join(
+                [
+                    f"Main Agent: {main_agent.name} (ID: {main_agent.id})",
+                    "Prompt:",
+                    prompt_preview,
+                    f"Available tools: {tool_names}",
+                ]
+            )
+        )
 
     ### Planner agent
 
@@ -156,7 +209,6 @@ def create_tissueagent_graph(
     reporter_node_id = assign_agent_node_id(ReporterAgent.id)
     reporter_tool_node_id = assign_tool_node_id(ReporterAgent.id)
 
-
     # Create graph nodes
 
     ### Planner Node
@@ -164,7 +216,7 @@ def create_tissueagent_graph(
     planner_tool_node = create_tool_node(PlannerAgent.tools)
 
     def planner_router(response, state) -> str:
-        """PlannerAgent transition fn"""
+        """PlannerAgent transition fn."""
         text = (response.content or "").strip()
         head = text.splitlines()[0].upper() if text else ""
         if head.startswith("ROUTE: DIRECT"):
@@ -178,7 +230,7 @@ def create_tissueagent_graph(
         planner_model,
         PlannerAgent.prompt,
         planner_tool_node_id,
-        exit_node_id_fn = planner_router
+        exit_node_id_fn=planner_router,
     )
 
     ### Recruiter Node
@@ -186,11 +238,11 @@ def create_tissueagent_graph(
     recruiter_tool_node = create_tool_node(RecruiterAgent.tools)
 
     recruiter_node = create_agent_node(
-        recruiter_node_id, 
-        recruiter_model, 
+        recruiter_node_id,
+        recruiter_model,
         recruiter_prompt,
         recruiter_tool_node_id,
-        manager_node_id
+        manager_node_id,
     )
 
     ### Manager Node
@@ -202,7 +254,7 @@ def create_tissueagent_graph(
         manager_model,
         manager_prompt,
         manager_tool_node_id,
-        evaluator_node_id
+        evaluator_node_id,
     )
 
     ### Evaluator node
@@ -228,7 +280,7 @@ def create_tissueagent_graph(
         return {}
 
     def evaluator_router(response, state) -> str:
-        """EvaluatorAgent transition fn"""
+        """EvaluatorAgent transition function."""
         text = (response.content or "").strip()
         head = text.splitlines()[0].upper() if text else ""
         if head.startswith("ROUTE: REPLAN"):
@@ -257,11 +309,11 @@ def create_tissueagent_graph(
         reporter_model,
         ReporterAgent.prompt,
         reporter_tool_node_id,
-        END
+        END,
     )
 
     graph = StateGraph(MessagesState)
-    
+
     graph.add_edge(START, planner_node_id)
 
     graph.add_node(planner_node_id, planner_node)

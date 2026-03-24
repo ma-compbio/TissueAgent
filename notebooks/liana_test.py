@@ -14,7 +14,8 @@ def _():
 
 @app.cell
 def _(repl):
-    print(repl.run("""
+    print(
+        repl.run("""
     import scanpy as sc
 
     from pathlib import Path
@@ -27,13 +28,15 @@ def _(repl):
     species = "mouse"
 
     print(adata)
-    """))
+    """)
+    )
     return
 
 
 @app.cell
 def _(repl):
-    print(repl.run("""
+    print(
+        repl.run("""
     import pandas as pd
     import numpy as np
     from collections import Counter
@@ -60,7 +63,8 @@ def _(repl):
     print("Gene map status counts:")
     print(gene_map_df["status"].value_counts().to_string())
     print("Unique mapped symbols (non-null):", gene_map_df["mapped_symbol"].notna().sum(), "of", gene_map_df.shape[0])
-    """))
+    """)
+    )
     return
 
 

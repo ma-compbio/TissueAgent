@@ -1,3 +1,4 @@
+"""Prompt templates and description for the critic agent."""
 from config import DATA_DIR
 
 CriticAgentDescription = """

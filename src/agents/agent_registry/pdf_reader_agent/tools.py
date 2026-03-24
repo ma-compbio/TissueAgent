@@ -1,12 +1,12 @@
-# src/agents/agent_registry/pdf_reader_agent/tools.py
+"""Tool definitions for the PDF reader agent."""
 from typing import List
 from langchain.tools import StructuredTool
 from pathlib import Path
 from config import DATA_DIR
 
+
 def write_file_tool(file_path: str, content: str) -> str:
-    """
-    Write text content to a file.
+    """Write text content to a file.
 
     Args:
         file_path: Path relative to DATA_DIR (e.g., "briefs/paper_summary.txt")
@@ -18,14 +18,14 @@ def write_file_tool(file_path: str, content: str) -> str:
     try:
         full_path = Path(DATA_DIR) / file_path
         full_path.parent.mkdir(parents=True, exist_ok=True)
-        full_path.write_text(content, encoding='utf-8')
+        full_path.write_text(content, encoding="utf-8")
         return f"Successfully wrote {len(content)} characters to {file_path}"
     except Exception as e:
         return f"Error writing to {file_path}: {str(e)}"
 
+
 def file_retriever_tool() -> str:
-    """
-    List files in DATA_DIR to verify outputs.
+    """List files in DATA_DIR to verify outputs.
 
     Returns:
         Directory structure showing created files
@@ -35,7 +35,9 @@ def file_retriever_tool() -> str:
         if not data_path.exists():
             return f"DATA_DIR does not exist: {DATA_DIR}"
 
-        result = [f"Files are stored in the DATA_DIR subdirectory.\nDATA_DIR: '{DATA_DIR}'\nFile Paths: ["]
+        result = [
+            f"Files are stored in the DATA_DIR subdirectory.\nDATA_DIR: '{DATA_DIR}'\nFile Paths: ["
+        ]
 
         for item in sorted(data_path.rglob("*")):
             if item.is_file():
@@ -46,6 +48,7 @@ def file_retriever_tool() -> str:
         return "\n".join(result)
     except Exception as e:
         return f"Error listing files: {str(e)}"
+
 
 # Export tools list
 PDFReaderTools: List[StructuredTool] = [

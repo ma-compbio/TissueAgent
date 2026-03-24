@@ -1,4 +1,4 @@
-FindLigandReceptorInteractionsDescription = '''
+FindLigandReceptorInteractionsDescription = """
 Computes ligand–receptor interaction scores between sender and receiver clusters.
 Requires that spatial clustering (e.g. Leiden) has already been performed.
 
@@ -12,9 +12,9 @@ Returns:
 
 Updates to adata:
   Writes a dictionary containing keys ['means', 'pvalues', 'metadata'] into `adata.uns["{cluster_key}_ligrec"]`.
-'''.strip()
+""".strip()
 
-FindLigandReceptorInteractionsCode = r'''
+FindLigandReceptorInteractionsCode = r"""
 def find_ligand_receptor_interactions(
     adata: AnnData,
     cluster_key: str,
@@ -40,9 +40,9 @@ def find_ligand_receptor_interactions(
 
     except Exception as e:
         return f"Error: {str(e)}"
-'''.strip()
+""".strip()
 
-PlotLigandReceptorInteractionsDescription = '''
+PlotLigandReceptorInteractionsDescription = """
 Plots ligand–receptor interaction scores between specified source and target clusters and saves the result as an image file.
 Requires that ligand–receptor analysis has already been computed and stored in `adata.uns["{cluster_key}_ligrec"]`.
 
@@ -55,9 +55,9 @@ Args:
 
 Returns:
   str: status message
-'''.strip()
+""".strip()
 
-PlotLigandReceptorInteractionsCode = r'''
+PlotLigandReceptorInteractionsCode = r"""
 def plot_ligand_receptor_interactions(
     adata: AnnData,
     cluster_key: str,
@@ -86,9 +86,9 @@ def plot_ligand_receptor_interactions(
         
     except Exception as e:
         return f"Error: {str(e)}"
-'''.strip()
+""".strip()
 
-PlotLigandReceptorHeatmapDescription = '''
+PlotLigandReceptorHeatmapDescription = """
 Computes and saves a heatmap of averaged top-n ligand–receptor interaction scores between sender and receiver clusters.
 Requires that ligand–receptor analysis has already been computed and stored in adata.uns["{cluster_key}_ligrec"].
 
@@ -100,9 +100,9 @@ Args:
 
 Returns:
   str: status message
-'''.strip()
+""".strip()
 
-PlotLigandReceptorHeatmapCode = r'''
+PlotLigandReceptorHeatmapCode = r"""
 def plot_ligand_receptor_heatmap(
     adata: AnnData,
     cluster_key: str,
@@ -158,9 +158,9 @@ def plot_ligand_receptor_heatmap(
     
     except Exception as e:
         return f"Error: {e}"
-'''.strip()
+""".strip()
 
-QueryInteractionAtCoordinatesDescription = '''
+QueryInteractionAtCoordinatesDescription = """
 Returns the ligand–receptor interaction score for a specific pair between the sender spot closest to (x,y) and its neighboring receiver spots.
 Requires spatial neighbors graph to be computed.
 
@@ -174,9 +174,9 @@ Args:
 Returns:
   str: status message on error
   dict: { "LIGAND-RECEPTOR": best_score }
-'''.strip()
+""".strip()
 
-QueryInteractionAtCoordinatesCode = r'''
+QueryInteractionAtCoordinatesCode = r"""
 def query_interaction_at_coordinates(
     adata: AnnData,
     ligand: str,
@@ -224,10 +224,10 @@ def query_interaction_at_coordinates(
 
     except Exception as e:
         return f"Error: {e}"
-'''.strip()
+""".strip()
 
 
-PlotInteractionNetworkDescription = '''
+PlotInteractionNetworkDescription = """
 Constructs and plots a network graph of clusters connected by top ligand–receptor pairs.
 Requires that ligand–receptor analysis has already been computed and stored in adata.uns["{cluster_key}_ligrec"].
 
@@ -240,9 +240,9 @@ Args:
 
 Returns:
   str: status message
-'''.strip()
+""".strip()
 
-PlotInteractionNetworkCode = r'''
+PlotInteractionNetworkCode = r"""
 def plot_interaction_network(
     adata: AnnData,
     cluster_key: str,
@@ -320,4 +320,4 @@ def plot_interaction_network(
 
     except Exception as e:
         return f"Error: {e}"
-'''.strip()
+""".strip()

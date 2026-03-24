@@ -1,3 +1,4 @@
+"""Tool definitions for the manager agent."""
 from typing import List
 
 from langchain.tools import StructuredTool

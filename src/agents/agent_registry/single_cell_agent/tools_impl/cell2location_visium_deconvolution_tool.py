@@ -1,3 +1,5 @@
+"""Cell2location Visium spatial deconvolution pipeline."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -6,9 +8,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 import scanpy as sc
-
-# from cell2location.models import Cell2location, RegressionModel
-
+from cell2location.models import Cell2location, RegressionModel
 from config import DATA_DIR
 
 
@@ -26,6 +26,7 @@ class Cell2locationResultPaths:
 
 
 def _resolve_path(path_like: str) -> Path:
+    """Resolve a relative or absolute path against DATA_DIR."""
     path = Path(path_like)
     if not path.is_absolute():
         path = DATA_DIR / path
@@ -33,6 +34,7 @@ def _resolve_path(path_like: str) -> Path:
 
 
 def _ensure_counts_layer(adata: sc.AnnData, layer_name: Optional[str]) -> Optional[str]:
+    """Validate that layer_name exists in the AnnData, or pass through None."""
     if layer_name is None:
         return None
     if layer_name not in adata.layers:
@@ -46,7 +48,6 @@ def _extract_cell_state_df(
     cell_type_column: str,
 ) -> pd.DataFrame:
     """Robustly recover the inferred reference cell state signatures."""
-
     # Try the public helper first (available in recent releases)
     if hasattr(regression_model, "export_cell_state_df"):
         try:
@@ -67,7 +68,9 @@ def _extract_cell_state_df(
             data = reference_adata.varm[key]
             if hasattr(data, "toarray"):
                 data = data.toarray()
-            mod_uns = reference_adata.uns.get("mod", {}) if isinstance(reference_adata.uns, dict) else {}
+            mod_uns = (
+                reference_adata.uns.get("mod", {}) if isinstance(reference_adata.uns, dict) else {}
+            )
             factor_names = mod_uns.get("factor_names")
             if factor_names is None and cell_type_column in reference_adata.obs:
                 labels = reference_adata.obs[cell_type_column]
@@ -95,6 +98,7 @@ def _save_cell_abundance(
     basename: str,
     cell_state_df: pd.DataFrame,
 ) -> Optional[Path]:
+    """Export a cell-abundance obsm matrix to CSV, returning the written path or None."""
     matrix = adata_visium.obsm.get(basename)
     if matrix is None:
         return None
@@ -102,7 +106,9 @@ def _save_cell_abundance(
     if isinstance(matrix, pd.DataFrame):
         abundance_df = matrix
     else:
-        abundance_df = pd.DataFrame(matrix, index=adata_visium.obs_names, columns=cell_state_df.columns)
+        abundance_df = pd.DataFrame(
+            matrix, index=adata_visium.obs_names, columns=cell_state_df.columns
+        )
 
     path = output_dir / f"{basename}.csv"
     abundance_df.to_csv(path)
@@ -127,13 +133,15 @@ def run_cell2location_visium_deconvolution(
     use_gpu: Optional[bool] = None,
 ) -> Dict[str, str]:
     """Run cell2location to deconvolve Visium spots into cell type abundances."""
-
     visium_path = _resolve_path(visium_h5ad_path)
     reference_path = _resolve_path(reference_h5ad_path)
     if not visium_path.exists():
         return {"status": "error", "message": f"Visium file not found: {visium_path}"}
     if not reference_path.exists():
-        return {"status": "error", "message": f"Reference file not found: {reference_path}"}
+        return {
+            "status": "error",
+            "message": f"Reference file not found: {reference_path}",
+        }
 
     output_dir = _resolve_path(output_subdir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -142,7 +150,10 @@ def run_cell2location_visium_deconvolution(
         adata_ref = sc.read(reference_path)
         adata_vis = sc.read(visium_path)
     except Exception as exc:  # pragma: no cover - I/O errors bubble up
-        return {"status": "error", "message": f"Failed to read input AnnData files: {exc}"}
+        return {
+            "status": "error",
+            "message": f"Failed to read input AnnData files: {exc}",
+        }
 
     if cell_type_column not in adata_ref.obs:
         return {
@@ -180,7 +191,10 @@ def run_cell2location_visium_deconvolution(
     regression_model.save(regression_model_dir, overwrite=True)
     regression_model.export_posterior(
         adata_ref,
-        sample_kwargs={"num_samples": posterior_samples, "batch_size": posterior_batch_size},
+        sample_kwargs={
+            "num_samples": posterior_samples,
+            "batch_size": posterior_batch_size,
+        },
     )
     cell_state_df = _extract_cell_state_df(regression_model, adata_ref, cell_type_column)
 
@@ -203,11 +217,16 @@ def run_cell2location_visium_deconvolution(
     spatial_model.save(spatial_model_dir, overwrite=True)
     spatial_model.export_posterior(
         adata_vis,
-        sample_kwargs={"num_samples": posterior_samples, "batch_size": posterior_batch_size},
+        sample_kwargs={
+            "num_samples": posterior_samples,
+            "batch_size": posterior_batch_size,
+        },
     )
 
     q05_path = _save_cell_abundance(adata_vis, output_dir, "q05_cell_abundance_w_sf", cell_state_df)
-    mean_path = _save_cell_abundance(adata_vis, output_dir, "means_cell_abundance_w_sf", cell_state_df)
+    mean_path = _save_cell_abundance(
+        adata_vis, output_dir, "means_cell_abundance_w_sf", cell_state_df
+    )
 
     visium_output = output_dir / "visium_with_cell2location.h5ad"
     reference_output = output_dir / "reference_with_posteriors.h5ad"

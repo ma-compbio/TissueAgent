@@ -1,3 +1,4 @@
+"""Prompt templates and description for the single cell agent."""
 SingleCellDescription = """
 Finds and/or downloads CZI CELLxGENE reference single-cell datasets for downstream analysis.
 Handles CELLxGENE filtering and dataset retrieval only (no general web/literature search).

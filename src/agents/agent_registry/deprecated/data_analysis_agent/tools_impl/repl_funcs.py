@@ -3,11 +3,13 @@ from dataclasses import dataclass
 from agents.agent_registry.data_analysis_agent.tools_impl.repl_spatial_clustering_funcs_impl import *
 from agents.agent_registry.data_analysis_agent.tools_impl.repl_ligand_receptor_funcs_impl import *
 
+
 @dataclass
 class REPLFunc:
     name: str
     description: str
     code: str
+
 
 REPLFuncs = {
     "Spatial Clustering analysis": [

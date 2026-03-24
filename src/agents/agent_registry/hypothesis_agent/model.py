@@ -1,3 +1,5 @@
+"""CodeAct-style hypothesis agent with a persistent Python REPL for hypothesis synthesis."""
+
 import logging
 from queue import Queue
 from typing import Optional
@@ -10,18 +12,31 @@ from langgraph.graph import END, MessagesState, START, StateGraph
 from agents.agent_utils import extract_block
 from agents.agent_registry.hypothesis_agent.tools import HypothesisTools
 from langchain_experimental.utilities import PythonREPL
-from agents.agent_registry.hypothesis_agent.prompt import HypothesisAgentPrompt, HypothesisAgentDescription
+from agents.agent_registry.hypothesis_agent.prompt import (
+    HypothesisAgentPrompt,
+    HypothesisAgentDescription,
+)
 from graph.graph_utils import log_message
 
 from config import DATA_DIR, PDF_UPLOADS_DIR
 
 
 class HypothesisState(MessagesState):
+    """Extended message state carrying the current code/response block and a persistent REPL."""
+
     status_block: str  # content of <execute> or <response> block
     repl: Optional[PythonREPL]
 
 
 def create_hypothesis_agent(state_queue: Queue):
+    """Build and return the hypothesis agent as a StructuredTool.
+
+    Args:
+        state_queue: Queue to which finished agent states are posted for UI consumption.
+
+    Returns:
+        A StructuredTool that invokes the hypothesis agent graph with a text prompt.
+    """
     graph = StateGraph(HypothesisState)
     id = "hypothesis_agent"
 
@@ -32,12 +47,14 @@ def create_hypothesis_agent(state_queue: Queue):
     ### Model
 
     from agents.agent_registry.hypothesis_agent.params import model_ctor
+
     model = model_ctor()
 
     agent_node_id = "agent_node"
     exec_node_id = "exec_node"
 
     def agent_node(state: HypothesisState):
+        """Invoke the LLM and route to exec or END based on block type."""
         messages = state["messages"]
         system_prompt = SystemMessage(HypothesisAgentPrompt)
 
@@ -67,6 +84,7 @@ def create_hypothesis_agent(state_queue: Queue):
         return Command(goto=next_node, update={"messages": response_msg})
 
     def exec_node(state: HypothesisState):
+        """Extract and run the <execute> code block in a persistent Python REPL."""
         messages = state["messages"]
         last_message = messages[-1]
         code_block = extract_block("execute", str(last_message.content))
@@ -85,7 +103,10 @@ def create_hypothesis_agent(state_queue: Queue):
                     f"Your role is to synthesize hypotheses, not generate notebooks."
                 )
                 logging.warning(f"Blocked forbidden function call: {forbidden}")
-                return {"messages": [HumanMessage(f"Python Error:\n{error_msg}")], "repl": state.get("repl")}
+                return {
+                    "messages": [HumanMessage(f"Python Error:\n{error_msg}")],
+                    "repl": state.get("repl"),
+                }
 
         repl = state.get("repl")
         if repl is None:
@@ -135,6 +156,7 @@ def create_hypothesis_agent(state_queue: Queue):
     _persistent_repl_state = {}
 
     def agent_invocation_tool(prompt: str) -> str:
+        """Run the hypothesis agent graph on a prompt and return the final message."""
         logging.info(f"Invoking agent `{id}`")
         # Preserve REPL from previous invocation
         initial_state = {"messages": [HumanMessage(prompt)]}

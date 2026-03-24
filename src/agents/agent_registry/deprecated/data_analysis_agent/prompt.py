@@ -80,7 +80,6 @@ Final Answer: <concise user-facing summary: what was done, key outputs/paths (fi
 """.strip()
 
 
-
 # DataAnalysisDescription = """
 # Generate Python code to analyze spatial transcriptomics data using Scanpy,
 # Squidpy, and related libraries. This agent supports tasks such as spatially
@@ -139,7 +138,6 @@ Final Answer: <concise user-facing summary: what was done, key outputs/paths (fi
 # """.strip()
 
 
-
 # DataAnalysisDescription = """
 # Generate Python code to analyze spatial transcriptomics data using Scanpy,
 # Squidpy, and related libraries. This agent supports tasks such as spatially
@@ -158,7 +156,7 @@ Final Answer: <concise user-facing summary: what was done, key outputs/paths (fi
 #   - `code_rag_tool`: use to semantically search for related scanpy/squidpy functions
 
 # ### Workflow
-#   - User describes their desired analysis in natural language (e.g. \"Find 
+#   - User describes their desired analysis in natural language (e.g. \"Find
 #     spatially variable genes and visualize the clusters\").
 #   - Divide the task into several components and use `code_rag_tool` to find
 #     relevant scanpy/squidpy functions for the task. Select the best to encorporate
@@ -169,7 +167,7 @@ Final Answer: <concise user-facing summary: what was done, key outputs/paths (fi
 #     code for your new analysis, remembering that values persist between invocations.
 #   - Use `python_repl_exec_tool` to execute Python code and interpret the output. Use
 #     builtin REPL functions as much as possible.
-#   - If an error occurs or the output is unclear, fix your code to better 
+#   - If an error occurs or the output is unclear, fix your code to better
 #     answer the query.
 
 # ### Response

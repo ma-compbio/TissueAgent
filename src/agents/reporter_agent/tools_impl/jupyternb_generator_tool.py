@@ -1,11 +1,10 @@
+"""Tool implementation for generating Jupyter notebooks from agent results."""
 import nbformat as nbf
 import nbformat.v4 as nbfv4
 from pathlib import Path
 from typing import Optional, Union
 
 from langchain.tools import StructuredTool
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
 
 from config import DATA_DIR, NOTEBOOK_DIR
 
@@ -29,6 +28,7 @@ by removing redundant code and removing code that resulted in errors. Print all
 images and figures as figures in Jupyter notebook format. DO NOT SAVE IMAGES TO
 FILES. ONLY RESPOND WITH CODE. DO NOT INCLUDE THE OUTPUT.
 """.strip()
+
 
 def _normalize_filename(filename: Optional[Union[Path, str]]) -> Path:
     if filename is None:
@@ -57,10 +57,12 @@ def _normalize_filename(filename: Optional[Union[Path, str]]) -> Path:
 
     return target
 
-def generate_jupyternb(filename: Optional[Union[Path, str]]=None) -> str:
+
+def generate_jupyternb(filename: Optional[Union[Path, str]] = None) -> str:
+    """Generate a Jupyter notebook from the current coding session."""
     # Since we removed the execution history tracking, create a basic empty notebook
     nb = nbfv4.new_notebook()
-    
+
     # Add a simple markdown cell explaining the situation
     markdown_cell = nbfv4.new_markdown_cell(
         "# Analysis Session\n\n"
@@ -68,11 +70,10 @@ def generate_jupyternb(filename: Optional[Union[Path, str]]=None) -> str:
         "Execution history tracking has been simplified, so this notebook contains only basic structure."
     )
     nb.cells.append(markdown_cell)
-    
+
     # Add a simple code cell
     code_cell = nbfv4.new_code_cell(
-        "# Add your analysis code here\n"
-        "print('Analysis session started')"
+        "# Add your analysis code here\nprint('Analysis session started')"
     )
     nb.cells.append(code_cell)
 
@@ -89,8 +90,9 @@ def generate_jupyternb(filename: Optional[Union[Path, str]]=None) -> str:
         return f"Error: notebook export failed with error `{e}`"
     return f"Success: notebook successfully exported to {filename_path}"
 
+
 jupyternb_generator_tool = StructuredTool.from_function(
     func=generate_jupyternb,
     name="jupyternb_generator_tool",
-    description="generates a Jupyter notebook that summarizes all executed commands"
+    description="generates a Jupyter notebook that summarizes all executed commands",
 )

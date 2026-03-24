@@ -1,3 +1,4 @@
+"""Prompt templates and description for the coding agent."""
 from config import DATA_DIR, NOTEBOOK_DIR
 
 CodingAgentBasePrompt = f"""

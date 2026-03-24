@@ -51,4 +51,23 @@ dependencies = [
     "ggplot>=0.11.5",
     "plotnine>=0.15.0",
     "memorisdk==2.3.0",
+    "ruff>=0.15.6",
+    "pre-commit>=4.5.1",
 ]
+
+[tool.ruff]
+line-length = 120
+force-exclude = true
+
+[tool.ruff.lint]
+select = ["E", "F", "D"]
+ignore = ["E731"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"**/prompt.py" = ["E501"]
+"**/__init__.py" = ["ALL"]
+"notebooks/**" = ["ALL"]
+"**/deprecated/**" = ["ALL"]

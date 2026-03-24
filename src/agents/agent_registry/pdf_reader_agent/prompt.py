@@ -1,3 +1,4 @@
+"""Prompt templates and description for the PDF reader agent."""
 from config import DATA_DIR
 
 PDFReaderAgentDescription = """

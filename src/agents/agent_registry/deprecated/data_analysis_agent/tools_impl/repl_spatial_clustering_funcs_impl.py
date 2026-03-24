@@ -1,4 +1,4 @@
-PreprocessAnndataDescription = '''
+PreprocessAnndataDescription = """
 Preprocesses an AnnData object by storing the raw data, normalizing total counts, log‐transforming, and selecting highly variable genes.
 
 Args:
@@ -14,9 +14,9 @@ Updates to adata:
   writes bool indicator of HVGs into `adata.var["highly_variable"]`
   writes means per gene into `adata.var["means"]`
   writes an indicator to `adata.uns["preprocessed"]`
-'''.strip()
+""".strip()
 
-PreprocessAnndataCode = r'''
+PreprocessAnndataCode = r"""
 def preprocess_adata(adata: AnnData, num_hvgs: int=2000):
     if adata.uns.get("preprocessed", False):
         return "Error: data has already been preprocessed. Nothing was done"
@@ -28,9 +28,9 @@ def preprocess_adata(adata: AnnData, num_hvgs: int=2000):
     adata.uns["preprocessed"] = True
 
     return "Success: data has been normalized, log‐transformed, and HVGs selected."
-'''
+"""
 
-FindMarkerGenesDescription = '''
+FindMarkerGenesDescription = """
 Finds marker genes for a given spatial cluster.
 Requires that spatial clustering (e.g. Leiden) has already been performed.
 
@@ -42,9 +42,9 @@ Args:
 Returns:
   str: status message on error
   dict: { "top_marker_genes": List[str] }
-'''.strip()
+""".strip()
 
-FindMarkerGenesCode = r'''
+FindMarkerGenesCode = r"""
 def find_marker_genes(
     adata: AnnData,
     cluster_key: str,
@@ -71,9 +71,9 @@ def find_marker_genes(
     
     except Exception as e:
         return f"Error: {str(e)}"
-'''.strip()
+""".strip()
 
-PlotGeneHeatmapDescription = '''
+PlotGeneHeatmapDescription = """
 Generates a heatmap of gene expression from spatial transcriptomics data.
 
 Args:
@@ -84,9 +84,9 @@ Args:
     
 Returns:
   str: status message
-'''.strip()
+""".strip()
 
-PlotGeneHeatmapCode = r'''
+PlotGeneHeatmapCode = r"""
 def plot_gene_heatmap(
     adata: AnnData,
     filename: Optional[Union[Path, str]]=None,
@@ -136,9 +136,9 @@ def plot_gene_heatmap(
     
     except Exception as e:
         return f"Error: {str(e)}"
-'''.strip()
+""".strip()
 
-QueryGeneExpressionDescription = '''
+QueryGeneExpressionDescription = """
 Queries the expression level of a given gene at the spatial location nearest to the provided coordinates.
 
 Args:
@@ -150,9 +150,9 @@ Args:
 Returns:
   str: status message on error
   dict: { "GENE": expression_level }
-'''.strip()
+""".strip()
 
-QueryGeneExpressionCode = r'''
+QueryGeneExpressionCode = r"""
 def query_gene_expression(
     adata: AnnData,
     gene: str,
@@ -180,9 +180,9 @@ def query_gene_expression(
                 else expression_level)}
     except Exception as e:
         return f"Error: {str(e)}"
-'''.strip()
+""".strip()
 
-SpatialClusteringDescription = '''
+SpatialClusteringDescription = """
 Performs spatial clustering on spatial transcriptomics data and generates a cluster visualization.
 
 Args:
@@ -194,7 +194,7 @@ Returns:
 
 Updates to adata:
   writes cluster labels to `adata.obs["leiden"]` as a categorical.
-'''.strip()
+""".strip()
 
 SpatialClusteringCode = r'''
 def spatial_clustering(
@@ -258,7 +258,7 @@ def spatial_clustering(
 # neighborhood or cluster information. Requires spatial clustering to have been performed.
 #
 # Args:
-#   adata(AnnData): the AnnData object containing spatial transcriptomics data 
+#   adata(AnnData): the AnnData object containing spatial transcriptomics data
 #   gene1(str): the name of the first gene in the pair.
 #   gene2(str): the name of the second gene in the pair.
 #
@@ -291,8 +291,8 @@ def spatial_clustering(
 #         sq.gr.spatial_neighbors(adata)
 #
 #         coexpression = sq.gr.co_occurrence(
-#             adata, 
-#             cluster_key="leiden", 
+#             adata,
+#             cluster_key="leiden",
 #             genes=[gene1, gene2]
 #         )
 #

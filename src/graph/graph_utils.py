@@ -1,11 +1,24 @@
+"""Graph node and tool factories for the TissueAgent LangGraph pipeline.
+
+Provides reusable builders for agent nodes, tool nodes, and sub-agent
+invocation tools, as well as message logging and user-state tracking
+helpers used across the graph.
+"""
+
 import logging
 from copy import deepcopy
 from queue import Queue
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, cast
 
 from langchain.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langgraph.graph import MessagesState
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
@@ -17,14 +30,25 @@ _latest_user_message_content: Optional[List[Any]] = None
 
 
 def register_ui_event_queue(event_queue: Queue) -> None:
+    """Set the global queue used to push messages to the Streamlit UI.
+
+    Args:
+        event_queue: Thread-safe queue that the UI layer drains to
+            render new messages in near-real-time.
+    """
     global _ui_event_queue
     _ui_event_queue = event_queue
 
 
 def record_user_message(message: BaseMessage) -> None:
-    """
-    Persist the latest user message content (including multimodal parts)
-    so downstream agent tools can access attachments like images.
+    """Persist the latest user message content for downstream access.
+
+    Stores a deep copy of multimodal content (text + image parts) in a
+    module-level global so that sub-agent invocation tools can forward
+    user-attached images without re-reading session state.
+
+    Args:
+        message: The most recent user message from the conversation.
     """
     global _latest_user_message_content
     content = getattr(message, "content", None)
@@ -35,8 +59,12 @@ def record_user_message(message: BaseMessage) -> None:
 
 
 def get_latest_user_image_parts() -> List[Dict[str, Any]]:
-    """
-    Return copies of the latest user's image parts (if any) to avoid mutation.
+    """Return deep copies of image parts from the latest user message.
+
+    Returns:
+        A list of image content-part dicts (``{"type": "image_url", …}``).
+        Returns an empty list when no images are attached or no user
+        message has been recorded.
     """
     if not isinstance(_latest_user_message_content, list):
         return []
@@ -47,15 +75,30 @@ def get_latest_user_image_parts() -> List[Dict[str, Any]]:
     return parts
 
 
-def standardize_message_format(
-    message: AIMessage
-) -> AIMessage:
+def standardize_message_format(message: AIMessage) -> AIMessage:
+    """Normalize an AI message into a consistent text + tool_calls format.
+
+    Provider responses may encode tool calls inline within the content
+    list.  This function separates text parts from tool-call parts and
+    returns a new :class:`AIMessage` with plain-text content and an
+    explicit ``tool_calls`` list.
+
+    Args:
+        message: The raw AI message to normalize.
+
+    Returns:
+        A new :class:`AIMessage` with standardized content, or the
+        original message unchanged if content is already a string.
+    """
     if isinstance(message.content, list):
         text_parts = []
         tool_calls = []
         other_parts = []
 
         for item in message.content:
+            if not isinstance(item, dict):
+                other_parts.append(item)
+                continue
             itype = item.get("type")
             if itype in ("text", "output_text"):
                 text_parts.append(item.get("text", ""))
@@ -63,7 +106,7 @@ def standardize_message_format(
                 tool_call = {
                     "name": item.get("name"),
                     "args": item.get("input") or item.get("args") or {},
-                    "id":   item.get("id"),
+                    "id": item.get("id"),
                     "type": "tool_call",
                 }
                 tool_calls.append(tool_call)
@@ -75,9 +118,10 @@ def standardize_message_format(
         return AIMessage("\n".join(text_parts).strip(), id=message.id, tool_calls=tool_calls)
     return message
 
+
 def _stringify_content(content: Any) -> List[str]:
-    """
-    Turn content into printable lines for logging.
+    """Turn content into printable lines for logging.
+
     Handles str or multimodal (list) content.
     """
     lines: List[str] = []
@@ -85,14 +129,19 @@ def _stringify_content(content: Any) -> List[str]:
         lines.extend(content.splitlines())
     elif isinstance(content, list):
         for idx, part in enumerate(content, 1):
+            if not isinstance(part, dict):
+                lines.append(f"[{idx}] {part}")
+                continue
             ptype = part.get("type")
             if ptype in ("text", "output_text"):
-                lines.append(f"[{idx}] (text) {part.get('text','')}")
+                lines.append(f"[{idx}] (text) {part.get('text', '')}")
             elif ptype in ("image_url", "image"):
                 url = part.get("image_url")
                 if isinstance(url, dict):
                     url = url.get("url")
-                lines.append(f"[{idx}] (image) {str(url)[:80]}{'...' if url and len(str(url))>80 else ''}")
+                lines.append(
+                    f"[{idx}] (image) {str(url)[:80]}{'...' if url and len(str(url)) > 80 else ''}"
+                )
             elif ptype in ("tool_use", "tool_call"):
                 lines.append(f"[{idx}] (tool_call) {part.get('name')}")
             else:
@@ -102,19 +151,29 @@ def _stringify_content(content: Any) -> List[str]:
     return lines
 
 
-def log_message(message: BaseMessage):
+def log_message(message: BaseMessage) -> None:
+    """Log a message's metadata and content, and push it to the UI queue.
+
+    Writes a structured log entry with the message type, name, ID, content,
+    and any tool calls.  If a UI event queue has been registered via
+    :func:`register_ui_event_queue`, the message is also enqueued for
+    real-time display.
+
+    Args:
+        message: Any LangChain message (human, AI, tool, etc.).
+    """
     # Some message types may not have .name; default to None
-    msg_type   = getattr(message, "type", type(message).__name__)
-    msg_name   = getattr(message, "name", None)
-    msg_id     = getattr(message, "id", None)
-    content    = getattr(message, "content", None)
+    msg_type = getattr(message, "type", type(message).__name__)
+    msg_name = getattr(message, "name", None)
+    msg_id = getattr(message, "id", None)
+    content = getattr(message, "content", None)
     tool_calls = getattr(message, "tool_calls", [])
 
     lines = [
-        f"Message Info",
+        "Message Info",
         f"Type: {msg_type}\n",
         f"Name: {msg_name}\n",
-        f"ID:   {msg_id}\n"
+        f"ID:   {msg_id}\n",
     ]
 
     if content is not None:
@@ -134,6 +193,7 @@ def log_message(message: BaseMessage):
         except Exception:
             pass
 
+
 def create_agent_node(
     agent_node_id: str,
     agent_model: BaseChatModel,
@@ -141,13 +201,41 @@ def create_agent_node(
     tool_node_id: str,
     exit_node_id: Optional[str] = None,
     exit_node_id_fn: Optional[Callable[[AIMessage, MessagesState], str]] = None,
-    state_update_fn: Optional[Callable[[AIMessage, MessagesState], Optional[Dict[str, Any]]]] = None,
+    state_update_fn: Optional[
+        Callable[[AIMessage, MessagesState], Optional[Dict[str, Any]]]
+    ] = None,
 ) -> Callable[[MessagesState], Command]:
-    
+    """Build a LangGraph agent node that invokes an LLM and routes the result.
+
+    The returned callable prepends a system prompt, invokes *agent_model*,
+    normalises the response, logs it, and returns a :class:`Command` that
+    either routes to the tool node (when tool calls are present) or to the
+    configured exit node.
+
+    Args:
+        agent_node_id: Unique node identifier; also set as the message's
+            ``name`` attribute for UI display.
+        agent_model: Bound chat model (with tools already attached).
+        prompt: System prompt injected before the conversation messages.
+        tool_node_id: Node to route to when the response contains tool
+            calls.
+        exit_node_id: Static node to route to when no tool calls are
+            present.  Mutually exclusive with *exit_node_id_fn*.
+        exit_node_id_fn: Callable that receives ``(response, state)`` and
+            returns the next node ID.  Used for conditional routing
+            (e.g. planner/evaluator routers).
+        state_update_fn: Optional callable that receives
+            ``(response, state)`` and returns a dict of extra state updates
+            to merge into the command payload.
+
+    Returns:
+        A callable suitable for use as a LangGraph node function.
+    """
+
     def agent_node(state: MessagesState) -> Command:
         messages = state["messages"]
         system_prompt = SystemMessage(prompt)
-        response = agent_model.invoke([system_prompt] + messages)
+        response = cast(AIMessage, agent_model.invoke([system_prompt] + messages))
         response = standardize_message_format(response)
         response.name = agent_node_id
         log_message(response)
@@ -158,38 +246,55 @@ def create_agent_node(
             if maybe_update:
                 extra_update.update(maybe_update)
 
-        next_node = tool_node_id if getattr(response, "tool_calls", []) else None
+        next_node: Optional[str] = tool_node_id if getattr(response, "tool_calls", []) else None
         if not next_node:
             if exit_node_id:
                 next_node = exit_node_id
             elif exit_node_id_fn:
                 next_node = exit_node_id_fn(response, state)
-            else:
-                next_node = None
 
         update_payload: Dict[str, Any] = {"messages": [response]}
         if extra_update:
             update_payload.update(extra_update)
-        return Command(goto=next_node, update=update_payload)
+        if next_node is not None:
+            return Command(goto=next_node, update=update_payload)
+        return Command(update=update_payload)
+
     return agent_node
 
+
 def create_tool_node(
-    tools: List[StructuredTool]
+    tools: List[StructuredTool],
 ) -> Callable[[MessagesState], MessagesState]:
+    """Build a LangGraph tool-execution node from a list of tools.
+
+    The returned callable reads the last AI message's ``tool_calls``,
+    invokes each tool by name, wraps the results as
+    :class:`~langchain_core.messages.ToolMessage` objects, and logs them.
+
+    Args:
+        tools: The tool instances available for invocation.  Each tool's
+            ``name`` must be unique within the list.
+
+    Returns:
+        A callable suitable for use as a LangGraph node function.
+    """
     tools_by_name = {tool.name: tool for tool in tools}
 
     def tool_node(state: MessagesState) -> MessagesState:
         result = []
-        for tool_call in state["messages"][-1].tool_calls:
+        last_message = cast(AIMessage, state["messages"][-1])
+        for tool_call in last_message.tool_calls:
             tool = tools_by_name[tool_call["name"]]
             observation = tool.invoke(tool_call["args"])
-            message = ToolMessage(content=observation,
-                                  tool_call_id=tool_call["id"])
+            message = ToolMessage(content=observation, tool_call_id=tool_call["id"])
             message.name = tool_call["name"]
             log_message(message)
             result.append(message)
         return {"messages": result}
+
     return tool_node
+
 
 def create_agent_invocation_tool(
     agent_node_id: str,
@@ -198,13 +303,39 @@ def create_agent_invocation_tool(
     state_queue: Queue,
     supports_pdf: bool = False,
     forward_user_images: bool = False,
-):
-    def _build_multimodal_message(prompt: str, extra_parts: Optional[List[Dict[str, Any]]] = None):
+) -> StructuredTool:
+    """Create a LangChain tool that delegates a prompt to a compiled sub-agent.
+
+    The returned :class:`~langchain.tools.StructuredTool` accepts a text
+    prompt (and optional PDF file IDs when *supports_pdf* is ``True``),
+    invokes the sub-agent graph, pushes the final state onto
+    *state_queue* for UI rendering, and returns the last message's content.
+
+    Args:
+        agent_node_id: Node ID of the sub-agent (used in the tool name).
+        agent_name: Human-readable agent name shown in UI badges.
+        agent: The compiled sub-agent graph to invoke.
+        state_queue: Queue where ``(agent_name, final_state)`` tuples are
+            placed after each invocation.
+        supports_pdf: When ``True``, the generated tool accepts an
+            additional ``pdf_file_ids`` parameter.
+        forward_user_images: When ``True``, the latest user-attached
+            images are included in the prompt sent to the sub-agent.
+
+    Returns:
+        A :class:`~langchain.tools.StructuredTool` named
+        ``"{agent_node_id}_transfer_tool"``.
+    """
+
+    def _build_multimodal_message(
+        prompt: str, extra_parts: Optional[List[Dict[str, Any]]] = None
+    ) -> HumanMessage:
+        """Assemble a HumanMessage from text, optional extras, and user images."""
         if forward_user_images:
             image_parts = get_latest_user_image_parts()
         else:
             image_parts = []
-        parts: List[Dict[str, Any]] = [{"type": "text", "text": prompt}]
+        parts: list[str | dict[str, Any]] = [{"type": "text", "text": prompt}]
         if extra_parts:
             parts.extend(extra_parts)
         if image_parts:
@@ -215,9 +346,9 @@ def create_agent_invocation_tool(
         return HumanMessage(prompt)
 
     if supports_pdf:
-        def agent_invocation_tool(prompt: str, pdf_file_ids: str = "") -> str:
-            """
-            Invoke agent with optional PDF file IDs.
+
+        def _pdf_agent_invocation_tool(prompt: str, pdf_file_ids: str = "") -> str:
+            """Invoke agent with optional PDF file IDs.
 
             Args:
                 prompt: Task instructions for the agent
@@ -235,24 +366,27 @@ def create_agent_invocation_tool(
                 file_ids = [fid.strip() for fid in pdf_file_ids.split(",") if fid.strip()]
                 logging.info(f"Attaching {len(file_ids)} PDF file(s) to agent invocation")
                 for file_id in file_ids:
-                    content.append({
-                        "type": "file",
-                        "file": {"file_id": file_id}
-                    })
+                    content.append({"type": "file", "file": {"file_id": file_id}})
 
             message = _build_multimodal_message(prompt, extra_parts=content)
             final_state = agent.invoke({"messages": [message]})
             state_queue.put((agent_name, final_state))
             logging.info(f"Finished invoking PDF-capable agent `{agent_node_id}`")
             return final_state["messages"][-1].content
+
+        agent_invocation_tool = _pdf_agent_invocation_tool
     else:
-        def agent_invocation_tool(prompt: str) -> str:
+
+        def _basic_agent_invocation_tool(prompt: str) -> str:
+            """Invoke the sub-agent with a text prompt and return its response."""
             logging.info(f"Invoking agent `{agent_node_id}`")
             message = _build_multimodal_message(prompt)
             final_state = agent.invoke({"messages": [message]})
             state_queue.put((agent_name, final_state))
             logging.info(f"Finished invoking agent `{agent_node_id}`")
             return final_state["messages"][-1].content
+
+        agent_invocation_tool = _basic_agent_invocation_tool
 
     return StructuredTool.from_function(
         func=agent_invocation_tool,

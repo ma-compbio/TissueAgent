@@ -1,3 +1,4 @@
+"""Tool definitions for the gene agent."""
 from typing import List
 
 from langchain.tools import StructuredTool
@@ -18,4 +19,3 @@ GeneAgentTools: List[StructuredTool] = [
         ),
     )
 ]
-

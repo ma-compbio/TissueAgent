@@ -1,3 +1,17 @@
+"""Integration layer for the Memori long-term memory SDK.
+
+Provides lazy initialization and lifecycle management of Memori instances,
+keyed by (user_id, session_id).  When ``MEMORI_ENABLED`` is set in the
+environment the module will create a SQLite-backed Memori store under
+``DATA_DIR/memori/`` and register it with the OpenAI integration hook so
+that all downstream LLM calls benefit from long-term memory.
+
+The public API is intentionally small:
+
+* :func:`initialize_memori_context` – ensure an instance exists and activate it.
+* :func:`memori_enabled` – check whether memory is effectively on.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -10,11 +24,11 @@ from typing import Dict, Optional, Tuple
 
 from config import DATA_DIR
 
-try:  # Optional dependency – only used when the SDK is installed
+try:
     from memori import Memori
     from memori.integrations import openai_integration as _memori_openai
-except ImportError:  # pragma: no cover - executed when Memori isn't installed
-    Memori = None  # type: ignore[assignment]
+except ImportError:
+    Memori = None
     set_active_memori_context = None  # type: ignore[assignment]
     register_memori_instance = None  # type: ignore[assignment]
 else:
@@ -42,6 +56,7 @@ def _default_sqlite_url() -> str:
 
 @dataclass(frozen=True)
 class _MemoriConfig:
+    """Immutable snapshot of Memori-related environment configuration."""
     enabled: bool
     database_url: str
     conscious_ingest: bool
@@ -55,6 +70,7 @@ class _MemoriConfig:
 
 
 def _load_config() -> _MemoriConfig:
+    """Read Memori settings from environment variables and return a frozen config."""
     return _MemoriConfig(
         enabled=_env_bool("MEMORI_ENABLED", False),
         database_url=os.getenv("MEMORI_DATABASE_URL", _default_sqlite_url()),
@@ -70,6 +86,7 @@ def _load_config() -> _MemoriConfig:
 
 
 _CONFIG = _load_config()
+
 
 def _log_memori_sdk_status() -> None:
     """Emit a log line describing whether the SDK is discoverable."""
@@ -103,6 +120,7 @@ class _MemoriManager:
 
     @property
     def enabled(self) -> bool:
+        """Return True when Memori is both configured and importable."""
         return self._config.enabled and Memori is not None
 
     def ensure_instance(
@@ -111,11 +129,14 @@ class _MemoriManager:
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
     ):
+        """Return an active Memori instance for the given user/session, creating one if needed."""
         if not self.enabled:
             return None
 
         resolved_user = (user_id or self._config.default_user_id or "default").strip() or "default"
-        resolved_session = (session_id or self._config.default_session_id or "default").strip() or "default"
+        resolved_session = (
+            session_id or self._config.default_session_id or "default"
+        ).strip() or "default"
         key = (resolved_user, resolved_session)
 
         with self._lock:
@@ -128,6 +149,7 @@ class _MemoriManager:
         return instance
 
     def _create_instance(self, user_id: str, session_id: str):
+        """Instantiate, enable, and return a new Memori object."""
         assert Memori is not None  # for type checkers
 
         try:
@@ -153,6 +175,7 @@ class _MemoriManager:
             raise
 
     def _activate_context(self, memori_instance) -> None:
+        """Register the instance with the OpenAI integration hook, if available."""
         hook = set_active_memori_context or register_memori_instance
         if hook is None:
             return
@@ -166,6 +189,7 @@ _MANAGER: Optional[_MemoriManager] = None
 
 
 def _get_manager() -> Optional[_MemoriManager]:
+    """Return the singleton manager, lazily creating it when Memori is enabled."""
     global _MANAGER
     if _MANAGER is not None:
         return _MANAGER
@@ -180,10 +204,17 @@ def initialize_memori_context(
     user_id: Optional[str] = None,
     session_id: Optional[str] = None,
 ):
-    """
-    Ensure Memori is enabled (if configured) and activate the context.
+    """Ensure Memori is enabled (if configured) and activate the context.
 
-    Returns the active Memori instance or None when memory is disabled.
+    Args:
+        user_id: Override for the default user identifier.  Falls back to
+            the ``MEMORI_USER_ID`` env var or ``"tissueagent"``.
+        session_id: Override for the default session identifier.  Falls back
+            to the ``MEMORI_SESSION_ID`` env var or ``"default"``.
+
+    Returns:
+        The active :class:`Memori` instance, or ``None`` when long-term
+        memory is disabled or the SDK is not installed.
     """
     manager = _get_manager()
     if manager is None:
@@ -192,7 +223,12 @@ def initialize_memori_context(
 
 
 def memori_enabled() -> bool:
-    """Expose the effective enablement state to the UI layer."""
+    """Check whether Memori long-term memory is active.
+
+    Returns:
+        ``True`` when the ``MEMORI_ENABLED`` env var is truthy and the
+        Memori SDK is importable; ``False`` otherwise.
+    """
     manager = _get_manager()
     return bool(manager and manager.enabled)
 

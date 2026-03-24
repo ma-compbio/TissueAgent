@@ -6,12 +6,13 @@ from pathlib import Path
 from scipy.sparse import csr_matrix
 from typing import Union
 
+
 def convert_to_h5ad(dataset_dir: Union[Path, str]) -> str:
     dataset_dir = Path(dataset_dir)
     res_path = dataset_dir / "adata.h5ad"
 
     if res_path.exists():
-      return f"Error: File {res_path} already exists."
+        return f"Error: File {res_path} already exists."
 
     slide_id = f"cosmx_{dataset_dir.name}"
 
@@ -19,7 +20,7 @@ def convert_to_h5ad(dataset_dir: Union[Path, str]) -> str:
     metadata_files = list(dataset_dir.glob("*metadata_file.csv"))
 
     if len(counts_files) != 1 or len(metadata_files) != 1:
-      return f"Error: Did not found both exprMat and metadata csv inside {dataset_dir}."
+        return f"Error: Did not found both exprMat and metadata csv inside {dataset_dir}."
 
     data = pd.read_csv(counts_files[0], index_col=[0, 1])
     obs = pd.read_csv(metadata_files[0], index_col=[0, 1])
@@ -39,7 +40,9 @@ def convert_to_h5ad(dataset_dir: Union[Path, str]) -> str:
 
     adata = anndata.AnnData(data.loc[:, is_gene], obs=obs)
 
-    adata.obsm["spatial"] = adata.obs[["CenterX_global_px", "CenterY_global_px"]].values * 0.120280945
+    adata.obsm["spatial"] = (
+        adata.obs[["CenterX_global_px", "CenterY_global_px"]].values * 0.120280945
+    )
     adata.obs["slide_id"] = pd.Series(slide_id, index=adata.obs_names, dtype="category")
 
     adata.X = csr_matrix(adata.X)
@@ -51,6 +54,7 @@ def convert_to_h5ad(dataset_dir: Union[Path, str]) -> str:
 def main(args):
     path = Path(args.path).absolute() / "cosmx"
     print(convert_to_h5ad(dataset_dir=path))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

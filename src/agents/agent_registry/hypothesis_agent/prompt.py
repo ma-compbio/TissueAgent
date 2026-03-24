@@ -1,3 +1,4 @@
+"""Prompt templates and description for the hypothesis agent."""
 from config import DATA_DIR
 
 HypothesisAgentDescription = """

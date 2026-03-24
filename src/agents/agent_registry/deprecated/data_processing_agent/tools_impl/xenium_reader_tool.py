@@ -8,6 +8,7 @@ from typing import Union
 
 from config import DATA_DIR
 
+
 def convert_to_h5ad(dataset_dir: Union[Path, str]) -> str:
     dataset_dir = Path(dataset_dir)
     if not dataset_dir.is_absolute():
@@ -35,6 +36,7 @@ def convert_to_h5ad(dataset_dir: Union[Path, str]) -> str:
 def main(args):
     path = Path(args.path).absolute() / "xenium"
     print(convert_to_h5ad(dataset_dir=path))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

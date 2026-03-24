@@ -1,3 +1,5 @@
+"""Wrapper that runs the GeneAgent cascade pipeline and normalises its outputs."""
+
 from __future__ import annotations
 
 import contextlib
@@ -12,16 +14,26 @@ from typing import Sequence
 from config import DATA_DIR
 
 GENE_AGENT_SRC_DIR = Path(__file__).resolve().parent.parent / "original_repo" / "GeneAgent"
-if str(GENE_AGENT_SRC_DIR) not in sys.path:
-    sys.path.append(str(GENE_AGENT_SRC_DIR))
 
-try:
-    from main_cascade import GeneAgent as _GeneAgentCascade  # type: ignore
-except ModuleNotFoundError as exc:  # pragma: no cover - defensive
-    raise RuntimeError(
-        "Unable to import GeneAgent cascade. Ensure the original repository is present at "
-        f"{GENE_AGENT_SRC_DIR}"
-    ) from exc
+_GeneAgentCascade = None
+
+
+def _get_gene_agent_cascade():
+    """Lazily import GeneAgent cascade to avoid tkinter dependency at module load time."""
+    global _GeneAgentCascade
+    if _GeneAgentCascade is not None:
+        return _GeneAgentCascade
+    if str(GENE_AGENT_SRC_DIR) not in sys.path:
+        sys.path.append(str(GENE_AGENT_SRC_DIR))
+    try:
+        from main_cascade import GeneAgent as _cls  # type: ignore
+    except ModuleNotFoundError as exc:  # pragma: no cover - defensive
+        raise RuntimeError(
+            "Unable to import GeneAgent cascade. Ensure the original repository is present at "
+            f"{GENE_AGENT_SRC_DIR}"
+        ) from exc
+    _GeneAgentCascade = _cls
+    return _GeneAgentCascade
 
 
 _FINAL_RESPONSE_REL = Path("Outputs/GeneAgent/Cascade/MsigDB_Final_Response_GeneAgent.txt")
@@ -30,17 +42,20 @@ _GPT4_REL = Path("Outputs/GPT-4/MsigDB_Response_GPT4.txt")
 
 
 def _read_text_if_exists(path: Path) -> str:
+    """Return the text content of a file, or empty string if it does not exist."""
     if not path.exists():
         return ""
     return path.read_text(encoding="utf-8", errors="replace")
 
 
 def _last_block(text: str, delimiter: str = "//") -> str:
+    """Return the last non-empty segment after splitting on a delimiter."""
     parts = [part.strip() for part in text.split(delimiter) if part.strip()]
     return parts[-1] if parts else ""
 
 
 def _extract_process_names(text: str) -> list[str]:
+    """Parse unique ``Process: <name>`` lines from GeneAgent output text."""
     names = re.findall(r"^Process:\s*(.+)$", text, flags=re.MULTILINE)
     seen: set[str] = set()
     ordered: list[str] = []
@@ -57,8 +72,7 @@ def run_geneagent_cascade(
     gene_list: Sequence[str],
     request_id: str | None = None,
 ) -> dict:
-    """
-    Run the GeneAgent cascade for a list of gene symbols.
+    """Run the GeneAgent cascade for a list of gene symbols.
 
     Args:
         gene_list: Iterable of gene symbols (case-sensitive). Empty/blank entries are ignored.
@@ -68,7 +82,6 @@ def run_geneagent_cascade(
         Dictionary containing normalized cascade outputs, including final summary text,
         process names, verification logs, artifact paths, and captured stdout.
     """
-
     genes = [gene.strip() for gene in gene_list if gene and gene.strip()]
     if not genes:
         raise ValueError("gene_list must contain at least one non-empty gene symbol.")
@@ -82,7 +95,7 @@ def run_geneagent_cascade(
     try:
         os.chdir(run_directory)
         with contextlib.redirect_stdout(stdout_buffer):
-            raw_result = _GeneAgentCascade(run_identifier, ",".join(genes))
+            raw_result = _get_gene_agent_cascade()(run_identifier, ",".join(genes))
     finally:
         os.chdir(prev_cwd)
 
@@ -123,4 +136,3 @@ def run_geneagent_cascade(
         )
 
     return normalized_result
-

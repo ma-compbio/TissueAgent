@@ -1,3 +1,4 @@
+"""Prompt templates and description for the gene agent."""
 GeneAgentDescription = """
 Interprets a provided gene list and returns a verified biological-process narrative.
 Input contract: a non-empty `gene_list` (plus optional `request_id`).
@@ -73,4 +74,3 @@ Artifacts:
 - <absolute path to verification log>
 </final>
 """.strip()
-

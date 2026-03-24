@@ -688,29 +688,29 @@ TEMPLATE_DICT = {
     "pipeline": COMPREHENSIVE_ANALYSIS_TEMPLATE,
     "all": COMPREHENSIVE_ANALYSIS_TEMPLATE,
     "annotation": CELL_TYPE_ANNOTATION_TEMPLATE,
-    "annotate": CELL_TYPE_ANNOTATION_TEMPLATE
+    "annotate": CELL_TYPE_ANNOTATION_TEMPLATE,
 }
 
+
 def get_code_template(task_description: str) -> str:
-    """
-    Get the most relevant code template for a given task description.
-    
+    """Get the most relevant code template for a given task description.
+
     Parameters:
     -----------
     task_description : str
         Description of the analysis task
-        
+
     Returns:
     --------
     str
         Code template for the task
     """
     task_lower = task_description.lower()
-    
+
     # Check for direct keyword matches
     for keyword, template in TEMPLATE_DICT.items():
         if keyword in task_lower:
             return template
-    
+
     # Default to comprehensive template if no match
     return COMPREHENSIVE_ANALYSIS_TEMPLATE

@@ -1,4 +1,4 @@
-# src/agents/evaluator_agent/prompt.py
+"""Prompt templates and description for the evaluator agent."""
 
 EvaluatorDescription = """
 Evaluates the plan execution results and determines if the user query has been satisfactorily addressed. 
@@ -71,5 +71,3 @@ FEEDBACK: Providing focused, actionable feedback on critical issues only.
 
 
 """.strip()
-
-

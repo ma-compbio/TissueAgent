@@ -1,4 +1,4 @@
-# src/agents/planner_agent/prompt.py
+"""Prompt templates and description for the planner agent."""
 
 PlannerDescription = """
 Turn a user query into a minimal, quality-gated multi-step plan by retrieving/adapting a template from the Plan Registry; if none fits, instantiate a new plan from a generic template.

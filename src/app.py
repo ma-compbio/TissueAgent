@@ -1,3 +1,16 @@
+"""Streamlit application entry-point for TissueAgent.
+
+Launches the chat UI, manages sidebar controls (dataset upload, image/PDF
+attachments, session save/load, file browser), and drives the LangGraph
+agent loop.  Each user message is fed into the compiled TissueAgent graph;
+intermediate sub-agent states are streamed back to the UI in near-real-time
+via thread-safe queues.
+
+Run with::
+
+    PYTHONPATH=$(pwd)/src python -m streamlit run src/app.py
+"""
+
 import anthropic
 import base64
 import json
@@ -11,14 +24,15 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from datetime import datetime
 from pathlib import Path
 import streamlit as st
-import streamlit_nested_layout
-from functools import partial
-from html import escape
+from streamlit.delta_generator import DeltaGenerator
 from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
 from streamlit_file_browser import st_file_browser
 from queue import Queue
 from typing import Any, Deque, Set
+
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 from app_utils import (
     save_current_session,
@@ -35,7 +49,14 @@ from graph.graph_utils import (
     register_ui_event_queue,
 )
 from memori_integration import initialize_memori_context, memori_enabled
-from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, RECURSION_LIMIT, SESSIONS_DIR, UPLOADS_DIR
+from config import (
+    DATA_DIR,
+    DATASET_DIR,
+    PDF_UPLOADS_DIR,
+    RECURSION_LIMIT,
+    SESSIONS_DIR,
+    UPLOADS_DIR,
+)
 
 
 def _file_to_data_url(file_path: Path) -> str:
@@ -46,18 +67,17 @@ def _file_to_data_url(file_path: Path) -> str:
     b64 = base64.b64encode(file_path.read_bytes()).decode("utf-8")
     return f"data:{mime};base64,{b64}"
 
+
 def _upload_pdf_to_openai(pdf_path: Path) -> str:
     """Upload PDF to OpenAI Files API and return file_id."""
     try:
-        file = openai.files.create(
-            file=open(pdf_path, "rb"),
-            purpose="user_data"
-        )
+        file = openai.files.create(file=open(pdf_path, "rb"), purpose="user_data")
         logging.info(f"Uploaded PDF {pdf_path.name} to OpenAI, file_id: {file.id}")
         return file.id
     except Exception as e:
         logging.error(f"Failed to upload PDF {pdf_path.name}: {e}")
         raise
+
 
 def _next_available_path(directory: Path, filename: str) -> Path:
     """Return a unique path inside directory by suffixing an index if needed."""
@@ -74,18 +94,16 @@ def _next_available_path(directory: Path, filename: str) -> Path:
             return candidate
     raise FileExistsError(f"Unable to allocate a unique filename for {filename}")
 
+
 def _reset_data_directories() -> None:
-    """
-    Clear and keep explicitly listed runtime folders, and delete all other subdirectories.
+    """Clear and keep explicitly listed runtime folders, and delete all other subdirectories.
+
     - Keeps (but clears): data/dataset, data/uploads, data/pdfs, sessions/
     - Deletes entirely: any other subdirectories under data/
     """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     keep_and_clear = {DATASET_DIR, UPLOADS_DIR, PDF_UPLOADS_DIR}
 
-    # Handle contents of DATA_DIR:
-    # - For explicitly listed dirs: clear contents and recreate
-    # - For any other subdirectory: delete entirely (do not recreate)
     for child in DATA_DIR.iterdir():
         if child.name == "memori" or not child.is_dir():
             continue
@@ -94,16 +112,15 @@ def _reset_data_directories() -> None:
             child.mkdir(parents=True, exist_ok=True)
         else:
             shutil.rmtree(child, ignore_errors=True)
-
-    # Sessions directory is outside DATA_DIR; clear but keep it
     shutil.rmtree(SESSIONS_DIR, ignore_errors=True)
     SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 
-## Enable Memori long-term memory (if configured) before any LLM calls take place.
+
 initialize_memori_context()
 
 
 def _message_identity(message: Any) -> str:
+    """Return a stable string key for *message* used to de-duplicate display."""
     msg_id = getattr(message, "id", None)
     if msg_id:
         return str(msg_id)
@@ -120,6 +137,7 @@ def _message_identity(message: Any) -> str:
 
 
 def _should_hide_message(message: Any) -> bool:
+    """Return True for internal transfer-tool messages that should not be shown."""
     from langchain_core.messages import ToolMessage as _ToolMessage
 
     if isinstance(message, _ToolMessage):
@@ -129,13 +147,11 @@ def _should_hide_message(message: Any) -> bool:
 
 
 def _ensure_display_state():
+    """Synchronise ``display_messages`` with the canonical agent message list."""
     existing_messages = [
-        msg for msg in st.session_state["agent_state"]["messages"]
-        if not _should_hide_message(msg)
+        msg for msg in st.session_state["agent_state"]["messages"] if not _should_hide_message(msg)
     ]
-    display_messages = st.session_state.setdefault(
-        "display_messages", existing_messages
-    )
+    display_messages = st.session_state.setdefault("display_messages", existing_messages)
     if display_messages is not existing_messages:
         display_messages[:] = existing_messages
     ids = st.session_state.setdefault("display_message_ids", set())
@@ -144,9 +160,10 @@ def _ensure_display_state():
 
 
 def _render_conversation(
-    placeholder: st.delta_generator.DeltaGenerator,
+    placeholder: DeltaGenerator,
     enable_debug: bool,
 ):
+    """Clear and re-render the full conversation into *placeholder*."""
     placeholder.empty()
     with placeholder.container():
         render_conversation_history_display(
@@ -155,12 +172,12 @@ def _render_conversation(
             enable_debug,
         )
 
-
 def _append_display_message(
     message: Any,
-    placeholder: st.delta_generator.DeltaGenerator,
+    placeholder: DeltaGenerator,
     enable_debug: bool,
 ) -> bool:
+    """Append *message* to the display list if it is new, then re-render."""
     if _should_hide_message(message):
         return False
     msg_key = _message_identity(message)
@@ -175,9 +192,10 @@ def _append_display_message(
 
 def _drain_event_queue(
     event_queue: Queue,
-    placeholder: st.delta_generator.DeltaGenerator,
+    placeholder: DeltaGenerator,
     enable_debug: bool,
 ) -> None:
+    """Flush all pending UI events from the queue into the display."""
     while not event_queue.empty():
         message = event_queue.get()
         _append_display_message(message, placeholder, enable_debug)
@@ -187,29 +205,29 @@ def _drain_subagent_queue(
     state_queue: Queue,
     pending_states: Deque[Any],
 ) -> None:
+    """Move completed sub-agent states from the queue into the pending deque."""
     while not state_queue.empty():
         pending_states.append(state_queue.get())
+
 
 SESSION_FILENAME_PREFIX = "session_"
 SESSION_FILENAME_SUFFIX = ".json"
 
-
-# One-turn attachments live here until the user sends a message
 if "pending_images" not in st.session_state:
     st.session_state["pending_images"] = []
 
 if "uploaded_pdfs" not in st.session_state:
     st.session_state["uploaded_pdfs"] = []
 
-# Modal for image upload (opened by the ➕ button)
-# image_modal = Modal("Add image(s)", key="image_modal", max_width=500)
-
-
 if "show_file_browser" not in st.session_state:
     st.session_state.show_file_browser = False
 
 with st.sidebar:
-    memori_status = "🧠 Memori long-term memory: enabled" if memori_enabled() else "🧠 Memori long-term memory: disabled"
+    memori_status = (
+        "🧠 Memori long-term memory: enabled"
+        if memori_enabled()
+        else "🧠 Memori long-term memory: disabled"
+    )
     st.caption(memori_status)
 
     ### Upload Dataset
@@ -220,8 +238,11 @@ with st.sidebar:
 
     col1, col2 = st.columns(2)
     with col1:
+
         def toggle_file_browser():
+            """Toggle the file browser visibility in session state."""
             st.session_state.show_file_browser = not st.session_state.show_file_browser
+
         button_status = "Close" if st.session_state.show_file_browser else "Open"
         st.button(f"📁 {button_status} File Browser", on_click=toggle_file_browser)
     with col2:
@@ -239,25 +260,26 @@ with st.sidebar:
     )
 
     if image_files:
-        existing = {
-            img["name"]: img["path"]
-            for img in st.session_state.get("pending_images", [])
-        }
+        existing = {img["name"]: img["path"] for img in st.session_state.get("pending_images", [])}
         saved_images = []
         for image in image_files:
             if image.name in existing and Path(existing[image.name]).exists():
-                saved_images.append({
-                    "name": image.name,
-                    "path": existing[image.name],
-                })
+                saved_images.append(
+                    {
+                        "name": image.name,
+                        "path": existing[image.name],
+                    }
+                )
                 continue
 
             target_path = _next_available_path(UPLOADS_DIR, image.name)
             target_path.write_bytes(image.getvalue())
-            saved_images.append({
-                "name": image.name,
-                "path": target_path,
-            })
+            saved_images.append(
+                {
+                    "name": image.name,
+                    "path": target_path,
+                }
+            )
 
         st.session_state["pending_images"] = saved_images
 
@@ -266,7 +288,7 @@ with st.sidebar:
         st.caption(f"Pending images: {pending_names}")
     else:
         st.caption("No images attached yet.")
-    
+
     ### Upload PDFs
 
     st.markdown("---")
@@ -294,10 +316,12 @@ with st.sidebar:
 
             pdf_path = _next_available_path(PDF_UPLOADS_DIR, pdf.name)
             pdf_path.write_bytes(pdf.getvalue())
-            saved_pdfs.append({
-                "name": pdf.name,
-                "path": str(pdf_path),
-            })
+            saved_pdfs.append(
+                {
+                    "name": pdf.name,
+                    "path": str(pdf_path),
+                }
+            )
 
         st.session_state["uploaded_pdfs"] = saved_pdfs
 
@@ -317,7 +341,9 @@ with st.sidebar:
     st.caption("Save or load full chat sessions.")
     st.button(
         "💾 Save Current Session",
-        on_click=lambda: save_current_session(SESSIONS_DIR, SESSION_FILENAME_PREFIX, SESSION_FILENAME_SUFFIX),
+        on_click=lambda: save_current_session(
+            SESSIONS_DIR, SESSION_FILENAME_PREFIX, SESSION_FILENAME_SUFFIX
+        ),
         use_container_width=True,
     )
 
@@ -325,7 +351,9 @@ with st.sidebar:
         SESSIONS_DIR.glob(f"{SESSION_FILENAME_PREFIX}*{SESSION_FILENAME_SUFFIX}"),
         reverse=True,
     )
-    session_map = {_session_option_label(path, SESSION_FILENAME_PREFIX): path for path in session_files}
+    session_map = {
+        _session_option_label(path, SESSION_FILENAME_PREFIX): path for path in session_files
+    }
 
     options = ["—"] + list(session_map.keys())
     current_selection = st.session_state.get(
@@ -416,7 +444,7 @@ if st.session_state.show_file_browser:
         show_preview=True,
         show_delete_file=True,
         show_download_file=True,
-        show_upload_file=True
+        show_upload_file=True,
     )
 else:
     st.markdown(
@@ -440,15 +468,17 @@ if "ui_event_queue" not in st.session_state:
 register_ui_event_queue(st.session_state["ui_event_queue"])
 event_queue = st.session_state["ui_event_queue"]
 
-if "agent" not in st.session_state:
-    bind_retry_fn = lambda model: model.with_retry(
+
+def _bind_retry(model):
+    """Wrap a model with retry logic for rate-limit errors."""
+    return model.with_retry(
         retry_if_exception_type=(openai.RateLimitError, anthropic.RateLimitError),
-        stop_after_attempt = 6,
+        stop_after_attempt=6,
     )
-    graph = create_tissueagent_graph(
-        state_queue,
-        bind_retry_fn
-    )
+
+
+if "agent" not in st.session_state:
+    graph = create_tissueagent_graph(state_queue, _bind_retry)
     st.session_state["agent"] = graph.compile()
 agent = st.session_state["agent"]
 
@@ -471,9 +501,7 @@ else:
 _ensure_display_state()
 
 
-# ╔═══════════════════════╗
-# ║ Chat UI               ║
-# ╚═══════════════════════╝
+### Chat UI
 
 # Initial render (text-only copy)
 conversation_placeholder = st.empty()
@@ -487,14 +515,14 @@ if prompt:
 
     # Add image attachments
     for f in st.session_state.get("pending_images", []):
-        content_parts.append({  # type: ignore
-            "type": "image_url",
-            "image_url": {"url": _file_to_data_url(Path(f["path"]))}
-        })
+        content_parts.append(
+            {  # type: ignore
+                "type": "image_url",
+                "image_url": {"url": _file_to_data_url(Path(f["path"]))},
+            }
+        )
 
-    # Add PDF attachments (only on first message after upload to avoid size limit)
     for pdf in st.session_state.get("uploaded_pdfs", []):
-        # Check if already uploaded (has file_id cached)
         if "file_id" not in pdf:
             try:
                 file_id = _upload_pdf_to_openai(Path(pdf["path"]))
@@ -504,13 +532,14 @@ if prompt:
                 st.error(f"Failed to upload PDF {pdf['name']}: {e}")
                 continue
 
-        # Only attach PDF to first message after upload to avoid 32MB cumulative limit
         if not pdf.get("attached_to_conversation", False):
-            content_parts.append({  # type: ignore
-                "type": "file",
-                "file": {"file_id": pdf["file_id"]}
-            })
-            pdf["attached_to_conversation"] = True  # Mark as attached
+            content_parts.append(
+                {  # type: ignore
+                    "type": "file",
+                    "file": {"file_id": pdf["file_id"]},
+                }
+            )
+            pdf["attached_to_conversation"] = True
 
     user_message = HumanMessage(content=content_parts)  # type: ignore
     record_user_message(user_message)
@@ -519,7 +548,6 @@ if prompt:
     st.session_state["agent_state"]["messages"].append(user_message)
     _drain_event_queue(event_queue, conversation_placeholder, enable_debug)
 
-    # clear one-shot attachments after sending
     st.session_state["pending_images"] = []
 
     rendered_prefix = len(st.session_state["agent_state"]["messages"])
@@ -533,7 +561,7 @@ if prompt:
             future = executor.submit(
                 agent.invoke,
                 st.session_state["agent_state"],
-                {"recursion_limit": RECURSION_LIMIT}
+                {"recursion_limit": RECURSION_LIMIT},
             )
             try:
                 while True:
@@ -573,7 +601,7 @@ if prompt:
         if not isinstance(message, ToolMessage):
             continue
         if message.name in ManagerToolNames:
-            continue  # manager tools already rendered directly
+            continue
 
         # Only linkage between tool output and sub-agent state should occur for transfer tools.
         if not str(message.name or "").endswith("_transfer_tool"):
@@ -583,7 +611,10 @@ if prompt:
         if tool_id in st.session_state["subagent_states"]:
             continue
         if getattr(message, "status", None) == "error":
-            st.session_state["subagent_states"][tool_id] = (message.name, message.content)
+            st.session_state["subagent_states"][tool_id] = (
+                message.name,
+                message.content,
+            )
         elif not pending_state_queue:
             logging.error(f"No agent state found for following message {message}")
             st.session_state["subagent_states"][tool_id] = ("agent not found", None)

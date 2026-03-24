@@ -1,4 +1,5 @@
-# agents/web_search_agent/tools_impl/openai_web_search_tool.py
+"""General web search engine backed by the OpenAI Responses API."""
+
 from __future__ import annotations
 from typing import Optional, Any, List
 from dataclasses import dataclass
@@ -8,9 +9,12 @@ from openai import APIConnectionError, RateLimitError, OpenAIError
 
 
 def _coerce_secret(v: Any) -> str:
+    """Unwrap a SecretStr (or similar) to a plain string."""
     return v.get_secret_value() if hasattr(v, "get_secret_value") else v
 
+
 def _extract_text(output: Any) -> str:
+    """Walk the OpenAI response output items and concatenate text parts."""
     if not output:
         return ""
     parts: List[str] = []
@@ -33,12 +37,16 @@ def _extract_text(output: Any) -> str:
                     parts.append(val.strip())
     return "\n\n".join(parts)
 
+
 @dataclass
 class OpenAIWebSearchEngine:
+    """Web search engine backed by the OpenAI Responses API with web_search tool."""
+
     api_key: Optional[Any] = None
     default_model: str = "gpt-4o"
 
     def __post_init__(self):
+        """Initialize the OpenAI client from the provided or default API key."""
         if self.api_key is None:
             self.client = OpenAI()
         else:
@@ -54,10 +62,20 @@ class OpenAIWebSearchEngine:
         max_output_tokens: int = 2000,
         instructions: Optional[str] = None,
     ) -> str:
+        """Perform a web search and return a concise answer with citations.
+
+        Args:
+            query: Search query string.
+            model: OpenAI model to use. Defaults to self.default_model.
+            max_output_tokens: Token budget for the response.
+            instructions: Extra system instructions appended to the default prompt.
+
+        Returns:
+            A text summary with citations, or an error message on failure.
+        """
         q = (query or "").strip()
         if not q:
             return "Error: empty query."
-
 
         mdl = model or self.default_model
         sys = (
@@ -74,14 +92,14 @@ class OpenAIWebSearchEngine:
                 input=q,
                 tools=[{"type": "web_search"}],
                 max_output_tokens=max_output_tokens,
-                parallel_tool_calls = False,
+                parallel_tool_calls=False,
             )
- 
+
             # Fast path
             txt = getattr(resp, "output_text", None)
             if isinstance(txt, str) and txt.strip():
                 return txt.strip()
-    
+
             # Fallback parse across shapes
             txt2 = _extract_text(getattr(resp, "output", None))
             return txt2 if txt2 else "No output from web search."

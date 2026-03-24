@@ -7,6 +7,7 @@ from typing import Union
 
 from config import DATA_DIR
 
+
 def extract_file(filepath: Union[Path, str]) -> str:
     filepath = Path(filepath)
     if not filepath.is_absolute():
@@ -14,21 +15,22 @@ def extract_file(filepath: Union[Path, str]) -> str:
     res_path = filepath.parent
 
     extension = filepath.suffix
-    try: 
+    try:
         if not filepath.exists():
             raise FileNotFoundError(f"File path '{filepath}' not found.")
 
-
-        if (extension in [".tar", ".gz", ".bz2", ".xz"] or 
-            filepath.suffixes[-2:] in [".tar", ".gz"]):
-            try: 
-                with tarfile.open(filepath, 'r:*') as tar_ref:
+        if extension in [".tar", ".gz", ".bz2", ".xz"] or filepath.suffixes[-2:] in [
+            ".tar",
+            ".gz",
+        ]:
+            try:
+                with tarfile.open(filepath, "r:*") as tar_ref:
                     tar_ref.extractall(filepath)
             except tarfile.ReadError:
                 return "Error: The TAR file is corrupted or not a valid TAR archive."
 
         elif extension == ".zip":
-            try: 
+            try:
                 with zipfile.ZipFile(filepath, "r") as zip_ref:
                     if not zip_ref.namelist():
                         raise zipfile.BadZipFile("The ZIP file is empty or corrupted.")

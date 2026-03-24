@@ -1,10 +1,12 @@
+"""Prompt templates and description for the manager agent."""
 from agents.agent_utils import format_agent_id_descriptions
 
 ManagerDescription = """
 Coordinate the Executor Team composed of expert agents to execute each step in the Plan. 
 """.strip()
 
-ManagerPrompt = lambda agent_id_descriptions: f"""
+ManagerPrompt = lambda agent_id_descriptions: (
+    f"""
 You are the Manager agent coordinating the Executor Team to execute a multi-step <Plan> for bioinformatics tasks.
 You will receive a <Plan> with a title and a numbered checklist of high-level steps. Each step lists an assigned agent from the <Agent Registry>.
 
@@ -107,3 +109,4 @@ Steps:
 - If agents.run errors or returns incomplete artifacts, mark [✗] with Failed and include None for execution artifacts, then apply a single retry if unused.
 - When skipping as duplicate/not needed, mark [✗] with Skipped and explain briefly.
 """
+)
