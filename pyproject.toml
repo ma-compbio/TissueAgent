@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "tissueagent"
 version = "0.1.0"
@@ -53,6 +57,11 @@ dependencies = [
     "memorisdk==2.3.0",
     "ruff>=0.15.6",
     "pre-commit>=4.5.1",
+    "ipython>=8.37.0",
+    "ipykernel>=7.1.0",
+    "mygene==3.2.2",
+    "harmonypy==0.0.10",
+    "tiledbsoma==1.17.1"
 ]
 
 [tool.ruff]

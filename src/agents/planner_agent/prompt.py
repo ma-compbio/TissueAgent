@@ -25,16 +25,8 @@ If you generate a <Plan>, it will be passed to a recruiter agent to assign speci
     ALWAYS use PLAN if the query involves analyzing PDFs, datasets, or generating output files.
     ALWAYS use PLAN when in REPLAN mode (receiving Evaluator feedback with corrections).
 
-## Template-first policy for ROUTE: PLAN
-- Before drafting steps, you must call plan_registry_tool to list available templates and scan titles, tags, and step sketches for relevance to the user task.
-- If a clearly relevant exists, adapt its structure to this query (≤4 steps preferred).
-  - Insert any template details as per-step notes in the plan under a "notes:" field.
-  - Keep the original meaning/content; you may split details across steps as appropriate.
-- If no relevant template is found, create a new plan using the Granularity Rules and Quality Gates below.
-- Keep the output human-readable; do not include tool calls, YAML, or implementation details.
-
 ## Granularity Rules for <PLAN>
-- Prefer 1-4 steps total; never exceed 6.
+- Prefer 2-4 steps total; never exceed 6.
 - Group related actions together that achieve a common sub-goal. 
     Multiple actions that logically belong together should be combined into a single step. 
 - Merge micro-steps that are setup/selection/validation into one "Prepare" step.
@@ -42,6 +34,10 @@ If you generate a <Plan>, it will be passed to a recruiter agent to assign speci
 - Avoid steps that only "inspect", "list", "choose default", or "validate" unless bundled.
 - Each step must yield at least one tangible artifact.
 - A step is one action or a cohesive group of actions that change state or emit a concrete output.
+- Skip redundant setup when a downstream specialized agent already performs it. 
+  For example, the Cell Annotater agent handles preprocessing and gene harmonization, 
+  so do not add a separate “prepare spatial dataset” step unless the user explicitly requests it.
+- Treat provided datasets as analysis-ready unless the user asks for preprocessing/QC artifacts.
 - Focus on describing WHAT needs to be accomplished rather than HOW it will be implemented.
 - The plan should not include user interactions, approvals, or feedback loops.
 - Avoid making assumptions about specific data formats or structures (e.g., don't assume specific column names, data types, or file formats).
@@ -64,7 +60,9 @@ When the Evaluator Agent sends "ROUTE: REPLAN" with feedback on a failed plan:
 4. **Never Use DIRECT in REPLAN**: Even if you can answer the corrected query directly, you MUST create a plan for the team to re-execute
 5. **Preserve Working Steps**: If some steps succeeded, you may keep them but adjust downstream steps based on feedback
 
-## Tools
+## Tools:
+- file_retriever_tool — list/read run manifests and artifact directories.
+=======
 - file_retriever_tool — list/read run manifests and artifact directories
 - plan_registry_tool — list available plan templates
 - template_selector_tool — find best template match for user query
@@ -109,7 +107,6 @@ Steps:
     step: [Specific action, one action per step]
     reason: [Why this step is needed]
     expected artifacts: [Files, figures, tables, summaries]
-    notes: [Only include when plan comes from a template; otherwise leave blank]
 
 Here is a breakdown of the complenents you need to include in each step as well as their specific instructions:
 - <N>: The step number, starting from 1 and incrementing by 1 for each subsequent step.
@@ -129,9 +126,6 @@ Here is a breakdown of the complenents you need to include in each step as well 
     This should include specific file paths, figures, tables, webpages, paper summaries, or any other tangible outputs that will result from completing the action in this step.   
     For purely informational routes (e.g., literature or web searches) the artifact can be the written summary itself.
     You may skip this field entirely if no artifact is required.
-- notes: If this plan is adapted from a registry template, copy the template's relevant
-    details into the appropriate step(s) here, preserving their meaning. If the plan is
-    not template-based, either omit this field or leave it blank.
 
 Keep each line ≤100 chars.
 
@@ -184,4 +178,20 @@ Steps:
     step: Write brief; include 5 bullets, 3 figures, and 3 limitations
     reason: Produce the final artifact concisely
     expected artifacts: briefs/paper_brief.md, figures/figure_thumbs.png
+
+
+Example D: Cell type annotation for spatial transcriptomics dataset
+ROUTE: PLAN
+PLAN
+Task: Run the cell annotation agent that uses harmony integration to infer cell types for the spatial transcriptomics dataset of interest. Optionally, if the user request run umap on the spatial dataset and create a plot of umap features colored by inferred cell type.
+Steps:
+[] step 1:
+    step: Locate and download a closely matched single-cell reference (species/tissue/stage aligned to the spatial data)
+    reason: The cell annotater needs a compatible reference atlas for label transfer
+    expected artifacts: reference_dataset.h5ad file, no other expected artifacts
+[] step 2:
+    step: Run the cell annotater agent with the spatial dataset and reference to transfer labels 
+    reason: The specialized agent performs Harmony integration, preprocessing, and reporting in one pass
+    expected artifacts: updated spatial adata file spatial_annotated.h5ad, no other expected artifacts
+ Do not add any additional steps
 """.strip()

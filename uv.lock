@@ -509,6 +509,18 @@ wheels = [
 ]
 
 [[package]]
+name = "biothings-client"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ef/2f/2ef9115e317f4c2acb690b341f40de751b16d14169fdbb8d6eb86964166c/biothings_client-0.4.1.tar.gz", hash = "sha256:5b34e09c905280b5bd2538f1f34b6fc780c53c8da9b4074e3ff304836046f613", size = 56096, upload-time = "2025-01-14T22:55:39.926Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dc/6d/130477cfbd7294949b919c45cc1ed14a642cec95afba06a54400a4419235/biothings_client-0.4.1-py3-none-any.whl", hash = "sha256:9cbc17461b2bf6af6ed200929b886d6670d450af2034b428cd833f725695265a", size = 46698, upload-time = "2025-01-14T22:55:37.44Z" },
+]
+
+[[package]]
 name = "bleach"
 version = "6.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1949,6 +1961,21 @@ wheels = [
 ]
 
 [[package]]
+name = "harmonypy"
+version = "0.0.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1a/69/9af6183745618057797b940a76320c52a38ad2a69e688e6345e2a0219655/harmonypy-0.0.10.tar.gz", hash = "sha256:27bd39a6f9ada1708ffa577e46c9b7363d1e2fd62740e477ce11fd61819a54df", size = 20339, upload-time = "2024-07-04T20:55:06.385Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cc/cd/9479dd66e503af191edc016a302d2125c4f02ea777ebea1e48f6b944b073/harmonypy-0.0.10-py3-none-any.whl", hash = "sha256:dab528052f909204e521c9c2bd980221c64003538b0c0fe25be2e43c1199282b", size = 20885, upload-time = "2024-07-04T20:55:00.329Z" },
+]
+
+[[package]]
 name = "hf-xet"
 version = "1.1.9"
 source = { registry = "https://pypi.org/simple" }
@@ -2258,7 +2285,7 @@ wheels = [
 
 [[package]]
 name = "ipykernel"
-version = "7.0.1"
+version = "7.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "appnope", marker = "sys_platform == 'darwin'" },
@@ -2276,9 +2303,9 @@ dependencies = [
     { name = "tornado" },
     { name = "traitlets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a8/4c/9f0024c8457286c6bfd5405a15d650ec5ea36f420ef9bbc58b301f66cfc5/ipykernel-7.0.1.tar.gz", hash = "sha256:2d3fd7cdef22071c2abbad78f142b743228c5d59cd470d034871ae0ac359533c", size = 171460, upload-time = "2025-10-14T16:17:07.325Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ca/8d/b68b728e2d06b9e0051019640a40a9eb7a88fcd82c2e1b5ce70bef5ff044/ipykernel-7.2.0.tar.gz", hash = "sha256:18ed160b6dee2cbb16e5f3575858bc19d8f1fe6046a9a680c708494ce31d909e", size = 176046, upload-time = "2026-02-06T16:43:27.403Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b8/f7/761037905ffdec673533bfa43af8d4c31c859c778dfc3bbb71899875ec18/ipykernel-7.0.1-py3-none-any.whl", hash = "sha256:87182a8305e28954b6721087dec45b171712610111d494c17bb607befa1c4000", size = 118157, upload-time = "2025-10-14T16:17:05.606Z" },
+    { url = "https://files.pythonhosted.org/packages/82/b9/e73d5d9f405cba7706c539aa8b311b49d4c2f3d698d9c12f815231169c71/ipykernel-7.2.0-py3-none-any.whl", hash = "sha256:3bbd4420d2b3cc105cbdf3756bfc04500b1e52f090a90716851f3916c62e1661", size = 118788, upload-time = "2026-02-06T16:43:25.149Z" },
 ]
 
 [[package]]
@@ -2601,7 +2628,7 @@ wheels = [
 
 [[package]]
 name = "jupyter-client"
-version = "8.6.3"
+version = "8.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jupyter-core" },
@@ -2610,9 +2637,9 @@ dependencies = [
     { name = "tornado" },
     { name = "traitlets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/71/22/bf9f12fdaeae18019a468b68952a60fe6dbab5d67cd2a103cac7659b41ca/jupyter_client-8.6.3.tar.gz", hash = "sha256:35b3a0947c4a6e9d589eb97d7d4cd5e90f910ee73101611f01283732bd6d9419", size = 342019, upload-time = "2024-09-17T10:44:17.613Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/05/e4/ba649102a3bc3fbca54e7239fb924fd434c766f855693d86de0b1f2bec81/jupyter_client-8.8.0.tar.gz", hash = "sha256:d556811419a4f2d96c869af34e854e3f059b7cc2d6d01a9cd9c85c267691be3e", size = 348020, upload-time = "2026-01-08T13:55:47.938Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/85/b0394e0b6fcccd2c1eeefc230978a6f8cb0c5df1e4cd3e7625735a0d7d1e/jupyter_client-8.6.3-py3-none-any.whl", hash = "sha256:e8a19cc986cc45905ac3362915f410f3af85424b4c0905e94fa5f2cb08e8f23f", size = 106105, upload-time = "2024-09-17T10:44:15.218Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/0b/ceb7694d864abc0a047649aec263878acb9f792e1fec3e676f22dc9015e3/jupyter_client-8.8.0-py3-none-any.whl", hash = "sha256:f93a5b99c5e23a507b773d3a1136bd6e16c67883ccdbd9a829b0bbdb98cd7d7a", size = 107371, upload-time = "2026-01-08T13:55:45.562Z" },
 ]
 
 [[package]]
@@ -4135,6 +4162,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b4/80/e2eb1b4f892bfb73cd3b9ef54ce1122a3c2d15d24a797831d9ecb7621ace/multiscale_spatial_image-1.0.1.tar.gz", hash = "sha256:7d8ef88d1892efa8c69878695cead310a2d5c10c64baad4e4fc9e381ac42ed36", size = 1311160, upload-time = "2024-07-22T23:45:15.329Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f5/98/23d67fb3e1cb801122bbf3ced565e796d471a09b610cd9c5697528e83494/multiscale_spatial_image-1.0.1-py3-none-any.whl", hash = "sha256:e927ed619d23e6b61777ca05a7c50f29db86dcfc2857f512bec6be8bcb351fcf", size = 25136, upload-time = "2024-07-22T23:45:13.57Z" },
+]
+
+[[package]]
+name = "mygene"
+version = "3.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "biothings-client" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0a/ec/a256003f84196aa3fdd65a7c6f5adfc0688398fb66442eba75b39c9b7627/mygene-3.2.2.tar.gz", hash = "sha256:e729cabbc28cf5afb221bca1ab637883b375cb1a3e2f067587ec79f71affdaea", size = 5399, upload-time = "2021-04-05T21:24:30.934Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a7/b7/132b1673c0ec00881d49d56c09624942fa0ebd2fc21d73d80647efa082e9/mygene-3.2.2-py2.py3-none-any.whl", hash = "sha256:18d85d1b28ecee2be31d844607fb0c5f7d7c58573278432df819ee2a5e88fe46", size = 5357, upload-time = "2021-04-05T21:24:29.07Z" },
 ]
 
 [[package]]
@@ -8103,7 +8142,7 @@ wheels = [
 [[package]]
 name = "tissueagent"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "anndata", version = "0.11.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "anndata", version = "0.12.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -8115,6 +8154,10 @@ dependencies = [
     { name = "decoupler" },
     { name = "ggplot" },
     { name = "google-search-results" },
+    { name = "harmonypy" },
+    { name = "ipykernel" },
+    { name = "ipython", version = "8.37.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "ipython", version = "9.6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "langchain" },
     { name = "langchain-anthropic" },
     { name = "langchain-chroma" },
@@ -8129,6 +8172,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "mcp", extra = ["cli"] },
     { name = "memorisdk" },
+    { name = "mygene" },
     { name = "nbconvert" },
     { name = "nbformat" },
     { name = "notebook" },
@@ -8167,6 +8211,9 @@ requires-dist = [
     { name = "decoupler", specifier = ">=2.1.1" },
     { name = "ggplot", specifier = ">=0.11.5" },
     { name = "google-search-results", specifier = "==2.4.2" },
+    { name = "harmonypy", specifier = "==0.0.10" },
+    { name = "ipykernel", specifier = ">=7.1.0" },
+    { name = "ipython", specifier = ">=8.37.0" },
     { name = "langchain", specifier = "==0.3.25" },
     { name = "langchain-anthropic", specifier = ">=0.3.15" },
     { name = "langchain-chroma", specifier = "==0.2.4" },
@@ -8181,6 +8228,7 @@ requires-dist = [
     { name = "matplotlib", specifier = "==3.9.4" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.12.4" },
     { name = "memorisdk", specifier = "==2.3.0" },
+    { name = "mygene", specifier = "==3.2.2" },
     { name = "nbconvert", specifier = ">=7.16.6" },
     { name = "nbformat", specifier = ">=5.10.4" },
     { name = "notebook", specifier = ">=7.4.7" },
