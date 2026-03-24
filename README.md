@@ -1,10 +1,10 @@
 # TissueAgent
 
-### Repository set-up:
+## Repository set-up:
 
 1. Clone the repository **with submodules** and `cd` into the local directory
    ```bash
-   git clone --recurse-submodules https://github.com/ma-lab/TissueAgent.git
+   git clone --recurse-submodules https://github.com/ma-compbio/TissueAgent
    cd TissueAgent
    ```
    If you already cloned without `--recurse-submodules`, initialize them manually:
@@ -26,6 +26,9 @@
 
 4. Open the URL in a web browser
 
+>[!TIP]
+>All agents use GPT-5 as a default. Agents that don't require a lot of reasonsing capabilities can use a weaker LLM to save on API tokens. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
+
 ### Long-term memory (Memori)
 
 1. Install the optional dependency with `uv add memorisdk` (or `pip install memorisdk` in your active environment).
@@ -34,13 +37,18 @@
    ```bash
    export MEMORI_ENABLED=true
    export MEMORI_DATABASE_URL="sqlite:///$(pwd)/data/memori/memori.db"
-   export MEMORI_USER_ID="wenduoc"
+   export MEMORI_USER_ID="..."
    export MEMORI_SESSION_ID="default"
    export MEMORI_OPENAI_API_KEY="s..."
    ```
 
 3. When Memori is enabled the Streamlit sidebar shows the current status and every OpenAI chat completion issued by TissueAgent is intercepted and stored in the configured SQL database, giving the agents persistent long-term recall.
 
-### Notes
+### Data Availability
 
-All agents use GPT-5 as a default. Agents that don't require a lot of reasonsing capabilities can use a weaker LLM to save on API tokens. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
+- Developing human heart MERFISH dataset (Farah et al., 2024): [https://cells.ucsc.edu/?ds=hoc](https://cells.ucsc.edu/?ds=hoc)
+- 10x Visium human heart dataset (Kanemaru et al., 2023): [https://www.heartcellatlas.org/](https://www.heartcellatlas.org/)
+- Single-cell reference dataset for cell type deconvolution: [CellxGene collection b52eb423](https://cellxgene.cziscience.com/collections/b52eb423-5d0d-4645-b217-e1c6d38b2e72)
+- 10x Visium Alzheimer's disease spatial transcriptomics dataset (Miyoshi et al., 2024): GEO accession [GSE233208](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE233208)
+- Spatial mouse atlas (Lohoff et al., 2022): [https://crukci.shinyapps.io/SpatialMouseAtlas/](https://crukci.shinyapps.io/SpatialMouseAtlas/)
+- Spatiotemporal transcriptomics dataset (Chen et al., 2022): CNGBdb accession [STDS0000058](https://db.cngb.org/search/project/STDS0000058/)
