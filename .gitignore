@@ -12,9 +12,6 @@ cache
 temp/
 test/
 data/*
-!data/memori/
-data/memori/*
-!data/memori/.gitkeep
 
 logs/
 eval/
