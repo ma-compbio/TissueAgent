@@ -16,7 +16,7 @@
 
 3. Run `uv sync` in the local repository
 
-### Usage
+### Usage (Web UI)
 
 1. Run `source .venv/bin/activate` to activate the virtual environment created by `uv`
 
@@ -26,8 +26,12 @@
 
 4. Open the URL in a web browser
 
+### Usage (Jupyter Notebook)
+
+See `demo/` for examples on how to invoke TissueAgent directly from a Jupyter Notebook.
+
 >[!TIP]
->All agents use GPT-5 as a default. Agents that don't require a lot of reasonsing capabilities can use a weaker LLM to save on API tokens. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
+>All agents use GPT-5 by default. To save API tokens, models with lower reasonsing capabilities can be used. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
 
 ### Long-term memory (Memori)
 
@@ -46,9 +50,14 @@
 
 ### Data Availability
 
+All datasets referenced in the manuscript are publically available:
 - Developing human heart MERFISH dataset (Farah et al., 2024): [https://cells.ucsc.edu/?ds=hoc](https://cells.ucsc.edu/?ds=hoc)
 - 10x Visium human heart dataset (Kanemaru et al., 2023): [https://www.heartcellatlas.org/](https://www.heartcellatlas.org/)
 - Single-cell reference dataset for cell type deconvolution: [CellxGene collection b52eb423](https://cellxgene.cziscience.com/collections/b52eb423-5d0d-4645-b217-e1c6d38b2e72)
 - 10x Visium Alzheimer's disease spatial transcriptomics dataset (Miyoshi et al., 2024): GEO accession [GSE233208](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE233208)
 - Spatial mouse atlas (Lohoff et al., 2022): [https://crukci.shinyapps.io/SpatialMouseAtlas/](https://crukci.shinyapps.io/SpatialMouseAtlas/)
 - Spatiotemporal transcriptomics dataset (Chen et al., 2022): CNGBdb accession [STDS0000058](https://db.cngb.org/search/project/STDS0000058/)
+
+### License
+
+[MIT License](LICENSE)
