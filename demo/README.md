@@ -27,4 +27,4 @@ demo
 ├── figure_recreation_lohoff-2e.ipynb    # notebook for figure recreation task (Figure 2c from Lohoff et. al.)
 ├── notebook_utils.py                    # utility functions for setting up and running TissueAgent in notebooks
 └── README.md
-```figu
+```
