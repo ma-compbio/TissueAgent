@@ -1,2 +1,0 @@
-estimate_elbow(X, k_range, verbose=False, **kwargs)
-

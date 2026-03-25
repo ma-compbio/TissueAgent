@@ -1,7 +1,0 @@
-show_resources()
-
-Show available resources.
-
-Returns
--------
-A list of resource names available via ``liana.resource.select_resource``

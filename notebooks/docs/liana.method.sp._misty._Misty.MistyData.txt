@@ -1,3 +1,0 @@
-MistyData(data: 'dict | MuData', obs: 'pd.DataFrame | None' = None, spatial_key: 'str' = 'spatial', enforce_obs: 'bool' = True, **kwargs)
-
-MistyData Class used to construct multi-view objects
