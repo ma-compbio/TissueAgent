@@ -48,7 +48,6 @@ from graph.graph_utils import (
     record_user_message,
     register_ui_event_queue,
 )
-from memori_integration import initialize_memori_context, memori_enabled
 from config import (
     DATA_DIR,
     DATASET_DIR,
@@ -96,16 +95,12 @@ def _next_available_path(directory: Path, filename: str) -> Path:
 
 
 def _reset_data_directories() -> None:
-    """Clear and keep explicitly listed runtime folders, and delete all other subdirectories.
-
-    - Keeps (but clears): data/dataset, data/uploads, data/pdfs, sessions/
-    - Deletes entirely: any other subdirectories under data/
-    """
+    """Clear and keep explicitly listed runtime folders, and delete all other subdirectories."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     keep_and_clear = {DATASET_DIR, UPLOADS_DIR, PDF_UPLOADS_DIR}
 
     for child in DATA_DIR.iterdir():
-        if child.name == "memori" or not child.is_dir():
+        if not child.is_dir():
             continue
         if child in keep_and_clear:
             shutil.rmtree(child, ignore_errors=True)
@@ -114,9 +109,6 @@ def _reset_data_directories() -> None:
             shutil.rmtree(child, ignore_errors=True)
     shutil.rmtree(SESSIONS_DIR, ignore_errors=True)
     SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-
-
-initialize_memori_context()
 
 
 def _message_identity(message: Any) -> str:
@@ -223,13 +215,6 @@ if "show_file_browser" not in st.session_state:
     st.session_state.show_file_browser = False
 
 with st.sidebar:
-    memori_status = (
-        "🧠 Memori long-term memory: enabled"
-        if memori_enabled()
-        else "🧠 Memori long-term memory: disabled"
-    )
-    st.caption(memori_status)
-
     ### Upload Dataset
 
     uploaded_files = st.file_uploader("Upload Dataset:", accept_multiple_files=True)

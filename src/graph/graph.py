@@ -33,7 +33,6 @@ from graph.graph_utils import (
     create_tool_node,
     create_agent_invocation_tool,
 )
-from memori_integration import initialize_memori_context
 
 MAX_REPLANS = 2
 
@@ -57,7 +56,6 @@ def create_tissueagent_graph(
         An uncompiled :class:`~langgraph.graph.StateGraph` ready to be
         compiled via ``.compile()``.
     """
-    initialize_memori_context()
     assign_agent_node_id = lambda id: f"{id}_agent"
     assign_tool_node_id = lambda id: f"{id}_tools"
 

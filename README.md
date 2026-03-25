@@ -33,21 +33,6 @@ See `demo/` for examples on how to invoke TissueAgent directly from a Jupyter No
 >[!TIP]
 >All agents use GPT-5 by default. To save API tokens, models with lower reasonsing capabilities can be used. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
 
-### Long-term memory (Memori)
-
-1. Install the optional dependency with `uv add memorisdk` (or `pip install memorisdk` in your active environment).
-
-2. Configure the memory backend by setting environment variables before launching Streamlit, e.g.:
-   ```bash
-   export MEMORI_ENABLED=true
-   export MEMORI_DATABASE_URL="sqlite:///$(pwd)/data/memori/memori.db"
-   export MEMORI_USER_ID="..."
-   export MEMORI_SESSION_ID="default"
-   export MEMORI_OPENAI_API_KEY="s..."
-   ```
-
-3. When Memori is enabled the Streamlit sidebar shows the current status and every OpenAI chat completion issued by TissueAgent is intercepted and stored in the configured SQL database, giving the agents persistent long-term recall.
-
 ### Data Availability
 
 All datasets referenced in the manuscript are publically available:
