@@ -1,18 +1,24 @@
+# python artifacts
 __pycache__/
 __marimo__/
 .ipynb_checkpoints/
-
 .venv/
 
-cache
-
+# OSX
 .DS_Store
 
+# Data and Test directories
+/logs/
+cache/
+data/*
+eval/
 temp/
 test/
-data/*
-
-/logs/
-eval/
-
 sessions/
+
+# frontend build artifacts
+src/frontend/node_modules/
+src/frontend/dist/
+
+# build artifacts
+*.egg-info/
