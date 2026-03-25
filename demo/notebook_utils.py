@@ -52,7 +52,7 @@ def _reset_data_directories() -> None:
     keep_and_clear = {DATASET_DIR, UPLOADS_DIR, PDF_UPLOADS_DIR}
 
     for child in DATA_DIR.iterdir():
-        if child.name == "memori" or not child.is_dir():
+        if not child.is_dir():
             continue
         if child in keep_and_clear:
             shutil.rmtree(child, ignore_errors=True)

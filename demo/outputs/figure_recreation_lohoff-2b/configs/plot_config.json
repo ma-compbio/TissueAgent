@@ -1,0 +1,41 @@
+{
+  "dataset_path": "dataset/dataset_lohoff_et_al_seqfish.h5ad",
+  "coord_source": "obsm:spatial",
+  "x_key": "spatial:0",
+  "y_key": "spatial:1",
+  "cell_type_key": "celltype_mapped_refined",
+  "color_map": {
+    "Allantois": "#3d1a78",
+    "Anterior somitic tissues": "#d62728",
+    "Cardiomyocytes": "#9c27b0",
+    "Cranial mesoderm": "#6b4226",
+    "Definitive endoderm": "#f4a9c0",
+    "Dermomyotome": "#b5541b",
+    "Endothelium": "#f57c00",
+    "Erythroid": "#e8967a",
+    "Forebrain/Midbrain/Hindbrain": "#999999",
+    "Gut tube": "#e91e8c",
+    "Haematoendothelial progenitors": "#999999",
+    "Intermediate mesoderm": "#2e8b89",
+    "Lateral plate mesoderm": "#7b68c8",
+    "Low quality": "#999999",
+    "Mixed mesenchymal mesoderm": "#c47a1e",
+    "NMP": "#7aaf85",
+    "Neural crest": "#b5b87a",
+    "Presomitic mesoderm": "#aadd33",
+    "Sclerotome": "#7b0e1e",
+    "Spinal cord": "#ccdd55",
+    "Splanchnic mesoderm": "#aecde8",
+    "Surface ectoderm": "#ffffaa"
+  },
+  "point_size": 5.0,
+  "alpha": 0.9,
+  "invert_y": true,
+  "figsize": [
+    6.0,
+    6.0
+  ],
+  "dpi": 300,
+  "background": "white",
+  "axis_off": true
+}

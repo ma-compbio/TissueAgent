@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-03-24T21:11:24.598472",
+  "dataset_path": "dataset/dataset_lohoff_et_al_seqfish.h5ad",
+  "keys": {
+    "x": "spatial:0",
+    "y": "spatial:1",
+    "cell_type": "celltype_mapped_refined"
+  },
+  "coord_source": {
+    "type": "obsm",
+    "key": "spatial",
+    "x_col": 0,
+    "y_col": 1,
+    "fallback": true
+  },
+  "counts_per_label": {
+    "Allantois": 77,
+    "Anterior somitic tissues": 112,
+    "Cardiomyocytes": 737,
+    "Cranial mesoderm": 528,
+    "Definitive endoderm": 213,
+    "Dermomyotome": 523,
+    "Endothelium": 953,
+    "Erythroid": 300,
+    "Forebrain/Midbrain/Hindbrain": 3704,
+    "Gut tube": 1464,
+    "Haematoendothelial progenitors": 637,
+    "Intermediate mesoderm": 623,
+    "Lateral plate mesoderm": 1243,
+    "Low quality": 1645,
+    "Mixed mesenchymal mesoderm": 541,
+    "NMP": 109,
+    "Neural crest": 912,
+    "Presomitic mesoderm": 458,
+    "Sclerotome": 78,
+    "Spinal cord": 2620,
+    "Splanchnic mesoderm": 1138,
+    "Surface ectoderm": 801
+  },
+  "used_fallback_color": false,
+  "labels_missing_in_config_colormap": [],
+  "outputs": {
+    "spatial_scatter_png": "figures/spatial_scatter.png",
+    "spatial_scatter_svg": "figures/spatial_scatter.svg",
+    "spatial_on_reference_png": "figures/spatial_on_reference.png"
+  },
+  "versions": {
+    "matplotlib": "3.9.4",
+    "seaborn": "0.13.2"
+  }
+}
