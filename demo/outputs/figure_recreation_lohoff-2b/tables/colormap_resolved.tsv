@@ -1,0 +1,23 @@
+cell_type	color_hex	present_in_data	used_color	count
+Allantois	#3d1a78	True	yaml	77
+Anterior somitic tissues	#d62728	True	yaml	112
+Cardiomyocytes	#9c27b0	True	yaml	737
+Cranial mesoderm	#6b4226	True	yaml	528
+Definitive endoderm	#f4a9c0	True	yaml	213
+Dermomyotome	#b5541b	True	yaml	523
+Endothelium	#f57c00	True	yaml	953
+Erythroid	#e8967a	True	yaml	300
+Forebrain/Midbrain/Hindbrain	#999999	True	yaml	3704
+Gut tube	#e91e8c	True	yaml	1464
+Haematoendothelial progenitors	#999999	True	yaml	637
+Intermediate mesoderm	#2e8b89	True	yaml	623
+Lateral plate mesoderm	#7b68c8	True	yaml	1243
+Low quality	#999999	True	yaml	1645
+Mixed mesenchymal mesoderm	#c47a1e	True	yaml	541
+NMP	#7aaf85	True	yaml	109
+Neural crest	#b5b87a	True	yaml	912
+Presomitic mesoderm	#aadd33	True	yaml	458
+Sclerotome	#7b0e1e	True	yaml	78
+Spinal cord	#ccdd55	True	yaml	2620
+Splanchnic mesoderm	#aecde8	True	yaml	1138
+Surface ectoderm	#ffffaa	True	yaml	801

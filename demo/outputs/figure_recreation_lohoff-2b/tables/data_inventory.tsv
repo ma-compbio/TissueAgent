@@ -1,0 +1,2 @@
+dataset_path	n_obs	n_vars	coord_x_key	coord_y_key	coord_source	coord_x_min	coord_x_max	coord_y_min	coord_y_max	cell_type_key	n_cell_types
+dataset/dataset_lohoff_et_al_seqfish.h5ad	19416	351	spatial:0	spatial:1	obsm:spatial	-2.5493682364864583	2.520293708124292	-3.4920842294172303	3.4920842294172374	celltype_mapped_refined	22
