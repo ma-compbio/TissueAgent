@@ -30,10 +30,13 @@
 
 See `demo/` for examples on how to invoke TissueAgent directly from a Jupyter Notebook.
 
->[!TIP]
->All agents use GPT-5 by default. To save API tokens, models with lower reasonsing capabilities can be used. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
+> [!TIP]
+> All agents use GPT-5 by default. To save API tokens, models with lower reasonsing capabilities can be used. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
 
-### Data Availability
+## Repository Structure
+
+
+## Data Availability
 
 All datasets referenced in the manuscript are publically available:
 - Developing human heart MERFISH dataset (Farah et al., 2024): [https://cells.ucsc.edu/?ds=hoc](https://cells.ucsc.edu/?ds=hoc)
