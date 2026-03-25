@@ -1,0 +1,7 @@
+key	value
+obs_columns	Area,celltype_mapped_refined
+var_n	351
+obs_n	19416
+spatial_keys_present	obsm:spatial
+obs_celltype_key	celltype_mapped_refined
+uns_keys	

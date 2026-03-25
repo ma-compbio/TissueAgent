@@ -1,0 +1,78 @@
+{
+  "sorted_celltype_order": [
+    "Forebrain/Midbrain/Hindbrain",
+    "Spinal cord",
+    "Gut tube",
+    "Surface ectoderm",
+    "Splanchnic mesoderm",
+    "Low quality",
+    "Intermediate mesoderm",
+    "Haematoendothelial progenitors",
+    "Endothelium",
+    "Lateral plate mesoderm",
+    "Neural crest",
+    "Cardiomyocytes",
+    "Mixed mesenchymal mesoderm",
+    "Dermomyotome",
+    "Cranial mesoderm",
+    "Presomitic mesoderm",
+    "NMP",
+    "Erythroid",
+    "Allantois",
+    "Definitive endoderm",
+    "Anterior somitic tissues",
+    "Sclerotome"
+  ],
+  "y_limits": [
+    -6.906757583414203,
+    67.333747717895
+  ],
+  "colormap_applied": {
+    "Forebrain/Midbrain/Hindbrain": "#999999",
+    "Spinal cord": "#ccdd55",
+    "Gut tube": "#e91e8c",
+    "Surface ectoderm": "#ffffaa",
+    "Splanchnic mesoderm": "#aecde8",
+    "Low quality": "#999999",
+    "Intermediate mesoderm": "#2e8b89",
+    "Haematoendothelial progenitors": "#999999",
+    "Endothelium": "#f57c00",
+    "Lateral plate mesoderm": "#7b68c8",
+    "Neural crest": "#b5b87a",
+    "Cardiomyocytes": "#9c27b0",
+    "Mixed mesenchymal mesoderm": "#c47a1e",
+    "Dermomyotome": "#b5541b",
+    "Cranial mesoderm": "#6b4226",
+    "Presomitic mesoderm": "#aadd33",
+    "NMP": "#7aaf85",
+    "Erythroid": "#e8967a",
+    "Allantois": "#3d1a78",
+    "Definitive endoderm": "#f4a9c0",
+    "Anterior somitic tissues": "#d62728",
+    "Sclerotome": "#7b0e1e"
+  },
+  "figure_size_inches": [
+    8.746666666666666,
+    3.933333333333333
+  ],
+  "dpi": 150,
+  "font_sizes": {
+    "xtick_fontsize": 8.5,
+    "ytick_fontsize": 9,
+    "label_fontsize": 10.5,
+    "title_fontsize": 11
+  },
+  "tick_label_rotation": 80,
+  "violin_params": {
+    "width": 0.9,
+    "linewidth": 0.8,
+    "cut": 0,
+    "inner": null
+  },
+  "axes_style": {
+    "spine_linewidth": 0.8,
+    "tick_width": 0.8,
+    "grid": false,
+    "ylabel": "t-statistic"
+  }
+}

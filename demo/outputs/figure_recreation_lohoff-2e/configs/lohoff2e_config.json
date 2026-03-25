@@ -1,0 +1,12 @@
+{
+  "dataset_path": "dataset/dataset_lohoff_et_al_seqfish.h5ad",
+  "instructions_path": "uploads/instructions_lohoff-2e.md",
+  "colormap_path": "uploads/colormap.yaml",
+  "detected_celltype_obs_key": "celltype_mapped_refined",
+  "n_cells": 19416,
+  "n_genes": 351,
+  "has_spatial_coords": true,
+  "gene_var_index_name": null,
+  "matrix_format": "csc",
+  "anndata_uns_keys": []
+}

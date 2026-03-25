@@ -1,0 +1,58 @@
+{
+  "timestamp": "2026-03-24T22:51:06.116906-04:00",
+  "note": "Plot follows instructions_lohoff-2e.md",
+  "environment": {
+    "python_version": "3.12.11",
+    "platform": "macOS-14.5-arm64-arm-64bit",
+    "pandas_version": "2.2.3",
+    "numpy_version": "2.2.6",
+    "matplotlib_version": "3.9.4",
+    "seaborn_version": "0.13.2",
+    "pillow_version": "11.3.0"
+  },
+  "inputs": {
+    "tables/tstats_long.tsv": {
+      "sha256": "cbda3df90148f3fd8ae0ef982a581beeb6cd38a25602c078df0fbce7b3568d38",
+      "size_bytes": 318829
+    },
+    "tables/celltype_means.tsv": {
+      "sha256": "e1ea65917da548eb0ac615eb235128b3a42afb8c9dd58a4a312b9dbed3ae22b1",
+      "size_bytes": 803
+    },
+    "tables/colormap_resolved.tsv": {
+      "sha256": "c41963bbb706abffe2aadc551ad8017813df3dba9437b0a5939d30bde031347b",
+      "size_bytes": 564
+    },
+    "uploads/reference_lohoff-2e.png": {
+      "sha256": "7f42e814e7b2546f7c64cca448cbac09f1f5071e5e4a91459563310378a8d74e",
+      "size_bytes": 219970
+    }
+  },
+  "missing_color_cell_types": [],
+  "fallback_color_used": "#808080",
+  "parameters_summary": {
+    "sorted_n_celltypes": 22,
+    "y_limits": [
+      -6.906757583414203,
+      67.333747717895
+    ],
+    "xtick_rotation": 80,
+    "violin_width": 0.9,
+    "violin_linewidth": 0.8,
+    "dpi": 150
+  },
+  "outputs": {
+    "figures/violin_lohoff2e.png": {
+      "size_bytes": 115673
+    },
+    "figures/violin_lohoff2e.svg": {
+      "size_bytes": 169574
+    },
+    "figures/violin_vs_ref.png": {
+      "size_bytes": 358459
+    },
+    "configs/plot_config.json": {
+      "size_bytes": 1888
+    }
+  }
+}
