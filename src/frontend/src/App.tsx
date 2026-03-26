@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ChatView from "./components/ChatView";
 import FileBrowser from "./components/FileBrowser";
+import { extractPlanData } from "./components/PlanViewer";
 import Sidebar from "./components/Sidebar";
 import { useSession } from "./hooks/useSession";
 import { useWebSocket } from "./hooks/useWebSocket";
@@ -12,6 +13,11 @@ export default function App() {
 
   const [enableDebug, setEnableDebug] = useState(false);
   const [showFileBrowser, setShowFileBrowser] = useState(false);
+
+  const planData = useMemo(
+    () => extractPlanData(ws.messages),
+    [ws.messages],
+  );
 
   return (
     <div className="app-layout">
@@ -28,6 +34,9 @@ export default function App() {
         onLoad={session.loadSession}
         onExportHtml={session.exportHtml}
         hasMessages={ws.messages.length > 0}
+        planPrompt={planData.prompt}
+        planEntries={planData.entries}
+        isRunning={ws.isRunning}
       />
 
       <main className="main-area">
