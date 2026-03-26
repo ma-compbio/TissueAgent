@@ -19,6 +19,8 @@ sessions/
 # frontend build artifacts
 src/frontend/node_modules/
 src/frontend/dist/
+node_modules/
+.vite/
 
 # build artifacts
 *.egg-info/
