@@ -130,8 +130,16 @@ def serialize_history(
     ]
 
     serialized_states = {}
-    for tool_id, (agent_name, state) in subagent_states.items():
-        serialized_states[tool_id] = serialize_subagent_state(tool_id, agent_name, state)
+    for tool_id, entry in subagent_states.items():
+        # Support both (agent_name, state) and (agent_name, state, invocation_id)
+        if len(entry) == 3:
+            agent_name, state, invocation_id = entry
+        else:
+            agent_name, state = entry
+            invocation_id = None
+        data = serialize_subagent_state(tool_id, agent_name, state)
+        data["invocation_id"] = invocation_id
+        serialized_states[tool_id] = data
 
     return {
         "messages": serialized_messages,

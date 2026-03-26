@@ -64,6 +64,7 @@ export default function App() {
             <ChatView
               messages={ws.messages}
               subagentStates={ws.subagentStates}
+              liveTraces={ws.liveTraces}
               isRunning={ws.isRunning}
               elapsed={ws.elapsed}
               enableDebug={enableDebug}

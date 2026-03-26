@@ -23,7 +23,7 @@ from agents.agent_registry.coding_agent.params import (
     tutorial_directories,
 )
 from agents.agent_registry.coding_agent.prompt import CodingAgentBasePrompt
-from graph.graph_utils import get_latest_user_image_parts, log_message
+from graph.graph_utils import get_latest_user_image_parts, log_message, subagent_invocation
 
 from config import DATA_DIR, NOTEBOOK_DIR
 
@@ -193,8 +193,9 @@ def create_coding_agent(state_queue: Queue):
             message = HumanMessage(content=content)
         else:
             message = HumanMessage(prompt)
-        final_state = agent.invoke({"messages": [message]})
-        state_queue.put((id, final_state))
+        with subagent_invocation("Coding Agent") as invocation_id:
+            final_state = agent.invoke({"messages": [message]})
+        state_queue.put((id, final_state, invocation_id))
         return final_state["messages"][-1].content
 
     return StructuredTool.from_function(

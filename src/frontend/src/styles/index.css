@@ -458,6 +458,48 @@ body {
   color: #8b5cf6;
 }
 
+/* ---- Live Sub-agent Card (currently running) ---- */
+
+.subagent-card-live {
+  border-left-color: #f59e0b !important;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+.subagent-card-live:hover {
+  background: #fffbeb;
+  border-color: #f59e0b;
+}
+
+.subagent-card-live.subagent-card-selected {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1px #f59e0b;
+}
+
+.subagent-card-live .subagent-card-action {
+  color: #d97706;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+  margin-right: 0.3rem;
+  animation: live-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes live-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
 /* ---- Trace Panel (right column) ---- */
 
 .trace-panel {

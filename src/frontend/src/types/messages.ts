@@ -31,6 +31,7 @@ export interface SubagentTranscript {
   avatar: string;
   transcript: SerializedMessage[] | null;
   raw_state: string | null;
+  invocation_id?: string | null;
 }
 
 export interface HistoryData {
@@ -43,6 +44,9 @@ export type ServerEvent =
   | { type: "history"; data: HistoryData }
   | { type: "message"; data: SerializedMessage }
   | { type: "subagent_state"; data: SubagentTranscript }
+  | { type: "subagent_start"; data: { invocation_id: string; agent_name: string; avatar: string } }
+  | { type: "subagent_message"; data: { invocation_id: string; agent_name: string; message: SerializedMessage } }
+  | { type: "subagent_end"; data: { invocation_id: string; agent_name: string } }
   | { type: "run_complete"; elapsed_seconds: number }
   | { type: "run_error"; error_type: string; detail: string };
 

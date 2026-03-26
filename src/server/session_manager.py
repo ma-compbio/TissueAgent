@@ -31,9 +31,9 @@ class SessionState:
             "replan_history": [],
         }
 
-        # Sub-agent tracking
-        self.subagent_states: Dict[str, Tuple[str, Any]] = {}
-        self.pending_subagent_states: Deque[Any] = deque()
+        # Sub-agent tracking: {tool_id: (agent_name, state, invocation_id)}
+        self.subagent_states: Dict[str, Tuple[str, Any, Optional[str]]] = {}
+        self.pending_subagent_states: Deque[Tuple[str, Any, Optional[str]]] = deque()
 
         # Display deduplication
         self.display_messages: List[Any] = []

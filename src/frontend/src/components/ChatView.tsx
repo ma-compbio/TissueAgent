@@ -6,6 +6,7 @@ import TracePanel from "./TracePanel";
 interface Props {
   messages: SerializedMessage[];
   subagentStates: Record<string, SubagentTranscript>;
+  liveTraces: Record<string, SubagentTranscript>;
   isRunning: boolean;
   elapsed: number | null;
   enableDebug: boolean;
@@ -191,6 +192,7 @@ function buildSyntheticTraces(
 export default function ChatView({
   messages,
   subagentStates,
+  liveTraces,
   isRunning,
   elapsed,
   enableDebug,
@@ -235,7 +237,7 @@ export default function ChatView({
   const syntheticTraces = useMemo(() => buildSyntheticTraces(displayItems), [displayItems]);
 
   const activeTrace = selectedTrace
-    ? (syntheticTraces[selectedTrace] ?? subagentStates[selectedTrace] ?? null)
+    ? (liveTraces[selectedTrace] ?? syntheticTraces[selectedTrace] ?? subagentStates[selectedTrace] ?? null)
     : null;
 
   return (
@@ -327,7 +329,31 @@ export default function ChatView({
               );
             })}
 
-            {isRunning && (
+            {/* Live sub-agent cards (currently running) */}
+            {Object.entries(liveTraces).map(([invId, trace]) => (
+              <div key={`live-${invId}`} className="manager-subagent-wrapper">
+                <div
+                  className={`subagent-card subagent-card-live ${selectedTrace === invId ? "subagent-card-selected" : ""}`}
+                  onClick={() => handleSelectTrace(invId)}
+                >
+                  <div className="subagent-card-header">
+                    <span className="avatar">{trace.avatar}</span>
+                    <span className="subagent-card-name">{trace.agent_name}</span>
+                    <span className="subagent-card-action">
+                      <span className="live-dot" />
+                      {selectedTrace === invId ? "Viewing live trace" : "View live trace"}
+                    </span>
+                  </div>
+                  {trace.transcript && trace.transcript.length > 0 && (
+                    <div className="subagent-card-output">
+                      Step {trace.transcript.filter((m) => m.type === "ai").length} in progress...
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {isRunning && Object.keys(liveTraces).length === 0 && (
               <div className="thinking-indicator">
                 <div className="thinking-dots">
                   <span></span><span></span><span></span>

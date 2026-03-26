@@ -10,6 +10,7 @@ import type {
 interface UseWebSocketReturn {
   messages: SerializedMessage[];
   subagentStates: Record<string, SubagentTranscript>;
+  liveTraces: Record<string, SubagentTranscript>;
   isConnected: boolean;
   isRunning: boolean;
   elapsed: number | null;
@@ -29,6 +30,9 @@ export function useWebSocket(): UseWebSocketReturn {
 
   const [messages, setMessages] = useState<SerializedMessage[]>([]);
   const [subagentStates, setSubagentStates] = useState<
+    Record<string, SubagentTranscript>
+  >({});
+  const [liveTraces, setLiveTraces] = useState<
     Record<string, SubagentTranscript>
   >({});
   const [isConnected, setIsConnected] = useState(false);
@@ -65,6 +69,7 @@ export function useWebSocket(): UseWebSocketReturn {
           const history = data.data as HistoryData;
           setMessages(history.messages);
           setSubagentStates(history.subagent_states);
+          setLiveTraces({});
           break;
         }
         case "message": {
@@ -76,23 +81,71 @@ export function useWebSocket(): UseWebSocketReturn {
           }
           break;
         }
+        case "subagent_start": {
+          const { invocation_id, agent_name, avatar } = data.data;
+          setLiveTraces((prev) => ({
+            ...prev,
+            [invocation_id]: {
+              tool_id: invocation_id,
+              agent_name,
+              avatar,
+              transcript: [],
+              raw_state: null,
+              invocation_id,
+            },
+          }));
+          break;
+        }
+        case "subagent_message": {
+          const { invocation_id, message: msg } = data.data;
+          setLiveTraces((prev) => {
+            const existing = prev[invocation_id];
+            if (!existing) return prev;
+            return {
+              ...prev,
+              [invocation_id]: {
+                ...existing,
+                transcript: [...(existing.transcript || []), msg],
+              },
+            };
+          });
+          break;
+        }
+        case "subagent_end": {
+          // Keep the live trace until subagent_state arrives with the final transcript
+          break;
+        }
         case "subagent_state": {
           const state = data.data as SubagentTranscript;
           if (state.tool_id !== "pending") {
-            setSubagentStates((prev) => ({
-              ...prev,
-              [state.tool_id]: state,
-            }));
+            setSubagentStates((prev) => {
+              const next = { ...prev, [state.tool_id]: state };
+              // Also index by invocation_id so selectedTrace survives the transition
+              if (state.invocation_id) {
+                next[state.invocation_id] = state;
+              }
+              return next;
+            });
+            // Remove from live traces
+            if (state.invocation_id) {
+              setLiveTraces((prev) => {
+                const next = { ...prev };
+                delete next[state.invocation_id!];
+                return next;
+              });
+            }
           }
           break;
         }
         case "run_complete":
           setIsRunning(false);
           setElapsed(data.elapsed_seconds);
+          setLiveTraces({});
           break;
         case "run_error":
           setIsRunning(false);
           setError(`${data.error_type}: ${data.detail}`);
+          setLiveTraces({});
           break;
       }
     };
@@ -128,6 +181,7 @@ export function useWebSocket(): UseWebSocketReturn {
   return {
     messages,
     subagentStates,
+    liveTraces,
     isConnected,
     isRunning,
     elapsed,

@@ -16,7 +16,7 @@ from agents.agent_registry.hypothesis_agent.prompt import (
     HypothesisAgentPrompt,
     HypothesisAgentDescription,
 )
-from graph.graph_utils import log_message
+from graph.graph_utils import log_message, subagent_invocation
 
 from config import DATA_DIR, PDF_UPLOADS_DIR
 
@@ -163,13 +163,14 @@ def create_hypothesis_agent(state_queue: Queue):
         if "repl" in _persistent_repl_state:
             initial_state["repl"] = _persistent_repl_state["repl"]
 
-        final_state = agent.invoke(initial_state)
+        with subagent_invocation("Hypothesis Agent") as invocation_id:
+            final_state = agent.invoke(initial_state)
 
         # Store REPL for next invocation
         if "repl" in final_state:
             _persistent_repl_state["repl"] = final_state["repl"]
 
-        state_queue.put((id, final_state))
+        state_queue.put((id, final_state, invocation_id))
         return final_state["messages"][-1].content
 
     return StructuredTool.from_function(

@@ -471,7 +471,8 @@ def _render_conversation_history_html(
             ]
             tool_id = getattr(message, "id", None)
             if tool_id is not None and str(tool_id) in subagent_state:
-                agent_name, final_state = subagent_state[str(tool_id)]
+                entry = subagent_state[str(tool_id)]
+                agent_name, final_state = entry[0], entry[1]
                 body_parts.append(_subagent_state_to_html(agent_name, final_state))
             blocks.append(f'<div class="message role-tool">{header}{"".join(body_parts)}</div>')
     return "\n".join(blocks)

@@ -22,7 +22,7 @@ from config import RECURSION_LIMIT
 from graph.graph_utils import log_message, record_user_message
 from server.message_serializer import serialize_history, serialize_message, serialize_subagent_state
 from server.session_manager import session
-from server.utils import file_to_data_url, upload_pdf_to_openai
+from server.utils import file_to_data_url, upload_pdf_to_openai, SUBAGENT_BADGES, SUBAGENT_DEFAULT_AVATAR
 
 router = APIRouter()
 
@@ -155,10 +155,12 @@ async def _handle_user_message(ws: WebSocket, data: dict):
         # Link tool messages to sub-agent states and send them
         linked_ids = _link_subagent_states(rendered_prefix)
         for tool_id in linked_ids:
-            agent_name, final_state = session.subagent_states[tool_id]
+            agent_name, final_state, invocation_id = session.subagent_states[tool_id]
+            data = serialize_subagent_state(tool_id, agent_name, final_state)
+            data["invocation_id"] = invocation_id
             await ws.send_json({
                 "type": "subagent_state",
-                "data": serialize_subagent_state(tool_id, agent_name, final_state),
+                "data": data,
             })
 
         elapsed = time.perf_counter() - start_time
@@ -196,23 +198,69 @@ async def _handle_user_message(ws: WebSocket, data: dict):
 
 async def _drain_queues(ws: WebSocket):
     """Drain both event and state queues, sending updates to client."""
-    # Drain UI event queue
+    # Drain UI event queue (now contains typed tuples)
     while not session.ui_event_queue.empty():
-        message = session.ui_event_queue.get()
-        if session.append_display_message(message):
-            await ws.send_json({
-                "type": "message",
-                "data": serialize_message(message),
-            })
+        event = session.ui_event_queue.get()
 
-    # Drain state queue
+        if isinstance(event, tuple) and len(event) == 2:
+            event_type, payload = event
+
+            if event_type == "message":
+                # Regular main-agent message
+                if session.append_display_message(payload):
+                    await ws.send_json({
+                        "type": "message",
+                        "data": serialize_message(payload),
+                    })
+
+            elif event_type == "subagent_start":
+                avatar = SUBAGENT_BADGES.get(
+                    payload["agent_name"], SUBAGENT_DEFAULT_AVATAR
+                )
+                await ws.send_json({
+                    "type": "subagent_start",
+                    "data": {
+                        "invocation_id": payload["invocation_id"],
+                        "agent_name": payload["agent_name"],
+                        "avatar": avatar,
+                    },
+                })
+
+            elif event_type == "subagent_message":
+                await ws.send_json({
+                    "type": "subagent_message",
+                    "data": {
+                        "invocation_id": payload["invocation_id"],
+                        "agent_name": payload["agent_name"],
+                        "message": serialize_message(payload["message"]),
+                    },
+                })
+
+            elif event_type == "subagent_end":
+                await ws.send_json({
+                    "type": "subagent_end",
+                    "data": {
+                        "invocation_id": payload["invocation_id"],
+                        "agent_name": payload["agent_name"],
+                    },
+                })
+        else:
+            # Legacy bare-message format (shouldn't happen, but handle safely)
+            if session.append_display_message(event):
+                await ws.send_json({
+                    "type": "message",
+                    "data": serialize_message(event),
+                })
+
+    # Drain state queue (tuples now include invocation_id)
     while not session.state_queue.empty():
-        agent_name, final_state = session.state_queue.get()
-        session.pending_subagent_states.append((agent_name, final_state))
-        await ws.send_json({
-            "type": "subagent_state",
-            "data": serialize_subagent_state("pending", agent_name, final_state),
-        })
+        item = session.state_queue.get()
+        if len(item) == 3:
+            agent_name, final_state, invocation_id = item
+        else:
+            agent_name, final_state = item
+            invocation_id = None
+        session.pending_subagent_states.append((agent_name, final_state, invocation_id))
 
 
 def _link_subagent_states(rendered_prefix: int) -> list[str]:
@@ -234,13 +282,13 @@ def _link_subagent_states(rendered_prefix: int) -> list[str]:
             continue
 
         if getattr(message, "status", None) == "error":
-            session.subagent_states[tool_id] = (message.name, message.content)
+            session.subagent_states[tool_id] = (message.name, message.content, None)
         elif not pending:
             logging.error(f"No agent state found for message {message}")
-            session.subagent_states[tool_id] = ("agent not found", None)
+            session.subagent_states[tool_id] = ("agent not found", None, None)
         else:
-            agent_name, final_state = pending.popleft()
-            session.subagent_states[tool_id] = (agent_name, final_state)
+            agent_name, final_state, invocation_id = pending.popleft()
+            session.subagent_states[tool_id] = (agent_name, final_state, invocation_id)
         linked.append(tool_id)
 
     if pending:
