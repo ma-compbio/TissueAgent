@@ -1,4 +1,4 @@
-"""REST endpoints for file management: dataset upload, image/PDF attachments, and browsing."""
+"""REST endpoints for file management: unified upload, browsing, and download."""
 
 import logging
 from pathlib import Path
@@ -14,13 +14,32 @@ from server.utils import next_available_path, upload_pdf_to_openai
 
 router = APIRouter(prefix="/api/files")
 
+# Extensions routed to dataset/
+DATASET_EXTENSIONS = {
+    ".h5ad", ".h5", ".hdf5",
+    ".csv", ".tsv", ".txt",
+    ".loom", ".zarr",
+    ".mtx", ".mtx.gz",
+    ".parquet",
+    ".gz", ".tar.gz",
+}
+
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".tif", ".tiff", ".svg"}
+
 
 class FileInfo(BaseModel):
     """Metadata for an uploaded file."""
 
     name: str
     path: str
+    category: str = "general"
     file_id: str | None = None
+
+
+class UploadResult(BaseModel):
+    """Aggregated result of a unified upload."""
+
+    files: List[FileInfo]
 
 
 class BrowseEntry(BaseModel):
@@ -33,88 +52,113 @@ class BrowseEntry(BaseModel):
     children: list["BrowseEntry"] | None = None
 
 
+def _classify_file(filename: str) -> str:
+    """Return 'dataset', 'image', 'pdf', or 'general' based on file extension."""
+    lower = filename.lower()
+    # Check compound extensions first (e.g. .mtx.gz, .tar.gz)
+    for ext in DATASET_EXTENSIONS:
+        if lower.endswith(ext):
+            return "dataset"
+    suffix = Path(lower).suffix
+    if suffix in IMAGE_EXTENSIONS:
+        return "image"
+    if suffix == ".pdf":
+        return "pdf"
+    return "general"
+
+
 # ---------------------------------------------------------------------------
-# Dataset upload
+# Unified upload
+# ---------------------------------------------------------------------------
+
+
+@router.post("/upload", response_model=UploadResult)
+async def upload_files(files: List[UploadFile] = File(...)):
+    """Upload files, auto-sorting into dataset/ or uploads/ by extension.
+
+    Args:
+        files: One or more files to upload.
+
+    Returns:
+        UploadResult with categorized file metadata.
+    """
+    results: List[FileInfo] = []
+
+    for f in files:
+        category = _classify_file(f.filename)
+        content = await f.read()
+
+        if category == "dataset":
+            if f.filename in session.processed_files:
+                continue
+            session.processed_files.add(f.filename)
+            file_path = DATASET_DIR / f.filename
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.write_bytes(content)
+            results.append(FileInfo(name=f.filename, path=str(file_path), category="dataset"))
+
+        elif category == "image":
+            existing = {img["name"]: img["path"] for img in session.pending_images}
+            if f.filename in existing and Path(existing[f.filename]).exists():
+                results.append(FileInfo(name=f.filename, path=existing[f.filename], category="image"))
+                continue
+            target_path = next_available_path(UPLOADS_DIR, f.filename)
+            target_path.write_bytes(content)
+            session.pending_images.append({"name": f.filename, "path": str(target_path)})
+            results.append(FileInfo(name=f.filename, path=str(target_path), category="image"))
+
+        elif category == "pdf":
+            existing = {
+                pdf["name"]: pdf for pdf in session.uploaded_pdfs if Path(pdf["path"]).exists()
+            }
+            if f.filename in existing:
+                entry = existing[f.filename]
+                results.append(FileInfo(name=f.filename, path=entry["path"], category="pdf", file_id=entry.get("file_id")))
+                continue
+            pdf_path = next_available_path(PDF_UPLOADS_DIR, f.filename)
+            pdf_path.write_bytes(content)
+            entry = {"name": f.filename, "path": str(pdf_path)}
+            try:
+                file_id = upload_pdf_to_openai(pdf_path)
+                entry["file_id"] = file_id
+                entry["attached_to_conversation"] = False
+            except Exception as e:
+                logging.error(f"Failed to upload PDF {f.filename} to OpenAI: {e}")
+            session.uploaded_pdfs.append(entry)
+            results.append(FileInfo(name=f.filename, path=str(pdf_path), category="pdf", file_id=entry.get("file_id")))
+
+        else:
+            target_path = next_available_path(UPLOADS_DIR, f.filename)
+            target_path.write_bytes(content)
+            results.append(FileInfo(name=f.filename, path=str(target_path), category="general"))
+
+    return UploadResult(files=results)
+
+
+# ---------------------------------------------------------------------------
+# Legacy endpoints (kept for backwards compatibility)
 # ---------------------------------------------------------------------------
 
 
 @router.post("/dataset", response_model=List[FileInfo])
 async def upload_dataset(files: List[UploadFile] = File(...)):
     """Upload one or more dataset files to the dataset directory."""
-    results = []
-    for f in files:
-        if f.filename in session.processed_files:
-            continue
-        session.processed_files.add(f.filename)
-        file_path = DATASET_DIR / f.filename
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        content = await f.read()
-        file_path.write_bytes(content)
-        results.append(FileInfo(name=f.filename, path=str(file_path)))
-    return results
-
-
-# ---------------------------------------------------------------------------
-# Image upload
-# ---------------------------------------------------------------------------
+    result = await upload_files(files)
+    return result.files
 
 
 @router.post("/images", response_model=List[FileInfo])
 async def upload_images(files: List[UploadFile] = File(...)):
     """Upload image attachments for the next message."""
-    existing = {img["name"]: img["path"] for img in session.pending_images}
-    saved = []
-
-    for f in files:
-        if f.filename in existing and Path(existing[f.filename]).exists():
-            saved.append({"name": f.filename, "path": existing[f.filename]})
-            continue
-
-        target_path = next_available_path(UPLOADS_DIR, f.filename)
-        content = await f.read()
-        target_path.write_bytes(content)
-        saved.append({"name": f.filename, "path": str(target_path)})
-
-    session.pending_images = saved
-    return [FileInfo(name=s["name"], path=s["path"]) for s in saved]
-
-
-# ---------------------------------------------------------------------------
-# PDF upload
-# ---------------------------------------------------------------------------
+    result = await upload_files(files)
+    return result.files
 
 
 @router.post("/pdfs", response_model=List[FileInfo])
 async def upload_pdfs(files: List[UploadFile] = File(...)):
     """Upload PDF documents, optionally uploading to OpenAI Files API."""
-    existing = {
-        pdf["name"]: pdf
-        for pdf in session.uploaded_pdfs
-        if Path(pdf["path"]).exists()
-    }
-    saved = []
-
-    for f in files:
-        if f.filename in existing:
-            saved.append(existing[f.filename])
-            continue
-
-        pdf_path = next_available_path(PDF_UPLOADS_DIR, f.filename)
-        content = await f.read()
-        pdf_path.write_bytes(content)
-
-        entry = {"name": f.filename, "path": str(pdf_path)}
-        try:
-            file_id = upload_pdf_to_openai(pdf_path)
-            entry["file_id"] = file_id
-            entry["attached_to_conversation"] = False
-        except Exception as e:
-            logging.error(f"Failed to upload PDF {f.filename} to OpenAI: {e}")
-
-        saved.append(entry)
-
-    session.uploaded_pdfs = saved
-    return [FileInfo(name=s["name"], path=s["path"], file_id=s.get("file_id")) for s in saved]
+    result = await upload_files(files)
+    return result.files
 
 
 # ---------------------------------------------------------------------------

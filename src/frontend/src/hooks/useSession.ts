@@ -5,8 +5,7 @@ const API = import.meta.env.DEV ? "http://localhost:8000" : "";
 
 export function useSession() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
-  const [pendingImages, setPendingImages] = useState<FileInfo[]>([]);
-  const [uploadedPdfs, setUploadedPdfs] = useState<FileInfo[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
 
   const fetchSessions = useCallback(async () => {
     const res = await fetch(`${API}/api/sessions/list`);
@@ -44,54 +43,26 @@ export function useSession() {
     URL.revokeObjectURL(url);
   }, []);
 
-  const uploadDataset = useCallback(async (files: FileList) => {
+  const uploadFiles = useCallback(async (files: FileList) => {
     const form = new FormData();
     for (const f of files) form.append("files", f);
-    await fetch(`${API}/api/files/dataset`, { method: "POST", body: form });
-  }, []);
-
-  const uploadImages = useCallback(async (files: FileList) => {
-    const form = new FormData();
-    for (const f of files) form.append("files", f);
-    const res = await fetch(`${API}/api/files/images`, {
+    const res = await fetch(`${API}/api/files/upload`, {
       method: "POST",
       body: form,
     });
-    if (res.ok) setPendingImages(await res.json());
-  }, []);
-
-  const uploadPdfs = useCallback(async (files: FileList) => {
-    const form = new FormData();
-    for (const f of files) form.append("files", f);
-    const res = await fetch(`${API}/api/files/pdfs`, {
-      method: "POST",
-      body: form,
-    });
-    if (res.ok) setUploadedPdfs(await res.json());
-  }, []);
-
-  const refreshPendingImages = useCallback(async () => {
-    const res = await fetch(`${API}/api/files/pending-images`);
-    if (res.ok) setPendingImages(await res.json());
-  }, []);
-
-  const refreshUploadedPdfs = useCallback(async () => {
-    const res = await fetch(`${API}/api/files/uploaded-pdfs`);
-    if (res.ok) setUploadedPdfs(await res.json());
+    if (res.ok) {
+      const data = await res.json();
+      setUploadedFiles((prev) => [...prev, ...data.files]);
+    }
   }, []);
 
   return {
     sessions,
-    pendingImages,
-    uploadedPdfs,
+    uploadedFiles,
     fetchSessions,
     saveSession,
     loadSession,
     exportHtml,
-    uploadDataset,
-    uploadImages,
-    uploadPdfs,
-    refreshPendingImages,
-    refreshUploadedPdfs,
+    uploadFiles,
   };
 }

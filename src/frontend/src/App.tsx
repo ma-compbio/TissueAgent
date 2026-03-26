@@ -10,7 +10,7 @@ export default function App() {
   const ws = useWebSocket();
   const session = useSession();
 
-  const [enableDebug, setEnableDebug] = useState(true);
+  const [enableDebug, setEnableDebug] = useState(false);
   const [showFileBrowser, setShowFileBrowser] = useState(false);
 
   return (
@@ -20,11 +20,8 @@ export default function App() {
         onToggleDebug={() => setEnableDebug((v) => !v)}
         showFileBrowser={showFileBrowser}
         onToggleFileBrowser={() => setShowFileBrowser((v) => !v)}
-        pendingImages={session.pendingImages}
-        uploadedPdfs={session.uploadedPdfs}
-        onUploadDataset={session.uploadDataset}
-        onUploadImages={session.uploadImages}
-        onUploadPdfs={session.uploadPdfs}
+        uploadedFiles={session.uploadedFiles}
+        onUploadFiles={session.uploadFiles}
         sessions={session.sessions}
         onFetchSessions={session.fetchSessions}
         onSave={session.saveSession}
@@ -35,7 +32,7 @@ export default function App() {
 
       <main className="main-area">
         <div className="top-bar">
-          <h1 className="app-title">🧬 TissueAgent</h1>
+          <h1 className="app-title">TissueAgent</h1>
           <div className="connection-status">
             <span
               className={`status-dot ${ws.isConnected ? "connected" : "disconnected"}`}
@@ -54,12 +51,7 @@ export default function App() {
         )}
 
         <div className="content-area">
-          {showFileBrowser && (
-            <div className="file-browser-panel">
-              <FileBrowser />
-            </div>
-          )}
-          <div className={`chat-panel ${showFileBrowser ? "with-browser" : ""}`}>
+          <div className="chat-panel">
             <ChatView
               messages={ws.messages}
               subagentStates={ws.subagentStates}
@@ -71,6 +63,23 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      {showFileBrowser && (
+        <div className="modal-overlay" onClick={() => setShowFileBrowser(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>File Browser</h3>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowFileBrowser(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <FileBrowser />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

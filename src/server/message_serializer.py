@@ -12,6 +12,7 @@ from server.utils import (
     extract_html_tags,
     extract_tool_inputs,
     lookup_agent_badge,
+    should_hide_message,
     split_route_and_body,
     stringify_chat_content,
     strip_images_for_display,
@@ -124,7 +125,9 @@ def serialize_history(
     Returns:
         Dict with serialized messages and subagent states.
     """
-    serialized_messages = [serialize_message(msg) for msg in messages]
+    serialized_messages = [
+        serialize_message(msg) for msg in messages if not should_hide_message(msg)
+    ]
 
     serialized_states = {}
     for tool_id, (agent_name, state) in subagent_states.items():

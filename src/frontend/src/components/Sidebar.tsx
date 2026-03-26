@@ -7,11 +7,8 @@ interface Props {
   onToggleDebug: () => void;
   showFileBrowser: boolean;
   onToggleFileBrowser: () => void;
-  pendingImages: FileInfo[];
-  uploadedPdfs: FileInfo[];
-  onUploadDataset: (files: FileList) => void;
-  onUploadImages: (files: FileList) => void;
-  onUploadPdfs: (files: FileList) => void;
+  uploadedFiles: FileInfo[];
+  onUploadFiles: (files: FileList) => void;
   sessions: SessionInfo[];
   onFetchSessions: () => void;
   onSave: () => Promise<boolean>;
@@ -25,11 +22,8 @@ export default function Sidebar({
   onToggleDebug,
   showFileBrowser,
   onToggleFileBrowser,
-  pendingImages,
-  uploadedPdfs,
-  onUploadDataset,
-  onUploadImages,
-  onUploadPdfs,
+  uploadedFiles,
+  onUploadFiles,
   sessions,
   onFetchSessions,
   onSave,
@@ -40,18 +34,15 @@ export default function Sidebar({
   return (
     <aside className="sidebar">
       <FileUpload
-        pendingImages={pendingImages}
-        uploadedPdfs={uploadedPdfs}
-        onUploadDataset={onUploadDataset}
-        onUploadImages={onUploadImages}
-        onUploadPdfs={onUploadPdfs}
+        uploadedFiles={uploadedFiles}
+        onUploadFiles={onUploadFiles}
       />
 
       <div className="upload-divider" />
 
       <div className="sidebar-controls">
         <button className="sidebar-btn" onClick={onToggleFileBrowser}>
-          📁 {showFileBrowser ? "Close" : "Open"} File Browser
+          {showFileBrowser ? "Close" : "Open"} File Browser
         </button>
         <label className="debug-toggle">
           <input

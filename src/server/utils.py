@@ -123,10 +123,11 @@ def message_identity(message: Any) -> str:
 
 
 def should_hide_message(message: Any) -> bool:
-    """Return True for internal transfer-tool messages that should not be shown."""
-    if isinstance(message, ToolMessage):
-        name = getattr(message, "name", "") or ""
-        return name.endswith("_transfer_tool")
+    """Return True for messages that should not appear in the display stream."""
+    if isinstance(message, HumanMessage):
+        content = getattr(message, "content", "")
+        if isinstance(content, str) and content.startswith("Python Output:\n"):
+            return True
     return False
 
 

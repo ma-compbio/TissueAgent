@@ -8,6 +8,9 @@ Run with::
     cd src && uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
 """
 
+import matplotlib
+matplotlib.use("Agg")
+
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path

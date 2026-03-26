@@ -57,6 +57,7 @@ export interface SendMessageEvent {
 export interface FileInfo {
   name: string;
   path: string;
+  category?: string;
   file_id?: string | null;
 }
 

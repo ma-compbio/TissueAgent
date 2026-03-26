@@ -120,6 +120,8 @@ async def _handle_user_message(ws: WebSocket, data: dict):
         "type": "message",
         "data": serialize_message(user_message),
     })
+    # Register for dedup so _drain_queues won't re-send from ui_event_queue
+    session.append_display_message(user_message)
 
     # Clear pending images after sending
     session.pending_images = []
@@ -150,8 +152,14 @@ async def _handle_user_message(ws: WebSocket, data: dict):
         # Final drain
         await _drain_queues(ws)
 
-        # Link tool messages to sub-agent states
-        _link_subagent_states(rendered_prefix)
+        # Link tool messages to sub-agent states and send them
+        linked_ids = _link_subagent_states(rendered_prefix)
+        for tool_id in linked_ids:
+            agent_name, final_state = session.subagent_states[tool_id]
+            await ws.send_json({
+                "type": "subagent_state",
+                "data": serialize_subagent_state(tool_id, agent_name, final_state),
+            })
 
         elapsed = time.perf_counter() - start_time
         await ws.send_json({
@@ -207,10 +215,11 @@ async def _drain_queues(ws: WebSocket):
         })
 
 
-def _link_subagent_states(rendered_prefix: int):
+def _link_subagent_states(rendered_prefix: int) -> list[str]:
     """Link tool message IDs to pending sub-agent states after agent completion."""
     new_messages = session.agent_state["messages"][rendered_prefix:]
     pending = session.pending_subagent_states
+    linked: list[str] = []
 
     for message in new_messages:
         if not isinstance(message, ToolMessage):
@@ -232,7 +241,10 @@ def _link_subagent_states(rendered_prefix: int):
         else:
             agent_name, final_state = pending.popleft()
             session.subagent_states[tool_id] = (agent_name, final_state)
+        linked.append(tool_id)
 
     if pending:
         logging.warning("Unmatched subagent states remaining; clearing queue.")
         pending.clear()
+
+    return linked
