@@ -16,3 +16,6 @@ data/*
 eval/
 
 sessions/
+
+*.egg-info/
+src/*.egg-info/
