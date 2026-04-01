@@ -6,9 +6,12 @@ helpers used across the graph.
 """
 
 import logging
+import threading
+import uuid
+from contextlib import contextmanager
 from copy import deepcopy
 from queue import Queue
-from typing import Any, Callable, Dict, List, Optional, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 
 from langchain.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -27,6 +30,51 @@ from logger import logger
 
 _ui_event_queue: Optional[Queue] = None
 _latest_user_message_content: Optional[List[Any]] = None
+
+# Thread-local storage for tracking which sub-agent is currently executing.
+# When log_message() is called from within a sub-agent invocation, this
+# context lets us tag the event so the UI can stream it into a live trace.
+_subagent_context = threading.local()
+
+
+def _get_subagent_context() -> Tuple[Optional[str], Optional[str]]:
+    """Return (invocation_id, agent_name) if inside a sub-agent, else (None, None)."""
+    return (
+        getattr(_subagent_context, "invocation_id", None),
+        getattr(_subagent_context, "agent_name", None),
+    )
+
+
+@contextmanager
+def subagent_invocation(agent_name: str):
+    """Context manager that brackets a sub-agent invocation with start/end events.
+
+    Sets thread-local context so that ``log_message()`` calls within the
+    sub-agent automatically route to the live-trace stream.  Pushes
+    ``subagent_start`` and ``subagent_end`` events onto the UI queue.
+
+    Yields the generated *invocation_id* (a UUID string).
+    """
+    invocation_id = str(uuid.uuid4())
+
+    if _ui_event_queue is not None:
+        _ui_event_queue.put_nowait(("subagent_start", {
+            "invocation_id": invocation_id,
+            "agent_name": agent_name,
+        }))
+
+    _subagent_context.invocation_id = invocation_id
+    _subagent_context.agent_name = agent_name
+    try:
+        yield invocation_id
+    finally:
+        _subagent_context.invocation_id = None
+        _subagent_context.agent_name = None
+        if _ui_event_queue is not None:
+            _ui_event_queue.put_nowait(("subagent_end", {
+                "invocation_id": invocation_id,
+                "agent_name": agent_name,
+            }))
 
 
 def register_ui_event_queue(event_queue: Queue) -> None:
@@ -189,7 +237,15 @@ def log_message(message: BaseMessage) -> None:
     logger.info(full_message)
     if _ui_event_queue is not None:
         try:
-            _ui_event_queue.put_nowait(message)
+            inv_id, sa_name = _get_subagent_context()
+            if inv_id is not None:
+                _ui_event_queue.put_nowait(("subagent_message", {
+                    "invocation_id": inv_id,
+                    "agent_name": sa_name,
+                    "message": message,
+                }))
+            else:
+                _ui_event_queue.put_nowait(("message", message))
         except Exception:
             pass
 
@@ -369,8 +425,9 @@ def create_agent_invocation_tool(
                     content.append({"type": "file", "file": {"file_id": file_id}})
 
             message = _build_multimodal_message(prompt, extra_parts=content)
-            final_state = agent.invoke({"messages": [message]})
-            state_queue.put((agent_name, final_state))
+            with subagent_invocation(agent_name) as invocation_id:
+                final_state = agent.invoke({"messages": [message]})
+            state_queue.put((agent_name, final_state, invocation_id))
             logging.info(f"Finished invoking PDF-capable agent `{agent_node_id}`")
             return final_state["messages"][-1].content
 
@@ -381,8 +438,9 @@ def create_agent_invocation_tool(
             """Invoke the sub-agent with a text prompt and return its response."""
             logging.info(f"Invoking agent `{agent_node_id}`")
             message = _build_multimodal_message(prompt)
-            final_state = agent.invoke({"messages": [message]})
-            state_queue.put((agent_name, final_state))
+            with subagent_invocation(agent_name) as invocation_id:
+                final_state = agent.invoke({"messages": [message]})
+            state_queue.put((agent_name, final_state, invocation_id))
             logging.info(f"Finished invoking agent `{agent_node_id}`")
             return final_state["messages"][-1].content
 
