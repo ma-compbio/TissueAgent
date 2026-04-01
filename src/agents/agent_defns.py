@@ -56,6 +56,11 @@ from agents.agent_registry.cell_annotater_agent.prompt import (
     CellTissueAnnotationDescription
 )
 from agents.agent_registry.cell_annotater_agent.tools import CellAnnotaterTools
+from agents.agent_registry.spot_agent.prompt import (
+    SpotPrompt,
+    SpotDescription,
+)
+from agents.agent_registry.spot_agent.tools import SpotTools
 from agents.agent_registry.hypothesis_agent.prompt import HypothesisAgentDescription
 
 
@@ -209,6 +214,14 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         prompt      = CellTissueAnnotationPrompt,
         tools       = CellAnnotaterTools,
         model_ctor  = DefaultModelCtor,
+    ),
+    ReActAgent(
+        id="spot",
+        name="Spot Agent",
+        description=SpotDescription,
+        prompt=SpotPrompt,
+        tools=SpotTools,
+        model_ctor=DefaultModelCtor,
     ),
     CustomAgent(
         id="hypothesis",
