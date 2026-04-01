@@ -1,0 +1,112 @@
+Metadata-Version: 2.4
+Name: tissueagent
+Version: 0.1.0
+Summary: autonomous AI agent for spatial transcriptomics research
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: langchain==0.3.25
+Requires-Dist: langchain-core==0.3.64
+Requires-Dist: langchain-ollama==0.3.0
+Requires-Dist: langchain-openai==0.3.10
+Requires-Dist: langchain-anthropic>=0.3.15
+Requires-Dist: langchain-community==0.3.24
+Requires-Dist: langgraph==0.3.20
+Requires-Dist: matplotlib==3.9.4
+Requires-Dist: numpy>=2.0.2
+Requires-Dist: pandas==2.2.3
+Requires-Dist: pydantic==2.10.6
+Requires-Dist: scanpy==1.10.3
+Requires-Dist: scipy==1.13.1
+Requires-Dist: seaborn==0.13.2
+Requires-Dist: spatialdata-io==0.1.5
+Requires-Dist: squidpy>=1.6.2
+Requires-Dist: streamlit==1.43.2
+Requires-Dist: streamlit-nested-layout==0.1.4
+Requires-Dist: streamlit-file-browser==3.2.22
+Requires-Dist: streamlit-modal==0.1.2
+Requires-Dist: tiledbsoma==1.17.1
+Requires-Dist: google-search-results==2.4.2
+Requires-Dist: pymed==0.8.9
+Requires-Dist: watchdog>=6.0.0
+Requires-Dist: anthropic==0.52.0
+Requires-Dist: openai>=1.73.0
+Requires-Dist: nbformat>=5.10.4
+Requires-Dist: langchain-chroma==0.2.4
+Requires-Dist: langchain-experimental>=0.3.0
+Requires-Dist: colorama>=0.4.6
+Requires-Dist: dask==2024.8.0
+Requires-Dist: xarray-datatree==0.0.15
+Requires-Dist: cellxgene-census>=1.17.0
+Requires-Dist: cell2location>=0.1.4
+Requires-Dist: mcp[cli]>=1.12.4
+Requires-Dist: sentence-transformers>=2.2.0
+Requires-Dist: scikit-learn>=1.3.0
+Requires-Dist: nbconvert>=7.16.6
+Requires-Dist: anndata>=0.11.4
+Requires-Dist: liana>=1.6.1
+Requires-Dist: decoupler>=2.1.1
+Requires-Dist: notebook>=7.4.7
+Requires-Dist: marimo>=0.17.2
+Requires-Dist: ggplot>=0.11.5
+Requires-Dist: plotnine>=0.15.0
+Requires-Dist: ruff>=0.15.6
+Requires-Dist: pre-commit>=4.5.1
+Requires-Dist: ipython>=8.37.0
+Requires-Dist: ipykernel>=7.1.0
+Requires-Dist: mygene==3.2.2
+Requires-Dist: harmonypy==0.0.10
+Requires-Dist: tiledbsoma==1.17.1
+Dynamic: license-file
+
+# TissueAgent
+
+## Repository set-up:
+
+1. Clone the repository **with submodules** and `cd` into the local directory
+   ```bash
+   git clone --recurse-submodules https://github.com/ma-compbio/TissueAgent
+   cd TissueAgent
+   ```
+   If you already cloned without `--recurse-submodules`, initialize them manually:
+   ```bash
+   git submodule update --init --recursive
+   ```
+
+2. Install Python 3.12 and [uv](https://docs.astral.sh/uv/)
+
+3. Run `uv sync` in the local repository
+
+### Usage (Web UI)
+
+1. Run `source .venv/bin/activate` to activate the virtual environment created by `uv`
+
+2. Export your LLM credentials. At minimum `OPENAI_API_KEY` must be set for the default agents to function (e.g. `export OPENAI_API_KEY="sk-..."`). 
+
+3. Use `PYTHONPATH=$(pwd)/src python -m streamlit run src/app.py` to start the streamlit application from the base directory
+
+4. Open the URL in a web browser
+
+### Usage (Jupyter Notebook)
+
+See `demo/` for examples on how to invoke TissueAgent directly from a Jupyter Notebook.
+
+> [!TIP]
+> All agents use GPT-5 by default. To save API tokens, models with lower reasonsing capabilities can be used. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
+
+## Repository Structure
+
+
+## Data Availability
+
+All datasets referenced in the manuscript are publically available:
+- Developing human heart MERFISH dataset (Farah et al., 2024): [https://cells.ucsc.edu/?ds=hoc](https://cells.ucsc.edu/?ds=hoc)
+- 10x Visium human heart dataset (Kanemaru et al., 2023): [https://www.heartcellatlas.org/](https://www.heartcellatlas.org/)
+- Single-cell reference dataset for cell type deconvolution: [CellxGene collection b52eb423](https://cellxgene.cziscience.com/collections/b52eb423-5d0d-4645-b217-e1c6d38b2e72)
+- 10x Visium Alzheimer's disease spatial transcriptomics dataset (Miyoshi et al., 2024): GEO accession [GSE233208](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE233208)
+- Spatial mouse atlas (Lohoff et al., 2022): [https://crukci.shinyapps.io/SpatialMouseAtlas/](https://crukci.shinyapps.io/SpatialMouseAtlas/)
+- Spatiotemporal transcriptomics dataset (Chen et al., 2022): CNGBdb accession [STDS0000058](https://db.cngb.org/search/project/STDS0000058/)
+
+### License
+
+[MIT License](LICENSE)

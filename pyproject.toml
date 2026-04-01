@@ -60,7 +60,7 @@ dependencies = [
     "ipykernel>=7.1.0",
     "mygene==3.2.2",
     "harmonypy==0.0.10",
-    "tiledbsoma==1.17.1"
+    "tiledbsoma==1.17.1",
 ]
 
 [tool.ruff]
