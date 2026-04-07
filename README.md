@@ -13,6 +13,31 @@ TissueAgent is a role-based multi-agent framework that turns open-ended natural-
 
 ![TISSUEAGENT overview figure](docs/figures/tissueagent_overall_design.png)
 
+## Project Structure
+
+```text
+TissueAgent/
+├── src/
+│   ├── agents/
+│   │   ├── planner_agent/
+│   │   ├── recruiter_agent/
+│   │   ├── manager_agent/
+│   │   ├── evaluator_agent/
+│   │   ├── reporter_agent/
+│   │   └── agent_registry/        # domain/specialized agents and tools
+│   ├── graph/                     # workflow graph/state orchestration
+│   ├── server/                    # FastAPI backend and routes
+│   └── frontend/                  # React + TypeScript frontend
+├── demo/                          # notebooks, sample inputs, and outputs
+├── data/                          # local datasets and analysis inputs
+├── docs/figures/                  # README/manuscript figures
+├── notebooks/                     # exploratory notebooks
+├── logs/                          # runtime logs
+├── sessions/                      # run/session artifacts
+├── pyproject.toml                 # Python project configuration
+└── flake.nix                      # Nix development environment
+```
+
 ## Repository set-up
 
 1. Clone the repository **with submodules** and `cd` into the local directory
@@ -111,6 +136,33 @@ Install uv, Python 3.12, and run `uv sync` from the root of this repository to i
 
 > [!TIP]
 > All agents use GPT-5 by default. To save API tokens, models with lower reasoning capabilities can be used. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
+
+## Demo
+
+Notebook-based demos are available in `demo/` and can be run end-to-end to reproduce manuscript tasks.
+
+### Run a demo
+
+1. Complete repository setup above and activate the environment
+
+2. Export your LLM credentials:
+   ```bash
+   export OPENAI_API_KEY="sk-..."
+   ```
+3. Launch Jupyter:
+   ```bash
+   jupyter notebook
+   ```
+4. Open and run a notebook from top to bottom.
+
+### Available notebooks
+
+- `demo/figure_recreation_lohoff-2b.ipynb`: figure reproduction workflow demo 1
+- `demo/figure_recreation_lohoff-2e.ipynb`: figure reproduction workflow demo 2
+
+Outputs are written to `data/` and copied into `demo/outputs/{TASK}`. Execution transcripts are saved to `demo/outputs/{TASK}/transcript.log`.
+
+See `demo/README.md` for more details.
 
 ## Data Availability
 
