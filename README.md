@@ -1,4 +1,17 @@
-# TissueAgent
+# TISSUEAGENT: A Role-Based Multi-Agent Framework for Reproducible Spatial Transcriptomics Workflows
+
+## Project Overview
+
+TISSUEAGENT is a role-based multi-agent framework that turns open-ended natural-language ST requests and multimodal inputs (data, PDFs, images) into auditable, runnable workflows. A single evolving plan coordinates specialized agents and records rationales, step status, and artifact links, enabling transparent provenance and targeted replanning. By separating planning, recruitment, execution, evaluation, and reporting, TISSUEAGENT is designed to improve reliability across heterogeneous, multi-stage analyses.
+
+## Key Features
+
+- Role-based multi-agent design with explicit separation of planning, recruitment, execution, evaluation, and reporting.
+- A single evolving plan that tracks rationales, step status, and artifact links to support transparent provenance and targeted replanning.
+- Built-in collaboration with external specialized agents to extend capabilities for domain-specific tasks.
+- Support for diverse spatial transcriptomics workflows such as figure reproduction, cell type annotation, cell-cell communication, differential gene expression, and cell type deconvolution.
+
+![TISSUEAGENT overview figure](docs/figures/tissueagent_overall_design.png)
 
 ## Repository set-up
 
