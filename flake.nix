@@ -21,7 +21,7 @@
           ];
 
           shellHook = ''
-            echo "TissueAgent dev shell — node $(node --version), npm $(npm --version)"
+            echo "TissueAgent dev shell - node $(node --version), npm $(npm --version)"
           '';
         };
       }

@@ -35,6 +35,7 @@ TissueAgent/
 ├── logs/                          # runtime logs
 ├── sessions/                      # run/session artifacts
 ├── pyproject.toml                 # Python project configuration
+├── environment.yml                # Conda environment definition
 └── flake.nix                      # Nix development environment
 ```
 
@@ -55,25 +56,23 @@ TissueAgent/
    export OPENAI_API_KEY="sk-..."
    ```
 
-### Option A: Using Nix (recommended)
+### Option A1: Using conda
 
-A `flake.nix` is provided that supplies Python 3.12, uv, Node.js 22, and npm.
+1. [Install Miniconda](https://docs.anaconda.com/miniconda/) or [Anaconda](https://www.anaconda.com/download) if you haven't already.
 
-1. [Install Nix](https://nixos.org/download) if you haven't already.
-
-2. Enter the dev shell and install dependencies:
+2. Create the conda environment and install dependencies:
    ```bash
-   nix develop          # drops you into a shell with python, uv, node, npm
-   uv sync              # creates .venv and installs Python deps
+   conda env create -f environment.yml
+   conda activate tissueagent
+   pip install -e .       # installs Python deps from pyproject.toml
    cd src/frontend
-   npm install           # installs React/TypeScript deps
+   npm install            # installs React/TypeScript deps
    cd ../..
    ```
 
-3. Start the application (two terminals, both inside `nix develop`):
+3. Start the application (two terminals, both with `conda activate tissueagent`):
    ```bash
    # Terminal 1 — FastAPI backend
-   source .venv/bin/activate
    PYTHONPATH=$(pwd)/src uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
 
    # Terminal 2 — React dev server (hot-reload)
@@ -86,14 +85,13 @@ A `flake.nix` is provided that supplies Python 3.12, uv, Node.js 22, and npm.
 #### Production mode (single process)
 
 ```bash
-nix develop
-source .venv/bin/activate
+conda activate tissueagent
 cd src/frontend && npm run build && cd ../..
 PYTHONPATH=$(pwd)/src uvicorn server.main:app --host 0.0.0.0 --port 8000
 ```
 Open **http://localhost:8000**. FastAPI serves the built React app as static files.
 
-### Option B: Without Nix
+### Option A2: Using uv
 
 You will need to install the following manually:
 - **Python 3.12** — [python.org](https://www.python.org/downloads/) or your system package manager
@@ -130,9 +128,61 @@ PYTHONPATH=$(pwd)/src uvicorn server.main:app --host 0.0.0.0 --port 8000
 ```
 Open **http://localhost:8000**.
 
-### Option C (Headless Mode)
+### Option B: Using Nix
 
-Install uv, Python 3.12, and run `uv sync` from the root of this repository to install all Python packages. Then, see `demo/` for examples on how to invoke TissueAgent directly from a Jupyter Notebook.
+A Nix flake is provided that supplies Python 3.12, uv, Node.js 22, and npm.
+
+1. [Install Nix](https://nixos.org/download) if you haven't already.
+
+2. Enter the dev shell and install dependencies:
+   ```bash
+   nix develop          # drops you into a shell with python, uv, node, npm
+   uv sync              # creates .venv and installs Python deps
+   cd src/frontend
+   npm install          # installs React/TypeScript deps
+   cd ../..
+   ```
+
+3. Start the application (two terminals, both inside `nix develop`):
+   ```bash
+   # Terminal 1 — FastAPI backend
+   source .venv/bin/activate
+   PYTHONPATH=$(pwd)/src uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
+
+   # Terminal 2 — React dev server (hot-reload)
+   cd src/frontend
+   npm run dev
+   ```
+
+4. Open **http://localhost:5173** in a web browser. The React dev server proxies API and WebSocket requests to the FastAPI backend automatically.
+
+#### Production mode (single process)
+
+```bash
+nix develop
+source .venv/bin/activate
+cd src/frontend && npm run build && cd ../..
+PYTHONPATH=$(pwd)/src uvicorn server.main:app --host 0.0.0.0 --port 8000
+```
+Open **http://localhost:8000**. FastAPI serves the built React app as static files.
+
+### Option C: Headless Mode
+
+No frontend is needed. Install Python dependencies using either conda or uv, then run TissueAgent directly from a Jupyter notebook.
+
+**Using conda:**
+```bash
+conda env create -f environment.yml
+conda activate tissueagent
+pip install -e .
+```
+
+**Using uv:**
+```bash
+uv sync
+```
+
+See `demo/` for examples on how to invoke TissueAgent from a notebook.
 
 > [!TIP]
 > All agents use GPT-5 by default. To save API tokens, models with lower reasoning capabilities can be used. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
