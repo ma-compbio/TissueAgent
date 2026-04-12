@@ -32,5 +32,7 @@ demo
 
 ### Web UI Demo
 
-https://github.com/user-attachments/assets/581aca67-abda-40bd-a698-3a5242d06d66
+https://github.com/user-attachments/assets/ef381418-cf5c-431b-9052-f931c922d2c8
+
+
 
