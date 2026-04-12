@@ -1,3 +1,5 @@
+
+
 # Demo
 
 This folder contains notebooks for several tasks described in the manuscript. Each notebook is self-contained and can be run end-to-end to load inputs, prompt the agent, and save outputs.
@@ -14,7 +16,6 @@ This folder contains notebooks for several tasks described in the manuscript. Ea
 
 5. Open a notebook and run it top-to-bottom to reproduce a task. Data can be accessed in `demo/data` and outputs are written to `data/` and copied into `demo/outputs/{TASK}`. The run is logged to `demo/outputs/{TASK}/transcript.log`.
 
-
 > [!WARNING]
 > LLM outputs are inherently stochastic, so TissueAgent may produce slightly different outputs between runs. 
 
@@ -28,3 +29,8 @@ demo
 ├── notebook_utils.py                    # utility functions for setting up and running TissueAgent in notebooks
 └── README.md
 ```
+
+### Web UI Demo
+
+https://github.com/user-attachments/assets/581aca67-abda-40bd-a698-3a5242d06d66
+
