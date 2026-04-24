@@ -26,6 +26,7 @@ demo
 ├── outputs/                             # transcripts and artifacts from demo tasks
 ├── figure_recreation_lohoff-2b.ipynb    # notebook for figure recreation task (Figure 2b from Lohoff et. al.)
 ├── figure_recreation_lohoff-2e.ipynb    # notebook for figure recreation task (Figure 2c from Lohoff et. al.)
+├── spot_deconvolution_visium_heart.ipynb    # notebook for cell-type deconvolution task (Figure 2c from Lohoff et. al.)
 ├── notebook_utils.py                    # utility functions for setting up and running TissueAgent in notebooks
 └── README.md
 ```
