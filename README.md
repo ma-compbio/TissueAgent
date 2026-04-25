@@ -189,9 +189,24 @@ See `demo/` for examples on how to invoke TissueAgent from a notebook.
 
 ## Demo
 
+TissueAgent can be invoked in two ways:
+
+### Option 1: Through Web UI
+
+Start the backend server:
+```bash
+PYTHONPATH=$(pwd)/src uvicorn server.main:app --host 0.0.0.0 --port 8000
+```
+
+**Web UI Demo:**
+
+https://github.com/user-attachments/assets/ef381418-cf5c-431b-9052-f931c922d2c8
+
+### Option 2: From Notebooks
+
 Notebook-based demos are available in `demo/` and can be run end-to-end to reproduce manuscript tasks.
 
-### Run a demo
+**Run a demo:**
 
 1. Complete repository setup above and activate the environment
 
@@ -205,10 +220,11 @@ Notebook-based demos are available in `demo/` and can be run end-to-end to repro
    ```
 4. Open and run a notebook from top to bottom.
 
-### Available notebooks
+**Available notebooks:**
 
 - `demo/figure_recreation_lohoff-2b.ipynb`: figure reproduction workflow demo 1
 - `demo/figure_recreation_lohoff-2e.ipynb`: figure reproduction workflow demo 2
+- `demo/spot_deconvolution_visium_heart.ipynb`: cell-type deconvolution task
 
 Outputs are written to `data/` and copied into `demo/outputs/{TASK}`. Execution transcripts are saved to `demo/outputs/{TASK}/transcript.log`.
 
