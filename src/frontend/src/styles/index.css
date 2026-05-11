@@ -7,10 +7,12 @@
   --bg-primary: #ffffff;
   --bg-secondary: #f8f9fa;
   --bg-sidebar: #f3f4f6;
+  --bg-card: #ffffff;
   --border-color: #e5e7eb;
   --text-primary: #1f2937;
   --text-secondary: #6b7280;
   --accent: #3b82f6;
+  --accent-hover: #2563eb;
   --accent-light: #eff6ff;
   --user-bg: #f0f4ff;
   --ai-bg: #f4fff0;
@@ -18,8 +20,65 @@
   --error-bg: #fef2f2;
   --error-text: #dc2626;
   --success: #22c55e;
+  --route-pill-bg: #e0e7ff;
+  --route-pill-text: #1f2a44;
+  --tool-pill-bg: #f3e8ff;
+  --tool-pill-text: #7c3aed;
+  --tag-response-bg: #f0fdf4;
+  --tag-response-border: #22c55e;
+  --tag-scratchpad-bg: #fefce8;
+  --tag-scratchpad-border: #eab308;
+  --tag-plan-bg: #eff6ff;
+  --tag-plan-border: #3b82f6;
+  --code-bg: #f8f9fa;
+  --output-bg: #1e1e1e;
+  --output-text: #d4d4d4;
+  --manager-accent: #8b5cf6;
+  --manager-accent-bg: #f5f3ff;
+  --live-accent: #f59e0b;
+  --live-accent-bg: #fffbeb;
+  --live-accent-strong: #d97706;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #15171c;
+  --bg-secondary: #1c1f26;
+  --bg-sidebar: #181a20;
+  --bg-card: #1c1f26;
+  --border-color: #2a2e38;
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --accent: #60a5fa;
+  --accent-hover: #93c5fd;
+  --accent-light: #1e2a44;
+  --user-bg: #1b2233;
+  --ai-bg: #1a2820;
+  --tool-bg: #2a2417;
+  --error-bg: #2a1818;
+  --error-text: #f87171;
+  --success: #4ade80;
+  --route-pill-bg: #1e2a44;
+  --route-pill-text: #cbd5e1;
+  --tool-pill-bg: #2a1f3d;
+  --tool-pill-text: #c4b5fd;
+  --tag-response-bg: #142019;
+  --tag-response-border: #22c55e;
+  --tag-scratchpad-bg: #1f1d10;
+  --tag-scratchpad-border: #eab308;
+  --tag-plan-bg: #15203a;
+  --tag-plan-border: #60a5fa;
+  --code-bg: #20232b;
+  --output-bg: #0f1115;
+  --output-text: #d4d4d4;
+  --manager-accent: #a78bfa;
+  --manager-accent-bg: #221b3a;
+  --live-accent: #fbbf24;
+  --live-accent-bg: #2a2110;
+  --live-accent-strong: #fcd34d;
+  color-scheme: dark;
 }
 
 * {
@@ -112,6 +171,40 @@ body {
 
 .status-dot.disconnected {
   background: var(--error-text);
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.theme-toggle {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0.4rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0;
+}
+
+.theme-toggle:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .error-banner {
@@ -246,7 +339,7 @@ body {
 }
 
 .send-button:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--accent-hover);
 }
 
 /* ---- Message Groups ---- */
@@ -302,8 +395,8 @@ body {
   display: inline-block;
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
-  background: #e0e7ff;
-  color: #1f2a44;
+  background: var(--route-pill-bg);
+  color: var(--route-pill-text);
   font-size: 0.8rem;
   margin-left: 0.5rem;
 }
@@ -342,10 +435,10 @@ body {
 .tool-call-pill {
   display: inline-block;
   padding: 0.15rem 0.5rem;
-  background: #f3e8ff;
+  background: var(--tool-pill-bg);
   border-radius: 0.3rem;
   font-size: 0.8rem;
-  color: #7c3aed;
+  color: var(--tool-pill-text);
 }
 
 /* ---- Tool Messages ---- */
@@ -385,7 +478,7 @@ body {
 /* ---- Subagent Card (left column) ---- */
 
 .subagent-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-left: 3px solid var(--accent);
   padding: 0.75rem 1rem;
@@ -440,44 +533,44 @@ body {
 /* ---- Manager Subagent Card (child agents like Coding Agent) ---- */
 
 .manager-subagent-wrapper .subagent-card {
-  border-left: 3px solid #8b5cf6;
+  border-left: 3px solid var(--manager-accent);
 }
 
 .manager-subagent-wrapper .subagent-card:hover {
-  background: #f5f3ff;
-  border-color: #8b5cf6;
+  background: var(--manager-accent-bg);
+  border-color: var(--manager-accent);
 }
 
 .manager-subagent-wrapper .subagent-card-selected {
-  background: #f5f3ff;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 1px #8b5cf6;
+  background: var(--manager-accent-bg);
+  border-color: var(--manager-accent);
+  box-shadow: 0 0 0 1px var(--manager-accent);
 }
 
 .manager-subagent-wrapper .subagent-card-action {
-  color: #8b5cf6;
+  color: var(--manager-accent);
 }
 
 /* ---- Live Sub-agent Card (currently running) ---- */
 
 .subagent-card-live {
-  border-left-color: #f59e0b !important;
+  border-left-color: var(--live-accent) !important;
   animation: live-pulse 2s ease-in-out infinite;
 }
 
 .subagent-card-live:hover {
-  background: #fffbeb;
-  border-color: #f59e0b;
+  background: var(--live-accent-bg);
+  border-color: var(--live-accent);
 }
 
 .subagent-card-live.subagent-card-selected {
-  background: #fffbeb;
-  border-color: #f59e0b;
-  box-shadow: 0 0 0 1px #f59e0b;
+  background: var(--live-accent-bg);
+  border-color: var(--live-accent);
+  box-shadow: 0 0 0 1px var(--live-accent);
 }
 
 .subagent-card-live .subagent-card-action {
-  color: #d97706;
+  color: var(--live-accent-strong);
 }
 
 @keyframes live-pulse {
@@ -490,7 +583,7 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #f59e0b;
+  background: var(--live-accent);
   margin-right: 0.3rem;
   animation: live-dot-pulse 1.2s ease-in-out infinite;
 }
@@ -583,18 +676,18 @@ body {
 }
 
 .trace-tag-response {
-  background: #f0fdf4;
-  border-left: 3px solid #22c55e;
+  background: var(--tag-response-bg);
+  border-left: 3px solid var(--tag-response-border);
 }
 
 .trace-tag-scratchpad {
-  background: #fefce8;
-  border-left: 3px solid #eab308;
+  background: var(--tag-scratchpad-bg);
+  border-left: 3px solid var(--tag-scratchpad-border);
 }
 
 .trace-tag-plan {
-  background: #eff6ff;
-  border-left: 3px solid #3b82f6;
+  background: var(--tag-plan-bg);
+  border-left: 3px solid var(--tag-plan-border);
 }
 
 .trace-code-block {
@@ -602,7 +695,7 @@ body {
 }
 
 .trace-code {
-  background: #f8f9fa;
+  background: var(--code-bg);
   border: 1px solid var(--border-color);
   border-radius: 0.4rem;
   padding: 0.5rem 0.75rem;
@@ -619,8 +712,8 @@ body {
 }
 
 .trace-output {
-  background: #1e1e1e;
-  color: #d4d4d4;
+  background: var(--output-bg);
+  color: var(--output-text);
   border-radius: 0.4rem;
   padding: 0.5rem 0.75rem;
   font-family: var(--font-mono);

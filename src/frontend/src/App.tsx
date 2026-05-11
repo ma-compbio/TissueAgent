@@ -3,8 +3,10 @@ import ChatView from "./components/ChatView";
 import FileBrowser from "./components/FileBrowser";
 import { extractPlanData } from "./components/PlanViewer";
 import Sidebar from "./components/Sidebar";
+import ThemeToggle from "./components/ThemeToggle";
 import { useModels } from "./hooks/useModels";
 import { useSession } from "./hooks/useSession";
+import { useTheme } from "./hooks/useTheme";
 import { useWebSocket } from "./hooks/useWebSocket";
 import "./styles/index.css";
 
@@ -12,6 +14,7 @@ export default function App() {
   const ws = useWebSocket();
   const session = useSession();
   const modelHook = useModels();
+  const { theme, toggleTheme } = useTheme();
 
   const [enableDebug, setEnableDebug] = useState(false);
   const [showFileBrowser, setShowFileBrowser] = useState(false);
@@ -50,11 +53,14 @@ export default function App() {
       <main className="main-area">
         <div className="top-bar">
           <h1 className="app-title">TissueAgent</h1>
-          <div className="connection-status">
-            <span
-              className={`status-dot ${ws.isConnected ? "connected" : "disconnected"}`}
-            />
-            {ws.isConnected ? "Connected" : "Disconnected"}
+          <div className="top-bar-right">
+            <div className="connection-status">
+              <span
+                className={`status-dot ${ws.isConnected ? "connected" : "disconnected"}`}
+              />
+              {ws.isConnected ? "Connected" : "Disconnected"}
+            </div>
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
         </div>
 
