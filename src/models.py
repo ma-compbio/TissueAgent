@@ -1,18 +1,28 @@
 """Model registry and runtime-configurable selection for TissueAgent.
 
-Defines the supported OpenAI and Anthropic chat models, the global
-selection state (which model the *orchestration* agents and the *worker*
-sub-agents should use), and a factory that produces a fresh
-``BaseChatModel`` instance for each agent invocation.
+Defines the supported OpenAI, Anthropic, and OpenRouter chat models, the
+global selection state (which model the *orchestration* agents and the
+*worker* sub-agents should use), the per-provider API key store, and a
+factory that produces a fresh ``BaseChatModel`` instance for each agent
+invocation.
 
 The selection is mutable at runtime: the FastAPI ``/api/models`` route
 writes to :data:`_selection`, and every ``model_ctor`` callable resolves
 the active model lazily at call time. The graph is rebuilt between user
 messages so a change takes effect on the next turn.
+
+API keys can come from two sources:
+  1. An environment variable (``OPENAI_API_KEY``, ``ANTHROPIC_API_KEY``,
+     ``OPENROUTER_API_KEY``).
+  2. A value the user types into the UI, which is held in
+     :data:`_api_keys` for the lifetime of the server process.
+
+The UI value, when set, takes precedence over the env var.
 """
 
 from __future__ import annotations
 
+import os
 import threading
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Literal, Optional
@@ -20,7 +30,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional
 from langchain_core.language_models.chat_models import BaseChatModel
 
 
-Provider = Literal["openai", "anthropic"]
+Provider = Literal["openai", "anthropic", "openrouter"]
 Role = Literal["orchestration", "worker"]
 
 
@@ -39,9 +49,11 @@ class ModelSpec:
 # Catalog
 # ---------------------------------------------------------------------------
 
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
 # Order matters: first entry per provider is shown first in the UI.
 SUPPORTED_MODELS: List[ModelSpec] = [
-    # --- OpenAI ---
+    # --- OpenAI (direct) ---
     ModelSpec(
         id="gpt-5.1",
         provider="openai",
@@ -70,7 +82,7 @@ SUPPORTED_MODELS: List[ModelSpec] = [
         label="GPT-5 mini",
         reasoning_effort="medium",
     ),
-    # --- Anthropic ---
+    # --- Anthropic (direct) ---
     ModelSpec(
         id="claude-opus-4-7",
         provider="anthropic",
@@ -83,11 +95,59 @@ SUPPORTED_MODELS: List[ModelSpec] = [
         api_model="claude-sonnet-4-6",
         label="Claude Sonnet 4.6",
     ),
+    # --- OpenRouter (same OpenAI + Claude models via OpenRouter gateway) ---
+    ModelSpec(
+        id="openrouter/gpt-5.1",
+        provider="openrouter",
+        api_model="openai/gpt-5.1",
+        label="GPT-5.1 · via OpenRouter",
+        reasoning_effort="high",
+    ),
+    ModelSpec(
+        id="openrouter/gpt-5.4",
+        provider="openrouter",
+        api_model="openai/gpt-5.4",
+        label="GPT-5.4 · via OpenRouter",
+        reasoning_effort="high",
+    ),
+    ModelSpec(
+        id="openrouter/gpt-5",
+        provider="openrouter",
+        api_model="openai/gpt-5",
+        label="GPT-5 · via OpenRouter",
+        reasoning_effort="high",
+    ),
+    ModelSpec(
+        id="openrouter/gpt-5-mini",
+        provider="openrouter",
+        api_model="openai/gpt-5-mini",
+        label="GPT-5 mini · via OpenRouter",
+        reasoning_effort="medium",
+    ),
+    ModelSpec(
+        id="openrouter/claude-opus-4-7",
+        provider="openrouter",
+        api_model="anthropic/claude-opus-4-7",
+        label="Claude Opus 4.7 · via OpenRouter",
+    ),
+    ModelSpec(
+        id="openrouter/claude-sonnet-4-6",
+        provider="openrouter",
+        api_model="anthropic/claude-sonnet-4-6",
+        label="Claude Sonnet 4.6 · via OpenRouter",
+    ),
 ]
 
 _MODELS_BY_ID: Dict[str, ModelSpec] = {m.id: m for m in SUPPORTED_MODELS}
 
 DEFAULT_MODEL_ID = "gpt-5.1"
+
+# Map providers to the env-var name the underlying SDK consults.
+PROVIDER_ENV_VAR: Dict[Provider, str] = {
+    "openai": "OPENAI_API_KEY",
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
+}
 
 
 def list_models() -> List[Dict[str, Any]]:
@@ -161,6 +221,63 @@ def get_model_id(role: Role) -> str:
 
 
 # ---------------------------------------------------------------------------
+# API key store (mutable, thread-safe)
+# ---------------------------------------------------------------------------
+
+_api_keys: Dict[Provider, str] = {}
+_api_keys_lock = threading.Lock()
+
+
+def _env_key(provider: Provider) -> Optional[str]:
+    name = PROVIDER_ENV_VAR.get(provider)
+    if not name:
+        return None
+    val = os.environ.get(name)
+    return val.strip() if val and val.strip() else None
+
+
+def get_api_key(provider: Provider) -> Optional[str]:
+    """Return the API key for *provider*: UI-stored value, else env var."""
+    with _api_keys_lock:
+        ui_val = _api_keys.get(provider)
+    if ui_val:
+        return ui_val
+    return _env_key(provider)
+
+
+def set_api_key(provider: Provider, key: Optional[str]) -> None:
+    """Store *key* in memory. Pass ``None`` or empty to clear and fall back to env."""
+    if provider not in PROVIDER_ENV_VAR:
+        raise ValueError(f"Unknown provider: {provider!r}")
+    clean = key.strip() if key else ""
+    with _api_keys_lock:
+        if clean:
+            _api_keys[provider] = clean
+        else:
+            _api_keys.pop(provider, None)
+
+
+def get_key_status() -> Dict[str, Dict[str, Any]]:
+    """Per-provider status for the UI: env detected, UI-set flag, env-var name.
+
+    Never returns the actual key values.
+    """
+    result: Dict[str, Dict[str, Any]] = {}
+    with _api_keys_lock:
+        ui_set = {p: bool(_api_keys.get(p)) for p in PROVIDER_ENV_VAR}
+    for provider, env_name in PROVIDER_ENV_VAR.items():
+        env_val = os.environ.get(env_name)
+        result[provider] = {
+            "env_var": env_name,
+            "env_set": bool(env_val and env_val.strip()),
+            "ui_set": ui_set[provider],
+            "effective": ui_set[provider]
+            or bool(env_val and env_val.strip()),
+        }
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
 
@@ -173,12 +290,14 @@ def build_chat_model(model_id: str, **overrides: Any) -> BaseChatModel:
     spec = get_model_spec(model_id)
 
     if spec.provider == "openai":
-        # Import lazily so a missing optional dependency only matters when used.
         from langchain_openai import ChatOpenAI
 
         kwargs: Dict[str, Any] = {"model": spec.api_model}
         if spec.reasoning_effort is not None:
             kwargs["reasoning_effort"] = spec.reasoning_effort
+        key = get_api_key("openai")
+        if key:
+            kwargs["api_key"] = key
         kwargs.update(overrides)
         return ChatOpenAI(**kwargs)
 
@@ -187,10 +306,30 @@ def build_chat_model(model_id: str, **overrides: Any) -> BaseChatModel:
 
         kwargs = {"model": spec.api_model}
         # Drop OpenAI-only kwargs callers may pass.
-        for key in ("reasoning_effort",):
-            overrides.pop(key, None)
+        for k in ("reasoning_effort",):
+            overrides.pop(k, None)
+        key = get_api_key("anthropic")
+        if key:
+            kwargs["api_key"] = key
         kwargs.update(overrides)
         return ChatAnthropic(**kwargs)
+
+    if spec.provider == "openrouter":
+        # OpenRouter is OpenAI-API-compatible. Use ChatOpenAI with a custom
+        # base URL and the OpenRouter key.
+        from langchain_openai import ChatOpenAI
+
+        kwargs = {
+            "model": spec.api_model,
+            "base_url": OPENROUTER_BASE_URL,
+        }
+        if spec.reasoning_effort is not None:
+            kwargs["reasoning_effort"] = spec.reasoning_effort
+        key = get_api_key("openrouter")
+        if key:
+            kwargs["api_key"] = key
+        kwargs.update(overrides)
+        return ChatOpenAI(**kwargs)
 
     raise ValueError(f"Unsupported provider for model {model_id!r}: {spec.provider}")
 

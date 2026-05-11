@@ -1,5 +1,10 @@
 import type { FileInfo, SessionInfo } from "../types/messages";
-import type { ModelOption, ModelSelection } from "../hooks/useModels";
+import type {
+  KeyStatusMap,
+  ModelOption,
+  ModelSelection,
+  Provider,
+} from "../hooks/useModels";
 import FileUpload from "./FileUpload";
 import ModelPicker from "./ModelPicker";
 import PlanViewer, { type PlanEntry } from "./PlanViewer";
@@ -27,6 +32,8 @@ interface Props {
   onChangeOrchestrationModel: (id: string) => void;
   onChangeWorkerModel: (id: string) => void;
   onResetWorkerModel: () => void;
+  modelKeys: KeyStatusMap;
+  onSaveApiKey: (provider: Provider, key: string) => Promise<boolean>;
 }
 
 export default function Sidebar({
@@ -51,6 +58,8 @@ export default function Sidebar({
   onChangeOrchestrationModel,
   onChangeWorkerModel,
   onResetWorkerModel,
+  modelKeys,
+  onSaveApiKey,
 }: Props) {
   return (
     <aside className="sidebar">
@@ -69,6 +78,8 @@ export default function Sidebar({
           onChangeOrchestration={onChangeOrchestrationModel}
           onChangeWorker={onChangeWorkerModel}
           onResetWorker={onResetWorkerModel}
+          keys={modelKeys}
+          onSaveKey={onSaveApiKey}
           disabled={isRunning}
         />
 

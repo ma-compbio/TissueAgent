@@ -48,6 +48,8 @@ export default function App() {
         onChangeOrchestrationModel={modelHook.setOrchestration}
         onChangeWorkerModel={modelHook.setWorker}
         onResetWorkerModel={modelHook.unpinWorker}
+        modelKeys={modelHook.keys}
+        onSaveApiKey={modelHook.setApiKey}
       />
 
       <main className="main-area">

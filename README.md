@@ -51,11 +51,13 @@ TissueAgent/
    git submodule update --init --recursive
    ```
 
-2. Export your LLM credentials. At minimum `OPENAI_API_KEY` must be set for the default agents to function. Export `ANTHROPIC_API_KEY` as well if you plan to select a Claude model in the UI:
+2. Set up your LLM credentials. See [LLM credentials](#llm-credentials) below for the full list of supported providers and models. At minimum, one provider key is required — by default that's `OPENAI_API_KEY`:
    ```bash
    export OPENAI_API_KEY="sk-..."
-   export ANTHROPIC_API_KEY="sk-ant-..."   # optional, required to use Claude models
+   export ANTHROPIC_API_KEY="sk-ant-..."     # optional, for Claude models
+   export OPENROUTER_API_KEY="sk-or-..."     # optional, for OpenRouter
    ```
+   You can also paste keys directly into the web UI (sidebar → **API keys**); UI values override env vars and stay in server memory until cleared.
 
 ### Option A1: Using conda
 
@@ -211,10 +213,11 @@ Notebook-based demos are available in `demo/` and can be run end-to-end to repro
 
 1. Complete repository setup above and activate the environment
 
-2. Export your LLM credentials:
+2. Export your LLM credentials (see [LLM credentials](#llm-credentials) for the full list):
    ```bash
    export OPENAI_API_KEY="sk-..."
-   export ANTHROPIC_API_KEY="sk-ant-..."   # optional, required to use Claude models
+   export ANTHROPIC_API_KEY="sk-ant-..."     # optional, for Claude models
+   export OPENROUTER_API_KEY="sk-or-..."     # optional, for OpenRouter
    ```
 3. Launch Jupyter:
    ```bash
@@ -231,6 +234,30 @@ Notebook-based demos are available in `demo/` and can be run end-to-end to repro
 Outputs are written to `data/` and copied into `demo/outputs/{TASK}`. Execution transcripts are saved to `demo/outputs/{TASK}/transcript.log`.
 
 See `demo/README.md` for more details.
+
+## LLM credentials
+
+TissueAgent supports different providers. You only need a key for the providers whose models you intend to use. At least one provider key must be available before the agent can run.
+
+You can supply keys in two ways:
+
+- **Environment variable** (recommended for headless or notebook use). Export the variables listed below before launching the server or notebook.
+- **Through the web UI**: open the sidebar → **API keys** and paste a key per provider. UI-typed keys are held in server memory only, override the matching env var while set, and can be cleared from the same UI.
+
+| Provider | Get a key | Environment variable | Default model | Other supported models |
+|---|---|---|---|---|
+| **OpenAI** | https://platform.openai.com/api-keys | `OPENAI_API_KEY` | `gpt-5.1` *(global default)* | `gpt-5.4`, `gpt-5`, `gpt-5-mini` |
+| **Anthropic** | https://console.anthropic.com/settings/keys | `ANTHROPIC_API_KEY` | `claude-opus-4-7` | `claude-sonnet-4-6` |
+| **OpenRouter** | https://openrouter.ai/keys | `OPENROUTER_API_KEY` | `openrouter/gpt-5.1` | `openrouter/gpt-5.4`, `openrouter/gpt-5`, `openrouter/gpt-5-mini`, `openrouter/claude-opus-4-7`, `openrouter/claude-sonnet-4-6` |
+
+OpenRouter is an API gateway: the same OpenAI and Anthropic models are reachable through it using your single OpenRouter key, which is useful when you only want to manage one credential or when one of the upstream providers is unavailable.
+
+**Model selection.** The UI exposes two dropdowns in the sidebar:
+
+- **Orchestration agents** — the planner / recruiter / manager / evaluator / reporter
+- **Expert agents** — the worker sub-agents (coding, hypothesis, single-cell, etc.)
+
+Changing the orchestration model also updates the expert model by default; click **sync** next to the Expert dropdown to re-link them after you've changed it independently. Model changes take effect on your next message.
 
 ## Data Availability
 
