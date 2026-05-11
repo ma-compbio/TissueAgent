@@ -10,6 +10,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, MessagesState, START, StateGraph
 
 from agents.agent_utils import extract_block
+from agents.repl_history import compress_repl_history
 from langchain_experimental.utilities import PythonREPL
 from agents.agent_registry.coding_agent.tools_impl.documentation_index import (
     DocumentationIndex,
@@ -115,8 +116,12 @@ def create_coding_agent(state_queue: Queue):
         messages = state["messages"]
         system_prompt = SystemMessage(CodingAgentBasePrompt)
 
+        # Strategy 2H: collapse older REPL iterations before re-sending.
+        # State remains untouched; only the request to the model shrinks.
+        compressed = compress_repl_history(messages)
+
         logging.info("invoking agent_node")
-        response = model.invoke([system_prompt] + messages)
+        response = model.invoke([system_prompt] + compressed)
         logging.info("finished invoking agent_node")
 
         response.name = id

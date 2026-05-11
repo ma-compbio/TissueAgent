@@ -11,6 +11,7 @@ from langgraph.graph import END, MessagesState, START, StateGraph
 
 from agents.agent_utils import extract_block
 from agents.agent_registry.hypothesis_agent.tools import HypothesisTools
+from agents.repl_history import compress_repl_history
 from langchain_experimental.utilities import PythonREPL
 from agents.agent_registry.hypothesis_agent.prompt import (
     HypothesisAgentPrompt,
@@ -58,8 +59,11 @@ def create_hypothesis_agent(state_queue: Queue):
         messages = state["messages"]
         system_prompt = SystemMessage(HypothesisAgentPrompt)
 
+        # Strategy 2H: collapse older REPL iterations before re-sending.
+        compressed = compress_repl_history(messages)
+
         logging.info(f"invoking {id} agent_node")
-        response = model.invoke([system_prompt] + messages)
+        response = model.invoke([system_prompt] + compressed)
         logging.info(f"finished invoking {id} agent_node")
 
         response.name = id

@@ -54,7 +54,15 @@ export default function App() {
 
       <main className="main-area">
         <div className="top-bar">
-          <h1 className="app-title">TissueAgent</h1>
+          <div className="app-brand">
+            <img
+              src="/tissueagent-icon.png"
+              alt=""
+              aria-hidden="true"
+              className="app-logo"
+            />
+            <h1 className="app-title">TissueAgent</h1>
+          </div>
           <div className="top-bar-right">
             <div className="connection-status">
               <span

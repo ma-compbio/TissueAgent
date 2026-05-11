@@ -145,6 +145,25 @@ body {
   background: var(--bg-primary);
 }
 
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.app-logo {
+  width: 32px;
+  height: 32px;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .app-logo {
+  /* Icon is dark on transparent — invert + hue-correct so it reads on a dark UI. */
+  filter: invert(1) hue-rotate(180deg) brightness(1.05);
+}
+
 .app-title {
   font-size: 1.5rem;
   font-weight: 600;

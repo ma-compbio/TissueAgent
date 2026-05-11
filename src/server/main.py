@@ -15,8 +15,6 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-import anthropic
-import openai
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -24,17 +22,20 @@ from fastapi.staticfiles import StaticFiles
 import models as model_registry
 from graph.graph import create_tissueagent_graph
 from graph.graph_utils import register_ui_event_queue
+from server.rate_limit import with_header_retry
 from server.routes import chat, files, models as models_route, sessions
 from server.session_manager import session
 from server.utils import reset_data_directories
 
 
 def _bind_retry(model):
-    """Wrap a model with retry logic for rate-limit errors."""
-    return model.with_retry(
-        retry_if_exception_type=(openai.RateLimitError, anthropic.RateLimitError),
-        stop_after_attempt=6,
-    )
+    """Wrap a model with header-driven rate-limit retry (strategy 1A).
+
+    Honors provider Retry-After / retry-after-ms headers on 429s so the
+    wait time tracks the actual rate-limit window instead of guessing
+    via exponential backoff.
+    """
+    return with_header_retry(model, max_attempts=6)
 
 
 def _compile_graph() -> None:

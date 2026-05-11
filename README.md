@@ -250,7 +250,6 @@ You can supply keys in two ways:
 | **Anthropic** | https://console.anthropic.com/settings/keys | `ANTHROPIC_API_KEY` | `claude-opus-4-7` | `claude-sonnet-4-6` |
 | **OpenRouter** | https://openrouter.ai/keys | `OPENROUTER_API_KEY` | `openrouter/gpt-5.1` | `openrouter/gpt-5.4`, `openrouter/gpt-5`, `openrouter/gpt-5-mini`, `openrouter/claude-opus-4-7`, `openrouter/claude-sonnet-4-6` |
 
-OpenRouter is an API gateway: the same OpenAI and Anthropic models are reachable through it using your single OpenRouter key, which is useful when you only want to manage one credential or when one of the upstream providers is unavailable.
 
 **Model selection.** The UI exposes two dropdowns in the sidebar:
 
