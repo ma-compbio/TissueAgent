@@ -7,10 +7,7 @@ recursion limit and log file location.
 
 import os
 from datetime import datetime
-from functools import partial
 from zoneinfo import ZoneInfo
-
-from langchain_openai import ChatOpenAI
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -34,4 +31,9 @@ LOG_TO_FILE = (
     )
 )
 
-DefaultModelCtor = partial(ChatOpenAI, model="gpt-5", reasoning_effort="high")
+from models import model_ctor_for_role  # noqa: E402  (import after dotenv/env setup)
+
+# Resolves the currently-selected orchestration model at call time so that
+# updating the selection via the /api/models route takes effect on the
+# next graph rebuild.
+DefaultModelCtor = model_ctor_for_role("orchestration")

@@ -21,9 +21,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+import models as model_registry
 from graph.graph import create_tissueagent_graph
 from graph.graph_utils import register_ui_event_queue
-from server.routes import chat, files, sessions
+from server.routes import chat, files, models as models_route, sessions
 from server.session_manager import session
 from server.utils import reset_data_directories
 
@@ -36,6 +37,24 @@ def _bind_retry(model):
     )
 
 
+def _compile_graph() -> None:
+    """(Re)compile the agent graph using the currently-selected models."""
+    graph = create_tissueagent_graph(session.state_queue, _bind_retry)
+    session.agent = graph.compile()
+    session.model_revision = model_registry.get_revision()
+    logging.info(
+        "TissueAgent graph compiled with selection=%s (rev %d).",
+        model_registry.get_selection(),
+        session.model_revision,
+    )
+
+
+def ensure_graph_current() -> None:
+    """Rebuild the graph if the model selection changed since the last compile."""
+    if getattr(session, "model_revision", None) != model_registry.get_revision():
+        _compile_graph()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: reset dirs, compile graph, register queues."""
@@ -45,8 +64,7 @@ async def lifespan(app: FastAPI):
     register_ui_event_queue(session.ui_event_queue)
 
     # Compile the agent graph
-    graph = create_tissueagent_graph(session.state_queue, _bind_retry)
-    session.agent = graph.compile()
+    _compile_graph()
 
     logging.info("TissueAgent graph compiled and ready.")
     yield
@@ -70,6 +88,7 @@ app.add_middleware(
 # Mount API routes
 app.include_router(chat.router)
 app.include_router(files.router)
+app.include_router(models_route.router)
 app.include_router(sessions.router)
 
 # Serve React build in production (if dist/ exists)

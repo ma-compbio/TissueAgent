@@ -129,6 +129,10 @@ async def _handle_user_message(ws: WebSocket, data: dict):
     # Record prefix for post-run linkage
     rendered_prefix = len(session.agent_state["messages"])
 
+    # Rebuild the agent graph if the user changed the model since the last turn.
+    from server.main import ensure_graph_current
+    ensure_graph_current()
+
     # Invoke agent in background thread
     session.is_running = True
     start_time = time.perf_counter()

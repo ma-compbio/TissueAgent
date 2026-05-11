@@ -21,8 +21,9 @@ class SessionState:
     def __init__(self) -> None:
         self._lock = threading.Lock()
 
-        # Agent graph (set once at startup)
+        # Agent graph (compiled at startup, recompiled when model selection changes)
         self.agent: Optional[CompiledStateGraph] = None
+        self.model_revision: Optional[int] = None
 
         # Core conversation state
         self.agent_state: Dict[str, Any] = {

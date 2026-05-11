@@ -51,9 +51,10 @@ TissueAgent/
    git submodule update --init --recursive
    ```
 
-2. Export your LLM credentials. At minimum `OPENAI_API_KEY` must be set for the default agents to function:
+2. Export your LLM credentials. At minimum `OPENAI_API_KEY` must be set for the default agents to function. Export `ANTHROPIC_API_KEY` as well if you plan to select a Claude model in the UI:
    ```bash
    export OPENAI_API_KEY="sk-..."
+   export ANTHROPIC_API_KEY="sk-ant-..."   # optional, required to use Claude models
    ```
 
 ### Option A1: Using conda
@@ -213,6 +214,7 @@ Notebook-based demos are available in `demo/` and can be run end-to-end to repro
 2. Export your LLM credentials:
    ```bash
    export OPENAI_API_KEY="sk-..."
+   export ANTHROPIC_API_KEY="sk-ant-..."   # optional, required to use Claude models
    ```
 3. Launch Jupyter:
    ```bash

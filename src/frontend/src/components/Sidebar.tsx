@@ -1,5 +1,7 @@
 import type { FileInfo, SessionInfo } from "../types/messages";
+import type { ModelOption, ModelSelection } from "../hooks/useModels";
 import FileUpload from "./FileUpload";
+import ModelPicker from "./ModelPicker";
 import PlanViewer, { type PlanEntry } from "./PlanViewer";
 import SessionManager from "./SessionManager";
 
@@ -19,6 +21,12 @@ interface Props {
   planPrompt: string | null;
   planEntries: PlanEntry[];
   isRunning: boolean;
+  models: ModelOption[];
+  modelSelection: ModelSelection | null;
+  workerPinned: boolean;
+  onChangeOrchestrationModel: (id: string) => void;
+  onChangeWorkerModel: (id: string) => void;
+  onResetWorkerModel: () => void;
 }
 
 export default function Sidebar({
@@ -37,6 +45,12 @@ export default function Sidebar({
   planPrompt,
   planEntries,
   isRunning,
+  models,
+  modelSelection,
+  workerPinned,
+  onChangeOrchestrationModel,
+  onChangeWorkerModel,
+  onResetWorkerModel,
 }: Props) {
   return (
     <aside className="sidebar">
@@ -44,6 +58,18 @@ export default function Sidebar({
         <FileUpload
           uploadedFiles={uploadedFiles}
           onUploadFiles={onUploadFiles}
+        />
+
+        <div className="upload-divider" />
+
+        <ModelPicker
+          models={models}
+          selection={modelSelection}
+          workerPinned={workerPinned}
+          onChangeOrchestration={onChangeOrchestrationModel}
+          onChangeWorker={onChangeWorkerModel}
+          onResetWorker={onResetWorkerModel}
+          disabled={isRunning}
         />
 
         <div className="upload-divider" />

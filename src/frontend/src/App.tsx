@@ -3,6 +3,7 @@ import ChatView from "./components/ChatView";
 import FileBrowser from "./components/FileBrowser";
 import { extractPlanData } from "./components/PlanViewer";
 import Sidebar from "./components/Sidebar";
+import { useModels } from "./hooks/useModels";
 import { useSession } from "./hooks/useSession";
 import { useWebSocket } from "./hooks/useWebSocket";
 import "./styles/index.css";
@@ -10,6 +11,7 @@ import "./styles/index.css";
 export default function App() {
   const ws = useWebSocket();
   const session = useSession();
+  const modelHook = useModels();
 
   const [enableDebug, setEnableDebug] = useState(false);
   const [showFileBrowser, setShowFileBrowser] = useState(false);
@@ -37,6 +39,12 @@ export default function App() {
         planPrompt={planData.prompt}
         planEntries={planData.entries}
         isRunning={ws.isRunning}
+        models={modelHook.models}
+        modelSelection={modelHook.selection}
+        workerPinned={modelHook.workerPinned}
+        onChangeOrchestrationModel={modelHook.setOrchestration}
+        onChangeWorkerModel={modelHook.setWorker}
+        onResetWorkerModel={modelHook.unpinWorker}
       />
 
       <main className="main-area">

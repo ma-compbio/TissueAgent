@@ -1,12 +1,10 @@
 """Model and parameter configuration for the coding agent."""
-from functools import partial
 from pathlib import Path
-from langchain_openai import ChatOpenAI
 
-# Model constructor configuration
-model_ctor = partial(ChatOpenAI, model="gpt-5")  # reasoning_effort="medium"
-# reasoning_effort: "low", "medium", "high"
-# note: reasoning tokens are counted in API cost
+from models import model_ctor_for_role
+
+# Coding agent is a worker sub-agent; resolves the worker model at call time.
+model_ctor = model_ctor_for_role("worker")
 
 # Documentation file paths - mapping library names to their JSON files
 doc_filepaths = {

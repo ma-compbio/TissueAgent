@@ -22,6 +22,9 @@ from agents.evaluator_agent.prompt import EvaluatorPrompt
 from agents.reporter_agent.prompt import ReporterPrompt
 from agents.reporter_agent.tools import ReporterTools
 from config import DefaultModelCtor
+from models import model_ctor_for_role
+
+WorkerModelCtor = model_ctor_for_role("worker")
 
 import agents.agent_registry.coding_agent.model as CodingAgent
 from agents.agent_registry.coding_agent.prompt import CodingAgentDescription
@@ -172,7 +175,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         description=PDFReaderAgentDescription,
         prompt=PDFReaderAgentPrompt,
         tools=PDFReaderTools,
-        model_ctor=DefaultModelCtor,
+        model_ctor=WorkerModelCtor,
     ),
     ReActAgent(
         id="searcher",
@@ -180,7 +183,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         description=SearcherDescription,
         prompt=SearcherPrompt,
         tools=SearcherTools,
-        model_ctor=DefaultModelCtor,
+        model_ctor=WorkerModelCtor,
     ),
     ReActAgent(
         id="single_cell",
@@ -188,7 +191,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         description=SingleCellDescription,
         prompt=SingleCellPrompt,
         tools=SingleCellTools,
-        model_ctor=DefaultModelCtor,
+        model_ctor=WorkerModelCtor,
     ),
     ReActAgent(
         id="critic",
@@ -196,7 +199,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         description=CriticAgentDescription,
         prompt=CriticAgentPrompt,
         tools=CriticTools,
-        model_ctor=DefaultModelCtor,
+        model_ctor=WorkerModelCtor,
     ),
     ReActAgent(
         id="gene_agent",
@@ -204,7 +207,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         description=GeneAgentDescription,
         prompt=GeneAgentPrompt,
         tools=GeneAgentTools,
-        model_ctor=DefaultModelCtor,
+        model_ctor=WorkerModelCtor,
     ),
 
     ReActAgent(
@@ -213,7 +216,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         description = CellTissueAnnotationDescription,
         prompt      = CellTissueAnnotationPrompt,
         tools       = CellAnnotaterTools,
-        model_ctor  = DefaultModelCtor,
+        model_ctor  = WorkerModelCtor,
     ),
     ReActAgent(
         id="spot",
@@ -221,7 +224,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         description=SpotDescription,
         prompt=SpotPrompt,
         tools=SpotTools,
-        model_ctor=DefaultModelCtor,
+        model_ctor=WorkerModelCtor,
     ),
     CustomAgent(
         id="hypothesis",
