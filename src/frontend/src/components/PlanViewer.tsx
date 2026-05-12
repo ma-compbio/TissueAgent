@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { SerializedMessage } from "../types/messages";
+import AgentAvatar from "./AgentAvatar";
 
 export interface PlanEntry {
   id: string;
@@ -135,7 +136,12 @@ export default function PlanViewer({ prompt, entries, isRunning }: Props) {
                 <span className="plan-step-toggle">
                   {isExpanded ? "▼" : "▶"}
                 </span>
-                <span className="plan-step-avatar">{entry.avatar}</span>
+                <AgentAvatar
+                  name={entry.agentName}
+                  fallback={entry.avatar}
+                  size={18}
+                  className="plan-step-avatar"
+                />
                 <span className="plan-step-label">{entry.label}</span>
                 <span className="plan-step-title">{entry.title}</span>
               </button>

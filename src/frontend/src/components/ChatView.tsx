@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SerializedMessage, SubagentTranscript } from "../types/messages";
+import AgentAvatar from "./AgentAvatar";
 import MessageBubble, { AgentRunCard, type AgentRun } from "./MessageBubble";
 import TracePanel from "./TracePanel";
 
@@ -337,7 +338,11 @@ export default function ChatView({
                   onClick={() => handleSelectTrace(invId)}
                 >
                   <div className="subagent-card-header">
-                    <span className="avatar">{trace.avatar}</span>
+                    <AgentAvatar
+                      name={trace.agent_name}
+                      fallback={trace.avatar}
+                      size={22}
+                    />
                     <span className="subagent-card-name">{trace.agent_name}</span>
                     <span className="subagent-card-action">
                       <span className="live-dot" />
