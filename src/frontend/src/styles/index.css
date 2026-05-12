@@ -160,8 +160,8 @@ body {
 }
 
 [data-theme="dark"] .app-logo {
-  /* Icon is dark on transparent — invert + hue-correct so it reads on a dark UI. */
-  filter: invert(1) hue-rotate(180deg) brightness(1.05);
+  /* TissueAgent icon is dark line art on transparent. Invert to read on a dark UI. */
+  filter: invert(0.92) hue-rotate(180deg);
 }
 
 .app-title {
@@ -418,10 +418,13 @@ body {
   object-fit: contain;
 }
 
-[data-theme="dark"] .agent-avatar-img {
-  /* The orchestration icons are dark line art on transparent backgrounds.
-     Invert + hue-correct so they remain readable on dark surfaces. */
-  filter: invert(1) hue-rotate(180deg) brightness(1.05);
+/* Dark line-art icons (no significant brand color) need lightening on
+   dark backgrounds. Colored icons (planner/manager/reporter) read fine
+   as-is so we leave them alone. */
+[data-theme="dark"] .agent-avatar-img[src*="tissueagent-icon"],
+[data-theme="dark"] .agent-avatar-img[src*="recruiter_icon"],
+[data-theme="dark"] .agent-avatar-img[src*="evaluator_icon"] {
+  filter: invert(0.92) hue-rotate(180deg);
 }
 
 .label {
