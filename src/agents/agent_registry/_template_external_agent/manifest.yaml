@@ -1,0 +1,38 @@
+# --- COPY THIS FILE TO YOUR EXTERNAL AGENT'S FOLDER AND FILL IN ---
+#
+# Declarative metadata for an external agent. See INTEGRATING.md at the
+# repository root for the field reference and the worked gene_agent
+# example.
+
+id: my_agent              # required; lowercase snake_case; must match folder name
+name: My Agent            # required; human-readable
+version: 0.1.0            # required; semver
+description: >
+  One- or two-sentence summary of what this agent does and what input
+  it expects. The recruiter agent reads this to decide when to invoke.
+
+# Optional: pin the upstream code you're adapting.
+upstream:
+  repo: https://github.com/example-org/example-repo.git
+  commit: 0000000000000000000000000000000000000000
+  submodule_path: upstream
+
+# Optional: LLM configuration for the adapter. Most external agents will
+# either follow TissueAgent's UI selection (omit `pinned_model`) or pin
+# to a specific model for reproducibility (set `pinned_model`).
+llm:
+  pinned_model: gpt-5.1
+  required_env_vars:
+    - OPENAI_API_KEY
+
+# Optional: subdirectory under data/ where artifacts go. Defaults to the
+# agent id if omitted.
+data_subdir: my_agent
+
+# Optional: the tool the manager will see. Names should be globally
+# unique within TissueAgent.
+tool:
+  name: my_agent_run_tool
+  description: >
+    Describe in one sentence what the manager should expect when invoking
+    this tool, including required arguments and the shape of the return.

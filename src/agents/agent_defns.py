@@ -49,11 +49,7 @@ from agents.agent_registry.critic_agent.prompt import (
     CriticAgentDescription,
 )
 from agents.agent_registry.critic_agent.tools import CriticTools
-from agents.agent_registry.gene_agent.prompt import (
-    GeneAgentPrompt,
-    GeneAgentDescription,
-)
-from agents.agent_registry.gene_agent.tools import GeneAgentTools
+from agents.agent_registry.gene_agent import agent_definition as GeneAgentDef
 from agents.agent_registry.cell_annotater_agent.prompt import (
     CellTissueAnnotationPrompt,
     CellTissueAnnotationDescription
@@ -202,12 +198,12 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         model_ctor=WorkerModelCtor,
     ),
     ReActAgent(
-        id="gene_agent",
-        name="Gene Agent",
-        description=GeneAgentDescription,
-        prompt=GeneAgentPrompt,
-        tools=GeneAgentTools,
-        model_ctor=WorkerModelCtor,
+        id=GeneAgentDef.id,
+        name=GeneAgentDef.name,
+        description=GeneAgentDef.description,
+        prompt=GeneAgentDef.prompt,
+        tools=GeneAgentDef.tools,
+        model_ctor=GeneAgentDef.model_ctor,
     ),
 
     ReActAgent(

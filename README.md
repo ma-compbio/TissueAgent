@@ -258,6 +258,40 @@ You can supply keys in two ways:
 
 Changing the orchestration model also updates the expert model by default; click **sync** next to the Expert dropdown to re-link them after you've changed it independently. Model changes take effect on your next message.
 
+## External agents
+
+TissueAgent integrates third-party research agents through a thin adapter layer. The included external agent is **GeneAgent** ([ncbi-nlp/GeneAgent](https://github.com/ncbi-nlp/GeneAgent)), which interprets a gene list and returns a verified biological-process narrative.
+
+### Installing GeneAgent
+
+GeneAgent's source is included as a git submodule pinned to a tested upstream commit. The standard `git clone --recurse-submodules ...` from the [repository set-up](#repository-set-up) section fetches it automatically. If you cloned without `--recurse-submodules`, run:
+
+```bash
+git submodule update --init --recursive
+```
+
+This populates `src/agents/agent_registry/gene_agent/upstream/` with the GeneAgent repository. No additional pip install is required — TissueAgent imports the upstream code directly through its adapter.
+
+**Verify the submodule is present:**
+
+```bash
+ls src/agents/agent_registry/gene_agent/upstream/main_cascade.py
+```
+
+If the file is missing, re-run the `git submodule update` command above.
+
+### Credentials and model
+
+GeneAgent always calls **OpenAI `gpt-5.1`** regardless of which model you've selected for TissueAgent's orchestration or expert agents. This keeps GeneAgent's behavior reproducible across sessions. You must therefore have `OPENAI_API_KEY` available (as an environment variable or pasted into the web UI's *API keys* panel) before invoking the Gene Agent.
+
+### Artifacts
+
+Each Gene Agent invocation writes to `data/gene_agent/<request_id>/` — a final summary, a claims-and-verification log, and the initial GPT response. The absolute paths are returned in the tool output so downstream agents and the user can reference them.
+
+### Adding your own external agent
+
+The full integration recipe — file structure, manifest schema, LLM-compatibility shim, common pitfalls — is documented in [`INTEGRATING.md`](INTEGRATING.md) at the repository root, with the Gene Agent integration as the worked example. A copy-paste skeleton lives at `src/agents/agent_registry/_template_external_agent/`.
+
 ## Data Availability
 
 All datasets referenced in the manuscript are publicly available:
