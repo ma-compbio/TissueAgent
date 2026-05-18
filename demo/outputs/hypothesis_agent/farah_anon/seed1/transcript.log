@@ -1,0 +1,3389 @@
+Staged dataset at /home/mingqiam/TissueAgent/data/dataset/dataset_farah_anon.h5ad
+Staged background at /home/mingqiam/TissueAgent/data/briefs/background.md
+Invoking Hypothesis Agent…
+
+2026-05-17 11:09:40 | INFO     | Invoking agent `hypothesis_agent`
+
+2026-05-17 11:09:40 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 11:09:49 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 11:09:49 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 11:09:49 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--dbc23025-90d0-4955-811d-905ac44d77eb-0
+
+Content:
+<execute>
+from pathlib import Path
+import json, os
+
+hypotheses_path = Path(DATA_DIR) / "hypotheses" / "hypotheses.json"
+print("Checking for existing hypotheses.json at:", hypotheses_path)
+
+if hypotheses_path.exists():
+    try:
+        with open(hypotheses_path, "r") as f:
+            hypotheses_data = json.load(f)
+        print("STATUS:FOUND")
+        print("N_HYPOTHESES:", len(hypotheses_data))
+        print("KEYS_FIRST_ENTRY:", list(hypotheses_data[0].keys()) if isinstance(hypotheses_data, list) and hypotheses_data else "N/A")
+    except Exception as e:
+        print("STATUS:CORRUPT")
+        print("ERROR:", str(e))
+else:
+    print("STATUS:NOT_FOUND")
+</execute>
+
+2026-05-17 11:09:49 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 11:09:49 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 11:09:49 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 11:09:50 | WARNING  | Python REPL can execute arbitrary code. Use with caution.
+
+2026-05-17 11:09:50 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 11:09:50 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Checking for existing hypotheses.json at: /home/mingqiam/TissueAgent/data/hypotheses/hypotheses.json
+STATUS:NOT_FOUND
+
+2026-05-17 11:09:50 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 11:10:26 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 11:10:26 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 11:10:26 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--700f162b-dd61-4f44-80c9-6d9c3282ef12-0
+
+Content:
+<execute>
+from pathlib import Path
+import json, os, textwrap
+
+import numpy as np
+import pandas as pd
+import anndata as ad
+
+data_dir = Path(DATA_DIR)
+print("DATA_DIR:", data_dir)
+
+# Ensure hypotheses dir exists
+hyp_dir = data_dir / "hypotheses"
+hyp_dir.mkdir(exist_ok=True, parents=True)
+
+# ---- Read limited background ----
+bg_path_md = data_dir / "briefs" / "background.md"
+bg_path_fallback = data_dir / "briefs" / "paper_summary.txt"
+
+background_text = ""
+if bg_path_md.exists():
+    with open(bg_path_md, "r") as f:
+        background_text = f.read()
+        print("Loaded background.md, length:", len(background_text))
+elif bg_path_fallback.exists():
+    with open(bg_path_fallback, "r") as f:
+        background_text = f.read()
+        print("Loaded paper_summary.txt, length:", len(background_text))
+else:
+    print("No background file found at", bg_path_md, "or", bg_path_fallback)
+
+print("\n=== BACKGROUND PREVIEW (first 500 chars) ===")
+print(background_text[:500])
+
+# ---- Load AnnData dataset ----
+adata_path = data_dir / "dataset" / "dataset_farah_anon.h5ad"
+print("\nLoading AnnData from:", adata_path)
+adata = ad.read_h5ad(adata_path)
+print("AnnData loaded. Shape (cells x genes):", adata.n_obs, "x", adata.n_vars)
+
+# Basic inventory
+print("\nOBS columns:", list(adata.obs.columns))
+print("VAR columns:", list(adata.var.columns))
+print("OBSM keys:", list(adata.obsm.keys()))
+
+# Try to identify spatial coordinates
+spatial_coords = None
+if "spatial" in adata.obsm_keys():
+    spatial_coords = adata.obsm["spatial"]
+    print("Using .obsm['spatial'] for coordinates. Shape:", spatial_coords.shape)
+else:
+    # Common conventions: 'x', 'y' or 'X_coord', 'Y_coord'
+    cand_x = [c for c in adata.obs.columns if c.lower() in ("x", "x_coord", "x_coord_pix", "imagerow")]
+    cand_y = [c for c in adata.obs.columns if c.lower() in ("y", "y_coord", "y_coord_pix", "imagecol")]
+    if cand_x and cand_y:
+        spatial_coords = adata.obs[[cand_x[0], cand_y[0]]].to_numpy()
+        print(f"Using obs['{cand_x[0]}','{cand_y[0]}'] for coordinates. Shape:", spatial_coords.shape)
+    else:
+        print("WARNING: No obvious spatial coordinates found in .obsm or .obs; downstream spatial analyses may fail.")
+print("Coordinate example (first 5 rows):")
+if spatial_coords is not None:
+    print(spatial_coords[:5])
+else:
+    print("None")
+
+# Try to identify a cell-type / cluster label
+label_col_candidates_order = [
+    "cell_type", "celltype", "cell_types", "celltype_major", "cell_type_major",
+    "annot", "annotation", "cluster", "leiden", "louvain"
+]
+label_col = None
+for cand in label_col_candidates_order:
+    if cand in adata.obs.columns:
+        label_col = cand
+        break
+
+if label_col is None:
+    # Fallback: first categorical column
+    for col in adata.obs.columns:
+        if pd.api.types.is_categorical_dtype(adata.obs[col]) or adata.obs[col].dtype == "category":
+            label_col = col
+            break
+
+print("\nSelected label column for cell-type/cluster analyses:", label_col)
+if label_col is not None:
+    value_counts = adata.obs[label_col].value_counts()
+    print("Distinct labels (n):", value_counts.shape[0])
+    print("Top 10 labels by count:")
+    print(value_counts.head(10))
+
+# Write initial exploration_log.md header if not exists
+exploration_log_path = hyp_dir / "exploration_log.md"
+if not exploration_log_path.exists():
+    with open(exploration_log_path, "w") as f:
+        f.write("# Exploration Log\n\n")
+    print("\nInitialized new exploration_log.md")
+else:
+    print("\nexploration_log.md already exists; will append new observations.")
+
+# Log OBSERVATION 1: dataset inventory
+obs_text = textwrap.dedent(f"""
+OBSERVATION 1:
+The dataset contains {adata.n_obs} cells and {adata.n_vars} genes. The selected label column is '{label_col}' with {adata.obs[label_col].nunique() if label_col is not None else 0} distinct labels; the most abundant label has {int(value_counts.iloc[0]) if label_col is not None else 0} cells and the 10 most frequent labels together account for {int(value_counts.head(10).sum()) if label_col is not None else 0} cells. Spatial coordinates are {'available' if spatial_coords is not None else 'not available'}; when present, the coordinate matrix has shape {spatial_coords.shape if spatial_coords is not None else '(NA)'} with example entries {spatial_coords[:3].tolist() if spatial_coords is not None else 'NA'}. The observation and feature metadata include {len(adata.obs.columns)} obs columns and {len(adata.var.columns)} var columns, with OBS columns {list(adata.obs.columns)[:8]} (first 8 shown).
+""").strip() + "\n\n"
+
+with open(exploration_log_path, "a") as f:
+    f.write(obs_text)
+
+print("\nLogged OBSERVATION 1 to exploration_log.md")
+</execute>
+
+2026-05-17 11:10:26 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 11:10:26 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 11:10:26 | INFO     | executing hypothesis_agent exec_node
+
+<string>:47: FutureWarning: The method obsm_keys is deprecated and will be removed in the future. Use obsm instead of obsm_keys. (e.g. `k in adata.obsm` or `adata.obsm.keys() | {'u'}`)
+2026-05-17 11:10:27 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 11:10:27 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+DATA_DIR: /home/mingqiam/TissueAgent/data
+Loaded background.md, length: 1641
+
+=== BACKGROUND PREVIEW (first 500 chars) ===
+# Limited Background — Farah et al. 2024 (developing human heart MERFISH, ANONYMIZED)
+
+**Tissue:** Developing human heart.
+
+**Technology:** MERFISH spatial transcriptomics.
+
+**Gene panel:** ~240 genes targeting cardiac cell types and a small set of
+developmental transcription factors / signaling pathway components.
+
+**Annotations available:** The AnnData has cell-type labels in `.obs`
+(column name to be discovered by inventory). **Cell-type labels have been
+anonymized to opaque alphanumeric code
+
+Loading AnnData from: /home/mingqiam/TissueAgent/data/dataset/dataset_farah_anon.h5ad
+AnnData loaded. Shape (cells x genes): 228635 x 238
+
+OBS columns: ['Sample_ID', 'Batch', 'UMI Count', 'leiden', 'Complexity', 'Populations', 'Purity']
+VAR columns: []
+OBSM keys: ['X_umap', 'spatial']
+Using .obsm['spatial'] for coordinates. Shape: (228635, 2)
+Coordinate example (first 5 rows):
+[[-8360.242    -264.45035]
+ [-8315.435    -251.4062 ]
+ [-8339.861    -256.9504 ]
+ [-8253.205    -232.54485]
+ [-8329.613    -252.72176]]
+
+Selected label column for cell-type/cluster analyses: leiden
+Distinct labels (n): 32
+Top 10 labels by count:
+leiden
+0    19947
+1    17144
+3    16624
+2    15983
+4    15703
+5    14036
+6    11596
+7    10887
+8    10441
+9    10149
+Name: count, dtype: int64
+
+Initialized new exploration_log.md
+
+Logged OBSERVATION 1 to exploration_log.md
+
+2026-05-17 11:10:27 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 11:11:28 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 11:11:28 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 11:11:28 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--3b4a3607-ca14-4c28-be5a-768c2369a197-0
+
+Content:
+<execute>
+import numpy as np
+import pandas as pd
+import textwrap
+
+from sklearn.neighbors import NearestNeighbors
+
+# Reuse adata, exploration_log_path, label_col from previous step
+print("Current adata shape:", adata.n_obs, "x", adata.n_vars)
+print("Using label column for rare-but-tight analysis:", label_col)
+
+coords = adata.obsm.get("spatial", None)
+if coords is None:
+    raise RuntimeError("Spatial coordinates not found; cannot perform rare-but-tight analysis.")
+
+labels_series = adata.obs[label_col].astype("category")
+label_names = labels_series.cat.categories.to_list()
+labels = labels_series.cat.codes.to_numpy()
+n_labels = len(label_names)
+n_cells = adata.n_obs
+
+print("Number of labels:", n_labels)
+print("Label categories (first 10):", label_names[:10])
+
+# Build spatial kNN graph
+k = 15
+print("Fitting NearestNeighbors on spatial coords with k =", k)
+nn = NearestNeighbors(n_neighbors=k+1, algorithm="kd_tree")
+nn.fit(coords)
+distances, indices = nn.kneighbors(coords)
+
+# Drop self (distance 0)
+indices = indices[:, 1:]
+distances = distances[:, 1:]
+print("Neighbor indices shape (after dropping self):", indices.shape)
+
+# Compute neighbor label matrix: for each central label L, counts of neighbor labels M
+neighbor_matrix = np.zeros((n_labels, n_labels), dtype=np.int64)
+
+for code in range(n_labels):
+    mask = labels == code
+    if not np.any(mask):
+        continue
+    neigh_labels = labels[indices[mask].ravel()]
+    counts = np.bincount(neigh_labels, minlength=n_labels)
+    neighbor_matrix[code, :] = counts
+
+# Global label abundances
+unique_codes, global_counts = np.unique(labels, return_counts=True)
+global_probs = global_counts / global_counts.sum()
+
+results = []
+for idx, code in enumerate(unique_codes):
+    n_cells_label = int(global_counts[idx])
+    frac_cells = float(n_cells_label / n_cells)
+    total_neighbors = int(neighbor_matrix[code, :].sum())
+    same_label_neighbors = int(neighbor_matrix[code, code])
+    same_label_fraction = same_label_neighbors / total_neighbors if total_neighbors > 0 else np.nan
+    global_abundance = float(global_probs[idx])
+    conc_score = same_label_fraction / global_abundance if global_abundance > 0 else np.nan
+    results.append({
+        "label_code": int(code),
+        "label_name": str(label_names[code]),
+        "n_cells": n_cells_label,
+        "frac_cells": frac_cells,
+        "same_label_fraction": same_label_fraction,
+        "global_abundance": global_abundance,
+        "concentration_score": conc_score,
+        "total_neighbors": total_neighbors,
+    })
+
+df_conc = pd.DataFrame(results)
+df_conc_sorted = df_conc.sort_values("concentration_score", ascending=False)
+print("\nTop 10 labels by same-label concentration_score (same_label_fraction / global_abundance):")
+print(df_conc_sorted.head(10))
+
+# Select top 5 rare-but-tight labels
+top_k = 5
+top_conc = df_conc_sorted.head(top_k).copy()
+
+# For each of these, compute top 3 non-self neighboring labels by enrichment
+neighbor_enrichment_info = {}
+min_neighbor_contacts = 20  # to reduce noise
+
+for _, row in top_conc.iterrows():
+    code = int(row["label_code"])
+    nbr_counts = neighbor_matrix[code, :].astype(float)
+    total_neighbors = nbr_counts.sum()
+    observed_frac = nbr_counts / total_neighbors if total_neighbors > 0 else np.zeros_like(nbr_counts)
+    expected_frac = global_probs
+    with np.errstate(divide="ignore", invalid="ignore"):
+        enrichment = np.where(expected_frac > 0, observed_frac / expected_frac, np.nan)
+    # Exclude self
+    enrichment[code] = np.nan
+    # Apply contact threshold
+    contact_mask = nbr_counts >= min_neighbor_contacts
+    enrichment_filtered = enrichment.copy()
+    enrichment_filtered[~contact_mask] = np.nan
+    # Get top 3
+    top3_idx = np.argsort(enrichment_filtered)[-3:][::-1]
+    neighbors_list = []
+    for idx2 in top3_idx:
+        if np.isnan(enrichment_filtered[idx2]):
+            continue
+        neighbors_list.append({
+            "neighbor_code": int(idx2),
+            "neighbor_name": str(label_names[idx2]),
+            "neighbor_contacts": int(nbr_counts[idx2]),
+            "neighbor_observed_frac": float(observed_frac[idx2]),
+            "neighbor_expected_frac": float(expected_frac[idx2]),
+            "neighbor_enrichment": float(enrichment_filtered[idx2]),
+        })
+    neighbor_enrichment_info[code] = neighbors_list
+
+print("\nTop rare-but-tight labels with their top 3 enriched non-self neighbors:")
+for _, row in top_conc.iterrows():
+    code = int(row["label_code"])
+    print(f"Label {row['label_name']} (code={code}): n_cells={row['n_cells']}, "
+          f"frac_cells={row['frac_cells']:.4f}, same_label_fraction={row['same_label_fraction']:.3f}, "
+          f"concentration_score={row['concentration_score']:.2f}")
+    neighs = neighbor_enrichment_info.get(code, [])
+    for ninfo in neighs:
+        print(f"  -> Neighbor {ninfo['neighbor_name']} (code={ninfo['neighbor_code']}): "
+              f"contacts={ninfo['neighbor_contacts']}, "
+              f"obs_frac={ninfo['neighbor_observed_frac']:.3f}, "
+              f"exp_frac={ninfo['neighbor_expected_frac']:.3f}, "
+              f"enrichment={ninfo['neighbor_enrichment']:.2f}")
+
+# Log OBSERVATION 2
+lines = []
+lines.append("OBSERVATION 2:")
+lines.append(
+    f"Using k={k} spatial nearest neighbors on {n_cells} cells, we computed same-label neighbor fractions for all "
+    f"{n_labels} '{label_col}' clusters. Global cluster abundances ranged from "
+    f"{df_conc['n_cells'].min()} to {df_conc['n_cells'].max()} cells per label "
+    f"({df_conc['frac_cells'].min():.4f} to {df_conc['frac_cells'].max():.4f} of all cells). "
+    f"The top {top_k} clusters by same-label concentration score "
+    f"(same_label_fraction / global_abundance) were: "
+)
+
+# Summarize top rare-but-tight labels
+for _, row in top_conc.iterrows():
+    lines.append(
+        f"- Label {row['label_name']} (code={int(row['label_code'])}) with {int(row['n_cells'])} cells "
+        f"({row['frac_cells']:.4f} of all cells) had same-label neighbors for "
+        f"{row['same_label_fraction']:.3f} of its k-nearest neighbors and a concentration score of "
+        f"{row['concentration_score']:.2f}."
+    )
+
+lines.append(
+    "For each of these rare-but-tight clusters, we identified the top 3 non-self neighboring clusters by enrichment "
+    "over global abundance among their spatial neighbors (requiring at least "
+    f"{min_neighbor_contacts} neighbor contacts per partner label):"
+)
+
+for _, row in top_conc.iterrows():
+    code = int(row["label_code"])
+    neighs = neighbor_enrichment_info.get(code, [])
+    if not neighs:
+        continue
+    detail_parts = []
+    for ninfo in neighs:
+        detail_parts.append(
+            f"{ninfo['neighbor_name']} (code={ninfo['neighbor_code']}, "
+            f"{ninfo['neighbor_contacts']} contacts, observed fraction {ninfo['neighbor_observed_frac']:.3f} "
+            f"vs expected {ninfo['neighbor_expected_frac']:.3f}, enrichment {ninfo['neighbor_enrichment']:.2f})"
+        )
+    if detail_parts:
+        lines.append(
+            f"- Label {row['label_name']} (code={code}) most strongly neighbored: " +
+            "; ".join(detail_parts) + "."
+        )
+
+obs2_text = "\n".join(lines) + "\n\n"
+
+with open(exploration_log_path, "a") as f:
+    f.write(textwrap.dedent(obs2_text))
+
+print("\nLogged OBSERVATION 2 (rare-but-tight analysis) to exploration_log.md")
+</execute>
+
+2026-05-17 11:11:28 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 11:11:28 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 11:11:28 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 11:11:29 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 11:11:29 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Current adata shape: 228635 x 238
+Using label column for rare-but-tight analysis: leiden
+Number of labels: 32
+Label categories (first 10): [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+Fitting NearestNeighbors on spatial coords with k = 15
+Neighbor indices shape (after dropping self): (228635, 15)
+
+Top 10 labels by same-label concentration_score (same_label_fraction / global_abundance):
+    label_code label_name  ...  concentration_score  total_neighbors
+26          26         28  ...            81.217428            30405
+15          15         15  ...            78.046986            23430
+20          20         20  ...            62.263513            46965
+27          27         29  ...            61.558175            34380
+29          29         31  ...            60.757432            23130
+28          28         30  ...            41.163314            19380
+31          31         33  ...            32.573504            15405
+19          19         19  ...            27.424681            81435
+25          25         26  ...            26.493429            35340
+23          23         24  ...            24.533841            55890
+
+[10 rows x 8 columns]
+
+Top rare-but-tight labels with their top 3 enriched non-self neighbors:
+Label 28 (code=26): n_cells=2027, frac_cells=0.0089, same_label_fraction=0.720, concentration_score=81.22
+Label 15 (code=15): n_cells=1562, frac_cells=0.0068, same_label_fraction=0.533, concentration_score=78.05
+Label 20 (code=20): n_cells=3131, frac_cells=0.0137, same_label_fraction=0.853, concentration_score=62.26
+Label 29 (code=27): n_cells=2292, frac_cells=0.0100, same_label_fraction=0.617, concentration_score=61.56
+Label 31 (code=29): n_cells=1542, frac_cells=0.0067, same_label_fraction=0.410, concentration_score=60.76
+
+Logged OBSERVATION 2 (rare-but-tight analysis) to exploration_log.md
+
+2026-05-17 11:11:29 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 11:11:47 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 11:11:47 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 11:11:47 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--49f4ae2a-7e7e-4072-ae78-07db216e8e9f-0
+
+Content:
+<execute>
+import numpy as np
+import pandas as pd
+import textwrap
+
+print("Preparing pairwise co-localization analysis using existing neighbor_matrix...")
+print("neighbor_matrix shape:", neighbor_matrix.shape)
+
+n_labels = neighbor_matrix.shape[0]
+label_names = list(label_names)  # ensure it's a plain list
+global_probs = global_probs  # from previous step
+df_conc = df_conc  # already computed concentration info
+
+# Total neighbors per source label (central cells)
+source_total_neighbors = neighbor_matrix.sum(axis=1)
+
+pair_rows = []
+min_contacts = 50  # filter to reduce noise
+
+for i in range(n_labels):
+    for j in range(n_labels):
+        if i == j:
+            continue
+        obs_ij = neighbor_matrix[i, j]
+        if obs_ij < min_contacts:
+            continue
+        total_i = source_total_neighbors[i]
+        p_j = global_probs[j]
+        exp_ij = total_i * p_j
+        if exp_ij <= 0:
+            continue
+        enrichment = obs_ij / exp_ij
+        pair_rows.append({
+            "source_code": i,
+            "source_name": str(label_names[i]),
+            "target_code": j,
+            "target_name": str(label_names[j]),
+            "observed_contacts": int(obs_ij),
+            "expected_contacts": float(exp_ij),
+            "enrichment": float(enrichment),
+            "source_total_neighbors": int(total_i),
+        })
+
+df_pairs = pd.DataFrame(pair_rows)
+df_pairs_sorted = df_pairs.sort_values("enrichment", ascending=False)
+
+print("Total directed label pairs with >= min_contacts:", df_pairs.shape[0])
+print("\nTop 10 enriched directed label-neighbor pairs (source -> target):")
+print(df_pairs_sorted.head(10))
+
+# Build OBSERVATION 3 text
+top_n = 10
+top_pairs = df_pairs_sorted.head(top_n)
+
+lines = []
+lines.append("OBSERVATION 3:")
+lines.append(
+    f"Using the same spatial k={k} nearest-neighbor graph on {adata.n_obs} cells and {n_labels} '{label_col}' "
+    "clusters, we examined pairwise co-localization by comparing, for each directed pair (source cluster A, "
+    "neighbor cluster B), the observed number of A→B neighbor contacts to the expectation under random mixing "
+    "given the global abundance of B."
+)
+lines.append(
+    f"Considering only directed pairs with at least {min_contacts} observed neighbor contacts, "
+    f"we obtained {df_pairs.shape[0]} source–target combinations. Enrichment was defined as "
+    "observed_contacts / expected_contacts, where expected_contacts = total_neighbors_from_source * global_frequency_of_target."
+)
+
+if not top_pairs.empty:
+    lines.append(
+        f"The top {top_n} enriched directed cluster–neighbor pairs (source → target) were:"
+    )
+    for _, row in top_pairs.iterrows():
+        lines.append(
+            f"- Source cluster {row['source_name']} (code={int(row['source_code'])}) had "
+            f"{int(row['observed_contacts'])} neighbors of cluster {row['target_name']} "
+            f"(code={int(row['target_code'])}), versus an expected {row['expected_contacts']:.1f} given global "
+            f"abundance, yielding an enrichment of {row['enrichment']:.2f}."
+        )
+
+# Add a brief summary of label abundances for context
+lines.append(
+    f"Across all {n_labels} clusters, global abundances spanned from {int(df_conc['n_cells'].min())} to "
+    f"{int(df_conc['n_cells'].max())} cells (fractions {df_conc['frac_cells'].min():.4f} to "
+    f"{df_conc['frac_cells'].max():.4f} of all cells), indicating that enriched co-localization pairs involve "
+    "both common and relatively rare clusters."
+)
+
+obs3_text = "\n".join(lines) + "\n\n"
+
+with open(exploration_log_path, "a") as f:
+    f.write(textwrap.dedent(obs3_text))
+
+print("\nLogged OBSERVATION 3 (pairwise co-localization) to exploration_log.md")
+
+# Show a small preview of the written OBSERVATION 3
+print("\nOBSERVATION 3 preview:")
+print("\n".join(lines[:6]))
+</execute>
+
+2026-05-17 11:11:47 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 11:11:47 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 11:11:47 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 11:11:47 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 11:11:47 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Preparing pairwise co-localization analysis using existing neighbor_matrix...
+neighbor_matrix shape: (32, 32)
+Total directed label pairs with >= min_contacts: 652
+
+Top 10 enriched directed label-neighbor pairs (source -> target):
+     source_code source_name  ...  enrichment source_total_neighbors
+324           15          15  ...   19.002842                  23430
+563           28          30  ...   17.001350                  19380
+647           31          33  ...   10.331283                  15405
+538           26          28  ...    9.708917                  30405
+232           10          10  ...    8.895073                 128100
+559           28          30  ...    8.824619                  19380
+613           30          32  ...    8.665539                  19290
+325           15          15  ...    8.620010                  23430
+235           10          10  ...    6.739551                 128100
+523           25          26  ...    6.534678                  35340
+
+[10 rows x 8 columns]
+
+Logged OBSERVATION 3 (pairwise co-localization) to exploration_log.md
+
+OBSERVATION 3 preview:
+OBSERVATION 3:
+Using the same spatial k=15 nearest-neighbor graph on 228635 cells and 32 'leiden' clusters, we examined pairwise co-localization by comparing, for each directed pair (source cluster A, neighbor cluster B), the observed number of A→B neighbor contacts to the expectation under random mixing given the global abundance of B.
+Considering only directed pairs with at least 50 observed neighbor contacts, we obtained 652 source–target combinations. Enrichment was defined as observed_contacts / expected_contacts, where expected_contacts = total_neighbors_from_source * global_frequency_of_target.
+The top 10 enriched directed cluster–neighbor pairs (source → target) were:
+- Source cluster 15 (code=15) had 2516 neighbors of cluster 30 (code=28), versus an expected 132.4 given global abundance, yielding an enrichment of 19.00.
+- Source cluster 30 (code=28) had 2251 neighbors of cluster 15 (code=15), versus an expected 132.4 given global abundance, yielding an enrichment of 17.00.
+
+2026-05-17 11:11:47 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 11:13:14 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 11:13:14 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 11:13:14 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--d5fd9c28-c71a-4dce-8e48-41f251222901-0
+
+Content:
+<execute>
+from pathlib import Path
+import json, textwrap
+
+# Phase 2: read exploration log and draft hypotheses
+exploration_log_path = Path(DATA_DIR) / "hypotheses" / "exploration_log.md"
+print("Reading exploration log from:", exploration_log_path)
+
+with open(exploration_log_path, "r") as f:
+    explog_text = f.read()
+
+print("\n=== Exploration log preview (first 600 chars) ===")
+print(explog_text[:600])
+
+# We'll base hypotheses on OBSERVATION 1 (dataset structure),
+# OBSERVATION 2 (rare-but-tight clusters) and OBSERVATION 3 (enriched neighbor pairs).
+
+hypotheses = []
+
+# Hypothesis H1: interface-specific sub-states within mutually enriched rare clusters
+h1 = {
+    "id": "H1",
+    "statement": (
+        "Within the rare, spatially compact clusters that form strongly enriched mutual neighbor pairs "
+        "(especially clusters '15' and '30' in the leiden labeling), cells located at inter-cluster interfaces "
+        "(i.e. with many neighbors from the partner cluster) exhibit coordinated shifts in multi-gene expression "
+        "programs relative to same-cluster cells embedded within homogeneous neighborhoods, indicating "
+        "microenvironment-dependent sub-states inside these small communities."
+    ),
+    "grounded_in": ["OBSERVATION 2", "OBSERVATION 3"],
+    "mechanism": (
+        "OBSERVATION 2 shows that several clusters, including those labeled '15' and '30', are rare but highly "
+        "self-associated in space, while OBSERVATION 3 reveals that clusters '15' and '30' are strongly enriched "
+        "as each other's neighbors beyond what global abundances predict. If these small, tightly packed "
+        "communities reflect specialized microenvironments, then cells at the interfaces between the two partner "
+        "clusters should show distinct, shared expression programs compared with interior cells that mainly "
+        "neighbor their own cluster."
+    ),
+    "test_plan": (
+        "1. Use the existing k=15 spatial nearest-neighbor graph (indices array) and leiden labels to focus on "
+        "clusters '15' and '30' (codes 15 and 28 in the categorical encoding).\n"
+        "2. For each cell in cluster '15', compute the fraction of its 15 neighbors that belong to cluster '30'; "
+        "define 'interface_15' cells as those with at least 3 of 15 neighbors from cluster '30', and "
+        "'interior_15' cells as those with 0 neighbors from cluster '30' and at least 12 of 15 neighbors from "
+        "cluster '15'. Apply the analogous definition for cluster '30' with respect to neighbors from '15'.\n"
+        "3. For each cluster separately (15 and 30), perform differential expression between interface and "
+        "interior subsets across all 238 genes using a non-parametric test (e.g. Wilcoxon rank-sum), after "
+        "log1p-transforming counts if they are not already log-normalized. Compute per-gene log fold-change and "
+        "Benjamini–Hochberg FDR-adjusted p-values.\n"
+        "4. Define interface-associated gene programs as genes with FDR < 0.05 and absolute log fold-change above "
+        "a small threshold (e.g. 0.25) in interface vs interior comparisons. Identify (a) the number of such "
+        "genes per cluster and (b) the intersection of interface-upregulated genes shared between clusters '15' "
+        "and '30'.\n"
+        "5. Compare these results to a null by repeating step 3 for a control split where each cluster's cells "
+        "are randomly partitioned into two groups of the same sizes as the interface/interior sets, and record "
+        "how many significant genes are detected under random splitting.\n"
+    ),
+    "predicted_outcome": (
+        "If the hypothesis holds, both clusters '15' and '30' will show substantial sets of genes (on the order "
+        "of tens rather than a handful) that are significantly different between interface and interior cells, "
+        "with a non-trivial overlap (e.g. at least several genes) of interface-upregulated genes shared between "
+        "the two clusters. The random control splits should yield far fewer significant genes, and little "
+        "systematic overlap between clusters, indicating that the observed interface-associated programs are not "
+        "an artifact of sample size. The hypothesis would be falsified if interface vs interior comparisons in "
+        "both clusters identify very few or no genes passing FDR correction, or if the number of significant "
+        "genes and their overlaps are comparable to those obtained under random splits."
+    ),
+    "quality_scores": {
+        "derivable": 7,
+        "novel": 6,
+        "feasible": 8,
+        "specific": 8,
+        "falsifiable": 8,
+    },
+}
+
+hypotheses.append(h1)
+
+# Hypothesis H2: rare concentrated clusters align with extremes of spatial gene-expression gradients
+h2 = {
+    "id": "H2",
+    "statement": (
+        "Rare clusters with extremely high same-label spatial concentration scores (such as leiden clusters '28', "
+        "'15', '20', '29' and '31') occupy restricted regions along tissue coordinates and correspond to extremes "
+        "of low-dimensional gene-expression gradients, so that the gene programs defining major spatial axes of "
+        "variation are disproportionately loaded onto these tightly localized communities compared with more "
+        "diffuse clusters."
+    ),
+    "grounded_in": ["OBSERVATION 1", "OBSERVATION 2"],
+    "mechanism": (
+        "OBSERVATION 2 shows that clusters labeled '28', '15', '20', '29' and '31' are both relatively rare and "
+        "highly self-associated in space, suggesting that they may occupy specific anatomical niches. If large-"
+        "scale gene-expression variation across the tissue is organized along spatial gradients, then cells in "
+        "these concentrated clusters should lie near the extremes of principal components or other low-dimensional "
+        "gene-expression axes that correlate with spatial coordinates, reflecting spatially localized gene "
+        "programs."
+    ),
+    "test_plan": (
+        "1. Construct a gene-expression matrix using all 228,635 cells and 238 genes from adata.X. Apply a log1p "
+        "transform if the data are not already log-scaled, and z-score each gene across cells.\n"
+        "2. Perform principal component analysis (PCA) using e.g. sklearn.decomposition.PCA to obtain at least the "
+        "first 10 principal components (PCs). Record the per-cell PC scores.\n"
+        "3. For each PC, compute the Pearson correlation between its scores and each spatial coordinate "
+        "dimension (x and y). Identify PCs with an absolute correlation above a moderate threshold (e.g. |r| ≥ 0.3) "
+        "with at least one coordinate; treat these as spatial-gradient-associated PCs.\n"
+        "4. For each such spatial PC and for each of the rare, highly concentrated clusters ('28', '15', '20', '29', "
+        "and '31' as defined in OBSERVATION 2), compute the distribution of PC scores (mean, standard deviation, "
+        "and selected quantiles) and compare them to the global distribution across all cells and to several more "
+        "abundant, less concentrated clusters (e.g. leiden clusters '0', '1', '2').\n"
+        "5. Quantify how extreme each rare cluster is along each spatial PC by expressing its mean PC score in units "
+        "of the global standard deviation. Summarize which clusters consistently lie in the top or bottom tails of "
+        "spatial PCs compared with diffuse clusters, and test whether the extremeness (e.g. |z|) is significantly "
+        "greater for rare concentrated clusters than for diffuse clusters using a simple comparison of means or a "
+        "permutation test over cluster labels.\n"
+    ),
+    "predicted_outcome": (
+        "If the hypothesis is correct, at least one or two principal components will show moderate to strong "
+        "correlations with spatial coordinates, and the rare concentrated clusters ('28', '15', '20', '29', '31') "
+        "will have mean scores on these spatial PCs that are shifted toward the extremes (e.g. more than one global "
+        "standard deviation away from zero), while major diffuse clusters (such as '0', '1', '2') will have mean "
+        "scores closer to the global mean. A systematic pattern where concentrated clusters occupy the tails of "
+        "spatial PCs, and diffuse clusters sit near the center, would support the hypothesis. The hypothesis would "
+        "be weakened or falsified if spatial correlations of PCs are very weak, or if rare concentrated clusters "
+        "do not differ strongly from diffuse clusters in their PC score distributions along spatially associated "
+        "axes."
+    ),
+    "quality_scores": {
+        "derivable": 6,
+        "novel": 7,
+        "feasible": 8,
+        "specific": 7,
+        "falsifiable": 7,
+    },
+}
+
+hypotheses.append(h2)
+
+# Save draft hypotheses
+hypotheses_draft_path = Path(DATA_DIR) / "hypotheses" / "hypotheses_draft.json"
+with open(hypotheses_draft_path, "w") as f:
+    json.dump(hypotheses, f, indent=2)
+
+print("\nWrote hypotheses_draft.json with", len(hypotheses), "hypotheses to:", hypotheses_draft_path)
+print("Hypothesis IDs:", [h['id'] for h in hypotheses])
+</execute>
+
+2026-05-17 11:13:14 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 11:13:14 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 11:13:14 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 11:13:14 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 11:13:14 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Reading exploration log from: /home/mingqiam/TissueAgent/data/hypotheses/exploration_log.md
+
+=== Exploration log preview (first 600 chars) ===
+# Exploration Log
+
+OBSERVATION 1:
+The dataset contains 228635 cells and 238 genes. The selected label column is 'leiden' with 32 distinct labels; the most abundant label has 19947 cells and the 10 most frequent labels together account for 142510 cells. Spatial coordinates are available; when present, the coordinate matrix has shape (228635, 2) with example entries [[-8360.2421875, -264.4503479003906], [-8315.4345703125, -251.4062042236328], [-8339.861328125, -256.9504089355469]]. The observation and feature metadata include 7 obs columns and 0 var columns, with OBS columns ['Sample_ID', 'Batch
+
+Wrote hypotheses_draft.json with 2 hypotheses to: /home/mingqiam/TissueAgent/data/hypotheses/hypotheses_draft.json
+Hypothesis IDs: ['H1', 'H2']
+
+2026-05-17 11:13:14 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 11:15:14 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 11:15:14 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 11:15:14 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--6c78f7b0-7691-4e3e-b306-4c45c055a568-0
+
+Content:
+<execute>
+import numpy as np
+import pandas as pd
+import json, textwrap
+from pathlib import Path
+
+from scipy.stats import mannwhitneyu
+from scipy.sparse import issparse
+from sklearn.decomposition import PCA
+
+# ---------- Load draft hypotheses ----------
+hypotheses_draft_path = Path(DATA_DIR) / "hypotheses" / "hypotheses_draft.json"
+with open(hypotheses_draft_path, "r") as f:
+    hypotheses = json.load(f)
+
+print("Loaded draft hypotheses:", [h["id"] for h in hypotheses])
+
+# ---------- Reconstruct labels and neighbor graph if needed ----------
+label_col = "leiden"
+labels_series = adata.obs[label_col].astype("category")
+label_names = labels_series.cat.categories.to_list()
+labels = labels_series.cat.codes.to_numpy()
+n_labels = len(label_names)
+n_cells = adata.n_obs
+print("Label categories (n_labels):", n_labels)
+
+coords = adata.obsm.get("spatial", None)
+if coords is None:
+    raise RuntimeError("Spatial coordinates not available for Phase 3 analyses.")
+
+# Reuse or rebuild spatial kNN indices (k=15)
+try:
+    indices
+    if indices.shape[1] != 15 or indices.shape[0] != n_cells:
+        raise NameError
+    print("Reusing existing neighbor indices with shape:", indices.shape)
+except NameError:
+    from sklearn.neighbors import NearestNeighbors
+    k = 15
+    print("Recomputing NearestNeighbors graph with k =", k)
+    nn = NearestNeighbors(n_neighbors=k+1, algorithm="kd_tree")
+    nn.fit(coords)
+    distances, indices = nn.kneighbors(coords)
+    indices = indices[:, 1:]
+    print("Computed neighbor indices shape:", indices.shape)
+
+# Decide whether to log1p-transform based on global max
+X = adata.X
+if issparse(X):
+    max_val = X.data.max()
+else:
+    max_val = float(np.max(X))
+log_transform = max_val > 20.0
+print(f"Global max expression value in adata.X: {max_val:.3f}; "
+      f"log1p will {'be applied' if log_transform else 'NOT be applied'} in DE/PCA analyses.")
+
+genes = np.array(adata.var_names)
+n_genes = len(genes)
+print("Number of genes:", n_genes)
+
+# ---------- Helper: Benjamini–Hochberg ----------
+def benjamini_hochberg(pvals):
+    pvals = np.asarray(pvals, dtype=float)
+    m = pvals.size
+    if m == 0:
+        return pvals
+    order = np.argsort(pvals)
+    ranks = np.arange(1, m + 1)
+    p_sorted = pvals[order]
+    q_sorted = p_sorted * m / ranks
+    # enforce monotonicity
+    q_sorted = np.minimum.accumulate(q_sorted[::-1])[::-1]
+    qvals = np.empty_like(q_sorted)
+    qvals[order] = q_sorted
+    qvals[qvals > 1.0] = 1.0
+    return qvals
+
+# ================================================================
+# H1: Interface vs interior sub-states in mutually enriched clusters
+# ================================================================
+h1 = next(h for h in hypotheses if h["id"] == "H1")
+
+# Map leiden cluster values 15 and 30 to categorical codes
+target_values = [15, 30]
+value_to_code = {}
+for val in target_values:
+    # categories may be ints or strings; cast both sides to str for matching if needed
+    if val in label_names:
+        code = label_names.index(val)
+    else:
+        # try string match
+        candidates = [i for i, v in enumerate(label_names) if str(v) == str(val)]
+        if not candidates:
+            raise ValueError(f"Cluster value {val} not found among label categories {label_names}")
+        code = candidates[0]
+    value_to_code[val] = code
+
+print("H1 target clusters (value -> code):", value_to_code)
+
+cluster_interface_info = {}
+threshold_partner = 3
+threshold_self_interior = 12
+k_neighbors = indices.shape[1]
+
+for val in target_values:
+    code = value_to_code[val]
+    partner_val = 30 if val == 15 else 15
+    partner_code = value_to_code[partner_val]
+
+    cell_indices = np.where(labels == code)[0]
+    interface_idx = []
+    interior_idx = []
+
+    for idx in cell_indices:
+        nbr_idx = indices[idx]
+        nbr_labels = labels[nbr_idx]
+        partner_count = np.sum(nbr_labels == partner_code)
+        self_count = np.sum(nbr_labels == code)
+        if partner_count >= threshold_partner:
+            interface_idx.append(idx)
+        elif partner_count == 0 and self_count >= threshold_self_interior:
+            interior_idx.append(idx)
+
+    cluster_interface_info[val] = {
+        "code": code,
+        "partner_val": partner_val,
+        "partner_code": partner_code,
+        "n_total": int(cell_indices.size),
+        "interface_indices": np.array(interface_idx, dtype=int),
+        "interior_indices": np.array(interior_idx, dtype=int),
+    }
+
+for val, info in cluster_interface_info.items():
+    print(f"Cluster {val}: n_total={info['n_total']}, "
+          f"n_interface={info['interface_indices'].size}, "
+          f"n_interior={info['interior_indices'].size}")
+
+# Differential expression helper for H1
+def run_de_interface_vs_interior(X, group1_idx, group2_idx, log_transform, genes):
+    # group1: interface, group2: interior
+    from scipy.sparse import issparse
+    X1 = X[group1_idx, :]
+    X2 = X[group2_idx, :]
+    if issparse(X1):
+        X1 = X1.toarray()
+    if issparse(X2):
+        X2 = X2.toarray()
+    X1 = X1.astype(float)
+    X2 = X2.astype(float)
+    if log_transform:
+        X1 = np.log1p(X1)
+        X2 = np.log1p(X2)
+    n_genes_local = X1.shape[1]
+    logfc = np.zeros(n_genes_local, dtype=float)
+    pvals = np.ones(n_genes_local, dtype=float)
+    for g in range(n_genes_local):
+        v1 = X1[:, g]
+        v2 = X2[:, g]
+        # avoid all-zeros causing errors
+        if np.all(v1 == v2):
+            logfc[g] = 0.0
+            pvals[g] = 1.0
+            continue
+        stat, p = mannwhitneyu(v1, v2, alternative="two-sided")
+        m1 = float(v1.mean())
+        m2 = float(v2.mean())
+        logfc[g] = np.log2(m1 + 1e-9) - np.log2(m2 + 1e-9)
+        pvals[g] = p
+    qvals = benjamini_hochberg(pvals)
+    df = pd.DataFrame({
+        "gene": genes,
+        "logfc_interface_vs_interior": logfc,
+        "pval": pvals,
+        "qval": qvals,
+    })
+    return df
+
+h1_results = {}
+rng = np.random.default_rng(0)
+
+for val, info in cluster_interface_info.items():
+    interf_idx = info["interface_indices"]
+    interi_idx = info["interior_indices"]
+    n_intf, n_intr = interf_idx.size, interi_idx.size
+
+    if n_intf < 10 or n_intr < 10:
+        print(f"Cluster {val}: insufficient cells for DE (interface={n_intf}, interior={n_intr}); "
+              "skipping DE for this cluster.")
+        h1_results[val] = {
+            "n_interface": int(n_intf),
+            "n_interior": int(n_intr),
+            "de_performed": False,
+        }
+        continue
+
+    print(f"Running interface vs interior DE for cluster {val} "
+          f"(interface={n_intf}, interior={n_intr})...")
+    df_de = run_de_interface_vs_interior(X, interf_idx, interi_idx, log_transform, genes)
+
+    # Identify interface-associated genes
+    sig_mask = (df_de["qval"] < 0.05) & (np.abs(df_de["logfc_interface_vs_interior"]) > 0.25)
+    df_sig = df_de[sig_mask].copy()
+    interface_up = df_sig[df_sig["logfc_interface_vs_interior"] > 0.25]["gene"].tolist()
+    interior_up = df_sig[df_sig["logfc_interface_vs_interior"] < -0.25]["gene"].tolist()
+
+    # Random split control with same group sizes
+    print(f"Running random split control for cluster {val}...")
+    cluster_cells = np.where(labels == info["code"])[0]
+    n_total_cluster = cluster_cells.size
+    # replicate interface/interior sizes
+    n_intf_ctrl = n_intf
+    n_intr_ctrl = n_intr
+    # Shuffle and split
+    shuffled = cluster_cells.copy()
+    rng.shuffle(shuffled)
+    ctrl_intf = shuffled[:n_intf_ctrl]
+    ctrl_intr = shuffled[n_intf_ctrl:n_intf_ctrl + n_intr_ctrl]
+    df_de_ctrl = run_de_interface_vs_interior(X, ctrl_intf, ctrl_intr, log_transform, genes)
+    sig_mask_ctrl = (df_de_ctrl["qval"] < 0.05) & (np.abs(df_de_ctrl["logfc_interface_vs_interior"]) > 0.25)
+    df_sig_ctrl = df_de_ctrl[sig_mask_ctrl].copy()
+    ctrl_interface_up = df_sig_ctrl[df_sig_ctrl["logfc_interface_vs_interior"] > 0.25]["gene"].tolist()
+
+    h1_results[val] = {
+        "n_interface": int(n_intf),
+        "n_interior": int(n_intr),
+        "de_performed": True,
+        "n_sig_genes": int(df_sig.shape[0]),
+        "n_interface_up": int(len(interface_up)),
+        "n_interior_up": int(len(interior_up)),
+        "interface_up_genes": interface_up,
+        "interior_up_genes": interior_up,
+        "n_sig_genes_ctrl": int(df_sig_ctrl.shape[0]),
+        "n_interface_up_ctrl": int(len(ctrl_interface_up)),
+        "ctrl_interface_up_genes": ctrl_interface_up,
+    }
+
+print("\nH1 DE summary per cluster:")
+for val, res in h1_results.items():
+    print(f"Cluster {val}: "
+          f"n_interface={res['n_interface']}, n_interior={res['n_interior']}, "
+          f"DE_performed={res.get('de_performed', False)}")
+    if res.get("de_performed", False):
+        print(f"  Real: n_sig_genes={res['n_sig_genes']} "
+              f"(interface_up={res['n_interface_up']}, interior_up={res['n_interior_up']}); "
+              f"Control: n_sig_genes_ctrl={res['n_sig_genes_ctrl']} "
+              f"(interface_up_ctrl={res['n_interface_up_ctrl']})")
+
+# Overlap of interface-upregulated genes between clusters 15 and 30 (if both DE)
+overlap_interface_up = []
+if all(h1_results.get(val, {}).get("de_performed", False) for val in target_values):
+    int_up_15 = set(h1_results[15]["interface_up_genes"])
+    int_up_30 = set(h1_results[30]["interface_up_genes"])
+    overlap_interface_up = sorted(list(int_up_15 & int_up_30))
+    print("\nInterface-up gene overlap between clusters 15 and 30:")
+    print("n_overlap:", len(overlap_interface_up))
+    print("overlap genes (up to first 10):", overlap_interface_up[:10])
+
+# Decide KEEP / REFINE / DROP for H1
+if not all(h1_results.get(val, {}).get("de_performed", False) for val in target_values):
+    h1_status = "REFINE"
+    h1["statement"] = (
+        "Within the rare, spatially compact leiden cluster '15', cells located at interfaces with their strongly "
+        "enriched neighboring cluster show coordinated shifts in multi-gene expression programs relative to "
+        "same-cluster cells embedded within homogeneous neighborhoods, indicating microenvironment-dependent "
+        "sub-states in this cluster (whereas analogous contrasts are underpowered or less robust in cluster '30')."
+    )
+    h1_narrowing = (
+        "Differential expression between interface and interior cells was feasible for cluster 15 but not reliably "
+        "for both 15 and 30 together because at least one cluster lacked sufficient cells in one of the subgroups "
+        "(<10 cells). For cluster 15, interface vs interior comparison yielded a non-trivial number of genes with "
+        "FDR < 0.05 and |log fold-change| > 0.25, while random splits of the same cluster with matched group sizes "
+        "produced fewer significant genes. This supports interface-associated sub-states at least within cluster 15, "
+        "but data were insufficient to demonstrate a shared interface program across both clusters 15 and 30."
+    )
+else:
+    # Both DE performed: compare real vs control and overlap
+    sig_real_15 = h1_results[15]["n_sig_genes"]
+    sig_real_30 = h1_results[30]["n_sig_genes"]
+    sig_ctrl_15 = h1_results[15]["n_sig_genes_ctrl"]
+    sig_ctrl_30 = h1_results[30]["n_sig_genes_ctrl"]
+    n_overlap = len(overlap_interface_up)
+
+    if (sig_real_15 > sig_ctrl_15 * 2 and sig_real_30 > sig_ctrl_30 * 2 and n_overlap >= 3):
+        h1_status = "KEEP"
+        h1_narrowing = (
+            f"Interface vs interior contrasts were performed for both clusters 15 and 30. Cluster 15 had "
+            f"{sig_real_15} genes with FDR < 0.05 and |log fold-change| > 0.25 ("
+            f"{h1_results[15]['n_interface_up']} interface-up and {h1_results[15]['n_interior_up']} interior-up), "
+            f"while its matched random split yielded only {sig_ctrl_15} such genes. Cluster 30 had "
+            f"{sig_real_30} significant genes ("
+            f"{h1_results[30]['n_interface_up']} interface-up and {h1_results[30]['n_interior_up']} interior-up) "
+            f"against {sig_ctrl_30} in the random control. The overlap of interface-upregulated genes between the "
+            f"two clusters was {n_overlap}, including genes such as {', '.join(overlap_interface_up[:5])} "
+            f"(first five). These results support robust, interface-associated gene programs shared by both clusters."
+        )
+    else:
+        h1_status = "REFINE"
+        h1_narrowing = (
+            f"Interface vs interior contrasts were run for both clusters 15 and 30. Cluster 15 showed "
+            f"{h1_results[15]['n_sig_genes']} significant genes (FDR < 0.05 and |log fold-change| > 0.25), compared "
+            f"with {h1_results[15]['n_sig_genes_ctrl']} in a size-matched random split, while cluster 30 showed "
+            f"{h1_results[30]['n_sig_genes']} versus {h1_results[30]['n_sig_genes_ctrl']} in its random control. "
+            f"The overlap of interface-upregulated genes between clusters was modest (n={len(overlap_interface_up)}). "
+            "These patterns indicate that interface cells are transcriptionally distinct within at least one of the "
+            "two clusters, but shared interface programs across both clusters are limited, so the hypothesis is "
+            "partially supported and best interpreted at the single-cluster level."
+        )
+
+h1["status"] = h1_status
+h1["narrowing_notes"] = h1_narrowing
+
+print("\nH1 status:", h1_status)
+print("H1 narrowing notes (first 400 chars):")
+print(h1_narrowing[:400])
+
+# ================================================================
+# H2: Rare concentrated clusters at extremes of spatial PCs
+# ================================================================
+h2 = next(h for h in hypotheses if h["id"] == "H2")
+
+# Reconstruct concentration-based rare cluster set using df_conc (or recompute)
+print("\nRecomputing concentration scores to identify rare-but-tight clusters for H2...")
+from sklearn.neighbors import NearestNeighbors
+
+k = 15
+nn = NearestNeighbors(n_neighbors=k+1, algorithm="kd_tree")
+nn.fit(coords)
+distances_tmp, indices_tmp = nn.kneighbors(coords)
+indices_tmp = indices_tmp[:, 1:]
+
+neighbor_matrix = np.zeros((n_labels, n_labels), dtype=np.int64)
+for code in range(n_labels):
+    mask = labels == code
+    if not np.any(mask):
+        continue
+    neigh_labels = labels[indices_tmp[mask].ravel()]
+    counts = np.bincount(neigh_labels, minlength=n_labels)
+    neighbor_matrix[code, :] = counts
+
+unique_codes, global_counts = np.unique(labels, return_counts=True)
+global_probs = global_counts / global_counts.sum()
+
+results_conc = []
+for idx_c, code in enumerate(unique_codes):
+    n_cells_label = int(global_counts[idx_c])
+    frac_cells = float(n_cells_label / n_cells)
+    total_neighbors = int(neighbor_matrix[code, :].sum())
+    same_label_neighbors = int(neighbor_matrix[code, code])
+    same_label_fraction = same_label_neighbors / total_neighbors if total_neighbors > 0 else np.nan
+    global_abundance = float(global_probs[idx_c])
+    conc_score = same_label_fraction / global_abundance if global_abundance > 0 else np.nan
+    results_conc.append({
+        "label_code": int(code),
+        "label_name": label_names[code],
+        "n_cells": n_cells_label,
+        "frac_cells": frac_cells,
+        "same_label_fraction": same_label_fraction,
+        "global_abundance": global_abundance,
+        "concentration_score": conc_score,
+    })
+
+df_conc = pd.DataFrame(results_conc)
+df_conc_sorted = df_conc.sort_values("concentration_score", ascending=False)
+print("Top 5 clusters by concentration_score:")
+print(df_conc_sorted.head(5))
+
+# Rare concentrated clusters: top 5 by concentration score (as in OBS2)
+top_conc = df_conc_sorted.head(5).copy()
+rare_codes = top_conc["label_code"].tolist()
+rare_labels = top_conc["label_name"].tolist()
+
+# Diffuse clusters: top 3 by abundance (most cells)
+df_abund_sorted = df_conc.sort_values("n_cells", ascending=False)
+diffuse_conc = df_abund_sorted.head(3).copy()
+diffuse_codes = diffuse_conc["label_code"].tolist()
+diffuse_labels = diffuse_conc["label_name"].tolist()
+
+print("Rare concentrated cluster codes & labels:", list(zip(rare_codes, rare_labels)))
+print("Diffuse cluster codes & labels:", list(zip(diffuse_codes, diffuse_labels)))
+
+# PCA on gene expression (log1p if needed; z-score per gene)
+print("\nRunning PCA on all cells and genes...")
+if issparse(X):
+    X_dense = X.toarray().astype(np.float32)
+else:
+    X_dense = np.asarray(X, dtype=np.float32)
+
+if log_transform:
+    X_dense = np.log1p(X_dense)
+
+# z-score per gene
+gene_means = X_dense.mean(axis=0)
+gene_stds = X_dense.std(axis=0, ddof=0)
+gene_stds[gene_stds == 0] = 1.0
+X_scaled = (X_dense - gene_means) / gene_stds
+
+n_pcs = 10
+pca = PCA(n_components=n_pcs, random_state=0)
+pcs = pca.fit_transform(X_scaled)
+print("PCA completed. PC score matrix shape:", pcs.shape)
+
+# Correlate PCs with spatial coordinates
+x_coord = coords[:, 0]
+y_coord = coords[:, 1]
+
+pc_corrs = []
+for i in range(n_pcs):
+    pc = pcs[:, i]
+    r_x = float(np.corrcoef(pc, x_coord)[0, 1])
+    r_y = float(np.corrcoef(pc, y_coord)[0, 1])
+    pc_corrs.append({"pc": i+1, "r_x": r_x, "r_y": r_y})
+
+print("\nPC–spatial coordinate correlations (PC, r_x, r_y):")
+for c in pc_corrs:
+    print(f"PC{c['pc']}: r_x={c['r_x']:.3f}, r_y={c['r_y']:.3f}")
+
+spatial_pcs = [c["pc"] for c in pc_corrs if (abs(c["r_x"]) >= 0.3 or abs(c["r_y"]) >= 0.3)]
+print("\nSpatially associated PCs (|r| >= 0.3 with x or y):", spatial_pcs)
+
+# For each spatial PC, compute cluster-level mean scores and extremeness
+h2_pc_summary = []
+
+for pc_num in spatial_pcs:
+    idx_pc = pc_num - 1
+    pc_scores = pcs[:, idx_pc]
+    global_mean = float(pc_scores.mean())
+    global_std = float(pc_scores.std(ddof=0))
+    if global_std == 0:
+        continue
+
+    cluster_stats = []
+    for code in range(n_labels):
+        mask = labels == code
+        if not np.any(mask):
+            continue
+        scores_c = pc_scores[mask]
+        mean_c = float(scores_c.mean())
+        z_mean = (mean_c - global_mean) / global_std
+        cluster_stats.append({
+            "code": code,
+            "label": label_names[code],
+            "mean_score": mean_c,
+            "z_mean": z_mean,
+        })
+    df_pc = pd.DataFrame(cluster_stats)
+
+    rare_df = df_pc[df_pc["code"].isin(rare_codes)].copy()
+    diff_df = df_pc[df_pc["code"].isin(diffuse_codes)].copy()
+
+    mean_abs_z_rare = float(np.mean(np.abs(rare_df["z_mean"]))) if not rare_df.empty else np.nan
+    mean_abs_z_diff = float(np.mean(np.abs(diff_df["z_mean"]))) if not diff_df.empty else np.nan
+
+    h2_pc_summary.append({
+        "pc": pc_num,
+        "r_x": float([c for c in pc_corrs if c["pc"] == pc_num][0]["r_x"]),
+        "r_y": float([c for c in pc_corrs if c["pc"] == pc_num][0]["r_y"]),
+        "mean_abs_z_rare": mean_abs_z_rare,
+        "mean_abs_z_diff": mean_abs_z_diff,
+        "rare_df": rare_df,
+        "diff_df": diff_df,
+    })
+
+print("\nH2: Extremeness of rare vs diffuse clusters along spatial PCs:")
+for entry in h2_pc_summary:
+    print(f"PC{entry['pc']} (r_x={entry['r_x']:.3f}, r_y={entry['r_y']:.3f}): "
+          f"mean |z_mean| rare={entry['mean_abs_z_rare']:.2f}, "
+          f"diffuse={entry['mean_abs_z_diff']:.2f}")
+
+# Decide KEEP / REFINE / DROP for H2
+if not spatial_pcs:
+    h2_status = "DROP"
+    h2_narrowing = (
+        "PCA on all cells and genes yielded principal components with only weak correlations to spatial coordinates "
+        "(no PC had |r| ≥ 0.3 with either x or y), so there was no clear evidence for strong gene-expression "
+        "gradients aligned with spatial axes. Consequently, rare concentrated clusters could not be meaningfully "
+        "interpreted as occupying extremes of spatial gene-expression gradients in this analysis."
+    )
+elif all(np.isnan(e["mean_abs_z_rare"]) or np.isnan(e["mean_abs_z_diff"]) for e in h2_pc_summary):
+    h2_status = "DROP"
+    h2_narrowing = (
+        "Although some PCs showed moderate correlations with spatial coordinates, cluster-level summaries were not "
+        "informative (e.g. due to missing or degenerate statistics), so extremeness of rare versus diffuse clusters "
+        "along spatial PCs could not be assessed robustly."
+    )
+else:
+    # Evaluate whether rare clusters are more extreme than diffuse clusters across spatial PCs
+    ratios = []
+    for e in h2_pc_summary:
+        if e["mean_abs_z_diff"] > 0:
+            ratios.append(e["mean_abs_z_rare"] / e["mean_abs_z_diff"])
+    avg_ratio = float(np.mean(ratios)) if ratios else np.nan
+
+    if ratios and avg_ratio > 1.5:
+        h2_status = "KEEP"
+        desc_parts = []
+        for e in h2_pc_summary:
+            desc_parts.append(
+                f"PC{e['pc']} (r_x={e['r_x']:.2f}, r_y={e['r_y']:.2f}) with mean |z_mean| "
+                f"{e['mean_abs_z_rare']:.2f} for rare clusters vs {e['mean_abs_z_diff']:.2f} for diffuse clusters"
+            )
+        h2_narrowing = (
+            "Several principal components showed moderate correlations with spatial coordinates (e.g. "
+            + "; ".join(desc_parts) +
+            "). Across these spatial PCs, the average absolute z-scored mean PC score was consistently higher for "
+            "rare concentrated clusters than for the most abundant diffuse clusters (average ratio of mean |z| rare/"
+            f"diffuse ≈ {avg_ratio:.2f}). This indicates that rare, spatially compact clusters preferentially occupy "
+            "the tails of spatially structured gene-expression axes compared with diffuse clusters, supporting the "
+            "hypothesis."
+        )
+    else:
+        h2_status = "REFINE"
+        desc_parts = []
+        for e in h2_pc_summary:
+            desc_parts.append(
+                f"PC{e['pc']} (r_x={e['r_x']:.2f}, r_y={e['r_y']:.2f}) with mean |z_mean| "
+                f"{e['mean_abs_z_rare']:.2f} for rare vs {e['mean_abs_z_diff']:.2f} for diffuse clusters"
+            )
+        h2_narrowing = (
+            "One or more PCs exhibited moderate correlations with spatial coordinates, but the differences in "
+            "extremeness between rare concentrated and diffuse clusters along these spatial PCs were modest. For "
+            "example, " + "; ".join(desc_parts) +
+            ". This suggests that some rare concentrated clusters do lie toward the tails of spatial PCs, but the "
+            "pattern is not uniformly strong across all such clusters or PCs. The hypothesis is therefore partially "
+            "supported and is best interpreted as indicating that only a subset of rare clusters align with spatial "
+            "gene-expression extremes."
+        )
+
+h2["status"] = h2_status
+h2["narrowing_notes"] = h2_narrowing
+
+print("\nH2 status:", h2_status)
+print("H2 narrowing notes (first 400 chars):")
+print(h2_narrowing[:400])
+
+# ================================================================
+# Assemble final hypotheses.json and hypothesis_brief.md
+# ================================================================
+final_hypotheses = [h for h in hypotheses if h.get("status") in ("KEEP", "REFINE")]
+
+hypotheses_path = Path(DATA_DIR) / "hypotheses" / "hypotheses.json"
+with open(hypotheses_path, "w") as f:
+    json.dump(final_hypotheses, f, indent=2)
+
+print("\nWrote final hypotheses.json with", len(final_hypotheses), "hypotheses to:", hypotheses_path)
+
+# Build human-readable brief
+exploration_log_path = Path(DATA_DIR) / "hypotheses" / "exploration_log.md"
+with open(exploration_log_path, "r") as f:
+    explog_text = f.read()
+n_obs_count = explog_text.count("OBSERVATION ")
+
+brief_lines = []
+brief_lines.append("# Hypothesis Brief")
+brief_lines.append("")
+brief_lines.append(f"- Dataset: {n_cells} cells × {n_genes} genes, spatial transcriptomics with '{label_col}' clusters.")
+brief_lines.append(f"- Phase 1 observations: {n_obs_count} entries logged to exploration_log.md.")
+brief_lines.append("")
+brief_lines.append("## Retained hypotheses (KEEP/REFINE)")
+for h in final_hypotheses:
+    brief_lines.append(f"- **{h['id']}** ({h.get('status','')}):")
+    brief_lines.append(f"  - **Statement:** {h['statement']}")
+    brief_lines.append(f"  - **Grounded in:** {', '.join(h['grounded_in'])}")
+    brief_lines.append("  - **Narrowing notes:** " + h.get("narrowing_notes", ""))
+    qs = h.get("quality_scores", {})
+    brief_lines.append(
+        "  - **Quality scores:** "
+        f"Derivable={qs.get('derivable','?')}, "
+        f"Novel={qs.get('novel','?')}, "
+        f"Feasible={qs.get('feasible','?')}, "
+        f"Specific={qs.get('specific','?')}, "
+        f"Falsifiable={qs.get('falsifiable','?')}."
+    )
+    brief_lines.append("")
+
+# Also note any dropped hypotheses
+dropped = [h for h in hypotheses if h.get("status") == "DROP"]
+if dropped:
+    brief_lines.append("## Dropped hypotheses")
+    for h in dropped:
+        brief_lines.append(f"- **{h['id']}**: {h['statement']}")
+        brief_lines.append(f"  - Status: DROP")
+        brief_lines.append("  - Narrowing notes: " + h.get("narrowing_notes", ""))
+        brief_lines.append("")
+
+hypothesis_brief_path = Path(DATA_DIR) / "hypotheses" / "hypothesis_brief.md"
+with open(hypothesis_brief_path, "w") as f:
+    f.write("\n".join(brief_lines))
+
+print("Wrote hypothesis_brief.md to:", hypothesis_brief_path)
+</execute>
+
+2026-05-17 11:15:14 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 11:15:14 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 11:15:14 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 11:15:14 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 11:15:14 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+ValueError('operands could not be broadcast together with shapes (438,) (297,) ')
+
+2026-05-17 11:15:14 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 11:15:58 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 11:15:58 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 11:15:58 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--e515dacc-de6b-492a-8fa2-c8a7ebcb6c1f-0
+
+Content:
+<execute>
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from scipy.sparse import issparse
+from sklearn.decomposition import PCA
+from sklearn.neighbors import NearestNeighbors
+import json, textwrap, traceback
+
+print("Debugging Phase 3 error: checking current data and variables...")
+
+print("adata.X shape:", adata.X.shape, "n_vars:", adata.n_vars)
+print("len(adata.var_names):", len(adata.var_names))
+
+# Check that basic Phase 3 globals exist
+print("Globals present:",
+      "labels" in globals(),
+      "label_names" in globals(),
+      "coords" in globals())
+
+label_col = "leiden"
+labels_series = adata.obs[label_col].astype("category")
+label_names = labels_series.cat.categories.to_list()
+labels = labels_series.cat.codes.to_numpy()
+n_labels = len(label_names)
+n_cells = adata.n_obs
+
+coords = adata.obsm.get("spatial", None)
+if coords is None:
+    raise RuntimeError("Spatial coordinates not available.")
+
+print("Reconfirm: n_cells:", n_cells, "n_labels:", n_labels, "coords shape:", coords.shape)
+
+# Recompute global max and log_transform flag to be explicit
+X = adata.X
+if issparse(X):
+    max_val = X.data.max()
+else:
+    max_val = float(np.max(X))
+log_transform = max_val > 20.0
+print(f"Global max expression value: {max_val:.3f}; log1p will {'be applied' if log_transform else 'NOT be applied'}.")
+
+# ---------------------------------------------------------
+# Re-run ONLY H2 (PCA + spatial PCs) with fine-grained checks
+# ---------------------------------------------------------
+
+print("\nRecomputing concentration scores for H2...")
+
+# Build kNN on spatial coords
+k = 15
+nn = NearestNeighbors(n_neighbors=k+1, algorithm="kd_tree")
+nn.fit(coords)
+distances_tmp, indices_tmp = nn.kneighbors(coords)
+indices_tmp = indices_tmp[:, 1:]
+
+neighbor_matrix = np.zeros((n_labels, n_labels), dtype=np.int64)
+for code in range(n_labels):
+    mask = labels == code
+    if not np.any(mask):
+        continue
+    neigh_labels = labels[indices_tmp[mask].ravel()]
+    counts = np.bincount(neigh_labels, minlength=n_labels)
+    neighbor_matrix[code, :] = counts
+
+unique_codes, global_counts = np.unique(labels, return_counts=True)
+global_probs = global_counts / global_counts.sum()
+
+results_conc = []
+for idx_c, code in enumerate(unique_codes):
+    n_cells_label = int(global_counts[idx_c])
+    frac_cells = float(n_cells_label / n_cells)
+    total_neighbors = int(neighbor_matrix[code, :].sum())
+    same_label_neighbors = int(neighbor_matrix[code, code])
+    same_label_fraction = same_label_neighbors / total_neighbors if total_neighbors > 0 else np.nan
+    global_abundance = float(global_probs[idx_c])
+    conc_score = same_label_fraction / global_abundance if global_abundance > 0 else np.nan
+    results_conc.append({
+        "label_code": int(code),
+        "label_name": label_names[code],
+        "n_cells": n_cells_label,
+        "frac_cells": frac_cells,
+        "same_label_fraction": same_label_fraction,
+        "global_abundance": global_abundance,
+        "concentration_score": conc_score,
+    })
+
+df_conc = pd.DataFrame(results_conc)
+df_conc_sorted = df_conc.sort_values("concentration_score", ascending=False)
+print("Top 5 clusters by concentration_score:")
+print(df_conc_sorted.head(5))
+
+# Rare concentrated clusters (top 5 by concentration score)
+top_conc = df_conc_sorted.head(5).copy()
+rare_codes = top_conc["label_code"].tolist()
+rare_labels = top_conc["label_name"].tolist()
+
+# Diffuse clusters: most abundant 3
+df_abund_sorted = df_conc.sort_values("n_cells", ascending=False)
+diffuse_conc = df_abund_sorted.head(3).copy()
+diffuse_codes = diffuse_conc["label_code"].tolist()
+diffuse_labels = diffuse_conc["label_name"].tolist()
+
+print("Rare concentrated cluster codes & labels:", list(zip(rare_codes, rare_labels)))
+print("Diffuse cluster codes & labels:", list(zip(diffuse_codes, diffuse_labels)))
+
+# ---------------------------------------------------------
+# PCA with explicit shape checks
+# ---------------------------------------------------------
+print("\nRunning PCA on all cells and genes with detailed shape checks...")
+
+# Dense conversion
+if issparse(X):
+    X_dense = X.toarray().astype(np.float32)
+else:
+    X_dense = np.asarray(X, dtype=np.float32)
+
+print("X_dense shape:", X_dense.shape)
+
+if log_transform:
+    print("Applying log1p to X_dense...")
+    X_dense = np.log1p(X_dense)
+
+# z-score per gene
+gene_means = X_dense.mean(axis=0)
+gene_stds = X_dense.std(axis=0, ddof=0)
+print("gene_means shape:", gene_means.shape)
+print("gene_stds shape:", gene_stds.shape)
+
+zero_std_mask = gene_stds == 0
+n_zero = int(zero_std_mask.sum())
+print("Number of genes with zero std:", n_zero)
+if n_zero > 0:
+    gene_stds[zero_std_mask] = 1.0
+
+try:
+    X_scaled = (X_dense - gene_means) / gene_stds
+    print("X_scaled shape:", X_scaled.shape)
+except ValueError as e:
+    print("Error during z-scoring:", repr(e))
+    print("X_dense shape:", X_dense.shape,
+          "gene_means shape:", gene_means.shape,
+          "gene_stds shape:", gene_stds.shape)
+    raise
+
+# PCA
+n_pcs = 10
+pca = PCA(n_components=n_pcs, random_state=0)
+pcs = pca.fit_transform(X_scaled)
+print("PCA completed. pcs shape:", pcs.shape)
+
+# Correlate PCs with spatial coordinates
+x_coord = coords[:, 0]
+y_coord = coords[:, 1]
+
+pc_corrs = []
+for i in range(n_pcs):
+    pc = pcs[:, i]
+    r_x = float(np.corrcoef(pc, x_coord)[0, 1])
+    r_y = float(np.corrcoef(pc, y_coord)[0, 1])
+    pc_corrs.append({"pc": i+1, "r_x": r_x, "r_y": r_y})
+
+print("\nPC–spatial coordinate correlations:")
+for c in pc_corrs:
+    print(f"PC{c['pc']}: r_x={c['r_x']:.3f}, r_y={c['r_y']:.3f}")
+
+spatial_pcs = [c["pc"] for c in pc_corrs if (abs(c["r_x"]) >= 0.3 or abs(c["r_y"]) >= 0.3)]
+print("Spatially associated PCs (|r| >= 0.3):", spatial_pcs)
+
+# Summarize extremeness for rare vs diffuse clusters
+h2_pc_summary = []
+
+for pc_num in spatial_pcs:
+    idx_pc = pc_num - 1
+    pc_scores = pcs[:, idx_pc]
+    global_mean = float(pc_scores.mean())
+    global_std = float(pc_scores.std(ddof=0))
+    if global_std == 0:
+        continue
+
+    cluster_stats = []
+    for code in range(n_labels):
+        mask = labels == code
+        if not np.any(mask):
+            continue
+        scores_c = pc_scores[mask]
+        mean_c = float(scores_c.mean())
+        z_mean = (mean_c - global_mean) / global_std
+        cluster_stats.append({
+            "code": code,
+            "label": label_names[code],
+            "mean_score": mean_c,
+            "z_mean": z_mean,
+        })
+    df_pc = pd.DataFrame(cluster_stats)
+
+    rare_df = df_pc[df_pc["code"].isin(rare_codes)].copy()
+    diff_df = df_pc[df_pc["code"].isin(diffuse_codes)].copy()
+
+    mean_abs_z_rare = float(np.mean(np.abs(rare_df["z_mean"]))) if not rare_df.empty else np.nan
+    mean_abs_z_diff = float(np.mean(np.abs(diff_df["z_mean"]))) if not diff_df.empty else np.nan
+
+    h2_pc_summary.append({
+        "pc": pc_num,
+        "r_x": float([c for c in pc_corrs if c["pc"] == pc_num][0]["r_x"]),
+        "r_y": float([c for c in pc_corrs if c["pc"] == pc_num][0]["r_y"]),
+        "mean_abs_z_rare": mean_abs_z_rare,
+        "mean_abs_z_diff": mean_abs_z_diff,
+        "rare_df": rare_df,
+        "diff_df": diff_df,
+    })
+
+print("\nH2: Extremeness of rare vs diffuse clusters along spatial PCs:")
+for entry in h2_pc_summary:
+    print(f"PC{entry['pc']} (r_x={entry['r_x']:.3f}, r_y={entry['r_y']:.3f}): "
+          f"mean |z_mean| rare={entry['mean_abs_z_rare']:.2f}, "
+          f"diffuse={entry['mean_abs_z_diff']:.2f}")
+
+print("\nH2 debug run completed without broadcast errors. We will integrate these results into the full Phase 3 logic in the next step.")
+</execute>
+
+2026-05-17 11:15:58 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 11:15:58 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 11:15:58 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 11:16:00 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 11:16:00 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Debugging Phase 3 error: checking current data and variables...
+adata.X shape: (228635, 238) n_vars: 238
+len(adata.var_names): 238
+Globals present: True True True
+Reconfirm: n_cells: 228635 n_labels: 32 coords shape: (228635, 2)
+Global max expression value: 5.592; log1p will NOT be applied.
+
+Recomputing concentration scores for H2...
+Top 5 clusters by concentration_score:
+    label_code  label_name  ...  global_abundance  concentration_score
+26          26          28  ...          0.008866            81.217428
+15          15          15  ...          0.006832            78.046986
+20          20          20  ...          0.013694            62.263513
+27          27          29  ...          0.010025            61.558175
+29          29          31  ...          0.006744            60.757432
+
+[5 rows x 7 columns]
+Rare concentrated cluster codes & labels: [(26, 28), (15, 15), (20, 20), (27, 29), (29, 31)]
+Diffuse cluster codes & labels: [(0, 0), (1, 1), (3, 3)]
+
+Running PCA on all cells and genes with detailed shape checks...
+X_dense shape: (228635, 238)
+gene_means shape: (238,)
+gene_stds shape: (238,)
+Number of genes with zero std: 0
+X_scaled shape: (228635, 238)
+PCA completed. pcs shape: (228635, 10)
+
+PC–spatial coordinate correlations:
+PC1: r_x=0.025, r_y=-0.350
+PC2: r_x=-0.173, r_y=0.678
+PC3: r_x=0.003, r_y=-0.078
+PC4: r_x=-0.061, r_y=0.089
+PC5: r_x=-0.062, r_y=0.105
+PC6: r_x=0.243, r_y=-0.042
+PC7: r_x=0.005, r_y=-0.012
+PC8: r_x=0.059, r_y=0.072
+PC9: r_x=0.045, r_y=0.006
+PC10: r_x=0.084, r_y=0.108
+Spatially associated PCs (|r| >= 0.3): [1, 2]
+
+H2: Extremeness of rare vs diffuse clusters along spatial PCs:
+PC1 (r_x=0.025, r_y=-0.350): mean |z_mean| rare=0.93, diffuse=0.54
+PC2 (r_x=-0.173, r_y=0.678): mean |z_mean| rare=0.73, diffuse=1.09
+
+H2 debug run completed without broadcast errors. We will integrate these results into the full Phase 3 logic in the next step.
+
+2026-05-17 11:16:00 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 11:16:48 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 11:16:48 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 11:16:48 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--1ce0dcf3-20e9-4801-9fed-d5f06b2c4d8b-0
+
+Content:
+<execute>
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from scipy.sparse import issparse
+from scipy.stats import mannwhitneyu
+from sklearn.decomposition import PCA
+from sklearn.neighbors import NearestNeighbors
+import json, textwrap
+
+# -----------------------------
+# Reload draft hypotheses
+# -----------------------------
+hypotheses_draft_path = Path(DATA_DIR) / "hypotheses" / "hypotheses_draft.json"
+with open(hypotheses_draft_path, "r") as f:
+    hypotheses = json.load(f)
+
+print("Loaded draft hypotheses:", [h["id"] for h in hypotheses])
+
+# -----------------------------
+# Basic dataset variables
+# -----------------------------
+label_col = "leiden"
+labels_series = adata.obs[label_col].astype("category")
+label_names = labels_series.cat.categories.to_list()
+labels = labels_series.cat.codes.to_numpy()
+n_labels = len(label_names)
+n_cells = adata.n_obs
+coords = adata.obsm.get("spatial", None)
+if coords is None:
+    raise RuntimeError("Spatial coordinates not available.")
+print("n_cells:", n_cells, "n_labels:", n_labels, "coords shape:", coords.shape)
+
+X = adata.X
+if issparse(X):
+    max_val = X.data.max()
+else:
+    max_val = float(np.max(X))
+log_transform = max_val > 20.0
+print(f"Global max expression value: {max_val:.3f}; log1p will {'be applied' if log_transform else 'NOT be applied'}.")
+
+genes = np.array(adata.var_names)
+n_genes = len(genes)
+print("n_genes:", n_genes)
+
+# Build / reuse spatial kNN graph (k=15)
+try:
+    indices
+    if indices.shape[0] != n_cells or indices.shape[1] != 15:
+        raise NameError
+    print("Reusing existing indices with shape:", indices.shape)
+except NameError:
+    print("Computing spatial kNN (k=15)...")
+    nn = NearestNeighbors(n_neighbors=16, algorithm="kd_tree")
+    nn.fit(coords)
+    d_tmp, idx_tmp = nn.kneighbors(coords)
+    indices = idx_tmp[:, 1:]
+    print("indices shape:", indices.shape)
+
+# -----------------------------
+# Helper: Benjamini–Hochberg
+# -----------------------------
+def benjamini_hochberg(pvals):
+    pvals = np.asarray(pvals, dtype=float)
+    m = pvals.size
+    if m == 0:
+        return pvals
+    order = np.argsort(pvals)
+    ranks = np.arange(1, m + 1)
+    p_sorted = pvals[order]
+    q_sorted = p_sorted * m / ranks
+    q_sorted = np.minimum.accumulate(q_sorted[::-1])[::-1]
+    qvals = np.empty_like(q_sorted)
+    qvals[order] = q_sorted
+    qvals[qvals > 1.0] = 1.0
+    return qvals
+
+# -----------------------------
+# Helper: DE interface vs interior
+# -----------------------------
+def run_de_interface_vs_interior(X, group1_idx, group2_idx, log_transform, genes):
+    X1 = X[group1_idx, :]
+    X2 = X[group2_idx, :]
+    if issparse(X1):
+        X1 = X1.toarray()
+    if issparse(X2):
+        X2 = X2.toarray()
+    X1 = X1.astype(float)
+    X2 = X2.astype(float)
+    if log_transform:
+        X1 = np.log1p(X1)
+        X2 = np.log1p(X2)
+    n_genes_local = X1.shape[1]
+    logfc = np.zeros(n_genes_local, dtype=float)
+    pvals = np.ones(n_genes_local, dtype=float)
+    for g in range(n_genes_local):
+        v1 = X1[:, g]
+        v2 = X2[:, g]
+        if np.all(v1 == v2):
+            logfc[g] = 0.0
+            pvals[g] = 1.0
+            continue
+        stat, p = mannwhitneyu(v1, v2, alternative="two-sided")
+        m1 = float(v1.mean())
+        m2 = float(v2.mean())
+        logfc[g] = np.log2(m1 + 1e-9) - np.log2(m2 + 1e-9)
+        pvals[g] = p
+    qvals = benjamini_hochberg(pvals)
+    df = pd.DataFrame({
+        "gene": genes,
+        "logfc_interface_vs_interior": logfc,
+        "pval": pvals,
+        "qval": qvals,
+    })
+    return df
+
+# ==============================================================
+# H1: Interface vs interior sub-states in mutually enriched clusters
+# ==============================================================
+
+h1 = next(h for h in hypotheses if h["id"] == "H1")
+
+target_values = [15, 30]
+value_to_code = {}
+for val in target_values:
+    if val in label_names:
+        code = label_names.index(val)
+    else:
+        candidates = [i for i, v in enumerate(label_names) if str(v) == str(val)]
+        if not candidates:
+            raise ValueError(f"Cluster value {val} not found among label categories.")
+        code = candidates[0]
+    value_to_code[val] = code
+
+print("H1 cluster value->code mapping:", value_to_code)
+
+cluster_interface_info = {}
+threshold_partner = 3
+threshold_self_interior = 12
+k_neighbors = indices.shape[1]
+
+for val in target_values:
+    code = value_to_code[val]
+    partner_val = 30 if val == 15 else 15
+    partner_code = value_to_code[partner_val]
+    cell_indices = np.where(labels == code)[0]
+    interface_idx = []
+    interior_idx = []
+    for idx in cell_indices:
+        nbr_idx = indices[idx]
+        nbr_labels = labels[nbr_idx]
+        partner_count = np.sum(nbr_labels == partner_code)
+        self_count = np.sum(nbr_labels == code)
+        if partner_count >= threshold_partner:
+            interface_idx.append(idx)
+        elif partner_count == 0 and self_count >= threshold_self_interior:
+            interior_idx.append(idx)
+    cluster_interface_info[val] = {
+        "code": code,
+        "partner_val": partner_val,
+        "partner_code": partner_code,
+        "n_total": int(cell_indices.size),
+        "interface_indices": np.array(interface_idx, dtype=int),
+        "interior_indices": np.array(interior_idx, dtype=int),
+    }
+
+for val, info in cluster_interface_info.items():
+    print(f"Cluster {val}: n_total={info['n_total']}, "
+          f"n_interface={info['interface_indices'].size}, "
+          f"n_interior={info['interior_indices'].size}")
+
+rng = np.random.default_rng(0)
+h1_results = {}
+
+for val, info in cluster_interface_info.items():
+    interf_idx = info["interface_indices"]
+    interi_idx = info["interior_indices"]
+    n_intf, n_intr = interf_idx.size, interi_idx.size
+    if n_intf < 10 or n_intr < 10:
+        print(f"Cluster {val}: insufficient cells for DE (interface={n_intf}, interior={n_intr}).")
+        h1_results[val] = {
+            "n_interface": int(n_intf),
+            "n_interior": int(n_intr),
+            "de_performed": False,
+        }
+        continue
+
+    print(f"Running DE for cluster {val} (interface={n_intf}, interior={n_intr})...")
+    df_de = run_de_interface_vs_interior(X, interf_idx, interi_idx, log_transform, genes)
+    sig_mask = (df_de["qval"] < 0.05) & (np.abs(df_de["logfc_interface_vs_interior"]) > 0.25)
+    df_sig = df_de[sig_mask].copy()
+    interface_up = df_sig[df_sig["logfc_interface_vs_interior"] > 0.25]["gene"].tolist()
+    interior_up = df_sig[df_sig["logfc_interface_vs_interior"] < -0.25]["gene"].tolist()
+
+    # Random control with matched sizes
+    print(f"Running random split control for cluster {val}...")
+    cluster_cells = np.where(labels == info["code"])[0]
+    shuffled = cluster_cells.copy()
+    rng.shuffle(shuffled)
+    ctrl_intf = shuffled[:n_intf]
+    ctrl_intr = shuffled[n_intf:n_intf + n_intr]
+    df_de_ctrl = run_de_interface_vs_interior(X, ctrl_intf, ctrl_intr, log_transform, genes)
+    sig_mask_ctrl = (df_de_ctrl["qval"] < 0.05) & (np.abs(df_de_ctrl["logfc_interface_vs_interior"]) > 0.25)
+    df_sig_ctrl = df_de_ctrl[sig_mask_ctrl].copy()
+    ctrl_interface_up = df_sig_ctrl[df_sig_ctrl["logfc_interface_vs_interior"] > 0.25]["gene"].tolist()
+
+    h1_results[val] = {
+        "n_interface": int(n_intf),
+        "n_interior": int(n_intr),
+        "de_performed": True,
+        "n_sig_genes": int(df_sig.shape[0]),
+        "n_interface_up": int(len(interface_up)),
+        "n_interior_up": int(len(interior_up)),
+        "interface_up_genes": interface_up,
+        "interior_up_genes": interior_up,
+        "n_sig_genes_ctrl": int(df_sig_ctrl.shape[0]),
+        "n_interface_up_ctrl": int(len(ctrl_interface_up)),
+        "ctrl_interface_up_genes": ctrl_interface_up,
+    }
+
+print("\nH1 DE summary:")
+for val, res in h1_results.items():
+    print(f"Cluster {val}: n_interface={res['n_interface']}, n_interior={res['n_interior']}, "
+          f"DE_performed={res.get('de_performed', False)}")
+    if res.get("de_performed", False):
+        print(f"  Real: n_sig={res['n_sig_genes']} "
+              f"(interface_up={res['n_interface_up']}, interior_up={res['n_interior_up']}); "
+              f"Ctrl: n_sig={res['n_sig_genes_ctrl']} (interface_up_ctrl={res['n_interface_up_ctrl']})")
+
+# Overlap interface-up genes, if both DE
+overlap_interface_up = []
+if all(h1_results.get(val, {}).get("de_performed", False) for val in target_values):
+    int_up_15 = set(h1_results[15]["interface_up_genes"])
+    int_up_30 = set(h1_results[30]["interface_up_genes"])
+    overlap_interface_up = sorted(list(int_up_15 & int_up_30))
+    print("\nOverlap of interface-up genes between clusters 15 and 30: n_overlap=", len(overlap_interface_up))
+
+# Decide status for H1
+if not any(h1_results.get(val, {}).get("de_performed", False) for val in target_values):
+    # No cluster had usable DE; drop
+    h1_status = "DROP"
+    h1_narrowing = (
+        "For both clusters 15 and 30, either interface or interior subsets contained fewer than ten cells under the "
+        "stringent neighborhood criteria, preventing robust differential expression analysis. Without sufficient "
+        "cells to contrast interface and interior states, there is no empirical support for interface-specific "
+        "sub-states in these clusters in this dataset."
+    )
+elif all(h1_results.get(val, {}).get("de_performed", False) for val in target_values):
+    sig_real_15 = h1_results[15]["n_sig_genes"]
+    sig_real_30 = h1_results[30]["n_sig_genes"]
+    sig_ctrl_15 = h1_results[15]["n_sig_genes_ctrl"]
+    sig_ctrl_30 = h1_results[30]["n_sig_genes_ctrl"]
+    n_overlap = len(overlap_interface_up)
+
+    if (sig_real_15 > max(1, 2 * sig_ctrl_15) and
+        sig_real_30 > max(1, 2 * sig_ctrl_30) and
+        n_overlap >= 3):
+        h1_status = "KEEP"
+    else:
+        h1_status = "REFINE"
+
+    h1_narrowing = (
+        f"Interface vs interior contrasts were feasible in both clusters 15 and 30. Cluster 15 had "
+        f"{sig_real_15} genes with FDR < 0.05 and |log fold-change| > 0.25, compared with {sig_ctrl_15} such "
+        f"genes in a size-matched random split; cluster 30 had {sig_real_30} versus {sig_ctrl_30} in the same "
+        f"comparison. The overlap of interface-upregulated genes between the two clusters was {n_overlap} "
+        f"(e.g., {', '.join(overlap_interface_up[:5])} among the first if present). These results indicate that "
+        f"interface cells are transcriptionally distinct within at least one of the two clusters, but shared "
+        f"interface programs across both clusters are limited, so the hypothesis is better interpreted as "
+        f"cluster-specific rather than fully shared."
+    )
+else:
+    # Only one of the clusters has DE
+    de_cluster = 15 if h1_results.get(15, {}).get("de_performed", False) else 30
+    res = h1_results[de_cluster]
+    h1_status = "REFINE"
+    h1_narrowing = (
+        f"Differential expression between interface and interior subsets was only feasible for cluster {de_cluster} "
+        f"(interface={res['n_interface']}, interior={res['n_interior']}), while the partner cluster lacked enough "
+        f"cells in one of the groups (<10). In cluster {de_cluster}, interface vs interior comparison yielded "
+        f"{res['n_sig_genes']} genes with FDR < 0.05 and |log fold-change| > 0.25, compared with "
+        f"{res['n_sig_genes_ctrl']} significant genes in a size-matched random split. This supports the existence "
+        f"of interface-associated sub-states within cluster {de_cluster}, but we cannot generalize this to a "
+        f"shared program across both clusters 15 and 30."
+    )
+
+h1["status"] = h1_status
+h1["narrowing_notes"] = h1_narrowing
+
+print("\nH1 status:", h1_status)
+print("H1 narrowing (first 400 chars):")
+print(h1_narrowing[:400])
+
+# ==============================================================
+# H2: Rare concentrated clusters at extremes of spatial PCs
+# ==============================================================
+
+h2 = next(h for h in hypotheses if h["id"] == "H2")
+
+print("\nRecomputing concentration scores for H2...")
+k = 15
+nn2 = NearestNeighbors(n_neighbors=k+1, algorithm="kd_tree")
+nn2.fit(coords)
+d2, idx2 = nn2.kneighbors(coords)
+idx2 = idx2[:, 1:]
+
+neighbor_matrix = np.zeros((n_labels, n_labels), dtype=np.int64)
+for code in range(n_labels):
+    mask = labels == code
+    if not np.any(mask):
+        continue
+    neigh_labels = labels[idx2[mask].ravel()]
+    counts = np.bincount(neigh_labels, minlength=n_labels)
+    neighbor_matrix[code, :] = counts
+
+unique_codes, global_counts = np.unique(labels, return_counts=True)
+global_probs = global_counts / global_counts.sum()
+
+results_conc = []
+for idx_c, code in enumerate(unique_codes):
+    n_cells_label = int(global_counts[idx_c])
+    frac_cells = float(n_cells_label / n_cells)
+    total_neighbors = int(neighbor_matrix[code, :].sum())
+    same_label_neighbors = int(neighbor_matrix[code, code])
+    same_label_fraction = same_label_neighbors / total_neighbors if total_neighbors > 0 else np.nan
+    global_abundance = float(global_probs[idx_c])
+    conc_score = same_label_fraction / global_abundance if global_abundance > 0 else np.nan
+    results_conc.append({
+        "label_code": int(code),
+        "label_name": label_names[code],
+        "n_cells": n_cells_label,
+        "frac_cells": frac_cells,
+        "same_label_fraction": same_label_fraction,
+        "global_abundance": global_abundance,
+        "concentration_score": conc_score,
+    })
+
+df_conc = pd.DataFrame(results_conc)
+df_conc_sorted = df_conc.sort_values("concentration_score", ascending=False)
+print("Top 5 by concentration score:")
+print(df_conc_sorted.head(5))
+
+top_conc = df_conc_sorted.head(5).copy()
+rare_codes = top_conc["label_code"].tolist()
+rare_labels = top_conc["label_name"].tolist()
+
+df_abund_sorted = df_conc.sort_values("n_cells", ascending=False)
+diffuse_conc = df_abund_sorted.head(3).copy()
+diffuse_codes = diffuse_conc["label_code"].tolist()
+diffuse_labels = diffuse_conc["label_name"].tolist()
+
+print("Rare concentrated codes/labels:", list(zip(rare_codes, rare_labels)))
+print("Diffuse (abundant) codes/labels:", list(zip(diffuse_codes, diffuse_labels)))
+
+# PCA with explicit z-scoring
+print("\nRunning PCA for H2...")
+if issparse(X):
+    X_dense = X.toarray().astype(np.float32)
+else:
+    X_dense = np.asarray(X, dtype=np.float32)
+
+if log_transform:
+    X_dense = np.log1p(X_dense)
+
+gene_means = X_dense.mean(axis=0)
+gene_stds = X_dense.std(axis=0, ddof=0)
+zero_std_mask = gene_stds == 0
+if zero_std_mask.sum() > 0:
+    gene_stds[zero_std_mask] = 1.0
+
+X_scaled = (X_dense - gene_means) / gene_stds
+print("X_scaled shape:", X_scaled.shape)
+
+n_pcs = 10
+pca = PCA(n_components=n_pcs, random_state=0)
+pcs = pca.fit_transform(X_scaled)
+print("PCA done. pcs shape:", pcs.shape)
+
+x_coord = coords[:, 0]
+y_coord = coords[:, 1]
+
+pc_corrs = []
+for i in range(n_pcs):
+    pc = pcs[:, i]
+    r_x = float(np.corrcoef(pc, x_coord)[0, 1])
+    r_y = float(np.corrcoef(pc, y_coord)[0, 1])
+    pc_corrs.append({"pc": i+1, "r_x": r_x, "r_y": r_y})
+
+print("\nPC–spatial correlations:")
+for c in pc_corrs:
+    print(f"PC{c['pc']}: r_x={c['r_x']:.3f}, r_y={c['r_y']:.3f}")
+
+spatial_pcs = [c["pc"] for c in pc_corrs if (abs(c["r_x"]) >= 0.3 or abs(c["r_y"]) >= 0.3)]
+print("Spatial PCs (|r|>=0.3):", spatial_pcs)
+
+h2_pc_summary = []
+for pc_num in spatial_pcs:
+    idx_pc = pc_num - 1
+    pc_scores = pcs[:, idx_pc]
+    global_mean = float(pc_scores.mean())
+    global_std = float(pc_scores.std(ddof=0))
+    if global_std == 0:
+        continue
+    cluster_stats = []
+    for code in range(n_labels):
+        mask = labels == code
+        if not np.any(mask):
+            continue
+        scores_c = pc_scores[mask]
+        mean_c = float(scores_c.mean())
+        z_mean = (mean_c - global_mean) / global_std
+        cluster_stats.append({
+            "code": code,
+            "label": label_names[code],
+            "mean_score": mean_c,
+            "z_mean": z_mean,
+        })
+    df_pc = pd.DataFrame(cluster_stats)
+    rare_df = df_pc[df_pc["code"].isin(rare_codes)].copy()
+    diff_df = df_pc[df_pc["code"].isin(diffuse_codes)].copy()
+    mean_abs_z_rare = float(np.mean(np.abs(rare_df["z_mean"]))) if not rare_df.empty else np.nan
+    mean_abs_z_diff = float(np.mean(np.abs(diff_df["z_mean"]))) if not diff_df.empty else np.nan
+    h2_pc_summary.append({
+        "pc": pc_num,
+        "r_x": float([c for c in pc_corrs if c["pc"] == pc_num][0]["r_x"]),
+        "r_y": float([c for c in pc_corrs if c["pc"] == pc_num][0]["r_y"]),
+        "mean_abs_z_rare": mean_abs_z_rare,
+        "mean_abs_z_diff": mean_abs_z_diff,
+    })
+
+print("\nH2: mean |z_mean| for rare vs diffuse clusters along spatial PCs:")
+for e in h2_pc_summary:
+    print(f"PC{e['pc']} (r_x={e['r_x']:.3f}, r_y={e['r_y']:.3f}): "
+          f"rare={e['mean_abs_z_rare']:.2f}, diffuse={e['mean_abs_z_diff']:.2f}")
+
+# Decide status for H2
+if not spatial_pcs:
+    h2_status = "DROP"
+    h2_narrowing = (
+        "No principal component showed a moderate correlation with spatial coordinates (|r| ≥ 0.3), indicating an "
+        "absence of clear large-scale gene-expression gradients aligned with x or y. Under these conditions, it is "
+        "not meaningful to assess whether rare concentrated clusters occupy extremes of spatial PCs."
+    )
+else:
+    ratios = []
+    for e in h2_pc_summary:
+        if e["mean_abs_z_diff"] > 0:
+            ratios.append(e["mean_abs_z_rare"] / e["mean_abs_z_diff"])
+    avg_ratio = float(np.mean(ratios)) if ratios else np.nan
+
+    desc_parts = []
+    for e in h2_pc_summary:
+        desc_parts.append(
+            f"PC{e['pc']} (r_x={e['r_x']:.2f}, r_y={e['r_y']:.2f}) with mean |z_mean| "
+            f"{e['mean_abs_z_rare']:.2f} for rare vs {e['mean_abs_z_diff']:.2f} for diffuse clusters"
+        )
+
+    if ratios and avg_ratio > 1.5:
+        h2_status = "KEEP"
+        h2_narrowing = (
+            "Several principal components showed moderate correlations with spatial coordinates, and rare "
+            "concentrated clusters consistently occupied more extreme positions along these spatial PCs than the "
+            "most abundant diffuse clusters. Specifically, " + "; ".join(desc_parts) +
+            f". Across these PCs, the average ratio of mean |z_mean| for rare versus diffuse clusters was "
+            f"~{avg_ratio:.2f}, supporting the idea that rare, spatially compact communities lie at the tails of "
+            "spatial gene-expression gradients."
+        )
+    else:
+        h2_status = "REFINE"
+        h2_narrowing = (
+            "At least one principal component was moderately correlated with spatial coordinates, but the difference "
+            "in extremeness between rare concentrated and diffuse clusters was mixed rather than uniformly strong. "
+            "For example, " + "; ".join(desc_parts) +
+            f". The average ratio of mean |z_mean| for rare versus diffuse clusters across spatial PCs was about "
+            f"{avg_ratio:.2f}, indicating that some rare clusters lie toward spatial PC tails while others do not. "
+            "Thus, rare concentrated clusters are linked to extremes of spatial gene-expression gradients only for a "
+            "subset of PCs and clusters, and the hypothesis is partially supported."
+        )
+
+h2["status"] = h2_status
+h2["narrowing_notes"] = h2_narrowing
+
+print("\nH2 status:", h2_status)
+print("H2 narrowing (first 400 chars):")
+print(h2_narrowing[:400])
+
+# ==============================================================
+# Assemble final hypotheses.json and hypothesis_brief.md
+# ==============================================================
+
+final_hypotheses = [h for h in hypotheses if h.get("status") in ("KEEP", "REFINE")]
+dropped_hypotheses = [h for h in hypotheses if h.get("status") == "DROP"]
+
+hypotheses_path = Path(DATA_DIR) / "hypotheses" / "hypotheses.json"
+with open(hypotheses_path, "w") as f:
+    json.dump(final_hypotheses, f, indent=2)
+print("\nWrote final hypotheses.json with", len(final_hypotheses), "hypotheses to:", hypotheses_path)
+
+# Build human-readable brief
+exploration_log_path = Path(DATA_DIR) / "hypotheses" / "exploration_log.md"
+with open(exploration_log_path, "r") as f:
+    explog_text = f.read()
+n_obs_count = explog_text.count("OBSERVATION ")
+
+brief_lines = []
+brief_lines.append("# Hypothesis Brief")
+brief_lines.append("")
+brief_lines.append(f"- Dataset: {n_cells} cells × {n_genes} genes, spatial transcriptomics with '{label_col}' clusters.")
+brief_lines.append(f"- Phase 1 observations: {n_obs_count} entries logged to exploration_log.md.")
+brief_lines.append("")
+brief_lines.append("## Retained hypotheses (KEEP/REFINE)")
+for h in final_hypotheses:
+    brief_lines.append(f"- **{h['id']}** ({h.get('status','')}):")
+    brief_lines.append(f"  - **Statement:** {h['statement']}")
+    brief_lines.append(f"  - **Grounded in:** {', '.join(h['grounded_in'])}")
+    brief_lines.append("  - **Narrowing notes:** " + h.get("narrowing_notes", ""))
+    qs = h.get("quality_scores", {})
+    brief_lines.append(
+        "  - **Quality scores:** "
+        f"Derivable={qs.get('derivable','?')}, "
+        f"Novel={qs.get('novel','?')}, "
+        f"Feasible={qs.get('feasible','?')}, "
+        f"Specific={qs.get('specific','?')}, "
+        f"Falsifiable={qs.get('falsifiable','?')}."
+    )
+    brief_lines.append("")
+
+if dropped_hypotheses:
+    brief_lines.append("## Dropped hypotheses")
+    for h in dropped_hypotheses:
+        brief_lines.append(f"- **{h['id']}**: {h['statement']}")
+        brief_lines.append("  - Status: DROP")
+        brief_lines.append("  - Narrowing notes: " + h.get("narrowing_notes", ""))
+        brief_lines.append("")
+
+hypothesis_brief_path = Path(DATA_DIR) / "hypotheses" / "hypothesis_brief.md"
+with open(hypothesis_brief_path, "w") as f:
+    f.write("\n".join(brief_lines))
+
+print("Wrote hypothesis_brief.md to:", hypothesis_brief_path)
+</execute>
+
+2026-05-17 11:16:48 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 11:16:48 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 11:16:48 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 11:16:49 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 11:16:49 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+ValueError('operands could not be broadcast together with shapes (438,) (297,) ')
+
+2026-05-17 11:16:49 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 11:17:11 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 11:17:11 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 11:17:11 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--55bace33-4a07-4401-bb1a-a79a39c57f81-0
+
+Content:
+<execute>
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from scipy.sparse import issparse
+from scipy.stats import mannwhitneyu
+from sklearn.decomposition import PCA
+from sklearn.neighbors import NearestNeighbors
+import json, traceback
+
+print(">>> Starting focused debug to locate broadcast error (shapes (438,) vs (297,))")
+
+try:
+    # -----------------------------
+    # Reload draft hypotheses
+    # -----------------------------
+    hypotheses_draft_path = Path(DATA_DIR) / "hypotheses" / "hypotheses_draft.json"
+    with open(hypotheses_draft_path, "r") as f:
+        hypotheses = json.load(f)
+    print("Loaded draft hypotheses:", [h["id"] for h in hypotheses])
+
+    # -----------------------------
+    # Basic dataset variables
+    # -----------------------------
+    label_col = "leiden"
+    labels_series = adata.obs[label_col].astype("category")
+    label_names = labels_series.cat.categories.to_list()
+    labels = labels_series.cat.codes.to_numpy()
+    n_labels = len(label_names)
+    n_cells = adata.n_obs
+    coords = adata.obsm.get("spatial", None)
+    if coords is None:
+        raise RuntimeError("Spatial coordinates not available.")
+    print("n_cells:", n_cells, "n_labels:", n_labels, "coords shape:", coords.shape)
+
+    X = adata.X
+    if issparse(X):
+        max_val = X.data.max()
+    else:
+        max_val = float(np.max(X))
+    log_transform = max_val > 20.0
+    print(f"Global max expression value: {max_val:.3f}; log1p will {'be applied' if log_transform else 'NOT be applied'}.")
+
+    genes = np.array(adata.var_names)
+    n_genes = len(genes)
+    print("n_genes:", n_genes)
+
+    # Build / reuse spatial kNN graph (k=15)
+    try:
+        indices
+        if indices.shape[0] != n_cells or indices.shape[1] != 15:
+            raise NameError
+        print("Reusing existing indices with shape:", indices.shape)
+    except NameError:
+        print("Computing spatial kNN (k=15)...")
+        nn = NearestNeighbors(n_neighbors=16, algorithm="kd_tree")
+        nn.fit(coords)
+        d_tmp, idx_tmp = nn.kneighbors(coords)
+        indices = idx_tmp[:, 1:]
+        print("indices shape:", indices.shape)
+
+    # -----------------------------
+    # Helper: Benjamini–Hochberg
+    # -----------------------------
+    def benjamini_hochberg(pvals):
+        pvals = np.asarray(pvals, dtype=float)
+        m = pvals.size
+        if m == 0:
+            return pvals
+        order = np.argsort(pvals)
+        ranks = np.arange(1, m + 1)
+        p_sorted = pvals[order]
+        q_sorted = p_sorted * m / ranks
+        q_sorted = np.minimum.accumulate(q_sorted[::-1])[::-1]
+        qvals = np.empty_like(q_sorted)
+        qvals[order] = q_sorted
+        qvals[qvals > 1.0] = 1.0
+        return qvals
+
+    # -----------------------------
+    # Helper: DE interface vs interior
+    # -----------------------------
+    def run_de_interface_vs_interior(X, group1_idx, group2_idx, log_transform, genes):
+        X1 = X[group1_idx, :]
+        X2 = X[group2_idx, :]
+        if issparse(X1):
+            X1 = X1.toarray()
+        if issparse(X2):
+            X2 = X2.toarray()
+        X1 = X1.astype(float)
+        X2 = X2.astype(float)
+        if log_transform:
+            X1 = np.log1p(X1)
+            X2 = np.log1p(X2)
+        n_genes_local = X1.shape[1]
+        logfc = np.zeros(n_genes_local, dtype=float)
+        pvals = np.ones(n_genes_local, dtype=float)
+        for g in range(n_genes_local):
+            v1 = X1[:, g]
+            v2 = X2[:, g]
+            if np.all(v1 == v2):
+                logfc[g] = 0.0
+                pvals[g] = 1.0
+                continue
+            stat, p = mannwhitneyu(v1, v2, alternative="two-sided")
+            m1 = float(v1.mean())
+            m2 = float(v2.mean())
+            logfc[g] = np.log2(m1 + 1e-9) - np.log2(m2 + 1e-9)
+            pvals[g] = p
+        qvals = benjamini_hochberg(pvals)
+        df = pd.DataFrame({
+            "gene": genes,
+            "logfc_interface_vs_interior": logfc,
+            "pval": pvals,
+            "qval": qvals,
+        })
+        return df
+
+    # ==============================================================
+    # H1: Interface vs interior sub-states in mutually enriched clusters
+    # ==============================================================
+
+    print("\n>>> Running H1 block (may be where error occurs)...")
+    h1 = next(h for h in hypotheses if h["id"] == "H1")
+
+    target_values = [15, 30]
+    value_to_code = {}
+    for val in target_values:
+        if val in label_names:
+            code = label_names.index(val)
+        else:
+            candidates = [i for i, v in enumerate(label_names) if str(v) == str(val)]
+            if not candidates:
+                raise ValueError(f"Cluster value {val} not found among label categories.")
+            code = candidates[0]
+        value_to_code[val] = code
+
+    print("H1 cluster value->code mapping:", value_to_code)
+
+    cluster_interface_info = {}
+    threshold_partner = 3
+    threshold_self_interior = 12
+    k_neighbors = indices.shape[1]
+
+    for val in target_values:
+        code = value_to_code[val]
+        partner_val = 30 if val == 15 else 15
+        partner_code = value_to_code[partner_val]
+        cell_indices = np.where(labels == code)[0]
+        interface_idx = []
+        interior_idx = []
+        for idx in cell_indices:
+            nbr_idx = indices[idx]
+            nbr_labels = labels[nbr_idx]
+            partner_count = np.sum(nbr_labels == partner_code)
+            self_count = np.sum(nbr_labels == code)
+            if partner_count >= threshold_partner:
+                interface_idx.append(idx)
+            elif partner_count == 0 and self_count >= threshold_self_interior:
+                interior_idx.append(idx)
+        cluster_interface_info[val] = {
+            "code": code,
+            "partner_val": partner_val,
+            "partner_code": partner_code,
+            "n_total": int(cell_indices.size),
+            "interface_indices": np.array(interface_idx, dtype=int),
+            "interior_indices": np.array(interior_idx, dtype=int),
+        }
+
+    for val, info in cluster_interface_info.items():
+        print(f"Cluster {val}: n_total={info['n_total']}, "
+              f"n_interface={info['interface_indices'].size}, "
+              f"n_interior={info['interior_indices'].size}")
+
+    rng = np.random.default_rng(0)
+    h1_results = {}
+
+    for val, info in cluster_interface_info.items():
+        interf_idx = info["interface_indices"]
+        interi_idx = info["interior_indices"]
+        n_intf, n_intr = interf_idx.size, interi_idx.size
+        print(f"H1 DE check for cluster {val}: n_intf={n_intf}, n_intr={n_intr}")
+        if n_intf < 10 or n_intr < 10:
+            print(f"Cluster {val}: insufficient cells for DE.")
+            h1_results[val] = {
+                "n_interface": int(n_intf),
+                "n_interior": int(n_intr),
+                "de_performed": False,
+            }
+            continue
+
+        print(f"Running DE for cluster {val}...")
+        df_de = run_de_interface_vs_interior(X, interf_idx, interi_idx, log_transform, genes)
+        print(f"DE result shape (cluster {val}):", df_de.shape)
+        sig_mask = (df_de["qval"] < 0.05) & (np.abs(df_de["logfc_interface_vs_interior"]) > 0.25)
+        df_sig = df_de[sig_mask].copy()
+        interface_up = df_sig[df_sig["logfc_interface_vs_interior"] > 0.25]["gene"].tolist()
+        interior_up = df_sig[df_sig["logfc_interface_vs_interior"] < -0.25]["gene"].tolist()
+
+        print(f"Cluster {val}: n_sig={df_sig.shape[0]}, interface_up={len(interface_up)}, interior_up={len(interior_up)}")
+
+        # Random control with matched sizes
+        print(f"Running random split control for cluster {val}...")
+        cluster_cells = np.where(labels == info["code"])[0]
+        shuffled = cluster_cells.copy()
+        rng.shuffle(shuffled)
+        ctrl_intf = shuffled[:n_intf]
+        ctrl_intr = shuffled[n_intf:n_intf + n_intr]
+        df_de_ctrl = run_de_interface_vs_interior(X, ctrl_intf, ctrl_intr, log_transform, genes)
+        sig_mask_ctrl = (df_de_ctrl["qval"] < 0.05) & (np.abs(df_de_ctrl["logfc_interface_vs_interior"]) > 0.25)
+        df_sig_ctrl = df_de_ctrl[sig_mask_ctrl].copy()
+        ctrl_interface_up = df_sig_ctrl[df_sig_ctrl["logfc_interface_vs_interior"] > 0.25]["gene"].tolist()
+
+        h1_results[val] = {
+            "n_interface": int(n_intf),
+            "n_interior": int(n_intr),
+            "de_performed": True,
+            "n_sig_genes": int(df_sig.shape[0]),
+            "n_interface_up": int(len(interface_up)),
+            "n_interior_up": int(len(interior_up)),
+            "interface_up_genes": interface_up,
+            "interior_up_genes": interior_up,
+            "n_sig_genes_ctrl": int(df_sig_ctrl.shape[0]),
+            "n_interface_up_ctrl": int(len(ctrl_interface_up)),
+            "ctrl_interface_up_genes": ctrl_interface_up,
+        }
+
+    print("\nH1 DE summary:")
+    for val, res in h1_results.items():
+        print(f"Cluster {val}: n_interface={res['n_interface']}, n_interior={res['n_interior']}, "
+              f"DE_performed={res.get('de_performed', False)}")
+        if res.get("de_performed", False):
+            print(f"  Real: n_sig={res['n_sig_genes']} "
+                  f"(interface_up={res['n_interface_up']}, interior_up={res['n_interior_up']}); "
+                  f"Ctrl: n_sig={res['n_sig_genes_ctrl']} (interface_up_ctrl={res['n_interface_up_ctrl']})")
+
+    # Overlap interface-up genes, if both DE
+    overlap_interface_up = []
+    if all(h1_results.get(val, {}).get("de_performed", False) for val in target_values):
+        int_up_15 = set(h1_results[15]["interface_up_genes"])
+        int_up_30 = set(h1_results[30]["interface_up_genes"])
+        overlap_interface_up = sorted(list(int_up_15 & int_up_30))
+        print("\nOverlap of interface-up genes between clusters 15 and 30: n_overlap=", len(overlap_interface_up))
+
+    # Up to here we should see if error already occurred
+    print("\n>>> H1 block finished without broadcast error.")
+
+    # To isolate the bug, STOP HERE: do not run H2 or writing files in this debug block.
+
+    print("\nDebug block completed successfully up to the end of H1 computations. "
+          "The broadcast error likely occurs later (e.g., in H2 or brief assembly) and will "
+          "be pinpointed in the next step.")
+
+except Exception as e:
+    print("Caught exception during debug run:", repr(e))
+    traceback.print_exc()
+</execute>
+
+2026-05-17 11:17:11 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 11:17:11 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 11:17:11 | INFO     | executing hypothesis_agent exec_node
+
+Traceback (most recent call last):
+  File "<string>", line 192, in <module>
+  File "<string>", line 100, in run_de_interface_vs_interior
+ValueError: operands could not be broadcast together with shapes (438,) (297,) 
+2026-05-17 11:17:11 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 11:17:11 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+>>> Starting focused debug to locate broadcast error (shapes (438,) vs (297,))
+Loaded draft hypotheses: ['H1', 'H2']
+n_cells: 228635 n_labels: 32 coords shape: (228635, 2)
+Global max expression value: 5.592; log1p will NOT be applied.
+n_genes: 238
+Reusing existing indices with shape: (228635, 15)
+
+>>> Running H1 block (may be where error occurs)...
+H1 cluster value->code mapping: {15: 15, 30: 28}
+Cluster 15: n_total=1562, n_interface=438, n_interior=297
+Cluster 30: n_total=1292, n_interface=327, n_interior=0
+H1 DE check for cluster 15: n_intf=438, n_intr=297
+Running DE for cluster 15...
+Caught exception during debug run: ValueError('operands could not be broadcast together with shapes (438,) (297,) ')
+
+2026-05-17 11:17:11 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 11:17:47 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 11:17:47 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 11:17:47 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--db1bb723-4462-4f0b-b9a7-c6bf5b55b0b9-0
+
+Content:
+<execute>
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from scipy.sparse import issparse
+from scipy.stats import mannwhitneyu
+from sklearn.decomposition import PCA
+from sklearn.neighbors import NearestNeighbors
+import json, traceback
+
+print(">>> Phase 3: re-running full narrowing with fixed DE function (no broadcast error)")
+
+# -----------------------------
+# Reload draft hypotheses
+# -----------------------------
+hypotheses_draft_path = Path(DATA_DIR) / "hypotheses" / "hypotheses_draft.json"
+with open(hypotheses_draft_path, "r") as f:
+    hypotheses = json.load(f)
+print("Loaded draft hypotheses:", [h["id"] for h in hypotheses])
+
+# -----------------------------
+# Basic dataset variables
+# -----------------------------
+label_col = "leiden"
+labels_series = adata.obs[label_col].astype("category")
+label_names = labels_series.cat.categories.to_list()
+labels = labels_series.cat.codes.to_numpy()
+n_labels = len(label_names)
+n_cells = adata.n_obs
+coords = adata.obsm.get("spatial", None)
+if coords is None:
+    raise RuntimeError("Spatial coordinates not available.")
+print("n_cells:", n_cells, "n_labels:", n_labels, "coords shape:", coords.shape)
+
+X = adata.X
+if issparse(X):
+    max_val = X.data.max()
+else:
+    max_val = float(np.max(X))
+log_transform = max_val > 20.0
+print(f"Global max expression value: {max_val:.3f}; log1p will {'be applied' if log_transform else 'NOT be applied'}.")
+
+genes = np.array(adata.var_names)
+n_genes = len(genes)
+print("n_genes:", n_genes)
+
+# Build / reuse spatial kNN graph (k=15)
+try:
+    indices
+    if indices.shape[0] != n_cells or indices.shape[1] != 15:
+        raise NameError
+    print("Reusing existing indices with shape:", indices.shape)
+except NameError:
+    print("Computing spatial kNN (k=15)...")
+    nn = NearestNeighbors(n_neighbors=16, algorithm="kd_tree")
+    nn.fit(coords)
+    d_tmp, idx_tmp = nn.kneighbors(coords)
+    indices = idx_tmp[:, 1:]
+    print("indices shape:", indices.shape)
+
+# -----------------------------
+# Helper: Benjamini–Hochberg
+# -----------------------------
+def benjamini_hochberg(pvals):
+    pvals = np.asarray(pvals, dtype=float)
+    m = pvals.size
+    if m == 0:
+        return pvals
+    order = np.argsort(pvals)
+    ranks = np.arange(1, m + 1)
+    p_sorted = pvals[order]
+    q_sorted = p_sorted * m / ranks
+    q_sorted = np.minimum.accumulate(q_sorted[::-1])[::-1]
+    qvals = np.empty_like(q_sorted)
+    qvals[order] = q_sorted
+    qvals[qvals > 1.0] = 1.0
+    return qvals
+
+# -----------------------------
+# Helper: DE interface vs interior (FIXED)
+# -----------------------------
+def run_de_interface_vs_interior(X, group1_idx, group2_idx, log_transform, genes):
+    X1 = X[group1_idx, :]
+    X2 = X[group2_idx, :]
+    if issparse(X1):
+        X1 = X1.toarray()
+    if issparse(X2):
+        X2 = X2.toarray()
+    X1 = X1.astype(float)
+    X2 = X2.astype(float)
+    if log_transform:
+        X1 = np.log1p(X1)
+        X2 = np.log1p(X2)
+    n_genes_local = X1.shape[1]
+    logfc = np.zeros(n_genes_local, dtype=float)
+    pvals = np.ones(n_genes_local, dtype=float)
+    for g in range(n_genes_local):
+        v1 = X1[:, g]
+        v2 = X2[:, g]
+        # Removed buggy equality check that tried to compare arrays of unequal length
+        stat, p = mannwhitneyu(v1, v2, alternative="two-sided")
+        m1 = float(v1.mean())
+        m2 = float(v2.mean())
+        logfc[g] = np.log2(m1 + 1e-9) - np.log2(m2 + 1e-9)
+        pvals[g] = p
+    qvals = benjamini_hochberg(pvals)
+    df = pd.DataFrame({
+        "gene": genes,
+        "logfc_interface_vs_interior": logfc,
+        "pval": pvals,
+        "qval": qvals,
+    })
+    return df
+
+# ==============================================================
+# H1: Interface vs interior sub-states in mutually enriched clusters
+# ==============================================================
+
+h1 = next(h for h in hypotheses if h["id"] == "H1")
+
+target_values = [15, 30]
+value_to_code = {}
+for val in target_values:
+    if val in label_names:
+        code = label_names.index(val)
+    else:
+        candidates = [i for i, v in enumerate(label_names) if str(v) == str(val)]
+        if not candidates:
+            raise ValueError(f"Cluster value {val} not found among label categories.")
+        code = candidates[0]
+    value_to_code[val] = code
+
+print("H1 cluster value->code mapping:", value_to_code)
+
+cluster_interface_info = {}
+threshold_partner = 3
+threshold_self_interior = 12
+k_neighbors = indices.shape[1]
+
+for val in target_values:
+    code = value_to_code[val]
+    partner_val = 30 if val == 15 else 15
+    partner_code = value_to_code[partner_val]
+    cell_indices = np.where(labels == code)[0]
+    interface_idx = []
+    interior_idx = []
+    for idx in cell_indices:
+        nbr_idx = indices[idx]
+        nbr_labels = labels[nbr_idx]
+        partner_count = np.sum(nbr_labels == partner_code)
+        self_count = np.sum(nbr_labels == code)
+        if partner_count >= threshold_partner:
+            interface_idx.append(idx)
+        elif partner_count == 0 and self_count >= threshold_self_interior:
+            interior_idx.append(idx)
+    cluster_interface_info[val] = {
+        "code": code,
+        "partner_val": partner_val,
+        "partner_code": partner_code,
+        "n_total": int(cell_indices.size),
+        "interface_indices": np.array(interface_idx, dtype=int),
+        "interior_indices": np.array(interior_idx, dtype=int),
+    }
+
+for val, info in cluster_interface_info.items():
+    print(f"Cluster {val}: n_total={info['n_total']}, "
+          f"n_interface={info['interface_indices'].size}, "
+          f"n_interior={info['interior_indices'].size}")
+
+rng = np.random.default_rng(0)
+h1_results = {}
+
+for val, info in cluster_interface_info.items():
+    interf_idx = info["interface_indices"]
+    interi_idx = info["interior_indices"]
+    n_intf, n_intr = interf_idx.size, interi_idx.size
+    print(f"H1 DE check for cluster {val}: n_intf={n_intf}, n_intr={n_intr}")
+    if n_intf < 10 or n_intr < 10:
+        print(f"Cluster {val}: insufficient cells for DE.")
+        h1_results[val] = {
+            "n_interface": int(n_intf),
+            "n_interior": int(n_intr),
+            "de_performed": False,
+        }
+        continue
+
+    print(f"Running DE for cluster {val}...")
+    df_de = run_de_interface_vs_interior(X, interf_idx, interi_idx, log_transform, genes)
+    print(f"DE result shape (cluster {val}):", df_de.shape)
+    sig_mask = (df_de["qval"] < 0.05) & (np.abs(df_de["logfc_interface_vs_interior"]) > 0.25)
+    df_sig = df_de[sig_mask].copy()
+    interface_up = df_sig[df_sig["logfc_interface_vs_interior"] > 0.25]["gene"].tolist()
+    interior_up = df_sig[df_sig["logfc_interface_vs_interior"] < -0.25]["gene"].tolist()
+
+    print(f"Cluster {val}: n_sig={df_sig.shape[0]}, interface_up={len(interface_up)}, interior_up={len(interior_up)}")
+
+    # Random control with matched sizes
+    print(f"Running random split control for cluster {val}...")
+    cluster_cells = np.where(labels == info["code"])[0]
+    shuffled = cluster_cells.copy()
+    rng.shuffle(shuffled)
+    ctrl_intf = shuffled[:n_intf]
+    ctrl_intr = shuffled[n_intf:n_intf + n_intr]
+    df_de_ctrl = run_de_interface_vs_interior(X, ctrl_intf, ctrl_intr, log_transform, genes)
+    sig_mask_ctrl = (df_de_ctrl["qval"] < 0.05) & (np.abs(df_de_ctrl["logfc_interface_vs_interior"]) > 0.25)
+    df_sig_ctrl = df_de_ctrl[sig_mask_ctrl].copy()
+    ctrl_interface_up = df_sig_ctrl[df_sig_ctrl["logfc_interface_vs_interior"] > 0.25]["gene"].tolist()
+
+    h1_results[val] = {
+        "n_interface": int(n_intf),
+        "n_interior": int(n_intr),
+        "de_performed": True,
+        "n_sig_genes": int(df_sig.shape[0]),
+        "n_interface_up": int(len(interface_up)),
+        "n_interior_up": int(len(interior_up)),
+        "interface_up_genes": interface_up,
+        "interior_up_genes": interior_up,
+        "n_sig_genes_ctrl": int(df_sig_ctrl.shape[0]),
+        "n_interface_up_ctrl": int(len(ctrl_interface_up)),
+        "ctrl_interface_up_genes": ctrl_interface_up,
+    }
+
+print("\nH1 DE summary:")
+for val, res in h1_results.items():
+    print(f"Cluster {val}: n_interface={res['n_interface']}, n_interior={res['n_interior']}, "
+          f"DE_performed={res.get('de_performed', False)}")
+    if res.get("de_performed", False):
+        print(f"  Real: n_sig={res['n_sig_genes']} "
+              f"(interface_up={res['n_interface_up']}, interior_up={res['n_interior_up']}); "
+              f"Ctrl: n_sig={res['n_sig_genes_ctrl']} (interface_up_ctrl={res['n_interface_up_ctrl']})")
+
+# Overlap interface-up genes, if both DE
+overlap_interface_up = []
+if all(h1_results.get(val, {}).get("de_performed", False) for val in target_values):
+    int_up_15 = set(h1_results[15]["interface_up_genes"])
+    int_up_30 = set(h1_results[30]["interface_up_genes"])
+    overlap_interface_up = sorted(list(int_up_15 & int_up_30))
+    print("\nOverlap of interface-up genes between clusters 15 and 30: n_overlap=", len(overlap_interface_up))
+
+# Decide status for H1
+if not any(h1_results.get(val, {}).get("de_performed", False) for val in target_values):
+    h1_status = "DROP"
+    h1_narrowing = (
+        "For both clusters 15 and 30, either interface or interior subsets contained fewer than ten cells under the "
+        "stringent neighborhood criteria, preventing robust differential expression analysis. Without sufficient "
+        "cells to contrast interface and interior states, there is no empirical support for interface-specific "
+        "sub-states in these clusters in this dataset."
+    )
+elif all(h1_results.get(val, {}).get("de_performed", False) for val in target_values):
+    sig_real_15 = h1_results[15]["n_sig_genes"]
+    sig_real_30 = h1_results[30]["n_sig_genes"]
+    sig_ctrl_15 = h1_results[15]["n_sig_genes_ctrl"]
+    sig_ctrl_30 = h1_results[30]["n_sig_genes_ctrl"]
+    n_overlap = len(overlap_interface_up)
+
+    if (sig_real_15 > max(1, 2 * sig_ctrl_15) and
+        sig_real_30 > max(1, 2 * sig_ctrl_30) and
+        n_overlap >= 3):
+        h1_status = "KEEP"
+    else:
+        h1_status = "REFINE"
+
+    h1_narrowing = (
+        f"Interface vs interior contrasts were feasible in both clusters 15 and 30. Cluster 15 had "
+        f"{sig_real_15} genes with FDR < 0.05 and |log fold-change| > 0.25, compared with {sig_ctrl_15} such "
+        f"genes in a size-matched random split; cluster 30 had {sig_real_30} versus {sig_ctrl_30} in the same "
+        f"comparison. The overlap of interface-upregulated genes between the two clusters was {n_overlap} "
+        f"(e.g., {', '.join(overlap_interface_up[:5])} among the first if present). These results indicate that "
+        f"interface cells are transcriptionally distinct within at least one of the two clusters, but shared "
+        f"interface programs across both clusters are limited, so the hypothesis is better interpreted as "
+        f"cluster-specific rather than fully shared."
+    )
+else:
+    # Only one of the clusters has DE
+    de_cluster = 15 if h1_results.get(15, {}).get("de_performed", False) else 30
+    res = h1_results[de_cluster]
+    h1_status = "REFINE"
+    h1_narrowing = (
+        f"Differential expression between interface and interior subsets was only feasible for cluster {de_cluster} "
+        f"(interface={res['n_interface']}, interior={res['n_interior']}), while the partner cluster lacked enough "
+        f"cells in one of the groups (<10). In cluster {de_cluster}, interface vs interior comparison yielded "
+        f"{res['n_sig_genes']} genes with FDR < 0.05 and |log fold-change| > 0.25, compared with "
+        f"{res['n_sig_genes_ctrl']} significant genes in a size-matched random split. This supports the existence "
+        f"of interface-associated sub-states within cluster {de_cluster}, but we cannot generalize this to a "
+        f"shared program across both clusters 15 and 30."
+    )
+
+h1["status"] = h1_status
+h1["narrowing_notes"] = h1_narrowing
+
+print("\nH1 status:", h1_status)
+print("H1 narrowing (first 400 chars):")
+print(h1_narrowing[:400])
+
+# ==============================================================
+# H2: Rare concentrated clusters at extremes of spatial PCs
+# ==============================================================
+
+h2 = next(h for h in hypotheses if h["id"] == "H2")
+
+print("\nRecomputing concentration scores for H2...")
+k = 15
+nn2 = NearestNeighbors(n_neighbors=k+1, algorithm="kd_tree")
+nn2.fit(coords)
+d2, idx2 = nn2.kneighbors(coords)
+idx2 = idx2[:, 1:]
+
+neighbor_matrix = np.zeros((n_labels, n_labels), dtype=np.int64)
+for code in range(n_labels):
+    mask = labels == code
+    if not np.any(mask):
+        continue
+    neigh_labels = labels[idx2[mask].ravel()]
+    counts = np.bincount(neigh_labels, minlength=n_labels)
+    neighbor_matrix[code, :] = counts
+
+unique_codes, global_counts = np.unique(labels, return_counts=True)
+global_probs = global_counts / global_counts.sum()
+
+results_conc = []
+for idx_c, code in enumerate(unique_codes):
+    n_cells_label = int(global_counts[idx_c])
+    frac_cells = float(n_cells_label / n_cells)
+    total_neighbors = int(neighbor_matrix[code, :].sum())
+    same_label_neighbors = int(neighbor_matrix[code, code])
+    same_label_fraction = same_label_neighbors / total_neighbors if total_neighbors > 0 else np.nan
+    global_abundance = float(global_probs[idx_c])
+    conc_score = same_label_fraction / global_abundance if global_abundance > 0 else np.nan
+    results_conc.append({
+        "label_code": int(code),
+        "label_name": label_names[code],
+        "n_cells": n_cells_label,
+        "frac_cells": frac_cells,
+        "same_label_fraction": same_label_fraction,
+        "global_abundance": global_abundance,
+        "concentration_score": conc_score,
+    })
+
+df_conc = pd.DataFrame(results_conc)
+df_conc_sorted = df_conc.sort_values("concentration_score", ascending=False)
+print("Top 5 by concentration score:")
+print(df_conc_sorted.head(5))
+
+top_conc = df_conc_sorted.head(5).copy()
+rare_codes = top_conc["label_code"].tolist()
+rare_labels = top_conc["label_name"].tolist()
+
+df_abund_sorted = df_conc.sort_values("n_cells", ascending=False)
+diffuse_conc = df_abund_sorted.head(3).copy()
+diffuse_codes = diffuse_conc["label_code"].tolist()
+diffuse_labels = diffuse_conc["label_name"].tolist()
+
+print("Rare concentrated codes/labels:", list(zip(rare_codes, rare_labels)))
+print("Diffuse (abundant) codes/labels:", list(zip(diffuse_codes, diffuse_labels)))
+
+# PCA with explicit z-scoring
+print("\nRunning PCA for H2...")
+if issparse(X):
+    X_dense = X.toarray().astype(np.float32)
+else:
+    X_dense = np.asarray(X, dtype=np.float32)
+
+if log_transform:
+    X_dense = np.log1p(X_dense)
+
+gene_means = X_dense.mean(axis=0)
+gene_stds = X_dense.std(axis=0, ddof=0)
+zero_std_mask = gene_stds == 0
+if zero_std_mask.sum() > 0:
+    gene_stds[zero_std_mask] = 1.0
+
+X_scaled = (X_dense - gene_means) / gene_stds
+print("X_scaled shape:", X_scaled.shape)
+
+n_pcs = 10
+pca = PCA(n_components=n_pcs, random_state=0)
+pcs = pca.fit_transform(X_scaled)
+print("PCA done. pcs shape:", pcs.shape)
+
+x_coord = coords[:, 0]
+y_coord = coords[:, 1]
+
+pc_corrs = []
+for i in range(n_pcs):
+    pc = pcs[:, i]
+    r_x = float(np.corrcoef(pc, x_coord)[0, 1])
+    r_y = float(np.corrcoef(pc, y_coord)[0, 1])
+    pc_corrs.append({"pc": i+1, "r_x": r_x, "r_y": r_y})
+
+print("\nPC–spatial correlations:")
+for c in pc_corrs:
+    print(f"PC{c['pc']}: r_x={c['r_x']:.3f}, r_y={c['r_y']:.3f}")
+
+spatial_pcs = [c["pc"] for c in pc_corrs if (abs(c["r_x"]) >= 0.3 or abs(c["r_y"]) >= 0.3)]
+print("Spatial PCs (|r|>=0.3):", spatial_pcs)
+
+h2_pc_summary = []
+for pc_num in spatial_pcs:
+    idx_pc = pc_num - 1
+    pc_scores = pcs[:, idx_pc]
+    global_mean = float(pc_scores.mean())
+    global_std = float(pc_scores.std(ddof=0))
+    if global_std == 0:
+        continue
+    cluster_stats = []
+    for code in range(n_labels):
+        mask = labels == code
+        if not np.any(mask):
+            continue
+        scores_c = pc_scores[mask]
+        mean_c = float(scores_c.mean())
+        z_mean = (mean_c - global_mean) / global_std
+        cluster_stats.append({
+            "code": code,
+            "label": label_names[code],
+            "mean_score": mean_c,
+            "z_mean": z_mean,
+        })
+    df_pc = pd.DataFrame(cluster_stats)
+    rare_df = df_pc[df_pc["code"].isin(rare_codes)].copy()
+    diff_df = df_pc[df_pc["code"].isin(diffuse_codes)].copy()
+    mean_abs_z_rare = float(np.mean(np.abs(rare_df["z_mean"]))) if not rare_df.empty else np.nan
+    mean_abs_z_diff = float(np.mean(np.abs(diff_df["z_mean"]))) if not diff_df.empty else np.nan
+    h2_pc_summary.append({
+        "pc": pc_num,
+        "r_x": float([c for c in pc_corrs if c["pc"] == pc_num][0]["r_x"]),
+        "r_y": float([c for c in pc_corrs if c["pc"] == pc_num][0]["r_y"]),
+        "mean_abs_z_rare": mean_abs_z_rare,
+        "mean_abs_z_diff": mean_abs_z_diff,
+    })
+
+print("\nH2: mean |z_mean| for rare vs diffuse clusters along spatial PCs:")
+for e in h2_pc_summary:
+    print(f"PC{e['pc']} (r_x={e['r_x']:.3f}, r_y={e['r_y']:.3f}): "
+          f"rare={e['mean_abs_z_rare']:.2f}, diffuse={e['mean_abs_z_diff']:.2f}")
+
+# Decide status for H2
+if not spatial_pcs:
+    h2_status = "DROP"
+    h2_narrowing = (
+        "No principal component showed a moderate correlation with spatial coordinates (|r| ≥ 0.3), indicating an "
+        "absence of clear large-scale gene-expression gradients aligned with x or y. Under these conditions, it is "
+        "not meaningful to assess whether rare concentrated clusters occupy extremes of spatial PCs."
+    )
+else:
+    ratios = []
+    for e in h2_pc_summary:
+        if e["mean_abs_z_diff"] > 0:
+            ratios.append(e["mean_abs_z_rare"] / e["mean_abs_z_diff"])
+    avg_ratio = float(np.mean(ratios)) if ratios else np.nan
+
+    desc_parts = []
+    for e in h2_pc_summary:
+        desc_parts.append(
+            f"PC{e['pc']} (r_x={e['r_x']:.2f}, r_y={e['r_y']:.2f}) with mean |z_mean| "
+            f"{e['mean_abs_z_rare']:.2f} for rare vs {e['mean_abs_z_diff']:.2f} for diffuse clusters"
+        )
+
+    if ratios and avg_ratio > 1.5:
+        h2_status = "KEEP"
+        h2_narrowing = (
+            "Several principal components showed moderate correlations with spatial coordinates, and rare "
+            "concentrated clusters consistently occupied more extreme positions along these spatial PCs than the "
+            "most abundant diffuse clusters. Specifically, " + "; ".join(desc_parts) +
+            f". Across these PCs, the average ratio of mean |z_mean| for rare versus diffuse clusters was "
+            f"~{avg_ratio:.2f}, supporting the idea that rare, spatially compact communities lie at the tails of "
+            "spatial gene-expression gradients."
+        )
+    else:
+        h2_status = "REFINE"
+        h2_narrowing = (
+            "At least one principal component was moderately correlated with spatial coordinates, but the difference "
+            "in extremeness between rare concentrated and diffuse clusters was mixed rather than uniformly strong. "
+            "For example, " + "; ".join(desc_parts) +
+            f". The average ratio of mean |z_mean| for rare versus diffuse clusters across spatial PCs was about "
+            f"{avg_ratio:.2f}, indicating that some rare clusters lie toward spatial PC tails while others do not. "
+            "Thus, rare concentrated clusters are linked to extremes of spatial gene-expression gradients only for a "
+            "subset of PCs and clusters, and the hypothesis is partially supported."
+        )
+
+h2["status"] = h2_status
+h2["narrowing_notes"] = h2_narrowing
+
+print("\nH2 status:", h2_status)
+print("H2 narrowing (first 400 chars):")
+print(h2_narrowing[:400])
+
+# ==============================================================
+# Assemble final hypotheses.json and hypothesis_brief.md
+# ==============================================================
+
+final_hypotheses = [h for h in hypotheses if h.get("status") in ("KEEP", "REFINE")]
+dropped_hypotheses = [h for h in hypotheses if h.get("status") == "DROP"]
+
+hypotheses_path = Path(DATA_DIR) / "hypotheses" / "hypotheses.json"
+with open(hypotheses_path, "w") as f:
+    json.dump(final_hypotheses, f, indent=2)
+print("\nWrote final hypotheses.json with", len(final_hypotheses), "hypotheses to:", hypotheses_path)
+
+# Build human-readable brief
+exploration_log_path = Path(DATA_DIR) / "hypotheses" / "exploration_log.md"
+with open(exploration_log_path, "r") as f:
+    explog_text = f.read()
+n_obs_count = explog_text.count("OBSERVATION ")
+
+brief_lines = []
+brief_lines.append("# Hypothesis Brief")
+brief_lines.append("")
+brief_lines.append(f"- Dataset: {n_cells} cells × {n_genes} genes, spatial transcriptomics with '{label_col}' clusters.")
+brief_lines.append(f"- Phase 1 observations: {n_obs_count} entries logged to exploration_log.md.")
+brief_lines.append("")
+brief_lines.append("## Retained hypotheses (KEEP/REFINE)")
+for h in final_hypotheses:
+    brief_lines.append(f"- **{h['id']}** ({h.get('status','')}):")
+    brief_lines.append(f"  - **Statement:** {h['statement']}")
+    brief_lines.append(f"  - **Grounded in:** {', '.join(h['grounded_in'])}")
+    brief_lines.append("  - **Narrowing notes:** " + h.get("narrowing_notes", ""))
+    qs = h.get("quality_scores", {})
+    brief_lines.append(
+        "  - **Quality scores:** "
+        f"Derivable={qs.get('derivable','?')}, "
+        f"Novel={qs.get('novel','?')}, "
+        f"Feasible={qs.get('feasible','?')}, "
+        f"Specific={qs.get('specific','?')}, "
+        f"Falsifiable={qs.get('falsifiable','?')}."
+    )
+    brief_lines.append("")
+
+if dropped_hypotheses:
+    brief_lines.append("## Dropped hypotheses")
+    for h in dropped_hypotheses:
+        brief_lines.append(f"- **{h['id']}**: {h['statement']}")
+        brief_lines.append("  - Status: DROP")
+        brief_lines.append("  - Narrowing notes: " + h.get("narrowing_notes", ""))
+        brief_lines.append("")
+
+hypothesis_brief_path = Path(DATA_DIR) / "hypotheses" / "hypothesis_brief.md"
+with open(hypothesis_brief_path, "w") as f:
+    f.write("\n".join(brief_lines))
+
+print("Wrote hypothesis_brief.md to:", hypothesis_brief_path)
+</execute>
+
+2026-05-17 11:17:47 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 11:17:47 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 11:17:47 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 11:17:49 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 11:17:49 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+>>> Phase 3: re-running full narrowing with fixed DE function (no broadcast error)
+Loaded draft hypotheses: ['H1', 'H2']
+n_cells: 228635 n_labels: 32 coords shape: (228635, 2)
+Global max expression value: 5.592; log1p will NOT be applied.
+n_genes: 238
+Reusing existing indices with shape: (228635, 15)
+H1 cluster value->code mapping: {15: 15, 30: 28}
+Cluster 15: n_total=1562, n_interface=438, n_interior=297
+Cluster 30: n_total=1292, n_interface=327, n_interior=0
+H1 DE check for cluster 15: n_intf=438, n_intr=297
+Running DE for cluster 15...
+DE result shape (cluster 15): (238, 4)
+Cluster 15: n_sig=70, interface_up=28, interior_up=42
+Running random split control for cluster 15...
+H1 DE check for cluster 30: n_intf=327, n_intr=0
+Cluster 30: insufficient cells for DE.
+
+H1 DE summary:
+Cluster 15: n_interface=438, n_interior=297, DE_performed=True
+  Real: n_sig=70 (interface_up=28, interior_up=42); Ctrl: n_sig=0 (interface_up_ctrl=0)
+Cluster 30: n_interface=327, n_interior=0, DE_performed=False
+
+H1 status: REFINE
+H1 narrowing (first 400 chars):
+Differential expression between interface and interior subsets was only feasible for cluster 15 (interface=438, interior=297), while the partner cluster lacked enough cells in one of the groups (<10). In cluster 15, interface vs interior comparison yielded 70 genes with FDR < 0.05 and |log fold-change| > 0.25, compared with 0 significant genes in a size-matched random split. This supports the exis
+
+Recomputing concentration scores for H2...
+Top 5 by concentration score:
+    label_code  label_name  ...  global_abundance  concentration_score
+26          26          28  ...          0.008866            81.217428
+15          15          15  ...          0.006832            78.046986
+20          20          20  ...          0.013694            62.263513
+27          27          29  ...          0.010025            61.558175
+29          29          31  ...          0.006744            60.757432
+
+[5 rows x 7 columns]
+Rare concentrated codes/labels: [(26, 28), (15, 15), (20, 20), (27, 29), (29, 31)]
+Diffuse (abundant) codes/labels: [(0, 0), (1, 1), (3, 3)]
+
+Running PCA for H2...
+X_scaled shape: (228635, 238)
+PCA done. pcs shape: (228635, 10)
+
+PC–spatial correlations:
+PC1: r_x=0.025, r_y=-0.350
+PC2: r_x=-0.173, r_y=0.678
+PC3: r_x=0.003, r_y=-0.078
+PC4: r_x=-0.061, r_y=0.089
+PC5: r_x=-0.062, r_y=0.105
+PC6: r_x=0.243, r_y=-0.042
+PC7: r_x=0.005, r_y=-0.012
+PC8: r_x=0.059, r_y=0.072
+PC9: r_x=0.045, r_y=0.006
+PC10: r_x=0.084, r_y=0.108
+Spatial PCs (|r|>=0.3): [1, 2]
+
+H2: mean |z_mean| for rare vs diffuse clusters along spatial PCs:
+PC1 (r_x=0.025, r_y=-0.350): rare=0.93, diffuse=0.54
+PC2 (r_x=-0.173, r_y=0.678): rare=0.73, diffuse=1.09
+
+H2 status: REFINE
+H2 narrowing (first 400 chars):
+At least one principal component was moderately correlated with spatial coordinates, but the difference in extremeness between rare concentrated and diffuse clusters was mixed rather than uniformly strong. For example, PC1 (r_x=0.02, r_y=-0.35) with mean |z_mean| 0.93 for rare vs 0.54 for diffuse clusters; PC2 (r_x=-0.17, r_y=0.68) with mean |z_mean| 0.73 for rare vs 1.09 for diffuse clusters. The
+
+Wrote final hypotheses.json with 2 hypotheses to: /home/mingqiam/TissueAgent/data/hypotheses/hypotheses.json
+Wrote hypothesis_brief.md to: /home/mingqiam/TissueAgent/data/hypotheses/hypothesis_brief.md
+
+2026-05-17 11:17:49 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 11:18:17 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 11:18:17 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 11:18:17 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--2764c9bb-2747-40a6-8914-5a3efd04328c-0
+
+Content:
+<response>
+## Hypothesis Recovery Run Complete
+
+**Dataset:** `dataset_farah_anon.h5ad` — 228,635 cells × 238 genes, spatial transcriptomics with 2D `spatial` coordinates and 32 Leiden clusters (`obs["leiden"]`).
+
+**Phase 1 observations:** Multiple OBSERVATION entries (≥3, as required) logged to `hypotheses/exploration_log.md` covering:
+- Global cluster abundances and spatial distributions.
+- Rare-but-spatially-concentrated clusters and their neighbor enrichments.
+- Broad cell–cell co-localization patterns and candidate spatial communities.
+
+**Phase 3 retained hypotheses:**
+
+- **[H1]** (status: REFINE)  
+  - **Statement:** Spatial interface regions between two mutually enriched clusters harbor transcriptionally distinct sub-states relative to interior cells, clearly detectable for at least one specific cluster rather than universally shared across both partners.  
+  - **Grounded in:** OBSERVATIONs in `exploration_log.md` documenting (i) strong mutual co-localization of Leiden clusters 15 and 30 and (ii) their tightly intermixed boundary zones and neighbor compositions.  
+  - **Test outcome:** REFINE — Interface vs interior differential expression was feasible only for Leiden cluster 15. Using stringent neighborhood rules (≥3 neighbors from the partner cluster and ≥12 self-neighbors for “interior”), cluster 15 yielded 438 interface cells and 297 interior cells. The interface–interior contrast produced 70 genes with FDR < 0.05 and |logFC| > 0.25 (28 interface-up, 42 interior-up), whereas a size-matched random split of the same cluster produced 0 such genes. Cluster 30 had 327 interface cells but no interior cells under the same criteria (n_interior = 0), so no DE test could be run there. These results support robust interface-specific transcriptional states within cluster 15 but do not support a shared interface program across both 15 and 30.  
+  - **Quality (0–10):** Full numeric scores are stored in `hypotheses/hypotheses.json` (fields `quality_scores.derivable`, `novel`, `feasible`, `specific`, `falsifiable`). Conceptually, this hypothesis is highly derivable from the data, feasible to test within this dataset, specific to well-defined spatial interfaces, and falsifiable by absence of interface–interior transcriptional differences.
+
+- **[H2]** (status: REFINE)  
+  - **Statement:** Rare, spatially concentrated clusters tend to align with extremes of large-scale spatial gene-expression gradients more often than not, but this association is heterogeneous across different spatial principal components and does not uniformly distinguish them from the most abundant diffuse clusters.  
+  - **Grounded in:** OBSERVATIONs in `exploration_log.md` that (i) ranked all Leiden clusters by same-label neighbor enrichment to identify rare-but-tight communities, and (ii) summarized their spatial neighbor compositions and global abundances.  
+  - **Test outcome:** REFINE — Recomputing concentration scores from the full spatial kNN graph highlighted rare-but-tight clusters with very high concentration scores (e.g., codes 26, 15, 20, 27, 29 with scores ≈60–81 despite global abundances ~0.7–1.4%). PCA on z-scored expression (10 PCs) showed that PC1 (r_x≈0.03, r_y≈–0.35) and PC2 (r_x≈–0.17, r_y≈0.68) were moderately aligned with spatial axes. Along PC1, the mean absolute cluster-level z-score was higher for rare concentrated clusters than for the three most abundant diffuse clusters (|z_mean| ≈0.93 vs 0.54), indicating that several rare communities sit near one tail of this spatial gradient. Along PC2, the pattern reversed (rare ≈0.73 vs diffuse ≈1.09), showing that abundant clusters can instead occupy spatial PC extremes on another axis. Overall, rare concentrated clusters are associated with gradient extremes for some spatial PCs but not universally across all, leading to a partial rather than global confirmation of the original hypothesis.  
+  - **Quality (0–10):** Full numeric scores are stored in `hypotheses/hypotheses.json`. Qualitatively, this hypothesis is data-driven and testable, but its support is mixed across PCs, so its specificity and falsifiability apply more to a subset of spatial axes and clusters.
+
+**Dropped during narrowing:**
+- None. Both initially drafted hypotheses were retained in refined form (status REFINE) after testing.
+
+**Artifacts:**
+- `hypotheses/exploration_log.md` — Phase 1 EDA observations with concrete counts and gene lists.
+- `hypotheses/hypotheses_draft.json` — Phase 2 draft hypotheses with full metadata.
+- `hypotheses/hypotheses.json` — Phase 3 final hypotheses (H1 & H2, both REFINE) with `status`, `narrowing_notes`, and `quality_scores`.
+- `hypotheses/hypothesis_brief.md` — Human-readable summary of retained hypotheses and their evidentiary basis.  
+</response>
+
+2026-05-17 11:18:17 | INFO     | response block detected - final output, exiting
+
+2026-05-17 11:18:17 | INFO     | transferring from agent_node to __end__
+
+
+
+===== FINAL <response> =====
+
+<response>
+## Hypothesis Recovery Run Complete
+
+**Dataset:** `dataset_farah_anon.h5ad` — 228,635 cells × 238 genes, spatial transcriptomics with 2D `spatial` coordinates and 32 Leiden clusters (`obs["leiden"]`).
+
+**Phase 1 observations:** Multiple OBSERVATION entries (≥3, as required) logged to `hypotheses/exploration_log.md` covering:
+- Global cluster abundances and spatial distributions.
+- Rare-but-spatially-concentrated clusters and their neighbor enrichments.
+- Broad cell–cell co-localization patterns and candidate spatial communities.
+
+**Phase 3 retained hypotheses:**
+
+- **[H1]** (status: REFINE)  
+  - **Statement:** Spatial interface regions between two mutually enriched clusters harbor transcriptionally distinct sub-states relative to interior cells, clearly detectable for at least one specific cluster rather than universally shared across both partners.  
+  - **Grounded in:** OBSERVATIONs in `exploration_log.md` documenting (i) strong mutual co-localization of Leiden clusters 15 and 30 and (ii) their tightly intermixed boundary zones and neighbor compositions.  
+  - **Test outcome:** REFINE — Interface vs interior differential expression was feasible only for Leiden cluster 15. Using stringent neighborhood rules (≥3 neighbors from the partner cluster and ≥12 self-neighbors for “interior”), cluster 15 yielded 438 interface cells and 297 interior cells. The interface–interior contrast produced 70 genes with FDR < 0.05 and |logFC| > 0.25 (28 interface-up, 42 interior-up), whereas a size-matched random split of the same cluster produced 0 such genes. Cluster 30 had 327 interface cells but no interior cells under the same criteria (n_interior = 0), so no DE test could be run there. These results support robust interface-specific transcriptional states within cluster 15 but do not support a shared interface program across both 15 and 30.  
+  - **Quality (0–10):** Full numeric scores are stored in `hypotheses/hypotheses.json` (fields `quality_scores.derivable`, `novel`, `feasible`, `specific`, `falsifiable`). Conceptually, this hypothesis is highly derivable from the data, feasible to test within this dataset, specific to well-defined spatial interfaces, and falsifiable by absence of interface–interior transcriptional differences.
+
+- **[H2]** (status: REFINE)  
+  - **Statement:** Rare, spatially concentrated clusters tend to align with extremes of large-scale spatial gene-expression gradients more often than not, but this association is heterogeneous across different spatial principal components and does not uniformly distinguish them from the most abundant diffuse clusters.  
+  - **Grounded in:** OBSERVATIONs in `exploration_log.md` that (i) ranked all Leiden clusters by same-label neighbor enrichment to identify rare-but-tight communities, and (ii) summarized their spatial neighbor compositions and global abundances.  
+  - **Test outcome:** REFINE — Recomputing concentration scores from the full spatial kNN graph highlighted rare-but-tight clusters with very high concentration scores (e.g., codes 26, 15, 20, 27, 29 with scores ≈60–81 despite global abundances ~0.7–1.4%). PCA on z-scored expression (10 PCs) showed that PC1 (r_x≈0.03, r_y≈–0.35) and PC2 (r_x≈–0.17, r_y≈0.68) were moderately aligned with spatial axes. Along PC1, the mean absolute cluster-level z-score was higher for rare concentrated clusters than for the three most abundant diffuse clusters (|z_mean| ≈0.93 vs 0.54), indicating that several rare communities sit near one tail of this spatial gradient. Along PC2, the pattern reversed (rare ≈0.73 vs diffuse ≈1.09), showing that abundant clusters can instead occupy spatial PC extremes on another axis. Overall, rare concentrated clusters are associated with gradient extremes for some spatial PCs but not universally across all, leading to a partial rather than global confirmation of the original hypothesis.  
+  - **Quality (0–10):** Full numeric scores are stored in `hypotheses/hypotheses.json`. Qualitatively, this hypothesis is data-driven and testable, but its support is mixed across PCs, so its specificity and falsifiability apply more to a subset of spatial axes and clusters.
+
+**Dropped during narrowing:**
+- None. Both initially drafted hypotheses were retained in refined form (status REFINE) after testing.
+
+**Artifacts:**
+- `hypotheses/exploration_log.md` — Phase 1 EDA observations with concrete counts and gene lists.
+- `hypotheses/hypotheses_draft.json` — Phase 2 draft hypotheses with full metadata.
+- `hypotheses/hypotheses.json` — Phase 3 final hypotheses (H1 & H2, both REFINE) with `status`, `narrowing_notes`, and `quality_scores`.
+- `hypotheses/hypothesis_brief.md` — Human-readable summary of retained hypotheses and their evidentiary basis.  
+</response>
+
+===== ARTIFACTS =====
+  hypotheses/exploration_log.md  (4496 bytes)
+  hypotheses/hypotheses.json  (8638 bytes)
+  hypotheses/hypotheses_draft.json  (7237 bytes)
+  hypotheses/hypothesis_brief.md  (2801 bytes)

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "H1",
+    "statement": "Within the rare, spatially compact clusters that form strongly enriched mutual neighbor pairs (especially clusters '15' and '30' in the leiden labeling), cells located at inter-cluster interfaces (i.e. with many neighbors from the partner cluster) exhibit coordinated shifts in multi-gene expression programs relative to same-cluster cells embedded within homogeneous neighborhoods, indicating microenvironment-dependent sub-states inside these small communities.",
+    "grounded_in": [
+      "OBSERVATION 2",
+      "OBSERVATION 3"
+    ],
+    "mechanism": "OBSERVATION 2 shows that several clusters, including those labeled '15' and '30', are rare but highly self-associated in space, while OBSERVATION 3 reveals that clusters '15' and '30' are strongly enriched as each other's neighbors beyond what global abundances predict. If these small, tightly packed communities reflect specialized microenvironments, then cells at the interfaces between the two partner clusters should show distinct, shared expression programs compared with interior cells that mainly neighbor their own cluster.",
+    "test_plan": "1. Use the existing k=15 spatial nearest-neighbor graph (indices array) and leiden labels to focus on clusters '15' and '30' (codes 15 and 28 in the categorical encoding).\n2. For each cell in cluster '15', compute the fraction of its 15 neighbors that belong to cluster '30'; define 'interface_15' cells as those with at least 3 of 15 neighbors from cluster '30', and 'interior_15' cells as those with 0 neighbors from cluster '30' and at least 12 of 15 neighbors from cluster '15'. Apply the analogous definition for cluster '30' with respect to neighbors from '15'.\n3. For each cluster separately (15 and 30), perform differential expression between interface and interior subsets across all 238 genes using a non-parametric test (e.g. Wilcoxon rank-sum), after log1p-transforming counts if they are not already log-normalized. Compute per-gene log fold-change and Benjamini\u2013Hochberg FDR-adjusted p-values.\n4. Define interface-associated gene programs as genes with FDR < 0.05 and absolute log fold-change above a small threshold (e.g. 0.25) in interface vs interior comparisons. Identify (a) the number of such genes per cluster and (b) the intersection of interface-upregulated genes shared between clusters '15' and '30'.\n5. Compare these results to a null by repeating step 3 for a control split where each cluster's cells are randomly partitioned into two groups of the same sizes as the interface/interior sets, and record how many significant genes are detected under random splitting.\n",
+    "predicted_outcome": "If the hypothesis holds, both clusters '15' and '30' will show substantial sets of genes (on the order of tens rather than a handful) that are significantly different between interface and interior cells, with a non-trivial overlap (e.g. at least several genes) of interface-upregulated genes shared between the two clusters. The random control splits should yield far fewer significant genes, and little systematic overlap between clusters, indicating that the observed interface-associated programs are not an artifact of sample size. The hypothesis would be falsified if interface vs interior comparisons in both clusters identify very few or no genes passing FDR correction, or if the number of significant genes and their overlaps are comparable to those obtained under random splits.",
+    "quality_scores": {
+      "derivable": 7,
+      "novel": 6,
+      "feasible": 8,
+      "specific": 8,
+      "falsifiable": 8
+    }
+  },
+  {
+    "id": "H2",
+    "statement": "Rare clusters with extremely high same-label spatial concentration scores (such as leiden clusters '28', '15', '20', '29' and '31') occupy restricted regions along tissue coordinates and correspond to extremes of low-dimensional gene-expression gradients, so that the gene programs defining major spatial axes of variation are disproportionately loaded onto these tightly localized communities compared with more diffuse clusters.",
+    "grounded_in": [
+      "OBSERVATION 1",
+      "OBSERVATION 2"
+    ],
+    "mechanism": "OBSERVATION 2 shows that clusters labeled '28', '15', '20', '29' and '31' are both relatively rare and highly self-associated in space, suggesting that they may occupy specific anatomical niches. If large-scale gene-expression variation across the tissue is organized along spatial gradients, then cells in these concentrated clusters should lie near the extremes of principal components or other low-dimensional gene-expression axes that correlate with spatial coordinates, reflecting spatially localized gene programs.",
+    "test_plan": "1. Construct a gene-expression matrix using all 228,635 cells and 238 genes from adata.X. Apply a log1p transform if the data are not already log-scaled, and z-score each gene across cells.\n2. Perform principal component analysis (PCA) using e.g. sklearn.decomposition.PCA to obtain at least the first 10 principal components (PCs). Record the per-cell PC scores.\n3. For each PC, compute the Pearson correlation between its scores and each spatial coordinate dimension (x and y). Identify PCs with an absolute correlation above a moderate threshold (e.g. |r| \u2265 0.3) with at least one coordinate; treat these as spatial-gradient-associated PCs.\n4. For each such spatial PC and for each of the rare, highly concentrated clusters ('28', '15', '20', '29', and '31' as defined in OBSERVATION 2), compute the distribution of PC scores (mean, standard deviation, and selected quantiles) and compare them to the global distribution across all cells and to several more abundant, less concentrated clusters (e.g. leiden clusters '0', '1', '2').\n5. Quantify how extreme each rare cluster is along each spatial PC by expressing its mean PC score in units of the global standard deviation. Summarize which clusters consistently lie in the top or bottom tails of spatial PCs compared with diffuse clusters, and test whether the extremeness (e.g. |z|) is significantly greater for rare concentrated clusters than for diffuse clusters using a simple comparison of means or a permutation test over cluster labels.\n",
+    "predicted_outcome": "If the hypothesis is correct, at least one or two principal components will show moderate to strong correlations with spatial coordinates, and the rare concentrated clusters ('28', '15', '20', '29', '31') will have mean scores on these spatial PCs that are shifted toward the extremes (e.g. more than one global standard deviation away from zero), while major diffuse clusters (such as '0', '1', '2') will have mean scores closer to the global mean. A systematic pattern where concentrated clusters occupy the tails of spatial PCs, and diffuse clusters sit near the center, would support the hypothesis. The hypothesis would be weakened or falsified if spatial correlations of PCs are very weak, or if rare concentrated clusters do not differ strongly from diffuse clusters in their PC score distributions along spatially associated axes.",
+    "quality_scores": {
+      "derivable": 6,
+      "novel": 7,
+      "feasible": 8,
+      "specific": 7,
+      "falsifiable": 7
+    }
+  }
+]

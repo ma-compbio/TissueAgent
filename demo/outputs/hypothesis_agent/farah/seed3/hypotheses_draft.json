@@ -1,0 +1,55 @@
+{
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "Spatially rare but highly self-associated cell communities captured by high-clustering-ratio leiden clusters (for example clusters 15, 20, 28, 29, and 31) exhibit coordinated enrichment of extracellular-matrix and cell-adhesion gene programs relative to more spatially dispersed clusters belonging to the same major population.",
+      "grounded_in": [
+        "OBSERVATION 2"
+      ],
+      "mechanism": "Leiden clusters with extremely high same-label neighbor fractions and clustering ratios suggest compact tissue microdomains or boundaries, where matrix deposition and adhesion signaling are typically elevated to maintain structural integrity and compartmentalization within the developing heart.",
+      "test_plan": "1) For each of the rare-but-tight clusters identified in OBSERVATION 2 (clusters 15, 20, 28, 29, 31), compute the distribution of Populations labels to determine their dominant major cell class. 2) Within each dominant population, compare cells inside these rare-but-tight clusters against cells from the same population located in other leiden clusters using differential expression (e.g., rank genes by log-fold-change or nonparametric tests). 3) Define an extracellular-matrix / adhesion program using all available genes in the panel whose names match collagens or structural and adhesion molecules (for example any genes starting with 'COL' or 'LAMA', and the genes 'FN1', 'VCAN', 'POSTN', 'FBN1', 'ELN' if present). 4) For each dominant population, compute an ECM/adhesion program score per cell (mean or summed expression of these genes) and compare scores between rare-but-tight cluster cells and non-rare clusters from the same population. 5) Assess significance using appropriate statistical tests (e.g., Wilcoxon rank-sum or permutation tests) and summarize whether ECM/adhesion scores are consistently higher in rare-but-tight clusters.",
+      "predicted_outcome": "If the hypothesis holds, in at least one major population represented within the rare-but-tight clusters, cells inside high-clustering-ratio clusters will show significantly higher ECM/adhesion program scores than same-population cells in more dispersed clusters, and multiple ECM-related genes will rank among the top upregulated genes. Falsification would be indicated if ECM/adhesion scores are similar or lower in rare-but-tight clusters relative to same-population cells elsewhere, with no consistent enrichment of matrix or adhesion genes.",
+      "quality_scores": {
+        "derivable": 8,
+        "novel": 7,
+        "feasible": 8,
+        "specific": 8,
+        "falsifiable": 9
+      }
+    },
+    {
+      "id": "H2",
+      "statement": "Lymphatic and vascular endothelial cells that reside in strongly co-localized interfaces with adventitial fibroblasts or epicardial-derived cells exhibit enhanced expression of vascular-interface and barrier-related gene programs compared to endothelial cells located in regions lacking these fibroblast- and epicardial-rich neighborhoods.",
+      "grounded_in": [
+        "OBSERVATION 3"
+      ],
+      "mechanism": "OBSERVATION 3 shows that LEC and VEC form highly enriched spatial neighbor pairs with adFibro, EPDC, and Epicardial populations, suggesting specialized interface zones where endothelial phenotype may be modified by mesenchymal neighbors to support lymphatic and vascular barrier formation and tissue remodeling.",
+      "test_plan": "1) Restrict to endothelial populations (e.g., LEC and VEC) using the Populations column. 2) For each endothelial cell, compute the fraction of its K nearest spatial neighbors belonging to adFibro, EPDC, or Epicardial populations. 3) Define an 'interface-associated' endothelial subset as cells with a high fraction of such neighbors (for example, top quantile of fibroblast/EPDC/Epicardial neighbor fraction) and a 'non-interface' subset as cells with minimal fibroblast/EPDC/Epicardial neighbors (for example, bottom quantile). 4) Construct a vascular-interface gene program using genes in the panel associated with endothelial identity and barrier or adhesion properties (for example any of the genes 'PECAM1', 'CDH5', 'VWF', 'KDR', 'FLT1', 'SELE', 'ICAM1', 'VCAM1' that are present). 5) Compare expression of this program between interface-associated and non-interface endothelial subsets by computing per-cell program scores and performing statistical tests. Also examine whether interface endothelial cells show broader transcriptomic shifts via differential expression analysis.",
+      "predicted_outcome": "Supporting evidence would consist of significantly higher vascular-interface program scores in endothelial cells with strong adFibro/EPDC/Epicardial neighbor enrichment than in those without such neighbors, with multiple vascular or adhesion genes collectively upregulated. The hypothesis would be disfavored if interface-associated endothelial cells show no consistent increase, or a decrease, in these program scores relative to non-interface endothelial cells.",
+      "quality_scores": {
+        "derivable": 8,
+        "novel": 7,
+        "feasible": 7,
+        "specific": 8,
+        "falsifiable": 9
+      }
+    },
+    {
+      "id": "H3",
+      "statement": "Cardiomyocytes classified as ncCM-IFT-like that reside in neuron-enriched microenvironments display coordinated upregulation of conduction and ion-handling gene programs relative to ncCM-IFT-like cells located away from neuronal neighbors, consistent with specialized neuro-cardiac interface niches during heart development.",
+      "grounded_in": [
+        "OBSERVATION 3"
+      ],
+      "mechanism": "OBSERVATION 3 reports strong spatial co-localization between Neuronal and ncCM-IFT-like populations, suggesting candidate neuro-cardiac interface zones where cardiomyocytes could adopt enhanced conduction or pacemaker-like transcriptional features in proximity to neurons.",
+      "test_plan": "1) Subset the data to ncCM-IFT-like cells using the Populations label. 2) For each ncCM-IFT-like cell, compute the fraction of its K nearest spatial neighbors that are Neuronal. 3) Define 'neuron-proximal' ncCM-IFT-like cells as those in the top quantile of Neuronal neighbor fraction, and 'neuron-distant' cells as those in the bottom quantile. 4) Assemble a conduction and ion-handling gene program using all available genes in the panel with names suggestive of gap junctions and ion channels (for example genes starting with 'GJA', 'SCN', or 'KCN', and the genes 'RYR2', 'CACNA1C', 'HCN4' if present). 5) Compare program scores between neuron-proximal and neuron-distant ncCM-IFT-like cells and perform differential expression to see whether multiple conduction-related genes are collectively upregulated in the neuron-proximal subset.",
+      "predicted_outcome": "If the hypothesis is correct, neuron-proximal ncCM-IFT-like cells will show significantly higher scores for the conduction and ion-handling gene program than neuron-distant ncCM-IFT-like cells, and several conduction-related genes will appear among the most upregulated genes. The hypothesis would be weakened if conduction program scores do not differ systematically between neuron-proximal and neuron-distant ncCM-IFT-like cells.",
+      "quality_scores": {
+        "derivable": 8,
+        "novel": 8,
+        "feasible": 7,
+        "specific": 8,
+        "falsifiable": 9
+      }
+    }
+  ]
+}

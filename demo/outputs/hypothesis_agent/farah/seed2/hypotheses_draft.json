@@ -1,0 +1,40 @@
+[
+  {
+    "id": "H1",
+    "statement": "Conduction-associated cardiomyocyte populations (including ncCM-IFT-like, ncCM-AVC-like, and vCM-His-Purkinje) occupy spatially segregated microdomains that are more strongly surrounded by non-working cardiomyocyte neighbors such as fibroblasts, endothelial cells, and neuronal cells than are bulk ventricular working cardiomyocytes, and these conduction-enriched domains share a distinct transcriptional program relative to nearby ventricular cardiomyocytes.",
+    "grounded_in": [
+      "OBSERVATION 1",
+      "OBSERVATION 2",
+      "OBSERVATION 3"
+    ],
+    "mechanism": "Rare-but-tight analysis shows ncCM-IFT-like and ncCM-AVC-like cardiomyocytes are highly spatially concentrated and have enriched nearest neighbors from specific non-cardiomyocyte types (e.g. aFibro, adFibro, Neuronal, BEC), and pairwise co-localization reveals strong self-association of vCM-His-Purkinje, suggesting conduction-like niches with distinctive immediate environments.",
+    "test_plan": "1) Define a 'conduction-like' group consisting of cells with Populations labels in ['ncCM-IFT-like', 'ncCM-AVC-like', 'vCM-His-Purkinje'] and a 'working-vCM' group including major ventricular cardiomyocyte labels such as ['vCM-LV-Compact', 'vCM-LV-Trabecular', 'vCM-RV-Compact', 'vCM-Proliferating']. 2) Using the precomputed k=20 neighbor indices on spatial coordinates, compute for each conduction-like and working-vCM cell the fraction of neighbors belonging to fibroblast (aFibro, vFibro, adFibro), endothelial (BEC, VEC, vEndocardial), and Neuronal populations. Compare neighbor-type distributions between conduction-like and working-vCM groups using contingency tables and effect sizes (e.g. differences in mean neighbor fractions). 3) Perform differential expression between conduction-like and working-vCM cells using the AnnData expression matrix to rank genes by log-fold-change, and then summarize whether conduction-like cells show coherent upregulation of a multi-gene program (e.g. ion-channel, gap-junction, or guidance-related genes present in the panel) relative to working-vCM cells.",
+    "predicted_outcome": "If the hypothesis holds, conduction-like cardiomyocytes will show higher fractions of fibroblast, endothelial, and neuronal neighbors than working-vCM cells, with neighbor-type differences that are substantially larger than sampling noise, and differential expression will reveal a coherent set of \u22655 genes jointly upregulated in conduction-like cells compared to working-vCM cells. The hypothesis would be weakened or falsified if neighbor-type compositions are similar between conduction-like and working-vCM groups and if no clear multi-gene expression program distinguishes conduction-like from working-vCM cells.",
+    "quality_scores": {
+      "derivable": 8,
+      "novel": 6,
+      "feasible": 9,
+      "specific": 8,
+      "falsifiable": 8
+    }
+  },
+  {
+    "id": "H2",
+    "statement": "Lymphatic endothelial cells, adipogenic fibroblasts, and epicardial-derived cells form a spatially co-localized niche in which adipogenic fibroblasts exhibit a transcriptional program distinct from ventricular fibroblasts, characterized by coordinated upregulation of extracellular-matrix and inflammatory or remodeling-associated genes present in the gene panel.",
+    "grounded_in": [
+      "OBSERVATION 1",
+      "OBSERVATION 2",
+      "OBSERVATION 3"
+    ],
+    "mechanism": "Rare-but-tight analysis indicates adFibro and LEC are both highly concentrated and that adFibro cells have strongly enriched LEC, WBC, and Epicardial neighbors, while LEC cells show enriched neighbors including adFibro and EPDC. Pairwise co-localization further shows highly enriched adFibro\u2192adFibro and adFibro\u2192LEC neighbor edges, suggesting a stable lymphatic\u2013fibroblast\u2013epicardial microenvironment with potentially distinct fibroblast gene regulation.",
+    "test_plan": "1) Define an 'adFibro-niche' set consisting of adFibro cells and their direct neighbors that are LEC, Epicardial, or EPDC, and a comparison set of ventricular fibroblasts (vFibro) located outside this niche (e.g. vFibro cells whose k=20 neighbors include no LEC, Epicardial, or EPDC). 2) Quantify spatial co-localization by computing observed vs expected neighbor-type frequencies for adFibro\u2194LEC, adFibro\u2194Epicardial, and adFibro\u2194EPDC pairs and compare them to vFibro\u2194LEC/Epicardial/EPDC pairs. 3) Perform differential expression between adFibro cells inside the niche and vFibro cells, ranking genes by log-fold-change, and identify multi-gene sets corresponding to extracellular matrix components or inflammatory mediators (e.g. families such as collagens, matrix metalloproteinases, or chemokines within the available panel). 4) Optionally, compare adFibro inside the niche to any adFibro cells that lack LEC/Epicardial neighbors to test whether niche proximity is associated with stronger activation of the same gene program.",
+    "predicted_outcome": "If the hypothesis is correct, adFibro cells will show markedly higher frequencies of LEC, Epicardial, and EPDC neighbors than vFibro cells, and adFibro inside the niche will display a coherent set of \u22655 genes with higher expression than vFibro (and than adFibro outside the niche if present), including multiple extracellular-matrix or remodeling-related genes from the panel. The hypothesis would be undermined if neighbor compositions of adFibro and vFibro are similar with little enrichment for LEC or Epicardial neighbors, or if differential expression reveals no clear multi-gene program distinguishing adFibro from vFibro.",
+    "quality_scores": {
+      "derivable": 8,
+      "novel": 7,
+      "feasible": 8,
+      "specific": 8,
+      "falsifiable": 8
+    }
+  }
+]

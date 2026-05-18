@@ -1,0 +1,26 @@
+Invoking CellVoyager on farah
+  num_analyses=3  max_iterations=6
+  model_name=gpt-5.1
+
+Traceback (most recent call last):
+  File "/home/mingqiam/TissueAgent/demo/run_cellvoyager_recovery.py", line 117, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/mingqiam/TissueAgent/demo/run_cellvoyager_recovery.py", line 80, in main
+    result = run_cellvoyager_analysis(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mingqiam/TissueAgent/src/agents/agent_registry/cellvoyager_agent/runner.py", line 198, in run_cellvoyager_analysis
+    proc = subprocess.run(
+           ^^^^^^^^^^^^^^^
+  File "/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/subprocess.py", line 2116, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+  File "/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/subprocess.py", line 1253, in _check_timeout
+    raise TimeoutExpired(
+subprocess.TimeoutExpired: Command '['conda', 'run', '-n', 'cellvoyager', '--live-stream', 'python', '/home/mingqiam/TissueAgent/src/agents/agent_registry/cellvoyager_agent/upstream/run_cellvoyager.py', '--h5ad-path', '/home/mingqiam/TissueAgent/demo/data/dataset_farah_heart_merfish.h5ad', '--paper-path', '/home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_135142/background.txt', '--analysis-name', 'farah_recovery', '--execution-mode', 'legacy', '--num-analyses', '3', '--max-iterations', '6', '--output-home', '/home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_135142', '--log-home', '/home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_135142/logs', '--no-vlm', '--model-name', 'gpt-5.1']' timed out after 1800 seconds
+ERROR conda.cli.main_run:execute(142): `conda run python demo/run_cellvoyager_recovery.py --dataset farah` failed. (See above for error)

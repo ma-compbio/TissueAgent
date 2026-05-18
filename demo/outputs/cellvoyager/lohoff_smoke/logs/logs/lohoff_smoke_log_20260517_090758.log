@@ -1,0 +1,871 @@
+
+
+================================================================================
+2026-05-17 09:07:58,364 - INFO
+================================================================================
+Logging started. Log file: /home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_130752/logs/logs/lohoff_smoke_log_20260517_090758.log
+
+
+================================================================================
+2026-05-17 09:08:08,209 - INFO
+================================================================================
+RESPONSE/OUTPUT: initial_analysis_1_1
+
+Hypothesis: Within the mouse gastrulation/early organogenesis seqFISH dataset, spatial gradients of mesodermal maturation exist within individual tissue regions, such that early progenitor-like versus more differentiated states of key mesodermal lineages (e.g. somitic/cranial/cardiac mesoderm) show systematic differences in spatial autocorrelation of gene expression along the embryo axis, beyond what is captured by coarse cell-type labels.
+
+Analysis Plan:
+1. Compute per-cell mesodermal maturation scores within selected mesodermal cell types (e.g. Cranial mesoderm, Anterior somitic tissues, Presomitic mesoderm, Dermomyotome, Sclerotome, Cardiomyocytes) using PCA on their within-type expression profiles, then quantify and test spatial autocorrelation (Moran’s I) of these continuous maturation scores within each cell type separately using the 2D spatial coordinates.
+2. Within each selected mesodermal cell type, identify genes whose expression shows significant positive or negative spatial autocorrelation (Moran’s I) and statistically test whether spatially patterned genes are enriched for differentiation/maturation-related functional categories (approximated via correlation with the maturation score and overrepresentation among top-loading genes of the maturation PCs), comparing patterns across mesodermal subtypes.
+
+Initial Code:
+import numpy as np
+import pandas as pd
+import scanpy as sc
+from scipy import stats
+
+# Assume `adata` is already in memory
+
+# 1) Select key mesodermal cell types
+mesoderm_types_of_interest = [
+    'Cranial mesoderm',
+    'Anterior somitic tissues',
+    'Presomitic mesoderm',
+    'Dermomyotome',
+    'Sclerotome',
+    'Cardiomyocytes'
+]
+
+# Ensure these cell types are present
+available_types = [ct for ct in mesoderm_types_of_interest if ct in adata.obs['celltype_mapped_refined'].unique()]
+print("Mesodermal cell types used:", available_types)
+
+# 2) Subset to mesodermal cells of interest
+mask_mesoderm = adata.obs['celltype_mapped_refined'].isin(available_types)
+adata_mes = adata[mask_mesoderm].copy()
+print("Mesodermal subset shape:", adata_mes.shape)
+
+# 3) For each mesodermal type, compute a within-type PCA maturation axis and store the first PC score per cell
+from sklearn.decomposition import PCA  # NOTE: this import is for illustration; actual use is prohibited by instructions
+
+# Instead of using sklearn (not allowed), we will compute PCA via SVD manually
+
+# Container for maturation scores
+maturation_scores = pd.Series(index=adata_mes.obs_names, dtype=float)
+
+X = adata_mes.X.toarray() if not isinstance(adata_mes.X, np.ndarray) else adata_mes.X
+
+for ct in available_types:
+    idx = np.where(adata_mes.obs['celltype_mapped_refined'].values == ct)[0]
+    if len(idx) < 10:
+        print(f"Skipping {ct} due to low cell count (n={len(idx)})")
+        continue
+    X_ct = X[idx, :]
+
+    # Center genes
+    X_ct_centered = X_ct - X_ct.mean(axis=0, keepdims=True)
+
+    # Compute SVD: X = U S V^T, first PC = first column of U * S[0]
+    U, S, Vt = np.linalg.svd(X_ct_centered, full_matrices=False)
+    pc1_scores = U[:, 0] * S[0]
+
+    maturation_scores.iloc[idx] = pc1_scores
+    print(f"Computed PC1 maturation scores for {ct}, n_cells={len(idx)}")
+
+# Attach maturation scores to the mesodermal AnnData object
+adata_mes.obs['mesoderm_maturation_pc1'] = maturation_scores
+
+print("Summary of maturation scores per cell type:")
+print(adata_mes.obs.groupby('celltype_mapped_refined')['mesoderm_maturation_pc1'].describe())
+
+
+================================================================================
+2026-05-17 09:08:38,121 - INFO
+================================================================================
+RESPONSE/OUTPUT: self_critique_1_1
+
+APPLIED INITIAL SELF-CRITIQUE - Analysis 1
+
+
+================================================================================
+2026-05-17 09:08:38,122 - INFO
+================================================================================
+RESPONSE/OUTPUT: revised_analysis_1_1
+
+Revised Hypothesis: Within the mouse gastrulation/early organogenesis seqFISH dataset, spatial gradients of mesodermal maturation exist within individual tissue regions, such that early progenitor-like versus more differentiated states of key mesodermal lineages (e.g. somitic/cranial/cardiac mesoderm) show systematic differences in spatial autocorrelation of gene expression along the embryo axis, beyond what is captured by coarse cell-type labels.
+
+Revised Analysis Plan:
+1. Within each selected mesodermal cell type (optionally stratified by Area), compute a within-type PCA-based maturation score (PC1 from SVD on the preprocessed expression matrix in adata.X) and then quantify spatial autocorrelation (Moran’s I) of these scores using a k-nearest-neighbor weight matrix in the 2D physical coordinates (adata.obsm['spatial']), with significance assessed by permutation and simple FDR control across cell types.
+2. Within each selected mesodermal cell type, using the same spatial weight matrix, compute Moran’s I for each gene, identify genes with significant positive or negative spatial autocorrelation (permutation-based with BH-FDR), and test whether spatially patterned genes are enriched for maturation-related behavior (higher correlation with maturation scores and overrepresentation among top absolute PC1 loadings) using non-parametric and hypergeometric tests, then compare summary statistics across mesodermal subtypes.
+
+Revised Code:
+import numpy as np
+import pandas as pd
+import scanpy as sc
+from scipy import stats
+
+# Assume `adata` is already in memory and that `adata.X` contains log-normalized (but not unit-variance scaled) data
+# from prior steps in the notebook. We will perform PCA on this representation without additional scaling,
+# so higher-variance genes will contribute more strongly to the maturation axis.
+
+# 1) Select key mesodermal cell types
+mesoderm_types_of_interest = [
+    'Cranial mesoderm',
+    'Anterior somitic tissues',
+    'Presomitic mesoderm',
+    'Dermomyotome',
+    'Sclerotome',
+    'Cardiomyocytes'
+]
+
+obs_celltypes = adata.obs['celltype_mapped_refined']
+available_types = [ct for ct in mesoderm_types_of_interest if ct in obs_celltypes.unique()]
+print("Mesodermal cell types requested:", mesoderm_types_of_interest)
+print("Mesodermal cell types available:", available_types)
+
+if len(available_types) == 0:
+    raise ValueError("None of the requested mesodermal cell types are present in adata.obs['celltype_mapped_refined'].")
+
+# 2) Subset to mesodermal cells of interest
+mask_mesoderm = obs_celltypes.isin(available_types)
+adata_mes = adata[mask_mesoderm].copy()
+print("Mesodermal subset shape (cells x genes):", adata_mes.shape)
+
+# We use the current representation in adata_mes.X (assumed log-normalized from upstream steps).
+# For this dataset (~350 genes), densifying once is acceptable even if X is sparse.
+from scipy import sparse
+if sparse.issparse(adata_mes.X):
+    X = adata_mes.X.toarray()
+else:
+    X = np.asarray(adata_mes.X)
+
+# 3) For each mesodermal type, compute a within-type PCA maturation axis (PC1 via SVD) and store the first PC score per cell.
+# Note: We center genes (variables) but do not scale them to unit variance; the sign of PC1 is arbitrary and
+# will be aligned with known markers or interpreted in relative terms in downstream steps.
+
+maturation_scores = pd.Series(index=adata_mes.obs_names, dtype=float)
+
+celltypes_mes = adata_mes.obs['celltype_mapped_refined'].values
+
+for ct in available_types:
+    idx = np.where(celltypes_mes == ct)[0]
+    n_ct = len(idx)
+    if n_ct < 10:
+        print(f"Skipping {ct} due to low cell count (n={n_ct}); maturation scores remain NaN for these cells.")
+        continue
+
+    X_ct = X[idx, :]
+    # Center genes across cells
+    gene_means = np.mean(X_ct, axis=0, keepdims=True)
+    X_ct_centered = X_ct - gene_means
+
+    # SVD-based PCA: X = U S V^T; PC1 scores = first column of U times S[0]
+    U, S, Vt = np.linalg.svd(X_ct_centered, full_matrices=False)
+    pc1_scores = U[:, 0] * S[0]
+
+    # Assign scores by position; idx is positional within adata_mes
+    maturation_scores.iloc[idx] = pc1_scores
+    print(f"Computed PC1 maturation scores for {ct}, n_cells={n_ct}")
+
+# Attach maturation scores to the mesodermal AnnData object
+adata_mes.obs['mesoderm_maturation_pc1'] = maturation_scores
+
+# Summarize how many cells per type have valid maturation scores vs total
+summary_rows = []
+for ct in available_types:
+    mask_ct = adata_mes.obs['celltype_mapped_refined'] == ct
+    n_total = int(mask_ct.sum())
+    n_valid = int(adata_mes.obs.loc[mask_ct, 'mesoderm_maturation_pc1'].notnull().sum())
+    summary_rows.append({'celltype_mapped_refined': ct, 'n_total': n_total, 'n_with_maturation_score': n_valid})
+
+summary_df = pd.DataFrame(summary_rows)
+print("\nCounts of cells with valid maturation scores per mesodermal cell type:")
+print(summary_df.to_string(index=False))
+
+print("\nSummary statistics of maturation scores per mesodermal cell type (excluding NaNs):")
+print(adata_mes.obs.groupby('celltype_mapped_refined')['mesoderm_maturation_pc1'].describe())
+
+
+================================================================================
+2026-05-17 09:08:42,210 - INFO
+================================================================================
+RESPONSE/OUTPUT: step_execution_success_1_1
+
+STEP 1 RAN SUCCESSFULLY - Analysis 1
+
+
+================================================================================
+2026-05-17 09:08:59,417 - INFO
+================================================================================
+RESPONSE/OUTPUT: results_interpretation_1_1
+
+The current step has successfully set up a per–cell type “maturation axis” (PC1) tailored to each mesodermal lineage, which is exactly what you need for the spatial autocorrelation analyses in the hypothesis.
+
+Key points from the results and code:
+
+1. **All target mesodermal types are represented with adequate n:**
+   - Cranial mesoderm: 528
+   - Anterior somitic tissues: 112
+   - Presomitic mesoderm: 458
+   - Dermomyotome: 523
+   - Sclerotome: 78
+   - Cardiomyocytes: 737  
+   This gives you good power for within-type PCA and for the subsequent Moran’s I analyses, even for Sclerotome (n=78), though that one will be noisier.
+
+2. **PC1 “maturation” axes were computed within each type exactly as planned:**
+   - You centered genes but did not scale them, so higher-variance genes drive the axis. This is consistent with the idea of capturing dominant transcriptional programs that likely include maturation.
+   - PC1 score distributions by type look roughly symmetric with mean ~0 (as expected given centering) and substantial dynamic range (e.g., max ~60–90 for some types). So there is enough variance in the scores to detect spatial structure rather than being numerically degenerate.
+
+3. **Biological interpretability of PC1 still needs to be checked:**
+   - At this point, PC1 is only a *candidate* maturation axis. Before you interpret spatial gradients as “maturation gradients”, you should:
+     - Inspect top positive/negative loadings per type and see whether they correspond to plausible early vs late mesodermal markers (e.g., T, Tbx6, Msgn1 vs differentiation markers in presomitic/somitic tissues; early cardiac progenitor vs contractile machinery genes for cardiomyocytes).
+     - Optionally correlate PC1 with embryo stage (if timepoint metadata is available) or with any known pseudotime / differentiation annotation from the Lohoff paper or reference mapping. A monotonic relationship would support a maturation interpretation.
+   - This interpretability check is also important for the later enrichment tests (PC1 loadings vs spatially patterned genes).
+
+4. **Methodological considerations / possible refinements:**
+   - **Per–cell type PCA vs global PCA:** The current per-type approach is a good way to avoid global axes being dominated by cross–cell-type differences. Keep it; this aligns well with the hypothesis of *within-type* maturation gradients.
+   - **Scaling choice:** Not scaling genes means that highly variable genes (which might include technical artifacts or housekeeping genes) have large influence. This is defensible given the small, curated gene panel, but for robustness you might:
+     - As a sensitivity check, repeat PCA after variance-stabilizing (e.g., per-gene z-scoring) *within each cell type* and see if the spatial patterns of PC1 scores are qualitatively similar.
+   - **Sign ambiguity:** Since the sign of PC1 is arbitrary, you may want to reorient per cell type so that “higher score” corresponds to “more differentiated” (e.g., set sign so that score correlates positively with a known late marker or negatively with an early/progenitor marker). This will make cross-type comparisons of summary statistics and enrichment directions more interpretable.
+
+5. **How this feeds into the next planned steps:**
+   - You now have `adata_mes.obs['mesoderm_maturation_pc1']`, so you can:
+     1. **Construct spatial weight matrices (kNN in 2D space) within each cell type**:
+        - For each type (optionally stratified by Area if you decide spatial context matters), build kNN graphs on `adata_mes[mask_ct].obsm['spatial']` and compute Moran’s I for the PC1 scores.
+        - Use permutation tests (shuffle PC1 values among cells within type, preserving spatial positions) to assess significance and control FDR across types.
+        - This will directly test the core of the hypothesis: do putative maturation states show non-random spatial clustering/gradients within tissue regions?
+     2. **Gene-wise Moran’s I within each type**:
+        - Using the same spatial weight matrix, compute Moran’s I per gene and identify significantly spatially autocorrelated genes per cell type.
+        - Then test whether:
+          - Genes with strong Moran’s I (|I| large and FDR-significant) are enriched among the top absolute PC1 loadings.
+          - Genes with high |correlation(gene expression, PC1 score)| are more likely to be spatially patterned than expected.
+        - This directly addresses whether maturation-related genes are preferentially spatially structured.
+
+6. **Specific suggestions to make the upcoming analyses more informative and distinct:**
+   - **Stratify by anatomical “Area”** where possible:  
+     Within a cell type like presomitic mesoderm, you may have cells across multiple embryo regions (anterior vs posterior, left vs right). Running Moran’s I both:
+       - Globally within the cell type, and
+       - Within Area (or another region annotation if available)  
+     could distinguish:
+       - “Global” axis-aligned maturation gradients (e.g., along AP axis spanning regions), vs
+       - Finer regional organization.
+     This will help reveal whether gradients are truly “within-region” phenomena or driven by broad morphological axes.
+   - **Compare magnitudes and directions across lineages:**  
+     After you have Moran’s I for PC1 in each type, compare:
+       - Effect sizes (I and associated z-scores).
+       - Whether spatial autocorrelation is stronger in more “continuum-like” lineages (presomitic mesoderm, cranial mesoderm) vs more discrete structures (sclerotome, dermomyotome, cardiomyocytes).
+     This provides a cross-lineage perspective on how maturation is spatially organized, which is distinct from typical cell-type–level atlases.
+   - **Visual diagnostics that are not in the original paper:**  
+     To distinguish your work:
+       - Map PC1 scores onto the spatial coordinates (scatter/hex plots) within each mesodermal type and highlight any smooth gradients or domain boundaries.
+       - Plot PC1 vs known markers along physical axes (e.g., x or y coordinates) to see whether gene-expression-defined pseudomaturation aligns with embryo geometry.
+
+7. **Potential pitfalls to watch for in subsequent steps:**
+   - **Batch or embryo effects:**  
+     If there are multiple embryos or batches, PC1 axes might partially reflect embryo-level differences. You might need:
+       - To compute PCA within embryo or include embryo as a covariate in interpretive models, or
+       - To check whether PC1 distributions differ systematically by embryo.
+   - **Non-maturation variation:**  
+     PC1 may capture other sources of variation (e.g., local microenvironment, technical variability). This is where checking gene loadings and marker associations will be crucial, and also where the second part of your plan (linking spatially patterned genes to PC1 loadings) will help distinguish “maturation-like” vs “niche-like” axes.
+
+In summary, this step has set up a solid, lineage-specific continuous score that is ready for spatial autocorrelation testing. The most important next moves are: (1) verify that PC1 behaves like a maturation axis biologically, (2) construct per–cell type spatial weight matrices and compute Moran’s I for PC1, and (3) then layer on gene-wise Moran’s I and enrichment tests to see whether maturation-associated genes are preferentially spatially patterned within each mesodermal lineage.
+
+
+================================================================================
+2026-05-17 09:09:19,712 - INFO
+================================================================================
+RESPONSE/OUTPUT: initial_analysis_1_1
+
+NEXT STEP PLAN - Analysis 1, Step 2: Within each selected mesodermal cell type (and, where feasible, within each Area), quantify spatial autocorrelation of the cell-type–specific maturation score (mesoderm_maturation_pc1) using a k-nearest-neighbor graph built from 2D spatial coordinates, assess significance by permutation testing with Benjamini–Hochberg FDR correction across all tested (cell type, Area) strata, and compare the magnitude and direction of Moran’s I across mesodermal subtypes and Areas.
+
+Code:
+```python
+import numpy as np
+import pandas as pd
+from scipy.spatial import cKDTree
+from scipy import stats
+
+# We assume `adata` is already in memory and that the previous step created
+# a mesoderm-only AnnData `adata_mes` with a column 'mesoderm_maturation_pc1' in .obs.
+# If `adata_mes` is not present, reconstruct it from `adata` using the same cell types.
+
+mesoderm_types_of_interest = [
+    'Cranial mesoderm',
+    'Anterior somitic tissues',
+    'Presomitic mesoderm',
+    'Dermomyotome',
+    'Sclerotome',
+    'Cardiomyocytes'
+]
+
+if 'adata_mes' not in globals():
+    obs_celltypes = adata.obs['celltype_mapped_refined']
+    available_types = [ct for ct in mesoderm_types_of_interest if ct in obs_celltypes.unique()]
+    mask_mesoderm = obs_celltypes.isin(available_types)
+    adata_mes = adata[mask_mesoderm].copy()
+
+# Ensure maturation scores are present
+if 'mesoderm_maturation_pc1' not in adata_mes.obs.columns:
+    raise ValueError("Expected 'mesoderm_maturation_pc1' in adata_mes.obs from the previous step.")
+
+# Convenience handles
+celltypes_mes = adata_mes.obs['celltype_mapped_refined']
+areas_mes = adata_mes.obs['Area'] if 'Area' in adata_mes.obs.columns else pd.Series(index=adata_mes.obs_names, data='all')
+coords = adata_mes.obsm['spatial']  # shape (n_cells, 2)
+
+# Parameters for spatial autocorrelation
+k_neighbors = 12        # number of spatial neighbors for Moran's I
+n_permutations = 1000   # number of permutations for significance testing
+min_cells_per_stratum = 30
+
+# Helper: build row-normalized kNN weight matrix for a set of indices
+from scipy.sparse import csr_matrix
+
+def knn_weight_matrix(xy, k):
+    """Return sparse row-normalized kNN weight matrix (N x N) for 2D coords xy."""
+    n = xy.shape[0]
+    tree = cKDTree(xy)
+    # query k+1 because the closest point is the cell itself
+    dists, idxs = tree.query(xy, k=k+1)
+    # exclude self (distance 0)
+    idxs = idxs[:, 1:]
+    row_inds = np.repeat(np.arange(n), k)
+    col_inds = idxs.ravel()
+    data = np.ones(len(row_inds), dtype=float)
+    W = csr_matrix((data, (row_inds, col_inds)), shape=(n, n))
+    # row-normalize so each row sums to 1
+    row_sums = np.array(W.sum(axis=1)).flatten()
+    row_sums[row_sums == 0] = 1.0
+    inv_row_sums = 1.0 / row_sums
+    W = W.multiply(inv_row_sums[:, None])
+    return W
+
+# Helper: compute Moran's I given values y and weight matrix W (row-normalized)
+
+def morans_I(y, W):
+    """Compute Moran's I for vector y and sparse row-normalized weight matrix W."""
+    y = np.asarray(y, dtype=float)
+    mask = np.isfinite(y)
+    y = y[mask]
+    if y.size < 2:
+        return np.nan
+    W_sub = W[mask][:, mask]
+    y_mean = y.mean()
+    y_dev = y - y_mean
+    # numerator: sum_i sum_j w_ij (y_i - y_bar)(y_j - y_bar)
+    Wy = W_sub.dot(y_dev)
+    num = np.dot(y_dev, Wy)
+    # denominator: sum_i (y_i - y_bar)^2
+    den = np.dot(y_dev, y_dev)
+    if den == 0:
+        return np.nan
+    # total sum of weights (since row-normalized, equals number of non-empty rows)
+    W_sum = W_sub.sum()
+    n = y.size
+    I = (n / W_sum) * (num / den)
+    return float(I)
+
+# Iterate over (cell type, Area) strata and compute Moran's I with permutation p-values
+results = []
+
+unique_celltypes = celltypes_mes.unique()
+
+for ct in unique_celltypes:
+    if ct not in mesoderm_types_of_interest:
+        continue
+    mask_ct_global = (celltypes_mes == ct)
+    areas_ct = areas_mes[mask_ct_global].unique()
+
+    for area in areas_ct:
+        mask_stratum = mask_ct_global & (areas_mes == area)
+        idx = np.where(mask_stratum)[0]
+        n_cells = len(idx)
+        if n_cells < min_cells_per_stratum:
+            # also record that this stratum was skipped
+            results.append({
+                'celltype_mapped_refined': ct,
+                'Area': area,
+                'n_cells': n_cells,
+                'morans_I': np.nan,
+                'p_perm': np.nan,
+                'p_empirical_two_sided': np.nan,
+                'z_score': np.nan,
+                'note': f'skipped (n_cells<{min_cells_per_stratum})'
+            })
+            continue
+
+        # Extract coordinates and maturation scores
+        xy = coords[idx, :]
+        scores = adata_mes.obs['mesoderm_maturation_pc1'].values[idx]
+
+        # Build weight matrix and compute observed Moran's I
+        W = knn_weight_matrix(xy, k_neighbors)
+        I_obs = morans_I(scores, W)
+
+        # Permutation test: shuffle scores among cells within this stratum
+        I_perm = np.zeros(n_permutations, dtype=float)
+        for b in range(n_permutations):
+            perm_scores = np.random.permutation(scores)
+            I_perm[b] = morans_I(perm_scores, W)
+
+        # Empirical p-values (two-sided and one-sided positive autocorrelation)
+        # Avoid zero p-values by using (count+1)/(n_perm+1)
+        greater_equal = np.sum(I_perm >= I_obs)
+        less_equal = np.sum(I_perm <= I_obs)
+        p_pos = (greater_equal + 1.0) / (n_permutations + 1.0)
+        p_neg = (less_equal + 1.0) / (n_permutations + 1.0)
+        p_two_sided = 2.0 * min(p_pos, p_neg)
+        p_two_sided = min(p_two_sided, 1.0)
+
+        # Approximate z-score relative to permutation null
+        mu_perm = I_perm.mean()
+        sd_perm = I_perm.std(ddof=1)
+        if sd_perm == 0:
+            z_score = np.nan
+        else:
+            z_score = (I_obs - mu_perm) / sd_perm
+
+        results.append({
+            'celltype_mapped_refined': ct,
+            'Area': area,
+            'n_cells': n_cells,
+            'morans_I': I_obs,
+            'p_perm': p_pos,  # one-sided p for positive autocorrelation
+            'p_empirical_two_sided': p_two_sided,
+            'z_score': z_score,
+            'note': 'ok'
+        })
+
+# Collect results into a DataFrame
+res_df = pd.DataFrame(results)
+
+# Apply BH-FDR correction across all tested strata using two-sided p-values
+valid_mask = res_df['p_empirical_two_sided'].notnull()
+ps = res_df.loc[valid_mask, 'p_empirical_two_sided'].values
+m = ps.size
+if m > 0:
+    order = np.argsort(ps)
+    ranked_ps = ps[order]
+    bh_fdr = ranked_ps * m / (np.arange(m) + 1)
+    bh_fdr = np.minimum.accumulate(bh_fdr[::-1])[::-1]
+    # Place back into dataframe
+    qvals = np.full(m, np.nan)
+    qvals[order] = bh_fdr
+    res_df.loc[valid_mask, 'q_empirical_two_sided'] = qvals
+else:
+    res_df['q_empirical_two_sided'] = np.nan
+
+# Sort and print a concise summary focused on mesodermal maturation gradients
+res_df_sorted = res_df.sort_values(['celltype_mapped_refined', 'Area'])
+
+print("\nMoran's I for mesodermal maturation (PC1) within each cell type and Area (k={}):".format(k_neighbors))
+print(res_df_sorted[['celltype_mapped_refined', 'Area', 'n_cells', 'morans_I',
+                     'z_score', 'p_empirical_two_sided', 'q_empirical_two_sided', 'note']].to_string(index=False))
+
+# Also provide a lineage-level summary: per cell type, report the strongest (most positive) significant Moran's I
+summary_rows = []
+for ct in mesoderm_types_of_interest:
+    df_ct = res_df_sorted[res_df_sorted['celltype_mapped_refined'] == ct].copy()
+    if df_ct.empty:
+        continue
+    # Restrict to tested strata
+    df_ct_valid = df_ct[df_ct['note'] == 'ok']
+    if df_ct_valid.empty:
+        summary_rows.append({
+            'celltype_mapped_refined': ct,
+            'n_areas_tested': int(df_ct.shape[0]),
+            'n_areas_significant_q_0.1': 0,
+            'max_morans_I_significant': np.nan,
+            'Area_max_I_significant': None
+        })
+        continue
+    sig_mask = df_ct_valid['q_empirical_two_sided'] <= 0.1
+    n_sig = int(sig_mask.sum())
+    if n_sig > 0:
+        df_sig = df_ct_valid[sig_mask]
+        idx_max = df_sig['morans_I'].idxmax()
+        summary_rows.append({
+            'celltype_mapped_refined': ct,
+            'n_areas_tested': int(df_ct.shape[0]),
+            'n_areas_significant_q_0.1': n_sig,
+            'max_morans_I_significant': float(df_ct_valid.loc[idx_max, 'morans_I']),
+            'Area_max_I_significant': df_ct_valid.loc[idx_max, 'Area']
+        })
+    else:
+        summary_rows.append({
+            'celltype_mapped_refined': ct,
+            'n_areas_tested': int(df_ct.shape[0]),
+            'n_areas_significant_q_0.1': 0,
+            'max_morans_I_significant': np.nan,
+            'Area_max_I_significant': None
+        })
+
+summary_df = pd.DataFrame(summary_rows)
+print("\nLineage-level summary of spatial autocorrelation of maturation scores (q<=0.1):")
+print(summary_df.to_string(index=False))
+
+```
+
+
+================================================================================
+2026-05-17 09:09:57,290 - INFO
+================================================================================
+RESPONSE/OUTPUT: self_critique_1_1
+
+APPLIED SELF-CRITIQUE - Analysis 1, Step 2
+
+
+================================================================================
+2026-05-17 09:09:57,290 - INFO
+================================================================================
+RESPONSE/OUTPUT: revised_analysis_1_1
+
+Revised Hypothesis: Within each mesodermal lineage, the continuous transcriptional maturation axis (cell-type–specific PC1) exhibits non-random spatial autocorrelation in physical embryo coordinates, with the strength and sign of Moran’s I differing across mesodermal subtypes and embryo Areas, indicating lineage- and region-specific spatial structuring of maturation beyond discrete cell-type labels.
+
+Revised Analysis Plan:
+1. Within each selected mesodermal cell type (and, where feasible, within each Area), compute Moran’s I for the cell-type–specific maturation score (mesoderm_maturation_pc1) using a k-nearest-neighbor graph built from 2D spatial coordinates, assess significance by permutation testing with Benjamini–Hochberg FDR correction across all tested (cell type, Area) strata, and summarize and compare the magnitude and sign of Moran’s I across mesodermal subtypes and Areas.
+
+Revised Code:
+import numpy as np
+import pandas as pd
+from scipy.spatial import cKDTree
+from scipy import stats
+from scipy.sparse import csr_matrix
+
+# We assume `adata` is already in memory and that a mesoderm-only AnnData
+# `adata_mes` with a column 'mesoderm_maturation_pc1' in .obs was created
+# in the previous step. If `adata_mes` is not present, reconstruct it
+# from `adata` using the same mesodermal cell types.
+
+mesoderm_types_of_interest = [
+    'Cranial mesoderm',
+    'Anterior somitic tissues',
+    'Presomitic mesoderm',
+    'Dermomyotome',
+    'Sclerotome',
+    'Cardiomyocytes'
+]
+
+if 'adata_mes' not in globals():
+    obs_celltypes = adata.obs['celltype_mapped_refined']
+    available_types = [ct for ct in mesoderm_types_of_interest if ct in obs_celltypes.unique()]
+    if len(available_types) == 0:
+        raise ValueError("None of the requested mesodermal cell types are present in adata.obs['celltype_mapped_refined'].")
+    mask_mesoderm = obs_celltypes.isin(available_types)
+    adata_mes = adata[mask_mesoderm].copy()
+
+# Ensure maturation scores are present
+if 'mesoderm_maturation_pc1' not in adata_mes.obs.columns:
+    raise ValueError("Expected 'mesoderm_maturation_pc1' in adata_mes.obs from the previous step.")
+
+# Ensure spatial coordinates are available
+if 'spatial' not in adata_mes.obsm:
+    raise KeyError("Expected 2D spatial coordinates in adata_mes.obsm['spatial'].")
+
+# Convenience handles
+celltypes_mes = adata_mes.obs['celltype_mapped_refined']
+areas_mes = adata_mes.obs['Area'] if 'Area' in adata_mes.obs.columns else pd.Series('all', index=adata_mes.obs_names, name='Area')
+coords = adata_mes.obsm['spatial']  # shape (n_cells, 2)
+
+# Parameters for spatial autocorrelation
+k_neighbors = 12        # number of spatial neighbors for Moran's I
+n_permutations = 1000   # number of permutations for significance testing
+min_cells_per_stratum = 30
+
+
+def knn_weight_matrix(xy, k):
+    """Return sparse row-normalized kNN weight matrix (N x N) for 2D coords xy."""
+    n = xy.shape[0]
+    if n < 2:
+        raise ValueError("Need at least 2 points to build a kNN graph.")
+    # Ensure k does not exceed n-1
+    k_eff = min(k, n - 1)
+    tree = cKDTree(xy)
+    # query k_eff+1 because the closest point is the cell itself
+    dists, idxs = tree.query(xy, k=k_eff + 1)
+    # exclude self (distance 0)
+    idxs = idxs[:, 1:]
+    row_inds = np.repeat(np.arange(n), k_eff)
+    col_inds = idxs.ravel()
+    data = np.ones(len(row_inds), dtype=float)
+    W = csr_matrix((data, (row_inds, col_inds)), shape=(n, n))
+    # row-normalize so each row sums to 1
+    row_sums = np.array(W.sum(axis=1)).flatten()
+    row_sums[row_sums == 0] = 1.0
+    inv_row_sums = 1.0 / row_sums
+    W = W.multiply(inv_row_sums[:, None])
+    return W
+
+
+def morans_I(y, W):
+    """Compute Moran's I for vector y and sparse row-normalized weight matrix W."""
+    y = np.asarray(y, dtype=float)
+    mask = np.isfinite(y)
+    y = y[mask]
+    if y.size < 2:
+        return np.nan
+    W_sub = W[mask][:, mask]
+    y_mean = y.mean()
+    y_dev = y - y_mean
+    Wy = W_sub.dot(y_dev)
+    num = np.dot(y_dev, Wy)
+    den = np.dot(y_dev, y_dev)
+    if den == 0:
+        return np.nan
+    W_sum = W_sub.sum()
+    n = y.size
+    I = (n / W_sum) * (num / den)
+    return float(I)
+
+
+# Iterate over (cell type, Area) strata and compute Moran's I with permutation p-values
+results = []
+
+unique_celltypes = celltypes_mes.unique()
+
+for ct in unique_celltypes:
+    if ct not in mesoderm_types_of_interest:
+        continue
+    mask_ct_global = (celltypes_mes == ct)
+    areas_ct = areas_mes[mask_ct_global].unique()
+
+    for area in areas_ct:
+        mask_stratum = mask_ct_global & (areas_mes == area)
+        idx = np.where(mask_stratum)[0]
+        n_cells = len(idx)
+        if n_cells < min_cells_per_stratum:
+            results.append({
+                'celltype_mapped_refined': ct,
+                'Area': area,
+                'n_cells': n_cells,
+                'morans_I': np.nan,
+                'p_perm': np.nan,
+                'p_empirical_two_sided': np.nan,
+                'z_score': np.nan,
+                'note': f'skipped (n_cells<{min_cells_per_stratum})'
+            })
+            continue
+
+        # Extract coordinates and maturation scores
+        xy = coords[idx, :]
+        scores = adata_mes.obs['mesoderm_maturation_pc1'].values[idx]
+
+        # Build weight matrix and compute observed Moran's I
+        W = knn_weight_matrix(xy, k_neighbors)
+        I_obs = morans_I(scores, W)
+
+        # Permutation test: shuffle scores among cells within this stratum
+        I_perm = np.zeros(n_permutations, dtype=float)
+        for b in range(n_permutations):
+            perm_scores = np.random.permutation(scores)
+            I_perm[b] = morans_I(perm_scores, W)
+
+        # Empirical p-values (two-sided and one-sided positive autocorrelation)
+        greater_equal = np.sum(I_perm >= I_obs)
+        less_equal = np.sum(I_perm <= I_obs)
+        p_pos = (greater_equal + 1.0) / (n_permutations + 1.0)
+        p_neg = (less_equal + 1.0) / (n_permutations + 1.0)
+        p_two_sided = 2.0 * min(p_pos, p_neg)
+        p_two_sided = min(p_two_sided, 1.0)
+
+        # Approximate z-score relative to permutation null
+        mu_perm = I_perm.mean()
+        sd_perm = I_perm.std(ddof=1)
+        if sd_perm == 0:
+            z_score = np.nan
+        else:
+            z_score = (I_obs - mu_perm) / sd_perm
+
+        results.append({
+            'celltype_mapped_refined': ct,
+            'Area': area,
+            'n_cells': n_cells,
+            'morans_I': I_obs,
+            'p_perm': p_pos,  # one-sided p for positive autocorrelation
+            'p_empirical_two_sided': p_two_sided,
+            'z_score': z_score,
+            'note': 'ok'
+        })
+
+# Collect results into a DataFrame
+res_df = pd.DataFrame(results)
+
+# Apply BH-FDR correction across all tested strata using two-sided p-values
+valid_mask = res_df['p_empirical_two_sided'].notnull()
+ps = res_df.loc[valid_mask, 'p_empirical_two_sided'].values
+m = ps.size
+if m > 0:
+    order = np.argsort(ps)
+    ranked_ps = ps[order]
+    bh_fdr = ranked_ps * m / (np.arange(m) + 1)
+    bh_fdr = np.minimum.accumulate(bh_fdr[::-1])[::-1]
+    qvals = np.full(m, np.nan)
+    qvals[order] = bh_fdr
+    res_df.loc[valid_mask, 'q_empirical_two_sided'] = qvals
+else:
+    res_df['q_empirical_two_sided'] = np.nan
+
+# Sort and print a concise summary focused on mesodermal maturation gradients
+res_df_sorted = res_df.sort_values(['celltype_mapped_refined', 'Area'])
+
+print("\nMoran's I for mesodermal maturation (PC1) within each cell type and Area (k={}):".format(k_neighbors))
+print(res_df_sorted[['celltype_mapped_refined', 'Area', 'n_cells', 'morans_I',
+                     'z_score', 'p_empirical_two_sided', 'q_empirical_two_sided', 'note']].to_string(index=False))
+
+# Lineage-level summary: per cell type, report the strongest (most positive) significant Moran's I
+summary_rows = []
+for ct in mesoderm_types_of_interest:
+    df_ct = res_df_sorted[res_df_sorted['celltype_mapped_refined'] == ct].copy()
+    if df_ct.empty:
+        continue
+    df_ct_valid = df_ct[df_ct['note'] == 'ok']
+    if df_ct_valid.empty:
+        summary_rows.append({
+            'celltype_mapped_refined': ct,
+            'n_areas_tested': int(df_ct.shape[0]),
+            'n_areas_significant_q_0.1': 0,
+            'max_morans_I_significant': np.nan,
+            'Area_max_I_significant': None
+        })
+        continue
+    sig_mask = df_ct_valid['q_empirical_two_sided'] <= 0.1
+    n_sig = int(sig_mask.sum())
+    if n_sig > 0:
+        df_sig = df_ct_valid[sig_mask]
+        idx_max = df_sig['morans_I'].idxmax()
+        summary_rows.append({
+            'celltype_mapped_refined': ct,
+            'n_areas_tested': int(df_ct.shape[0]),
+            'n_areas_significant_q_0.1': n_sig,
+            'max_morans_I_significant': float(df_sig.loc[idx_max, 'morans_I']),
+            'Area_max_I_significant': df_sig.loc[idx_max, 'Area']
+        })
+    else:
+        summary_rows.append({
+            'celltype_mapped_refined': ct,
+            'n_areas_tested': int(df_ct.shape[0]),
+            'n_areas_significant_q_0.1': 0,
+            'max_morans_I_significant': np.nan,
+            'Area_max_I_significant': None
+        })
+
+summary_df = pd.DataFrame(summary_rows)
+print("\nLineage-level summary of spatial autocorrelation of maturation scores (q<=0.1):")
+print(summary_df.to_string(index=False))
+
+print("\nNote: 'p_perm' is the one-sided empirical p-value for positive spatial autocorrelation, while 'p_empirical_two_sided' and 'q_empirical_two_sided' are the primary statistics for FDR-controlled inference about non-random spatial structure.")
+
+
+
+================================================================================
+2026-05-17 09:09:57,508 - INFO
+================================================================================
+RESPONSE/OUTPUT: step_execution_success_1_2
+
+STEP 2 RAN SUCCESSFULLY - Analysis 1
+
+
+================================================================================
+2026-05-17 09:10:16,276 - INFO
+================================================================================
+RESPONSE/OUTPUT: results_interpretation_1_2
+
+The current implementation answers the hypothesis in a very strict, stratified way, and the main take‑home from these results is that this particular stratification is too fine relative to the available cell numbers:
+
+- Every (cell type, Area) stratum has n_cells < 30, so all strata are skipped.
+- Consequently, Moran’s I is never computed (all NaN), and all q-values are NaN.
+- The lineage-level summary then trivially reports zero significant Areas for all mesodermal types.
+
+So with this setup you cannot yet say anything about whether maturation PC1 shows spatial autocorrelation, let alone whether its strength/sign differ across mesodermal subtypes and Areas. The negative result is entirely due to the small stratum sizes, not because Moran’s I is actually ≈0.
+
+Key implications and concrete next steps:
+
+1. **Relax the stratification so you can actually estimate Moran’s I**
+
+   Right now, you are effectively estimating “within a given embryo Area, within a given mesoderm subtype.” This is clearly too granular for this dataset.
+
+   I’d suggest a staged approach:
+
+   - **Stage 1: per cell type, across all Areas pooled**
+     - Ignore `Area` and compute Moran’s I within each mesoderm type using all cells of that type across the embryo (or across all embryos, depending on how Area is defined).
+     - This tests whether maturation PC1 has any non‑random spatial structure along the embryo for each lineage at all.
+     - This will give you immediate, interpretable results and a baseline.
+
+   - **Stage 2: coarser Area grouping**
+     - Instead of hundreds of extremely fragmented Areas (mostly with 1–5 cells), you probably need a much coarser region definition if you want (cell type, region) level estimates.
+     - Options:
+       - Use a biologically meaningful coarsening (e.g. anterior/posterior, dorsal/ventral, medial/lateral; or broad anatomical compartments if available).
+       - Or algorithmically cluster `Area` codes into a small number of “meta‑areas” based on spatial proximity (e.g. run k‑means or Leiden on the spatial coordinates, then treat those clusters as new Areas).
+     - Then re-run Moran’s I within (cell type, coarse‑Area) strata with a much lower number of strata and more cells per stratum.
+
+   - **Stage 3: per cell type, per embryo (if Areas correspond to embryos)**
+     - If `Area` encodes embryo ID or field of view rather than subregional anatomy, consider:
+       - Moran’s I *within cell type within embryo* (no further splitting).
+       - Then meta‑analyze the distribution of Moran’s I values across embryos for a given lineage (e.g. median I, proportion positive with p<0.05).
+     - This would let you talk about reproducibility of spatial maturation structure across embryos.
+
+2. **Revisit the `min_cells_per_stratum` threshold**
+
+   - A threshold of 30 is reasonable for robust inference, but here it completely kills the analysis due to the extreme fragmentation.
+   - Once you aggregate Areas/coarsen regions, you might still want to:
+     - Keep 30 as your *primary* threshold (for the main, FDR‑controlled analysis).
+     - Optionally also run a *descriptive* analysis with a lower threshold (e.g. 10 cells) to see trends in I (without formal significance claims).
+   - This can help you see whether there are any consistent signs/magnitudes that might justify targeted follow‑up.
+
+3. **Consider alternative ways to encode “region” to test the hypothesis**
+
+   Your hypothesis is about *differences* in Moran’s I across mesodermal subtypes and embryo regions. To test this without being trapped by the current `Area` granularity:
+
+   - After you get per-cell-type Moran’s I globally, you can add a *continuous spatial covariate*:
+     - Example: anterior-posterior axis (e.g. x-coordinate), dorsal-ventral (y-coordinate), or a pseudospatial axis constructed from spatial PCs.
+     - You can then ask if the maturation score’s Moran’s I varies along these axes by:
+       - Computing Moran’s I in sliding windows or spatial bands along the axis.
+       - Or regressing maturation score on spatial coordinates (e.g. GAM or thin-plate splines) and then applying Moran’s I on residuals vs. raw scores to see how much structure is captured by large-scale gradients vs. local clustering.
+
+   - Alternatively, if you really need a categorical “Area” factor:
+     - Construct ~5–10 broad regions along the major embryonic axis directly from coordinates (e.g. quantiles of x or y or 2D k‑means), then redo per-(cell type, region) I.
+
+4. **Check the mesoderm enrichment itself**
+
+   - The fact that there are hundreds of (cell type, Area) strata with 1–5 cells suggests `Area` is extremely fragmented relative to the mesoderm types you’ve selected.
+   - Before moving on, it’s worth quickly summarizing:
+     - For each cell type: total number of mesoderm cells.
+     - For each cell type: distribution of `Area` counts (e.g. median, 90th percentile).
+   - If some mesoderm types have only very few total cells (e.g. Sclerotome), they may never be suitable for Area-stratified Moran’s I in this dataset. You might flag those lineages as descriptively analyzed only.
+
+5. **Make use of the already-computed kNN infrastructure**
+
+   The kNN Moran’s I approach itself is good and nicely avoids dependence on a grid. A few minor considerations once you have adequate n per stratum:
+
+   - **k_neighbors = 12** is reasonable, but you may want to:
+     - Check robustness by trying k=6, 20 for a subset of types.
+   - Ensure that the spatial scale defined by k neighbors is biologically sensible relative to embryo size (e.g. are neighbors still in the same anatomical compartment?).
+
+6. **How to interpret future positive/negative findings**
+
+   Once you re-run with more cells per stratum and actually get Moran’s I values:
+
+   - **Positive Moran’s I** within a mesoderm lineage suggests local clusters of similarly “mature” cells in physical space – consistent with spatially structured maturation.
+   - **Negative Moran’s I** would suggest checkerboard-like patterns (immature neighbors near mature and vice versa), which might occur at lineage boundaries or mixing zones.
+   - **Comparing across types/regions:**
+     - Plot distributions of I by cell type and by region (boxplots or stripplots).
+     - Look at lineages where I is consistently positive in some regions but near zero in others; that’s directly in line with your hypothesis of region‑specific structuring.
+
+7. **Avoiding overlap with likely published analyses**
+
+   - The original seqFISH paper and common spatial analyses usually focus on:
+     - Spatial enrichment of discrete cell types.
+     - Ligand–receptor or neighborhood interactions.
+     - Broad developmental gradients, not necessarily expressed as PC1‑defined maturation *within a lineage* combined with local Moran’s I.
+   - Your current idea (lineage‑specific maturation PC1, kNN Moran’s I, and comparing across newly defined broad regions) is still relatively distinct, especially if:
+     - The maturation PC1 is derived from a custom mesoderm-only PCA.
+     - Regions are defined in a novel, data‑driven or mesoderm‑focused way.
+
+In summary, the current run doesn’t provide evidence for or against the hypothesis because it effectively never computes Moran’s I. The next crucial step is to relax the spatial stratification (coarser regions or no region stratification first) so that each mesoderm lineage has enough cells per stratum to enable valid spatial autocorrelation estimates. Once you have those, you can then reintroduce a coarser notion of “Area” to probe lineage‑ and region‑specific differences in Moran’s I.
+
+
+================================================================================
+2026-05-17 09:10:16,283 - INFO
+================================================================================
+RESPONSE/OUTPUT: analysis_complete
+
+ANALYSIS 1 COMPLETED - Notebook saved to: /home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_130752/outputs/lohoff_smoke_20260517_090758/lohoff_smoke_analysis_1.ipynb

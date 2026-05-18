@@ -1,0 +1,1652 @@
+Staged dataset at /home/mingqiam/TissueAgent/data/dataset/dataset_farah_heart_merfish.h5ad
+Staged background at /home/mingqiam/TissueAgent/data/briefs/background.md
+Invoking Hypothesis Agent…
+
+2026-05-17 08:50:27 | INFO     | Invoking agent `hypothesis_agent`
+
+2026-05-17 08:50:27 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 08:50:37 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 08:50:37 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 08:50:37 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--b927de72-129c-402b-9ff6-08125b59bd98-0
+
+Content:
+<execute>
+from pathlib import Path
+import json
+from pprint import pprint
+
+hypotheses_path = Path(DATA_DIR) / "hypotheses" / "hypotheses.json"
+print("Checking for existing hypotheses.json at:", hypotheses_path)
+
+if hypotheses_path.exists():
+    try:
+        with open(hypotheses_path, "r") as f:
+            hypotheses_data = json.load(f)
+        print("Existing hypotheses.json found and parsed successfully.")
+        print("Content summary:")
+        pprint(hypotheses_data)
+    except Exception as e:
+        print("Failed to read existing hypotheses.json:", e)
+else:
+    print("No existing hypotheses.json found.")
+</execute>
+
+2026-05-17 08:50:37 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 08:50:37 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 08:50:37 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 08:50:38 | WARNING  | Python REPL can execute arbitrary code. Use with caution.
+
+2026-05-17 08:50:38 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 08:50:38 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Checking for existing hypotheses.json at: /home/mingqiam/TissueAgent/data/hypotheses/hypotheses.json
+No existing hypotheses.json found.
+
+2026-05-17 08:50:38 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 08:50:54 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 08:50:54 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 08:50:54 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--98223e56-5e37-482c-8852-ac8f7c0f6902-0
+
+Content:
+<execute>
+from pathlib import Path
+import ad
+from anndata import AnnData
+
+data_dir = Path(DATA_DIR)
+background_path = data_dir / "briefs" / "background.md"
+fallback_bg_path = data_dir / "briefs" / "paper_summary.txt"
+dataset_path = data_dir / "dataset" / "dataset_farah_heart_merfish.h5ad"
+inventory_path = data_dir / "tables" / "data_inventory.tsv"
+hyp_dir = data_dir / "hypotheses"
+hyp_dir.mkdir(exist_ok=True, parents=True)
+
+print("Reading background...")
+if background_path.exists():
+    bg_text = background_path.read_text()[:2000]
+    print("Loaded background.md (first 2000 chars):\n", bg_text)
+elif fallback_bg_path.exists():
+    bg_text = fallback_bg_path.read_text()[:2000]
+    print("background.md missing, loaded paper_summary.txt (first 2000 chars):\n", bg_text)
+else:
+    bg_text = ""
+    print("No background file found.")
+
+print("\nLoading AnnData from:", dataset_path)
+adata = ad.read_h5ad(dataset_path)
+print("AnnData loaded.")
+print("Shape (cells x genes):", adata.shape)
+
+print("\n.obs columns:", list(adata.obs.columns))
+print(".var columns:", list(adata.var.columns))
+print(".uns keys:", list(adata.uns.keys()))
+print(".obsm keys:", list(adata.obsm.keys()))
+
+if inventory_path.exists():
+    print("\nFound data_inventory.tsv:")
+    print(inventory_path.read_text()[:1000])
+else:
+    print("\nNo data_inventory.tsv found.")
+
+# Basic inventory: cell type columns and counts
+possible_ct_cols = [c for c in adata.obs.columns if "cell_type" in c.lower() or "annotation" in c.lower() or "cluster" in c.lower()]
+print("\nCandidate cell-type / cluster columns:", possible_ct_cols)
+
+inventory = {}
+for col in possible_ct_cols:
+    vc = adata.obs[col].value_counts()
+    inventory[col] = {"n_levels": int(vc.shape[0]), "top_levels": vc.head(10).to_dict()}
+    print(f"\nColumn {col}: {vc.shape[0]} unique labels")
+    print(vc.head(10))
+
+# Determine spatial coordinates source
+coords = None
+coord_source = None
+if "spatial" in adata.obsm_keys():
+    coords = adata.obsm["spatial"]
+    coord_source = "obsm['spatial']"
+else:
+    # look for x/y-like columns
+    x_cols = [c for c in adata.obs.columns if c.lower() in ("x", "x_coord", "x_um", "xcoord")]
+    y_cols = [c for c in adata.obs.columns if c.lower() in ("y", "y_coord", "y_um", "ycoord")]
+    if x_cols and y_cols:
+        coords = adata.obs[[x_cols[0], y_cols[0]]].to_numpy()
+        coord_source = f"obs['{x_cols[0]}','{y_cols[0]}']"
+    else:
+        # check obsm for 2D arrays
+        for k in adata.obsm_keys():
+            if adata.obsm[k].shape[1] == 2:
+                coords = adata.obsm[k]
+                coord_source = f"obsm['{k}']"
+                break
+
+print("\nSpatial coordinate source:", coord_source)
+if coords is not None:
+    print("Spatial extent (min/max per axis):")
+    print("min:", coords.min(axis=0), "max:", coords.max(axis=0))
+
+# Gene panel size
+print("\nNumber of genes:", adata.n_vars)
+print("First 10 gene names:", list(adata.var_names[:10]))
+</execute>
+
+2026-05-17 08:50:54 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 08:50:54 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 08:50:54 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 08:50:54 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 08:50:54 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+ModuleNotFoundError("No module named 'ad'")
+
+2026-05-17 08:50:54 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 08:51:01 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 08:51:01 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 08:51:01 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--198f5393-cdaf-4dfb-aee1-8b02adbedff6-0
+
+Content:
+<execute>
+from pathlib import Path
+
+data_dir = Path(DATA_DIR)
+background_path = data_dir / "briefs" / "background.md"
+fallback_bg_path = data_dir / "briefs" / "paper_summary.txt"
+dataset_path = data_dir / "dataset" / "dataset_farah_heart_merfish.h5ad"
+inventory_path = data_dir / "tables" / "data_inventory.tsv"
+hyp_dir = data_dir / "hypotheses"
+hyp_dir.mkdir(exist_ok=True, parents=True)
+
+print("Reading background...")
+if background_path.exists():
+    bg_text = background_path.read_text()[:2000]
+    print("Loaded background.md (first 2000 chars):\n", bg_text)
+elif fallback_bg_path.exists():
+    bg_text = fallback_bg_path.read_text()[:2000]
+    print("background.md missing, loaded paper_summary.txt (first 2000 chars):\n", bg_text)
+else:
+    bg_text = ""
+    print("No background file found.")
+
+print("\nLoading AnnData from:", dataset_path)
+adata = ad.read_h5ad(dataset_path)
+print("AnnData loaded.")
+print("Shape (cells x genes):", adata.shape)
+
+print("\n.obs columns:", list(adata.obs.columns))
+print(".var columns:", list(adata.var.columns))
+print(".uns keys:", list(adata.uns.keys()))
+print(".obsm keys:", list(adata.obsm.keys()))
+
+if inventory_path.exists():
+    print("\nFound data_inventory.tsv:")
+    print(inventory_path.read_text()[:1000])
+else:
+    print("\nNo data_inventory.tsv found.")
+
+# Basic inventory: cell type columns and counts
+possible_ct_cols = [c for c in adata.obs.columns if "cell_type" in c.lower() or "annotation" in c.lower() or "cluster" in c.lower()]
+print("\nCandidate cell-type / cluster columns:", possible_ct_cols)
+
+inventory = {}
+for col in possible_ct_cols:
+    vc = adata.obs[col].value_counts()
+    inventory[col] = {"n_levels": int(vc.shape[0]), "top_levels": vc.head(10).to_dict()}
+    print(f"\nColumn {col}: {vc.shape[0]} unique labels")
+    print(vc.head(10))
+
+# Determine spatial coordinates source
+coords = None
+coord_source = None
+if "spatial" in adata.obsm_keys():
+    coords = adata.obsm["spatial"]
+    coord_source = "obsm['spatial']"
+else:
+    # look for x/y-like columns
+    x_cols = [c for c in adata.obs.columns if c.lower() in ("x", "x_coord", "x_um", "xcoord")]
+    y_cols = [c for c in adata.obs.columns if c.lower() in ("y", "y_coord", "y_um", "ycoord")]
+    if x_cols and y_cols:
+        coords = adata.obs[[x_cols[0], y_cols[0]]].to_numpy()
+        coord_source = f"obs['{x_cols[0]}','{y_cols[0]}']"
+    else:
+        # check obsm for 2D arrays
+        for k in adata.obsm_keys():
+            if adata.obsm[k].shape[1] == 2:
+                coords = adata.obsm[k]
+                coord_source = f"obsm['{k}']"
+                break
+
+print("\nSpatial coordinate source:", coord_source)
+if coords is not None:
+    print("Spatial extent (min/max per axis):")
+    print("min:", coords.min(axis=0), "max:", coords.max(axis=0))
+
+# Gene panel size
+print("\nNumber of genes:", adata.n_vars)
+print("First 10 gene names:", list(adata.var_names[:10]))
+</execute>
+
+2026-05-17 08:51:01 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 08:51:01 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 08:51:01 | INFO     | executing hypothesis_agent exec_node
+
+<string>:52: FutureWarning: The method obsm_keys is deprecated and will be removed in the future. Use obsm instead of obsm_keys. (e.g. `k in adata.obsm` or `adata.obsm.keys() | {'u'}`)
+2026-05-17 08:51:02 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 08:51:02 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Reading background...
+Loaded background.md (first 2000 chars):
+ # Limited Background — Farah et al. 2024 (developing human heart MERFISH)
+
+**Tissue:** Developing human heart.
+
+**Technology:** MERFISH spatial transcriptomics.
+
+**Gene panel:** ~140 genes selected to mark cardiac cell types and a small set
+of developmental transcription factors / signaling pathway components.
+
+**Annotations available:** the AnnData has cell-type labels in `.obs` (column
+name to be discovered by inventory) covering cardiomyocyte subtypes
+(ventricular, atrial, AVC-region), fibroblasts (atrial, ventricular, valve),
+endothelial cells, epicardium, and immune cells. 2D spatial coordinates are in
+`.obsm["spatial"]` and section / region metadata in `.obs`.
+
+**Scope of study (intentionally vague):** the dataset profiles spatial
+organization of cell types across anatomical regions (atria, ventricles,
+atrioventricular canal, outflow tract) of the developing human heart.
+**Specific findings — including which spatially restricted communities the
+original authors highlighted, which cell-type combinations they found
+co-localized, and which developmental hypotheses they proposed — are withheld
+from you.** Discover what is interesting about this dataset by exploring it
+directly.
+
+**Constraints:**
+- Use only this dataset; no external lookups, no external datasets.
+- Cell-type labels are author-provided; do not relabel them.
+- Spatial unit is the coordinate value in `.obsm["spatial"]`; spatial scale is
+  not calibrated, treat coordinates as unitless.
+
+
+Loading AnnData from: /home/mingqiam/TissueAgent/data/dataset/dataset_farah_heart_merfish.h5ad
+AnnData loaded.
+Shape (cells x genes): (228635, 238)
+
+.obs columns: ['Sample_ID', 'Batch', 'UMI Count', 'leiden', 'Complexity', 'Populations', 'Purity']
+.var columns: []
+.uns keys: ['dataset_provenance']
+.obsm keys: ['X_umap', 'spatial']
+
+No data_inventory.tsv found.
+
+Candidate cell-type / cluster columns: []
+
+Spatial coordinate source: obsm['spatial']
+Spatial extent (min/max per axis):
+min: [-10717.285  -4881.698] max: [6634.4106 1712.3276]
+
+Number of genes: 238
+First 10 gene names: ['ABCC9', 'ADAMTS6', 'ADAMTS8', 'ADGRL1', 'ADGRL2', 'ADGRL3', 'ADM', 'AGPS', 'AGT', 'ALDH1A2']
+
+2026-05-17 08:51:02 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 08:51:31 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 08:51:31 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 08:51:31 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--ac3df318-7dbd-4bcd-a608-4f6b3013d2bd-0
+
+Content:
+<execute>
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from sklearn.neighbors import NearestNeighbors
+
+data_dir = Path(DATA_DIR)
+hyp_dir = data_dir / "hypotheses"
+hyp_dir.mkdir(exist_ok=True, parents=True)
+log_path = hyp_dir / "exploration_log.md"
+
+print("Existing exploration_log.md:", log_path.exists())
+
+# Re-inspect obs columns to identify cell-type and cluster labels
+print("adata.obs columns:", adata.obs.columns.tolist())
+
+# Treat 'Populations' as cell-type, 'leiden' as cluster
+cell_type_col = None
+cluster_col = None
+if "Populations" in adata.obs.columns:
+    cell_type_col = "Populations"
+if "leiden" in adata.obs.columns:
+    cluster_col = "leiden"
+
+print("Selected cell_type_col:", cell_type_col)
+print("Selected cluster_col:", cluster_col)
+
+# EDA PASS 1: basic cell-type and cluster distributions
+obs1_lines = []
+obs1_lines.append("OBSERVATION 1:")
+n_cells = adata.n_obs
+obs1_lines.append(f"Total cells: {n_cells}.")
+if cell_type_col is not None:
+    ct_counts = adata.obs[cell_type_col].value_counts()
+    obs1_lines.append(
+        f"Cell-type column '{cell_type_col}' has {ct_counts.shape[0]} unique labels; "
+        f"top 10 (label: count, percent of cells):"
+    )
+    top_ct = []
+    for lbl, cnt in ct_counts.head(10).items():
+        top_ct.append(f"{lbl}: {cnt} ({cnt / n_cells * 100:.2f}%)")
+    obs1_lines.append(", ".join(top_ct))
+else:
+    obs1_lines.append("No explicit cell-type column identified.")
+
+if cluster_col is not None:
+    cl_counts = adata.obs[cluster_col].value_counts()
+    obs1_lines.append(
+        f"Cluster column '{cluster_col}' has {cl_counts.shape[0]} unique labels; "
+        f"top 10 (label: count, percent of cells):"
+    )
+    top_cl = []
+    for lbl, cnt in cl_counts.head(10).items():
+        top_cl.append(f"{lbl}: {cnt} ({cnt / n_cells * 100:.2f}%)")
+    obs1_lines.append(", ".join(top_cl))
+
+# Also summarize batches/samples if present
+for meta_col in ["Sample_ID", "Batch"]:
+    if meta_col in adata.obs.columns:
+        vc = adata.obs[meta_col].value_counts()
+        obs1_lines.append(
+            f"Metadata column '{meta_col}' has {vc.shape[0]} unique values; "
+            f"top 10 (value: count, percent of cells):"
+        )
+        top_meta = []
+        for lbl, cnt in vc.head(10).items():
+            top_meta.append(f"{lbl}: {cnt} ({cnt / n_cells * 100:.2f}%)")
+        obs1_lines.append(", ".join(top_meta))
+
+obs1_text = "\n".join(obs1_lines) + "\n\n"
+print("\n--- OBSERVATION 1 PREVIEW ---\n", obs1_text)
+
+# Prepare spatial coordinates
+coords = adata.obsm["spatial"]
+print("Spatial coords shape:", coords.shape)
+
+# Build KNN graph once (for k neighbors)
+k = 20
+nbrs = NearestNeighbors(n_neighbors=k + 1, algorithm="kd_tree").fit(coords)
+distances, indices = nbrs.kneighbors(coords)
+# Exclude self (first neighbor)
+neighbor_indices = indices[:, 1:]
+print("Neighbor_indices shape:", neighbor_indices.shape)
+
+# EDA PASS 2: Rare-but-tight using same-label NN fraction vs global frequency (on cell_type_col if available)
+obs2_lines = []
+obs2_lines.append("OBSERVATION 2:")
+if cell_type_col is None:
+    obs2_lines.append("Cell-type column not found; rare-but-tight analysis cannot be performed on cell types.")
+else:
+    labels = adata.obs[cell_type_col].astype("category")
+    label_names = labels.cat.categories.tolist()
+    print("Number of cell-type labels:", len(label_names))
+
+    label_array = labels.to_numpy()
+    total_cells = label_array.shape[0]
+
+    # Global frequencies
+    value_counts = pd.Series(label_array).value_counts()
+    global_freq = (value_counts / total_cells).to_dict()
+
+    # Compute same-label neighbor fraction per cell
+    same_label_frac_per_cell = np.zeros(total_cells, dtype=float)
+    for i in range(total_cells):
+        center_label = label_array[i]
+        neigh_labels = label_array[neighbor_indices[i]]
+        if len(neigh_labels) == 0:
+            same_label_frac_per_cell[i] = np.nan
+            continue
+        same_label_frac_per_cell[i] = np.mean(neigh_labels == center_label)
+
+    # Aggregate per label
+    label_stats = []
+    for lbl in label_names:
+        mask = label_array == lbl
+        if mask.sum() == 0:
+            continue
+        nn_same = np.nanmean(same_label_frac_per_cell[mask])
+        gfreq = global_freq.get(lbl, 0.0)
+        ratio = nn_same / gfreq if gfreq > 0 else np.nan
+        label_stats.append(
+            {
+                "label": lbl,
+                "n_cells": int(mask.sum()),
+                "global_freq": gfreq,
+                "nn_same_frac": nn_same,
+                "concentration_ratio": ratio,
+            }
+        )
+
+    label_stats_df = pd.DataFrame(label_stats).sort_values(
+        "concentration_ratio", ascending=False
+    )
+
+    # Take top 5 labels by concentration ratio (rare-but-tight candidates)
+    top_conc = label_stats_df.head(5)
+    obs2_lines.append(
+        "Rare-but-tight analysis on cell-type column "
+        f"'{cell_type_col}' using k={k} nearest neighbors; top 5 labels by "
+        "same-label neighbor fraction / global frequency:"
+    )
+    for _, row in top_conc.iterrows():
+        obs2_lines.append(
+            f"{row['label']}: cells={row['n_cells']} "
+            f"({row['global_freq']*100:.2f}% of total), "
+            f"same-label-NN-fraction={row['nn_same_frac']:.3f}, "
+            f"concentration-ratio={row['concentration_ratio']:.2f}"
+        )
+
+    # Mandatory follow-up: for each of these labels, compute top 3 non-self neighboring labels by enrichment
+    obs2_lines.append(
+        "For each of these concentrated labels, the top 3 non-self neighboring "
+        "cell-type labels (by enrichment over global frequency) among k-nearest neighbors are:"
+    )
+
+    # Precompute global neighbor label frequencies as baseline
+    all_neighbor_labels = label_array[neighbor_indices.reshape(-1)]
+    all_neighbor_vc = pd.Series(all_neighbor_labels).value_counts()
+    global_neighbor_freq = (all_neighbor_vc / all_neighbor_labels.shape[0]).to_dict()
+
+    for _, row in top_conc.iterrows():
+        lbl = row["label"]
+        mask = label_array == lbl
+        central_indices = np.where(mask)[0]
+        neigh_idx_for_label = neighbor_indices[central_indices].reshape(-1)
+        neigh_labels_for_label = label_array[neigh_idx_for_label]
+        # Exclude same-label neighbors
+        neigh_labels_nonself = neigh_labels_for_label[neigh_labels_for_label != lbl]
+        if neigh_labels_nonself.size == 0:
+            obs2_lines.append(f"{lbl}: no non-self neighbors found.")
+            continue
+        vc = pd.Series(neigh_labels_nonself).value_counts()
+        total_nonself = neigh_labels_nonself.shape[0]
+        # Compute enrichment ratio vs global neighbor freq
+        enrich_list = []
+        for nl, cnt in vc.items():
+            local_freq = cnt / total_nonself
+            gfreq = global_neighbor_freq.get(nl, 0.0)
+            ratio = local_freq / gfreq if gfreq > 0 else np.nan
+            enrich_list.append(
+                {"neighbor_label": nl, "local_freq": local_freq, "global_freq": gfreq, "enrich_ratio": ratio}
+            )
+        enrich_df = pd.DataFrame(enrich_list).sort_values("enrich_ratio", ascending=False)
+        top3 = enrich_df.head(3)
+        parts = []
+        for _, er in top3.iterrows():
+            parts.append(
+                f"{er['neighbor_label']}: "
+                f"local={er['local_freq']*100:.2f}% vs global={er['global_freq']*100:.2f}%, "
+                f"enrichment-ratio={er['enrich_ratio']:.2f}"
+            )
+        obs2_lines.append(f"{lbl}: " + "; ".join(parts))
+
+obs2_text = "\n".join(obs2_lines) + "\n\n"
+print("\n--- OBSERVATION 2 PREVIEW ---\n", obs2_text[:1500])
+
+# EDA PASS 3: Pairwise co-localization across all cell-type pairs using neighbor edges
+obs3_lines = []
+obs3_lines.append("OBSERVATION 3:")
+if cell_type_col is None:
+    obs3_lines.append("Cell-type column not found; pairwise co-localization across cell types not computed.")
+else:
+    labels = adata.obs[cell_type_col].astype("category")
+    label_array = labels.to_numpy()
+    total_cells = label_array.shape[0]
+
+    # Count directed edges (center -> neighbor)
+    center_labels = np.repeat(label_array, neighbor_indices.shape[1])
+    neighbor_labels_flat = label_array[neighbor_indices.reshape(-1)]
+    edges_df = pd.DataFrame({"center": center_labels, "neighbor": neighbor_labels_flat})
+    pair_counts = edges_df.value_counts().rename("count").reset_index()
+
+    # Global frequencies of center and neighbor labels
+    center_freq = pd.Series(center_labels).value_counts() / center_labels.shape[0]
+    neigh_freq = pd.Series(neighbor_labels_flat).value_counts() / neighbor_labels_flat.shape[0]
+
+    # Compute expected count under independence: N_edges * p(center) * p(neighbor)
+    n_edges = center_labels.shape[0]
+    pair_records = []
+    for _, row in pair_counts.iterrows():
+        c = row["center"]
+        n = row["neighbor"]
+        obs_cnt = row["count"]
+        exp_cnt = n_edges * center_freq[c] * neigh_freq[n]
+        enrich = obs_cnt / exp_cnt if exp_cnt > 0 else np.nan
+        pair_records.append(
+            {
+                "center": c,
+                "neighbor": n,
+                "obs_cnt": int(obs_cnt),
+                "exp_cnt": float(exp_cnt),
+                "enrichment_ratio": enrich,
+            }
+        )
+    pair_df = pd.DataFrame(pair_records).sort_values("enrichment_ratio", ascending=False)
+
+    # Report top 10 enriched pairs (excluding extreme single-count noise by requiring obs_cnt>=50)
+    filtered_pairs = pair_df[pair_df["obs_cnt"] >= 50].head(10)
+    obs3_lines.append(
+        "Pairwise co-localization using k-nearest-neighbor edges on cell-type "
+        f"column '{cell_type_col}' (k={k}); top 10 center→neighbor label pairs "
+        "ranked by observed/expected edge count (require observed count ≥50):"
+    )
+    for _, row in filtered_pairs.iterrows():
+        obs3_lines.append(
+            f"{row['center']} → {row['neighbor']}: "
+            f"observed_edges={row['obs_cnt']}, expected_edges={row['exp_cnt']:.1f}, "
+            f"enrichment-ratio={row['enrichment_ratio']:.2f}"
+        )
+
+obs3_text = "\n".join(obs3_lines) + "\n\n"
+print("\n--- OBSERVATION 3 PREVIEW ---\n", obs3_text[:1500])
+
+# Append all observations to exploration_log.md
+with open(log_path, "a") as f:
+    f.write(obs1_text)
+    f.write(obs2_text)
+    f.write(obs3_text)
+
+print(f"\nWritten OBSERVATION 1–3 to {log_path}")
+</execute>
+
+2026-05-17 08:51:31 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 08:51:31 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 08:51:31 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 08:51:36 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 08:51:36 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Existing exploration_log.md: False
+adata.obs columns: ['Sample_ID', 'Batch', 'UMI Count', 'leiden', 'Complexity', 'Populations', 'Purity']
+Selected cell_type_col: Populations
+Selected cluster_col: leiden
+
+--- OBSERVATION 1 PREVIEW ---
+ OBSERVATION 1:
+Total cells: 228635.
+Cell-type column 'Populations' has 27 unique labels; top 10 (label: count, percent of cells):
+vCM-LV-Compact: 30380 (13.29%), aCM-RA: 19947 (8.72%), vCM-Proliferating: 17584 (7.69%), vFibro: 16624 (7.27%), vCM-LV-Trabecular: 16511 (7.22%), BEC: 12248 (5.36%), VIC: 11596 (5.07%), vEndocardial: 10887 (4.76%), aCM-LA: 10441 (4.57%), vCM-RV-Compact: 9488 (4.15%)
+Cluster column 'leiden' has 32 unique labels; top 10 (label: count, percent of cells):
+0: 19947 (8.72%), 1: 17144 (7.50%), 3: 16624 (7.27%), 2: 15983 (6.99%), 4: 15703 (6.87%), 5: 14036 (6.14%), 6: 11596 (5.07%), 7: 10887 (4.76%), 8: 10441 (4.57%), 9: 10149 (4.44%)
+Metadata column 'Sample_ID' has 3 unique values; top 10 (value: count, percent of cells):
+R78_4C15: 79891 (34.94%), R78_4C12: 75782 (33.15%), R77_4C4: 72962 (31.91%)
+Metadata column 'Batch' has 3 unique values; top 10 (value: count, percent of cells):
+R78_4C15: 79891 (34.94%), R78_4C12: 75782 (33.15%), R77_4C4: 72962 (31.91%)
+
+
+Spatial coords shape: (228635, 2)
+Neighbor_indices shape: (228635, 20)
+Number of cell-type labels: 27
+
+--- OBSERVATION 2 PREVIEW ---
+ OBSERVATION 2:
+Rare-but-tight analysis on cell-type column 'Populations' using k=20 nearest neighbors; top 5 labels by same-label neighbor fraction / global frequency:
+ncCM-IFT-like: cells=2027 (0.89% of total), same-label-NN-fraction=0.707, concentration-ratio=79.69
+adFibro: cells=1562 (0.68% of total), same-label-NN-fraction=0.521, concentration-ratio=76.23
+ncCM-AVC-like: cells=2292 (1.00% of total), same-label-NN-fraction=0.605, concentration-ratio=60.34
+LEC: cells=1292 (0.57% of total), same-label-NN-fraction=0.213, concentration-ratio=37.63
+VSMC: cells=4673 (2.04% of total), same-label-NN-fraction=0.691, concentration-ratio=33.81
+For each of these concentrated labels, the top 3 non-self neighboring cell-type labels (by enrichment over global frequency) among k-nearest neighbors are:
+ncCM-IFT-like: Neuronal: local=15.29% vs global=0.45%, enrichment-ratio=33.68; aFibro: local=40.92% vs global=3.06%, enrichment-ratio=13.39; adFibro: local=8.36% vs global=0.66%, enrichment-ratio=12.67
+adFibro: LEC: local=22.82% vs global=0.56%, enrichment-ratio=40.61; WBC: local=9.89% vs global=0.54%, enrichment-ratio=18.42; Epicardial: local=9.06% vs global=0.78%, enrichment-ratio=11.55
+ncCM-AVC-like: aFibro: local=32.81% vs global=3.06%, enrichment-ratio=10.74; ncCM-IFT-like: local=2.78% vs global=0.94%, enrichment-ratio=2.97; BEC: local=15.12% vs global=5.40%, enrichment-ratio=2.80
+LEC: adFibro: local=15.20% vs global=0.66%, enrichment-ratio=23.03; EPDC: local=41.71% vs global=3.60%, enri
+
+--- OBSERVATION 3 PREVIEW ---
+ OBSERVATION 3:
+Pairwise co-localization using k-nearest-neighbor edges on cell-type column 'Populations' (k=20); top 10 center→neighbor label pairs ranked by observed/expected edge count (require observed count ≥50):
+adFibro → adFibro: observed_edges=16269, expected_edges=206.2, enrichment-ratio=78.91
+ncCM-IFT-like → ncCM-IFT-like: observed_edges=28642, expected_edges=379.8, enrichment-ratio=75.42
+ncCM-AVC-like → ncCM-AVC-like: observed_edges=27730, expected_edges=464.2, enrichment-ratio=59.74
+LEC → LEC: observed_edges=5495, expected_edges=145.2, enrichment-ratio=37.84
+VSMC → VSMC: observed_edges=64578, expected_edges=1988.2, enrichment-ratio=32.48
+Epicardial → Epicardial: observed_edges=11639, expected_edges=369.6, enrichment-ratio=31.49
+Neuronal → Neuronal: observed_edges=2638, expected_edges=93.2, enrichment-ratio=28.30
+VEC → VEC: observed_edges=27829, expected_edges=1034.2, enrichment-ratio=26.91
+vCM-His-Purkinje → vCM-His-Purkinje: observed_edges=68643, expected_edges=2644.2, enrichment-ratio=25.96
+adFibro → LEC: observed_edges=3417, expected_edges=175.6, enrichment-ratio=19.46
+
+
+
+Written OBSERVATION 1–3 to /home/mingqiam/TissueAgent/data/hypotheses/exploration_log.md
+
+2026-05-17 08:51:36 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 08:52:09 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 08:52:09 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 08:52:09 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--ed7a9705-a327-4ac0-9644-6e87f831a003-0
+
+Content:
+<execute>
+from pathlib import Path
+import json
+
+data_dir = Path(DATA_DIR)
+hyp_dir = data_dir / "hypotheses"
+log_path = hyp_dir / "exploration_log.md"
+
+print("Reading exploration_log from:", log_path)
+exploration_text = log_path.read_text()
+print(exploration_text[:2000])
+
+# Construct hypotheses draft anchored in OBSERVATIONs 1–3
+
+hypotheses = []
+
+# H1: Specialized conduction-like cardiomyocyte microdomains with distinct neighbor composition
+h1 = {
+    "id": "H1",
+    "statement": (
+        "Conduction-associated cardiomyocyte populations (including ncCM-IFT-like, "
+        "ncCM-AVC-like, and vCM-His-Purkinje) occupy spatially segregated microdomains "
+        "that are more strongly surrounded by non-working cardiomyocyte neighbors "
+        "such as fibroblasts, endothelial cells, and neuronal cells than are bulk "
+        "ventricular working cardiomyocytes, and these conduction-enriched domains "
+        "share a distinct transcriptional program relative to nearby ventricular "
+        "cardiomyocytes."
+    ),
+    "grounded_in": ["OBSERVATION 1", "OBSERVATION 2", "OBSERVATION 3"],
+    "mechanism": (
+        "Rare-but-tight analysis shows ncCM-IFT-like and ncCM-AVC-like cardiomyocytes "
+        "are highly spatially concentrated and have enriched nearest neighbors from "
+        "specific non-cardiomyocyte types (e.g. aFibro, adFibro, Neuronal, BEC), and "
+        "pairwise co-localization reveals strong self-association of vCM-His-Purkinje, "
+        "suggesting conduction-like niches with distinctive immediate environments."
+    ),
+    "test_plan": (
+        "1) Define a 'conduction-like' group consisting of cells with Populations labels "
+        "in ['ncCM-IFT-like', 'ncCM-AVC-like', 'vCM-His-Purkinje'] and a 'working-vCM' "
+        "group including major ventricular cardiomyocyte labels such as "
+        "['vCM-LV-Compact', 'vCM-LV-Trabecular', 'vCM-RV-Compact', 'vCM-Proliferating']. "
+        "2) Using the precomputed k=20 neighbor indices on spatial coordinates, compute "
+        "for each conduction-like and working-vCM cell the fraction of neighbors "
+        "belonging to fibroblast (aFibro, vFibro, adFibro), endothelial (BEC, VEC, "
+        "vEndocardial), and Neuronal populations. Compare neighbor-type distributions "
+        "between conduction-like and working-vCM groups using contingency tables and "
+        "effect sizes (e.g. differences in mean neighbor fractions). "
+        "3) Perform differential expression between conduction-like and working-vCM "
+        "cells using the AnnData expression matrix to rank genes by log-fold-change, "
+        "and then summarize whether conduction-like cells show coherent upregulation "
+        "of a multi-gene program (e.g. ion-channel, gap-junction, or guidance-related "
+        "genes present in the panel) relative to working-vCM cells."
+    ),
+    "predicted_outcome": (
+        "If the hypothesis holds, conduction-like cardiomyocytes will show higher "
+        "fractions of fibroblast, endothelial, and neuronal neighbors than "
+        "working-vCM cells, with neighbor-type differences that are substantially "
+        "larger than sampling noise, and differential expression will reveal a "
+        "coherent set of ≥5 genes jointly upregulated in conduction-like cells "
+        "compared to working-vCM cells. The hypothesis would be weakened or falsified "
+        "if neighbor-type compositions are similar between conduction-like and "
+        "working-vCM groups and if no clear multi-gene expression program "
+        "distinguishes conduction-like from working-vCM cells."
+    ),
+    "quality_scores": {
+        "derivable": 8,
+        "novel": 6,
+        "feasible": 9,
+        "specific": 8,
+        "falsifiable": 8
+    }
+}
+hypotheses.append(h1)
+
+# H2: Lymphatic–adipogenic fibroblast–epicardial niche with distinct fibroblast program
+h2 = {
+    "id": "H2",
+    "statement": (
+        "Lymphatic endothelial cells, adipogenic fibroblasts, and epicardial-derived "
+        "cells form a spatially co-localized niche in which adipogenic fibroblasts "
+        "exhibit a transcriptional program distinct from ventricular fibroblasts, "
+        "characterized by coordinated upregulation of extracellular-matrix and "
+        "inflammatory or remodeling-associated genes present in the gene panel."
+    ),
+    "grounded_in": ["OBSERVATION 1", "OBSERVATION 2", "OBSERVATION 3"],
+    "mechanism": (
+        "Rare-but-tight analysis indicates adFibro and LEC are both highly "
+        "concentrated and that adFibro cells have strongly enriched LEC, WBC, and "
+        "Epicardial neighbors, while LEC cells show enriched neighbors including "
+        "adFibro and EPDC. Pairwise co-localization further shows highly enriched "
+        "adFibro→adFibro and adFibro→LEC neighbor edges, suggesting a stable "
+        "lymphatic–fibroblast–epicardial microenvironment with potentially distinct "
+        "fibroblast gene regulation."
+    ),
+    "test_plan": (
+        "1) Define an 'adFibro-niche' set consisting of adFibro cells and their "
+        "direct neighbors that are LEC, Epicardial, or EPDC, and a comparison set of "
+        "ventricular fibroblasts (vFibro) located outside this niche (e.g. vFibro "
+        "cells whose k=20 neighbors include no LEC, Epicardial, or EPDC). "
+        "2) Quantify spatial co-localization by computing observed vs expected "
+        "neighbor-type frequencies for adFibro↔LEC, adFibro↔Epicardial, and "
+        "adFibro↔EPDC pairs and compare them to vFibro↔LEC/Epicardial/EPDC pairs. "
+        "3) Perform differential expression between adFibro cells inside the niche "
+        "and vFibro cells, ranking genes by log-fold-change, and identify multi-gene "
+        "sets corresponding to extracellular matrix components or inflammatory "
+        "mediators (e.g. families such as collagens, matrix metalloproteinases, or "
+        "chemokines within the available panel). "
+        "4) Optionally, compare adFibro inside the niche to any adFibro cells that "
+        "lack LEC/Epicardial neighbors to test whether niche proximity is associated "
+        "with stronger activation of the same gene program."
+    ),
+    "predicted_outcome": (
+        "If the hypothesis is correct, adFibro cells will show markedly higher "
+        "frequencies of LEC, Epicardial, and EPDC neighbors than vFibro cells, and "
+        "adFibro inside the niche will display a coherent set of ≥5 genes with higher "
+        "expression than vFibro (and than adFibro outside the niche if present), "
+        "including multiple extracellular-matrix or remodeling-related genes from the "
+        "panel. The hypothesis would be undermined if neighbor compositions of "
+        "adFibro and vFibro are similar with little enrichment for LEC or Epicardial "
+        "neighbors, or if differential expression reveals no clear multi-gene "
+        "program distinguishing adFibro from vFibro."
+    ),
+    "quality_scores": {
+        "derivable": 8,
+        "novel": 7,
+        "feasible": 8,
+        "specific": 8,
+        "falsifiable": 8
+    }
+}
+hypotheses.append(h2)
+
+draft_path = hyp_dir / "hypotheses_draft.json"
+with open(draft_path, "w") as f:
+    json.dump(hypotheses, f, indent=2)
+
+print(f"\nWrote hypotheses_draft.json with {len(hypotheses)} hypotheses to {draft_path}")
+</execute>
+
+2026-05-17 08:52:09 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 08:52:09 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 08:52:09 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 08:52:09 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 08:52:09 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Reading exploration_log from: /home/mingqiam/TissueAgent/data/hypotheses/exploration_log.md
+OBSERVATION 1:
+Total cells: 228635.
+Cell-type column 'Populations' has 27 unique labels; top 10 (label: count, percent of cells):
+vCM-LV-Compact: 30380 (13.29%), aCM-RA: 19947 (8.72%), vCM-Proliferating: 17584 (7.69%), vFibro: 16624 (7.27%), vCM-LV-Trabecular: 16511 (7.22%), BEC: 12248 (5.36%), VIC: 11596 (5.07%), vEndocardial: 10887 (4.76%), aCM-LA: 10441 (4.57%), vCM-RV-Compact: 9488 (4.15%)
+Cluster column 'leiden' has 32 unique labels; top 10 (label: count, percent of cells):
+0: 19947 (8.72%), 1: 17144 (7.50%), 3: 16624 (7.27%), 2: 15983 (6.99%), 4: 15703 (6.87%), 5: 14036 (6.14%), 6: 11596 (5.07%), 7: 10887 (4.76%), 8: 10441 (4.57%), 9: 10149 (4.44%)
+Metadata column 'Sample_ID' has 3 unique values; top 10 (value: count, percent of cells):
+R78_4C15: 79891 (34.94%), R78_4C12: 75782 (33.15%), R77_4C4: 72962 (31.91%)
+Metadata column 'Batch' has 3 unique values; top 10 (value: count, percent of cells):
+R78_4C15: 79891 (34.94%), R78_4C12: 75782 (33.15%), R77_4C4: 72962 (31.91%)
+
+OBSERVATION 2:
+Rare-but-tight analysis on cell-type column 'Populations' using k=20 nearest neighbors; top 5 labels by same-label neighbor fraction / global frequency:
+ncCM-IFT-like: cells=2027 (0.89% of total), same-label-NN-fraction=0.707, concentration-ratio=79.69
+adFibro: cells=1562 (0.68% of total), same-label-NN-fraction=0.521, concentration-ratio=76.23
+ncCM-AVC-like: cells=2292 (1.00% of total), same-label-NN-fraction=0.605, concentration-ratio=60.34
+LEC: cells=1292 (0.57% of total), same-label-NN-fraction=0.213, concentration-ratio=37.63
+VSMC: cells=4673 (2.04% of total), same-label-NN-fraction=0.691, concentration-ratio=33.81
+For each of these concentrated labels, the top 3 non-self neighboring cell-type labels (by enrichment over global frequency) among k-nearest neighbors are:
+ncCM-IFT-like: Neuronal: local=15.29% vs global=0.45%, enrichment-ratio=33.68; aFibro: local=40.92% vs global=3.06%, enrichment-ratio=13.39; adFibro: local=8.36% vs global=0.66%, enrichment-ratio=12.67
+adFibro
+
+Wrote hypotheses_draft.json with 2 hypotheses to /home/mingqiam/TissueAgent/data/hypotheses/hypotheses_draft.json
+
+2026-05-17 08:52:09 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 08:53:04 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 08:53:04 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 08:53:04 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--e151c4be-f8eb-43e6-acac-ac946b082c18-0
+
+Content:
+<execute>
+from pathlib import Path
+import json
+import numpy as np
+import pandas as pd
+
+# Load draft hypotheses
+data_dir = Path(DATA_DIR)
+hyp_dir = data_dir / "hypotheses"
+draft_path = hyp_dir / "hypotheses_draft.json"
+
+with open(draft_path, "r") as f:
+    draft_hypotheses = json.load(f)
+
+print("Loaded hypotheses_draft.json with", len(draft_hypotheses), "entries")
+
+# Basic objects from AnnData
+pop = adata.obs["Populations"].astype("category")
+pop_array = pop.to_numpy()
+labels_unique = pop.cat.categories.tolist()
+n_cells = adata.n_obs
+print("Populations labels (n=", len(labels_unique), "):", labels_unique)
+
+# Neighbor indices and labels (reuse if present, else recompute)
+try:
+    neighbor_indices
+    k = neighbor_indices.shape[1]
+    print("Using existing neighbor_indices with k =", k)
+except NameError:
+    from sklearn.neighbors import NearestNeighbors
+    coords = adata.obsm["spatial"]
+    k = 20
+    nbrs = NearestNeighbors(n_neighbors=k + 1, algorithm="kd_tree").fit(coords)
+    distances, indices = nbrs.kneighbors(coords)
+    neighbor_indices = indices[:, 1:]
+    print("Recomputed neighbor_indices with k =", k)
+
+neighbor_labels_all = pop_array[neighbor_indices]  # shape (n_cells, k)
+
+# Try to import scipy for p-values
+try:
+    from scipy import sparse
+    from scipy import stats
+    have_scipy = True
+    print("Using scipy for sparse handling and statistics.")
+except ImportError:
+    import scipy.sparse as sparse  # may still work if scipy split
+    try:
+        from scipy import stats
+        have_scipy = True
+    except Exception:
+        have_scipy = False
+    print("scipy.stats availability:", have_scipy)
+
+# Helper: compute mean expression for a boolean mask
+def group_means(X, mask):
+    import numpy as _np
+    from scipy import sparse as _sp
+    if _sp.issparse(X):
+        return _np.asarray(X[mask].mean(axis=0)).ravel()
+    else:
+        return X[mask].mean(axis=0)
+
+
+# -------------------------
+# TEST H1
+# -------------------------
+print("\n=== Testing H1: conduction-like vs working ventricular CM environments and gene programs ===")
+
+conduction_labels = ["ncCM-IFT-like", "ncCM-AVC-like", "vCM-His-Purkinje"]
+working_labels = ["vCM-LV-Compact", "vCM-LV-Trabecular", "vCM-RV-Compact", "vCM-Proliferating"]
+
+mask_cond = np.isin(pop_array, conduction_labels)
+mask_work = np.isin(pop_array, working_labels)
+
+n_cond = int(mask_cond.sum())
+n_work = int(mask_work.sum())
+print("Conduction-like cells:", n_cond, "Working-vCM cells:", n_work)
+
+# Neighbor-type fractions
+fibro_labels = ["aFibro", "vFibro", "adFibro"]
+endo_labels = ["BEC", "VEC", "vEndocardial"]
+neuronal_labels = ["Neuronal"]
+
+is_fibro = np.isin(neighbor_labels_all, fibro_labels)
+is_endo = np.isin(neighbor_labels_all, endo_labels)
+is_neuro = np.isin(neighbor_labels_all, neuronal_labels)
+
+fibro_frac = is_fibro.mean(axis=1)
+endo_frac = is_endo.mean(axis=1)
+neuro_frac = is_neuro.mean(axis=1)
+
+def summarize_neighbor_frac(name, frac_array, mask_a, mask_b, label_a, label_b):
+    import numpy as _np
+    vals_a = frac_array[mask_a]
+    vals_b = frac_array[mask_b]
+    mean_a = float(vals_a.mean())
+    mean_b = float(vals_b.mean())
+    diff = mean_a - mean_b
+    print(f"{name} neighbor fraction:")
+    print(f"  {label_a}: mean={mean_a:.3f}, n={vals_a.shape[0]}")
+    print(f"  {label_b}: mean={mean_b:.3f}, n={vals_b.shape[0]}")
+    print(f"  difference ({label_a}-{label_b})={diff:.3f}")
+    if have_scipy:
+        try:
+            stat, p = stats.mannwhitneyu(vals_a, vals_b, alternative="two-sided")
+            print(f"  Mann-Whitney U p-value={p:.2e}")
+        except Exception as e:
+            print("  Mann-Whitney test failed:", e)
+
+summarize_neighbor_frac("Fibroblast", fibro_frac, mask_cond, mask_work, "Conduction-like", "Working-vCM")
+summarize_neighbor_frac("Endothelial", endo_frac, mask_cond, mask_work, "Conduction-like", "Working-vCM")
+summarize_neighbor_frac("Neuronal", neuro_frac, mask_cond, mask_work, "Conduction-like", "Working-vCM")
+
+# Differential expression: conduction-like vs working-vCM
+X = adata.X
+print("\nComputing differential expression (mean expression and log2 fold-change)...")
+mean_cond = group_means(X, mask_cond)
+mean_work = group_means(X, mask_work)
+
+eps = 1e-9
+log2fc = np.log2((mean_cond + eps) / (mean_work + eps))
+# Rank genes by log2FC
+gene_names = np.array(adata.var_names)
+order = np.argsort(-log2fc)  # descending
+top_up_idx = order[:20]
+print("\nTop 20 genes upregulated in conduction-like vs working-vCM by log2FC:")
+for i in top_up_idx:
+    print(f"{gene_names[i]}: log2FC={log2fc[i]:.2f}, mean_cond={mean_cond[i]:.3f}, mean_work={mean_work[i]:.3f}")
+
+# Count how many genes show substantial positive log2FC (e.g., >0.5 as an informal threshold)
+n_pos_05 = int((log2fc > 0.5).sum())
+n_pos_1 = int((log2fc > 1.0).sum())
+print(f"\nNumber of genes with log2FC>0.5: {n_pos_05}, with log2FC>1.0: {n_pos_1} (out of {len(gene_names)})")
+
+
+# -------------------------
+# TEST H2
+# -------------------------
+print("\n=== Testing H2: adFibro–LEC–Epicardial niche and fibroblast programs ===")
+
+ad_label = "adFibro"
+vf_label = "vFibro"
+lec_label = "LEC"
+epi_label = "Epicardial"
+epdc_label = "EPDC"
+
+mask_ad = pop_array == ad_label
+mask_vf = pop_array == vf_label
+n_ad = int(mask_ad.sum())
+n_vf = int(mask_vf.sum())
+print("adFibro cells:", n_ad, "vFibro cells:", n_vf)
+
+# Fractions of specific neighbor types
+is_lec = (neighbor_labels_all == lec_label)
+is_epi = (neighbor_labels_all == epi_label)
+is_epdc = (neighbor_labels_all == epdc_label)
+is_any_niche = np.logical_or.reduce([is_lec, is_epi, is_epdc])
+
+lec_frac = is_lec.mean(axis=1)
+epi_frac = is_epi.mean(axis=1)
+epdc_frac = is_epdc.mean(axis=1)
+niche_frac = is_any_niche.mean(axis=1)
+
+def summarize_neighbor_frac_two(name, frac_array, mask_a, mask_b, label_a, label_b):
+    import numpy as _np
+    vals_a = frac_array[mask_a]
+    vals_b = frac_array[mask_b]
+    mean_a = float(vals_a.mean())
+    mean_b = float(vals_b.mean())
+    diff = mean_a - mean_b
+    print(f"{name} neighbor fraction:")
+    print(f"  {label_a}: mean={mean_a:.3f}, n={vals_a.shape[0]}")
+    print(f"  {label_b}: mean={mean_b:.3f}, n={vals_b.shape[0]}")
+    print(f"  difference ({label_a}-{label_b})={diff:.3f}")
+    if have_scipy:
+        try:
+            stat, p = stats.mannwhitneyu(vals_a, vals_b, alternative='two-sided')
+            print(f"  Mann-Whitney U p-value={p:.2e}")
+        except Exception as e:
+            print("  Mann-Whitney test failed:", e)
+
+print("\nNeighbor-type enrichment for adFibro vs vFibro:")
+summarize_neighbor_frac_two("LEC", lec_frac, mask_ad, mask_vf, "adFibro", "vFibro")
+summarize_neighbor_frac_two("Epicardial", epi_frac, mask_ad, mask_vf, "adFibro", "vFibro")
+summarize_neighbor_frac_two("EPDC", epdc_frac, mask_ad, mask_vf, "adFibro", "vFibro")
+summarize_neighbor_frac_two("Any(LEC/Epicardial/EPDC)", niche_frac, mask_ad, mask_vf, "adFibro", "vFibro")
+
+# Proportion of cells with at least one niche neighbor
+has_lec = is_lec.any(axis=1)
+has_epi = is_epi.any(axis=1)
+has_epdc = is_epdc.any(axis=1)
+has_any_niche = is_any_niche.any(axis=1)
+
+def proportion(mask, base_mask):
+    # proportion within base_mask that satisfy mask
+    sel = np.logical_and(mask, base_mask)
+    return sel.sum() / base_mask.sum() if base_mask.sum() > 0 else np.nan
+
+print("\nProportion of cells with at least one niche neighbor:")
+for name, arr in [
+    ("LEC", has_lec),
+    ("Epicardial", has_epi),
+    ("EPDC", has_epdc),
+    ("Any(LEC/Epicardial/EPDC)", has_any_niche),
+]:
+    pa = proportion(arr, mask_ad)
+    pv = proportion(arr, mask_vf)
+    print(f"{name}: adFibro={pa*100:.1f}% of adFibro, vFibro={pv*100:.1f}% of vFibro")
+
+# Define adFibro-in-niche vs adFibro-outside-niche for expression comparison
+mask_ad_niche = np.logical_and(mask_ad, has_any_niche)
+mask_ad_non = np.logical_and(mask_ad, ~has_any_niche)
+print("\nadFibro in niche (>=1 LEC/Epicardial/EPDC neighbor):", int(mask_ad_niche.sum()))
+print("adFibro outside niche:", int(mask_ad_non.sum()))
+
+# Gene expression: adFibro vs vFibro
+print("\nDifferential expression: adFibro vs vFibro")
+mean_ad = group_means(X, mask_ad)
+mean_vf = group_means(X, mask_vf)
+log2fc_ad_vf = np.log2((mean_ad + eps) / (mean_vf + eps))
+order2 = np.argsort(-log2fc_ad_vf)
+top_up_idx2 = order2[:20]
+print("Top 20 genes upregulated in adFibro vs vFibro by log2FC:")
+for i in top_up_idx2:
+    print(f"{gene_names[i]}: log2FC={log2fc_ad_vf[i]:.2f}, mean_ad={mean_ad[i]:.3f}, mean_vf={mean_vf[i]:.3f}")
+n_pos_05_ad = int((log2fc_ad_vf > 0.5).sum())
+n_pos_1_ad = int((log2fc_ad_vf > 1.0).sum())
+print(f"Number of genes with log2FC>0.5: {n_pos_05_ad}, with log2FC>1.0: {n_pos_1_ad} (out of {len(gene_names)})")
+
+# If enough cells, gene expression: adFibro-in-niche vs adFibro-outside
+if mask_ad_niche.sum() >= 20 and mask_ad_non.sum() >= 20:
+    print("\nDifferential expression: adFibro in niche vs adFibro outside niche")
+    mean_ad_niche = group_means(X, mask_ad_niche)
+    mean_ad_non = group_means(X, mask_ad_non)
+    log2fc_ad_inout = np.log2((mean_ad_niche + eps) / (mean_ad_non + eps))
+    order3 = np.argsort(-log2fc_ad_inout)
+    top_up_idx3 = order3[:20]
+    print("Top 20 genes upregulated in adFibro-in-niche vs adFibro-outside by log2FC:")
+    for i in top_up_idx3:
+        print(f"{gene_names[i]}: log2FC={log2fc_ad_inout[i]:.2f}, mean_in={mean_ad_niche[i]:.3f}, mean_out={mean_ad_non[i]:.3f}")
+    n_pos_05_inout = int((log2fc_ad_inout > 0.5).sum())
+    n_pos_1_inout = int((log2fc_ad_inout > 1.0).sum())
+    print(f"Number of genes with log2FC>0.5: {n_pos_05_inout}, with log2FC>1.0: {n_pos_1_inout} (out of {len(gene_names)})")
+else:
+    print("\nNot enough adFibro cells in at least one group for robust in-niche vs outside-niche DE test.")
+</execute>
+
+2026-05-17 08:53:04 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 08:53:04 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 08:53:04 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 08:53:04 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 08:53:04 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Loaded hypotheses_draft.json with 2 entries
+Populations labels (n= 27 ): ['BEC', 'EPDC', 'Epicardial', 'LEC', 'Neuronal', 'Pericyte', 'VEC', 'VIC', 'VSMC', 'WBC', 'aCM-LA', 'aCM-RA', 'aEndocardial', 'aFibro', 'adFibro', 'ncCM-AVC-like', 'ncCM-IFT-like', 'vCM-His-Purkinje', 'vCM-LV-AV', 'vCM-LV-Compact', 'vCM-LV-Trabecular', 'vCM-Proliferating', 'vCM-RV-AV', 'vCM-RV-Compact', 'vCM-RV-Trabecular', 'vEndocardial', 'vFibro']
+Using existing neighbor_indices with k = 20
+Using scipy for sparse handling and statistics.
+
+=== Testing H1: conduction-like vs working ventricular CM environments and gene programs ===
+Conduction-like cells: 9748 Working-vCM cells: 73963
+Fibroblast neighbor fraction:
+  Conduction-like: mean=0.101, n=9748
+  Working-vCM: mean=0.121, n=73963
+  difference (Conduction-like-Working-vCM)=-0.020
+  Mann-Whitney U p-value=2.00e-247
+Endothelial neighbor fraction:
+  Conduction-like: mean=0.083, n=9748
+  Working-vCM: mean=0.107, n=73963
+  difference (Conduction-like-Working-vCM)=-0.024
+  Mann-Whitney U p-value=0.00e+00
+Neuronal neighbor fraction:
+  Conduction-like: mean=0.010, n=9748
+  Working-vCM: mean=0.000, n=73963
+  difference (Conduction-like-Working-vCM)=0.009
+  Mann-Whitney U p-value=0.00e+00
+
+Computing differential expression (mean expression and log2 fold-change)...
+
+Top 20 genes upregulated in conduction-like vs working-vCM by log2FC:
+BMP2: log2FC=4.20, mean_cond=0.951, mean_work=0.052
+ISL1: log2FC=3.22, mean_cond=0.123, mean_work=0.013
+NR2F1: log2FC=3.05, mean_cond=0.438, mean_work=0.053
+TBX3: log2FC=2.84, mean_cond=0.965, mean_work=0.135
+RSPO3: log2FC=2.78, mean_cond=0.092, mean_work=0.013
+MYH11: log2FC=2.71, mean_cond=0.175, mean_work=0.027
+TRPM3: log2FC=2.29, mean_cond=0.304, mean_work=0.062
+IRX1: log2FC=2.26, mean_cond=0.992, mean_work=0.207
+JAG1: log2FC=2.21, mean_cond=0.575, mean_work=0.125
+FBLN2: log2FC=1.98, mean_cond=0.411, mean_work=0.104
+FMOD: log2FC=1.90, mean_cond=0.119, mean_work=0.032
+BRINP3: log2FC=1.86, mean_cond=0.545, mean_work=0.151
+MSX2: log2FC=1.79, mean_cond=0.236, mean_work=0.068
+NELL2: log2FC=1.75, mean_cond=0.086, mean_work=0.026
+IRX2: log2FC=1.74, mean_cond=1.000, mean_work=0.300
+PENK: log2FC=1.71, mean_cond=0.110, mean_work=0.033
+RCAN1: log2FC=1.67, mean_cond=0.532, mean_work=0.167
+ADM: log2FC=1.64, mean_cond=0.433, mean_work=0.139
+TENM2: log2FC=1.63, mean_cond=0.242, mean_work=0.078
+ADGRL1: log2FC=1.54, mean_cond=0.598, mean_work=0.205
+
+Number of genes with log2FC>0.5: 72, with log2FC>1.0: 36 (out of 238)
+
+=== Testing H2: adFibro–LEC–Epicardial niche and fibroblast programs ===
+adFibro cells: 1562 vFibro cells: 16624
+
+Neighbor-type enrichment for adFibro vs vFibro:
+LEC neighbor fraction:
+  adFibro: mean=0.109, n=1562
+  vFibro: mean=0.001, n=16624
+  difference (adFibro-vFibro)=0.108
+  Mann-Whitney U p-value=0.00e+00
+Epicardial neighbor fraction:
+  adFibro: mean=0.043, n=1562
+  vFibro: mean=0.001, n=16624
+  difference (adFibro-vFibro)=0.042
+  Mann-Whitney U p-value=0.00e+00
+EPDC neighbor fraction:
+  adFibro: mean=0.055, n=1562
+  vFibro: mean=0.013, n=16624
+  difference (adFibro-vFibro)=0.042
+  Mann-Whitney U p-value=4.02e-278
+Any(LEC/Epicardial/EPDC) neighbor fraction:
+  adFibro: mean=0.208, n=1562
+  vFibro: mean=0.015, n=16624
+  difference (adFibro-vFibro)=0.193
+  Mann-Whitney U p-value=0.00e+00
+
+Proportion of cells with at least one niche neighbor:
+LEC: adFibro=46.1% of adFibro, vFibro=1.5% of vFibro
+Epicardial: adFibro=32.2% of adFibro, vFibro=1.1% of vFibro
+EPDC: adFibro=36.2% of adFibro, vFibro=7.6% of vFibro
+Any(LEC/Epicardial/EPDC): adFibro=62.7% of adFibro, vFibro=8.0% of vFibro
+
+adFibro in niche (>=1 LEC/Epicardial/EPDC neighbor): 979
+adFibro outside niche: 583
+
+Differential expression: adFibro vs vFibro
+Top 20 genes upregulated in adFibro vs vFibro by log2FC:
+PIEZO2: log2FC=4.06, mean_ad=1.170, mean_vf=0.070
+OSR1: log2FC=3.84, mean_ad=2.152, mean_vf=0.150
+ISL1: log2FC=3.23, mean_ad=0.134, mean_vf=0.014
+MFAP5: log2FC=3.06, mean_ad=0.460, mean_vf=0.055
+NR2F1: log2FC=3.04, mean_ad=0.599, mean_vf=0.073
+MYH11: log2FC=2.94, mean_ad=0.216, mean_vf=0.028
+CRABP2: log2FC=2.70, mean_ad=1.397, mean_vf=0.214
+NPR3: log2FC=2.70, mean_ad=0.395, mean_vf=0.061
+ENTPD2: log2FC=2.70, mean_ad=0.483, mean_vf=0.074
+JAG1: log2FC=2.55, mean_ad=1.241, mean_vf=0.211
+TSHZ2: log2FC=2.53, mean_ad=0.380, mean_vf=0.066
+PTCH2: log2FC=2.50, mean_ad=0.493, mean_vf=0.087
+FNDC1: log2FC=2.38, mean_ad=1.682, mean_vf=0.323
+CPE: log2FC=2.38, mean_ad=0.977, mean_vf=0.188
+LYVE1: log2FC=2.32, mean_ad=0.300, mean_vf=0.060
+FBLN5: log2FC=2.15, mean_ad=2.103, mean_vf=0.475
+FOXC1: log2FC=2.10, mean_ad=0.451, mean_vf=0.105
+HOXA5: log2FC=2.05, mean_ad=0.260, mean_vf=0.063
+F13A1: log2FC=2.02, mean_ad=0.246, mean_vf=0.061
+COL14A1: log2FC=1.99, mean_ad=1.521, mean_vf=0.383
+Number of genes with log2FC>0.5: 99, with log2FC>1.0: 54 (out of 238)
+
+Differential expression: adFibro in niche vs adFibro outside niche
+Top 20 genes upregulated in adFibro-in-niche vs adFibro-outside by log2FC:
+CLDN5: log2FC=1.58, mean_in=0.123, mean_out=0.041
+PENK: log2FC=1.51, mean_in=0.258, mean_out=0.091
+NKD2: log2FC=1.45, mean_in=0.236, mean_out=0.087
+LYVE1: log2FC=1.41, mean_in=0.391, mean_out=0.147
+WT1: log2FC=1.17, mean_in=0.282, mean_out=0.126
+NRP2: log2FC=1.08, mean_in=0.505, mean_out=0.239
+F13A1: log2FC=1.06, mean_in=0.306, mean_out=0.147
+GJA1: log2FC=1.01, mean_in=0.469, mean_out=0.233
+HHIP: log2FC=0.97, mean_in=0.224, mean_out=0.115
+TFF3: log2FC=0.90, mean_in=0.157, mean_out=0.084
+MAF: log2FC=0.89, mean_in=1.599, mean_out=0.865
+NELL2: log2FC=0.87, mean_in=0.132, mean_out=0.072
+HAND1: log2FC=0.87, mean_in=0.051, mean_out=0.028
+TFPI2: log2FC=0.82, mean_in=0.126, mean_out=0.071
+SCN7A: log2FC=0.81, mean_in=0.171, mean_out=0.098
+MOXD1: log2FC=0.81, mean_in=0.137, mean_out=0.078
+ADM: log2FC=0.80, mean_in=0.269, mean_out=0.155
+PRSS23: log2FC=0.79, mean_in=0.134, mean_out=0.078
+COLEC11: log2FC=0.79, mean_in=0.140, mean_out=0.081
+DLK1: log2FC=0.77, mean_in=2.252, mean_out=1.318
+Number of genes with log2FC>0.5: 40, with log2FC>1.0: 8 (out of 238)
+
+2026-05-17 08:53:04 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 08:53:48 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 08:53:48 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 08:53:48 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--d8454dd3-7861-4d2b-a70b-12b8f2f15cfa-0
+
+Content:
+<execute>
+from pathlib import Path
+import json
+
+data_dir = Path(DATA_DIR)
+hyp_dir = data_dir / "hypotheses"
+draft_path = hyp_dir / "hypotheses_draft.json"
+
+with open(draft_path, "r") as f:
+    draft_hypotheses = json.load(f)
+
+print("Draft hypotheses loaded:", [h["id"] for h in draft_hypotheses])
+
+# Prepare refined/kept hypotheses with narrowing notes
+final_hypotheses = []
+
+for h in draft_hypotheses:
+    hid = h["id"]
+    if hid == "H1":
+        status = "REFINE"
+        # Refine the statement based on results: strong gene-program signal, but not enriched
+        # for fibro/endo neighbors; modest neuronal enrichment instead.
+        h["statement"] = (
+            "Conduction-associated cardiomyocyte populations (including ncCM-IFT-like, "
+            "ncCM-AVC-like, and vCM-His-Purkinje) form spatially segregated, strongly "
+            "self-associated microdomains that are modestly enriched for neuronal "
+            "neighbors compared with working ventricular cardiomyocytes and exhibit a "
+            "shared developmental and conduction-related gene program that is "
+            "distinct from the surrounding ventricular myocardium."
+        )
+        h["narrowing_notes"] = (
+            "Tested neighbor composition for conduction-like cardiomyocytes "
+            "(ncCM-IFT-like, ncCM-AVC-like, vCM-His-Purkinje; n=9,748) versus "
+            "working ventricular cardiomyocytes (vCM-LV-Compact, vCM-LV-Trabecular, "
+            "vCM-RV-Compact, vCM-Proliferating; n=73,963) using k=20 spatial "
+            "nearest neighbors. Conduction-like cells had slightly lower mean "
+            "fractions of fibroblast neighbors (0.101 vs 0.121; Mann–Whitney "
+            "p≈2×10⁻²⁴⁷) and endothelial neighbors (0.083 vs 0.107; p<10⁻³⁰⁰) "
+            "than working ventricular cells, contradicting the prediction of "
+            "increased fibroblast/endothelial contact. In contrast, conduction-like "
+            "cells showed a higher neuronal neighbor fraction (0.010 vs ≈0.000; "
+            "p<10⁻³⁰⁰), consistent with modest neuronal enrichment. Differential "
+            "expression between conduction-like and working ventricular "
+            "cardiomyocytes revealed a strong, coherent gene program: 72 of 238 "
+            "genes had log₂ fold-change>0.5 and 36>1.0, with top upregulated genes "
+            "including BMP2, ISL1, NR2F1, TBX3, RSPO3, IRX1, IRX2, JAG1, TRPM3, "
+            "and FBLN2. Together with the rare-but-tight and pairwise co-localization "
+            "results (very high self-edge enrichment for conduction-related labels), "
+            "this supports spatially segregated conduction microdomains with a "
+            "distinct developmental/conduction transcriptional program, but does "
+            "not support broad enrichment for fibroblast or endothelial neighbors. "
+            "The hypothesis was therefore narrowed to emphasize self-association, "
+            "neuronal enrichment, and the shared gene program rather than generalized "
+            "stromal enrichment."
+        )
+        # Update quality scores slightly (strong support but needed refinement)
+        h["quality_scores"] = {
+            "derivable": 9,
+            "novel": 6,
+            "feasible": 9,
+            "specific": 8,
+            "falsifiable": 8,
+        }
+        h["status"] = status
+        final_hypotheses.append(h)
+
+    elif hid == "H2":
+        status = "KEEP"
+        # Statement remains broadly correct; evidence is strong for both spatial niche and
+        # a distinct fibroblast program with ECM/remodeling features.
+        h["statement"] = (
+            "Lymphatic endothelial cells, adipogenic fibroblasts, and epicardial- or "
+            "epicardial-derived cells form a spatially co-localized niche in which "
+            "adipogenic fibroblasts display a transcriptional program distinct from "
+            "ventricular fibroblasts, characterized by coordinated upregulation of "
+            "multiple extracellular-matrix, remodeling-associated, and guidance- or "
+            "signaling-related genes present in the panel, with additional modulation "
+            "of this program in adipogenic fibroblasts that reside directly within "
+            "the niche."
+        )
+        h["narrowing_notes"] = (
+            "Neighbor analysis compared adipogenic fibroblasts (adFibro; n=1,562) to "
+            "ventricular fibroblasts (vFibro; n=16,624) using k=20 spatial neighbors. "
+            "adFibro cells had much higher mean fractions of lymphatic endothelial "
+            "neighbors (LEC: 0.109 vs 0.001), epicardial neighbors (Epicardial: "
+            "0.043 vs 0.001), and EPDC neighbors (0.055 vs 0.013), and a combined "
+            "Any(LEC/Epicardial/EPDC) neighbor fraction of 0.208 vs 0.015 in vFibro "
+            "(all Mann–Whitney p<10⁻²⁷⁰). At the cell level, 46.1% of adFibro cells "
+            "had at least one LEC neighbor, 32.2% at least one Epicardial neighbor, "
+            "36.2% at least one EPDC neighbor, and 62.7% had at least one of these "
+            "niche neighbors, compared with 1.5%, 1.1%, 7.6%, and 8.0% respectively "
+            "for vFibro, indicating a tightly co-localized lymphatic–fibroblast–"
+            "epicardial niche. Differential expression between adFibro and vFibro "
+            "showed a strong program: 99 of 238 genes had log₂ fold-change>0.5 and "
+            "54>1.0, with top upregulated genes including PIEZO2, OSR1, MFAP5, NR2F1, "
+            "MYH11, CRABP2, NPR3, FNDC1, LYVE1, FBLN5, HOXA5, F13A1, and COL14A1, "
+            "encompassing extracellular-matrix components and remodeling- or signaling-"
+            "associated factors. Within adFibro, cells in the niche (≥1 LEC/Epicardial/"
+            "EPDC neighbor; n=979) versus outside (n=583) showed additional "
+            "transcriptional differences, with 40 genes having log₂ fold-change>0.5 "
+            "and 8>1.0; top niche-enriched genes included CLDN5, PENK, NKD2, LYVE1, "
+            "WT1, NRP2, F13A1, and GJA1, suggesting further modulation of the program "
+            "linked to direct niche contact. These results support the existence of a "
+            "lymphatic–adipogenic fibroblast–epicardial niche and a distinct, niche-"
+            "sensitive adFibro gene program relative to vFibro."
+        )
+        h["quality_scores"] = {
+            "derivable": 9,
+            "novel": 7,
+            "feasible": 8,
+            "specific": 8,
+            "falsifiable": 8,
+        }
+        h["status"] = status
+        final_hypotheses.append(h)
+
+# Write final hypotheses.json (only KEEP/REFINE)
+final_path = hyp_dir / "hypotheses.json"
+with open(final_path, "w") as f:
+    json.dump(final_hypotheses, f, indent=2)
+print("Wrote final hypotheses to", final_path, "with ids:", [h["id"] for h in final_hypotheses])
+
+# Also write a human-readable brief
+brief_path = hyp_dir / "hypothesis_brief.md"
+
+n_cells = adata.n_obs
+n_genes = adata.n_vars
+n_pops = adata.obs["Populations"].nunique()
+samples = adata.obs["Sample_ID"].value_counts()
+
+brief_lines = []
+brief_lines.append("# Hypothesis Brief: Farah Heart MERFISH Dataset")
+brief_lines.append("")
+brief_lines.append(f"- Total cells: {n_cells}")
+brief_lines.append(f"- Genes in panel: {n_genes}")
+brief_lines.append(f"- Populations (Populations labels): {n_pops}")
+brief_lines.append("- Samples (Sample_ID counts): " + ", ".join(
+    f"{sid}: {cnt}" for sid, cnt in samples.items()
+))
+brief_lines.append("")
+brief_lines.append("## H1 (REFINE) – Conduction-associated cardiomyocyte microdomains")
+brief_lines.append("")
+brief_lines.append(
+    "Refined hypothesis: Conduction-associated cardiomyocyte populations "
+    "(ncCM-IFT-like, ncCM-AVC-like, vCM-His-Purkinje) form spatially segregated, "
+    "strongly self-associated microdomains that are modestly enriched for neuronal "
+    "neighbors compared with working ventricular cardiomyocytes and exhibit a "
+    "shared developmental and conduction-related gene program distinct from the "
+    "surrounding ventricular myocardium."
+)
+brief_lines.append("")
+brief_lines.append("Key evidence:")
+brief_lines.append(
+    "- Conduction-like cells (n=9,748) vs working ventricular cardiomyocytes "
+    "(n=73,963) showed slightly lower mean fractions of fibroblast neighbors "
+    "(0.101 vs 0.121; p≈2×10⁻²⁴⁷) and endothelial neighbors (0.083 vs 0.107; "
+    "p<10⁻³⁰⁰), but higher neuronal neighbor fraction (0.010 vs ≈0.000; "
+    "p<10⁻³⁰⁰). Thus broad stromal enrichment is not supported, but modest "
+    "neuronal enrichment is."
+)
+brief_lines.append(
+    "- Differential expression between conduction-like and working ventricular "
+    "cardiomyocytes identified 72/238 genes with log₂ fold-change>0.5 and 36>1.0. "
+    "Top conduction-enriched genes include BMP2, ISL1, NR2F1, TBX3, RSPO3, IRX1, "
+    "IRX2, JAG1, TRPM3, and FBLN2, indicating a coordinated developmental/"
+    "conduction program."
+)
+brief_lines.append(
+    "- Rare-but-tight and pairwise co-localization analyses (from the exploration "
+    "phase) showed very strong self-association of ncCM-IFT-like, ncCM-AVC-like, "
+    "and vCM-His-Purkinje labels, consistent with discrete conduction microdomains."
+)
+brief_lines.append("")
+brief_lines.append("Status: **REFINE** – spatial self-organization and a distinct gene "
+                   "program are supported; the original prediction of stronger "
+                   "fibroblast/endothelial enrichment was not supported and has been "
+                   "removed from the statement.")
+brief_lines.append("")
+brief_lines.append("## H2 (KEEP) – Lymphatic–adipogenic fibroblast–epicardial niche")
+brief_lines.append("")
+brief_lines.append(
+    "Hypothesis: Lymphatic endothelial cells, adipogenic fibroblasts, and "
+    "epicardial/epicardial-derived cells form a spatially co-localized niche in "
+    "which adipogenic fibroblasts display a transcriptional program distinct from "
+    "ventricular fibroblasts, characterized by coordinated upregulation of "
+    "extracellular-matrix, remodeling-associated, and signaling-related genes, "
+    "with additional modulation in adipogenic fibroblasts located directly within "
+    "the niche."
+)
+brief_lines.append("")
+brief_lines.append("Key evidence:")
+brief_lines.append(
+    "- Strong spatial co-localization: adFibro cells (n=1,562) vs vFibro "
+    "(n=16,624) have much higher mean neighbor fractions for LEC (0.109 vs 0.001), "
+    "Epicardial (0.043 vs 0.001), EPDC (0.055 vs 0.013), and Any(LEC/Epicardial/"
+    "EPDC) (0.208 vs 0.015), all with Mann–Whitney p<10⁻²⁷⁰."
+)
+brief_lines.append(
+    "- At least one niche neighbor: 46.1% of adFibro vs 1.5% of vFibro have a LEC "
+    "neighbor; 32.2% vs 1.1% an Epicardial neighbor; 36.2% vs 7.6% an EPDC "
+    "neighbor; and 62.7% vs 8.0% have at least one of these niche neighbors."
+)
+brief_lines.append(
+    "- Differential expression (adFibro vs vFibro) revealed 99/238 genes with "
+    "log₂ fold-change>0.5 and 54>1.0. Top adFibro-enriched genes include PIEZO2, "
+    "OSR1, MFAP5, NR2F1, MYH11, CRABP2, NPR3, FNDC1, LYVE1, FBLN5, HOXA5, F13A1, "
+    "and COL14A1, encompassing extracellular-matrix and remodeling/guidance-related "
+    "factors."
+)
+brief_lines.append(
+    "- Within adFibro, niche vs non-niche cells (979 vs 583) showed 40 genes with "
+    "log₂ fold-change>0.5 and 8>1.0; top niche-enriched genes such as CLDN5, PENK, "
+    "NKD2, LYVE1, WT1, NRP2, F13A1, and GJA1 suggest further tuning of the program "
+    "linked to direct lymphatic/epicardial contact."
+)
+brief_lines.append("")
+brief_lines.append("Status: **KEEP** – both the spatial niche and a distinct, niche-"
+                   "sensitive adFibro gene program are strongly supported by the data.")
+
+with open(brief_path, "w") as f:
+    f.write("\n".join(brief_lines))
+
+print("Wrote hypothesis brief to", brief_path)
+</execute>
+
+2026-05-17 08:53:48 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 08:53:48 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 08:53:48 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 08:53:48 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 08:53:48 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Draft hypotheses loaded: ['H1', 'H2']
+Wrote final hypotheses to /home/mingqiam/TissueAgent/data/hypotheses/hypotheses.json with ids: ['H1', 'H2']
+Wrote hypothesis brief to /home/mingqiam/TissueAgent/data/hypotheses/hypothesis_brief.md
+
+2026-05-17 08:53:48 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 08:53:59 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 08:53:59 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 08:53:59 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--ecfe8835-59d8-471d-96ea-a88d04076d41-0
+
+Content:
+<response>
+## Hypothesis Recovery Run Complete
+
+**Dataset:** Farah adult mouse heart MERFISH (`dataset_farah_heart_merfish.h5ad`; 228,635 cells, 238 genes, 27 Populations labels, 3 samples: R78_4C15, R78_4C12, R77_4C4)
+
+**Phase 1 observations:** 3 entries logged to `exploration_log.md`.
+
+**Phase 3 retained hypotheses:**
+
+- **[H1] (REFINE) Statement:**  
+  Conduction-associated cardiomyocyte populations (including ncCM-IFT-like, ncCM-AVC-like, and vCM-His-Purkinje) form spatially segregated, strongly self-associated microdomains that are modestly enriched for neuronal neighbors compared with working ventricular cardiomyocytes and exhibit a shared developmental and conduction-related gene program distinct from the surrounding ventricular myocardium.
+  - Grounded in OBSERVATION 1–3.
+  - Test outcome: **REFINE** —  
+    Neighbor analysis comparing conduction-like (n=9,748) vs working ventricular cardiomyocytes (n=73,963; k=20 neighbors) showed that conduction-like cells actually have *lower* fibroblast neighbor fractions (0.101 vs 0.121; Mann–Whitney p≈2×10⁻²⁴⁷) and *lower* endothelial fractions (0.083 vs 0.107; p<10⁻³⁰⁰), contradicting the original expectation of stromal enrichment. However, conduction-like cells showed higher neuronal neighbor fraction (0.010 vs ~0.000; p<10⁻³⁰⁰), supporting modest neuronal enrichment. Differential expression revealed a strong shared program: 72/238 genes with log₂FC>0.5 and 36>1.0 vs working vCM, including BMP2, ISL1, NR2F1, TBX3, RSPO3, IRX1, IRX2, JAG1, TRPM3, and FBLN2. Combined with rare-but-tight and co-localization results (strong self-association for conduction labels), this supports conduction microdomains with a distinct developmental/conduction gene program and modest neuronal association, but not generalized fibroblast/endothelial enrichment; the hypothesis was narrowed accordingly.
+  - Quality (0–10): Derivable=9, Novel=6, Feasible=9, Specific=8, Falsifiable=8.
+
+- **[H2] (KEEP) Statement:**  
+  Lymphatic endothelial cells, adipogenic fibroblasts, and epicardial- or epicardial-derived cells form a spatially co-localized niche in which adipogenic fibroblasts display a transcriptional program distinct from ventricular fibroblasts, characterized by coordinated upregulation of multiple extracellular-matrix, remodeling-associated, and guidance- or signaling-related genes present in the panel, with additional modulation of this program in adipogenic fibroblasts that reside directly within the niche.
+  - Grounded in OBSERVATION 1–3.
+  - Test outcome: **KEEP** —  
+    Spatial neighbor statistics strongly support a lymphatic–adipogenic fibroblast–epicardial niche. Compared with vFibro (n=16,624), adFibro (n=1,562) showed much higher mean neighbor fractions for LEC (0.109 vs 0.001), Epicardial (0.043 vs 0.001), EPDC (0.055 vs 0.013), and Any(LEC/Epicardial/EPDC) (0.208 vs 0.015), all with Mann–Whitney p<10⁻²⁷⁰. At the cell level, 46.1% of adFibro vs 1.5% of vFibro had ≥1 LEC neighbor; 32.2% vs 1.1% ≥1 Epicardial; 36.2% vs 7.6% ≥1 EPDC; and 62.7% vs 8.0% had at least one niche neighbor. Differential expression (adFibro vs vFibro) showed 99/238 genes with log₂FC>0.5 and 54>1.0, including PIEZO2, OSR1, MFAP5, NR2F1, MYH11, CRABP2, NPR3, FNDC1, LYVE1, FBLN5, HOXA5, F13A1, and COL14A1, consistent with ECM/remodeling and signaling changes. Within adFibro, niche (n=979) vs non-niche (n=583) cells showed further modulation: 40 genes with log₂FC>0.5 and 8>1.0, including CLDN5, PENK, NKD2, LYVE1, WT1, NRP2, F13A1, and GJA1 enriched in the niche subset. These results support both the spatial niche and a distinct, niche-sensitive adFibro program relative to vFibro.
+  - Quality (0–10): Derivable=9, Novel=7, Feasible=8, Specific=8, Falsifiable=8.
+
+**Dropped during narrowing:**
+
+- None. Both drafted hypotheses were retained (one refined, one kept as strengthened).
+
+**Artifacts:**
+
+- `hypotheses/exploration_log.md`
+- `hypotheses/hypotheses_draft.json`
+- `hypotheses/hypotheses.json`
+- `hypotheses/hypothesis_brief.md`
+</response>
+
+2026-05-17 08:53:59 | INFO     | response block detected - final output, exiting
+
+2026-05-17 08:53:59 | INFO     | transferring from agent_node to __end__
+
+
+
+===== FINAL <response> =====
+
+<response>
+## Hypothesis Recovery Run Complete
+
+**Dataset:** Farah adult mouse heart MERFISH (`dataset_farah_heart_merfish.h5ad`; 228,635 cells, 238 genes, 27 Populations labels, 3 samples: R78_4C15, R78_4C12, R77_4C4)
+
+**Phase 1 observations:** 3 entries logged to `exploration_log.md`.
+
+**Phase 3 retained hypotheses:**
+
+- **[H1] (REFINE) Statement:**  
+  Conduction-associated cardiomyocyte populations (including ncCM-IFT-like, ncCM-AVC-like, and vCM-His-Purkinje) form spatially segregated, strongly self-associated microdomains that are modestly enriched for neuronal neighbors compared with working ventricular cardiomyocytes and exhibit a shared developmental and conduction-related gene program distinct from the surrounding ventricular myocardium.
+  - Grounded in OBSERVATION 1–3.
+  - Test outcome: **REFINE** —  
+    Neighbor analysis comparing conduction-like (n=9,748) vs working ventricular cardiomyocytes (n=73,963; k=20 neighbors) showed that conduction-like cells actually have *lower* fibroblast neighbor fractions (0.101 vs 0.121; Mann–Whitney p≈2×10⁻²⁴⁷) and *lower* endothelial fractions (0.083 vs 0.107; p<10⁻³⁰⁰), contradicting the original expectation of stromal enrichment. However, conduction-like cells showed higher neuronal neighbor fraction (0.010 vs ~0.000; p<10⁻³⁰⁰), supporting modest neuronal enrichment. Differential expression revealed a strong shared program: 72/238 genes with log₂FC>0.5 and 36>1.0 vs working vCM, including BMP2, ISL1, NR2F1, TBX3, RSPO3, IRX1, IRX2, JAG1, TRPM3, and FBLN2. Combined with rare-but-tight and co-localization results (strong self-association for conduction labels), this supports conduction microdomains with a distinct developmental/conduction gene program and modest neuronal association, but not generalized fibroblast/endothelial enrichment; the hypothesis was narrowed accordingly.
+  - Quality (0–10): Derivable=9, Novel=6, Feasible=9, Specific=8, Falsifiable=8.
+
+- **[H2] (KEEP) Statement:**  
+  Lymphatic endothelial cells, adipogenic fibroblasts, and epicardial- or epicardial-derived cells form a spatially co-localized niche in which adipogenic fibroblasts display a transcriptional program distinct from ventricular fibroblasts, characterized by coordinated upregulation of multiple extracellular-matrix, remodeling-associated, and guidance- or signaling-related genes present in the panel, with additional modulation of this program in adipogenic fibroblasts that reside directly within the niche.
+  - Grounded in OBSERVATION 1–3.
+  - Test outcome: **KEEP** —  
+    Spatial neighbor statistics strongly support a lymphatic–adipogenic fibroblast–epicardial niche. Compared with vFibro (n=16,624), adFibro (n=1,562) showed much higher mean neighbor fractions for LEC (0.109 vs 0.001), Epicardial (0.043 vs 0.001), EPDC (0.055 vs 0.013), and Any(LEC/Epicardial/EPDC) (0.208 vs 0.015), all with Mann–Whitney p<10⁻²⁷⁰. At the cell level, 46.1% of adFibro vs 1.5% of vFibro had ≥1 LEC neighbor; 32.2% vs 1.1% ≥1 Epicardial; 36.2% vs 7.6% ≥1 EPDC; and 62.7% vs 8.0% had at least one niche neighbor. Differential expression (adFibro vs vFibro) showed 99/238 genes with log₂FC>0.5 and 54>1.0, including PIEZO2, OSR1, MFAP5, NR2F1, MYH11, CRABP2, NPR3, FNDC1, LYVE1, FBLN5, HOXA5, F13A1, and COL14A1, consistent with ECM/remodeling and signaling changes. Within adFibro, niche (n=979) vs non-niche (n=583) cells showed further modulation: 40 genes with log₂FC>0.5 and 8>1.0, including CLDN5, PENK, NKD2, LYVE1, WT1, NRP2, F13A1, and GJA1 enriched in the niche subset. These results support both the spatial niche and a distinct, niche-sensitive adFibro program relative to vFibro.
+  - Quality (0–10): Derivable=9, Novel=7, Feasible=8, Specific=8, Falsifiable=8.
+
+**Dropped during narrowing:**
+
+- None. Both drafted hypotheses were retained (one refined, one kept as strengthened).
+
+**Artifacts:**
+
+- `hypotheses/exploration_log.md`
+- `hypotheses/hypotheses_draft.json`
+- `hypotheses/hypotheses.json`
+- `hypotheses/hypothesis_brief.md`
+</response>
+
+===== ARTIFACTS =====
+  hypotheses/exploration_log.md  (3881 bytes)
+  hypotheses/hypotheses.json  (9289 bytes)
+  hypotheses/hypotheses_draft.json  (5779 bytes)
+  hypotheses/hypothesis_brief.md  (3652 bytes)

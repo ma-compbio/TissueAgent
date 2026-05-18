@@ -24,3 +24,18 @@ node_modules/
 
 # build artifacts
 *.egg-info/
+
+# secrets
+.env
+.env.local
+*.key
+
+# large data artifacts (build with demo/build_*.py)
+demo/data/farah_raw/
+demo/data/dataset_farah_heart_merfish.h5ad
+demo/data/dataset_farah_anon.h5ad
+
+# sensitive manuscript files (not committed to public repo)
+TissueAgent*.pdf
+TissueAgent_*.pdf
+

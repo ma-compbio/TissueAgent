@@ -1,0 +1,49 @@
+Invoking CellVoyager on farah
+  num_analyses=3  max_iterations=6
+  model_name=gpt-5.1
+
+
+returncode: 0
+run_directory: /home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_142509
+notebook_path: /home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_142509/outputs/farah_recovery_20260517_102514/farah_recovery_analysis_1.ipynb
+hypotheses parsed: 6
+
+--- All parsed hypotheses ---
+
+### Hypothesis 1
+# Analysis
+
+**Hypothesis**: Within ventricular cardiomyocytes, spatial gradients of developmental transcription factor expression form coherent, spatially localized maturation states that are associated with differences in local cellular purity (segmentation confidence) and are not captured by existing Leiden clusters or coarse cell-type labels.
+
+### Hypothesis 2
+# Analysis Plan
+
+**Hypothesis**: Within ventricular cardiomyocytes, spatial gradients of developmental transcription factor expression form coherent, spatially localized maturation states that are associated with differences in local cellular purity (segmentation confidence) and are not captured by existing Leiden clusters or coarse cell-type labels.
+
+## Steps:
+- Confirm and summarize the distribu
+
+### Hypothesis 3
+# Analysis
+
+**Hypothesis**: Within ventricular cardiomyocytes, spatial gradients in developmental maturation exist such that more mature transcriptional states are preferentially localized to regions with higher local cell-type mixing between cardiomyocytes and non-myocyte support cells, independent of overall cell purity.
+
+### Hypothesis 4
+# Analysis Plan
+
+**Hypothesis**: Within ventricular cardiomyocytes, spatial gradients in developmental maturation exist such that more mature transcriptional states are preferentially localized to regions with higher local cell-type mixing between cardiomyocytes and non-myocyte support cells, independent of overall cell purity.
+
+## Steps:
+- Compute and print a concise overview of key metadata (cel
+
+### Hypothesis 5
+# Analysis
+
+**Hypothesis**: Within ventricular and atrial fibroblast and endothelial populations, a discrete subset of cells with unusually high transcriptional and neighborhood diversity acts as spatial hubs at interfaces between cardiomyocyte domains, leading to a strong association between per-cell transcriptional complexity, local spatial cell-type heterogeneity, and reduced Purity that is not
+
+### Hypothesis 6
+# Analysis Plan
+
+**Hypothesis**: Within ventricular and atrial fibroblast and endothelial populations, a discrete subset of cells with unusually high transcriptional and neighborhood diversity acts as spatial hubs at interfaces between cardiomyocyte domains, leading to a strong association between per-cell transcriptional complexity, local spatial cell-type heterogeneity, and reduced Purity that i
+
+Summary written: /home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_142509/cellvoyager_recovery_summary.json

@@ -1,0 +1,1 @@
+Mouse embryo seqFISH dataset (Lohoff et al.), ~350 genes, gastrulation / early organogenesis stage. Cell-type labels in `.obs` (see `celltype_mapped_refined`); 2D spatial coords in `.obsm['spatial']`. Scope: discover what is interesting about cell-type spatial organization. No specific finding is provided.

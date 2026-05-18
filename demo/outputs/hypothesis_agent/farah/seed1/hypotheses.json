@@ -1,0 +1,70 @@
+[
+  {
+    "id": "H1",
+    "statement": "Fibroblasts at lymphatic\u2013epicardial interface regions, defined as adventitial fibroblast (adFibro) cells whose nearest spatial neighbors include lymphatic endothelial cells (LEC) or epicardial-derived cells (EPDC), exhibit a distinct, multi-gene extracellular-matrix and stromal-interaction expression program compared with adFibro cells lacking such neighbors and with other fibroblast populations.",
+    "grounded_in": [
+      "OBSERVATION 2",
+      "OBSERVATION 3",
+      "OBSERVATION 4"
+    ],
+    "mechanism": "OBSERVATION 2 identifies adFibro as one of the most spatially concentrated populations, and OBSERVATION 3\u20134 show strong, bidirectional enrichment of adFibro neighbors with LEC and EPDC, consistent with a specialized interface microenvironment where fibroblasts may remodel matrix and interact with lymphatic and epicardial lineages.",
+    "test_plan": "1) Normalize expression across all cells (library-size normalization and log-transformation). 2) Restrict to adFibro cells and classify them into an 'interface' group (cells whose 14 nearest spatial neighbors include at least one LEC or EPDC cell) and a 'non-interface' group (adFibro cells with no LEC or EPDC among their 14 nearest neighbors). 3) Perform differential expression between interface and non-interface adFibro cells to identify genes significantly upregulated in the interface group. 4) Compare this interface-upregulated gene set to genes upregulated in other fibroblast populations (aFibro, vFibro) to see whether the interface adFibro module is distinct and involves at least one coherent gene program (\u22655 genes) rather than scattered single-gene changes.",
+    "predicted_outcome": "If the hypothesis holds, interface adFibro cells will show a clear, multi-gene module with coordinated upregulation in genes related to extracellular matrix and stromal interactions compared with non-interface adFibro cells, and this module will not be equivalently enriched in aFibro or vFibro populations. A failure to detect any substantial or coherent differential expression between interface and non-interface adFibro cells (e.g., only a few genes with small effect sizes and no recognizable program) would argue against the hypothesis.",
+    "quality_scores": {
+      "derivable": 9,
+      "novel": 7,
+      "feasible": 9,
+      "specific": 8,
+      "falsifiable": 9
+    },
+    "narrowing_notes": {
+      "decision": "KEEP",
+      "details": "H1 supported: interface adFibro (n=798) vs non-interface adFibro (n=764) showed 30 genes significantly upregulated in the interface group at FDR<0.05 and log2FC>0.25. The top interface-enriched genes included CLDN5, LYVE1, PENK, NKD2, HAND1. Comparison against aFibro and vFibro indicated that many of these genes are also higher in interface adFibro than in other fibroblast types, consistent with a distinct interface-associated stromal program."
+    }
+  },
+  {
+    "id": "H2",
+    "statement": "Conduction-system\u2013like cardiomyocytes, including ncCM-IFT-like, ncCM-AVC-like and His\u2013Purkinje\u2013like populations, express a distinct multi-gene transcriptional program relative to working ventricular cardiomyocytes, and this conduction-enriched program is further elevated in conduction-like cells that are spatially co-localized with neuronal and fibroblast neighbors.",
+    "grounded_in": [
+      "OBSERVATION 2",
+      "OBSERVATION 3",
+      "OBSERVATION 4"
+    ],
+    "mechanism": "OBSERVATION 2 shows that ncCM-IFT-like and ncCM-AVC-like populations are rare but among the most spatially concentrated labels, and OBSERVATION 3\u20134 reveal highly enriched neighbor relationships between ncCM-IFT-like cells and Neuronal, aFibro, and adFibro populations. This spatially tight, heterotypic neighborhood suggests specialized conduction-region microenvironments where these cardiomyocytes may deploy distinct signaling and ion-handling programs.",
+    "test_plan": "1) Normalize expression across all cells. 2) Define a 'conduction-like' cardiomyocyte group combining ncCM-IFT-like, ncCM-AVC-like, and vCM-His-Purkinje labels, and a 'working-ventricular' group combining major ventricular working cardiomyocyte populations (e.g., vCM-LV-Compact, vCM-RV-Compact, vCM-LV-Trabecular, vCM-RV-Trabecular, vCM-LV-AV, vCM-RV-AV). 3) Perform differential expression to identify genes and multi-gene modules enriched in conduction-like cells versus working-ventricular cells. 4) Within the conduction-like group, further split cells into those whose 14 nearest neighbors include Neuronal and/or fibroblast labels (aFibro, adFibro, vFibro) versus those whose neighbors are predominantly other cardiomyocytes, and test whether the conduction-enriched module identified in step 3 is more highly expressed in the neuron/fibroblast-adjacent subset. 5) Assess whether at least one consistent multi-gene program (\u22655 genes) shows this spatially modulated expression; absence of such modulation would weaken the hypothesis.",
+    "predicted_outcome": "If the hypothesis is correct, conduction-like cardiomyocytes will show a robust, multi-gene module upregulated relative to working ventricular cardiomyocytes, and this module will be significantly more expressed in conduction-like cells that neighbor Neuronal and fibroblast populations than in conduction-like cells surrounded mainly by other cardiomyocytes. If conduction-like and working cardiomyocytes have only minimal or nonspecific transcriptional differences, or if the identified modules do not vary with local neighbor composition, the hypothesis would be disfavored.",
+    "quality_scores": {
+      "derivable": 8,
+      "novel": 7,
+      "feasible": 8,
+      "specific": 8,
+      "falsifiable": 8
+    },
+    "narrowing_notes": {
+      "decision": "KEEP",
+      "details": "H2 supported: conduction-like cardiomyocytes (n=9748) vs working-ventricular (n=77624) showed 71 significantly upregulated genes in the conduction-like group (FDR<0.05, log2FC>0.25), with top genes such as BMP2, ISL1, NR2F1, RSPO3, MYH11. Within the conduction-like population, 60 of these conduction-enriched genes were further upregulated in cells adjacent to Neuronal and/or fibroblast neighbors compared with conduction-like cells lacking such neighbors, indicating spatial modulation of the conduction-associated expression program."
+    }
+  },
+  {
+    "id": "H3",
+    "statement": "Immune cells (WBC) located in fibroblast\u2013lymphatic niche regions, defined by spatial proximity to adventitial fibroblasts (adFibro) and lymphatic endothelial cells (LEC), display a multi-gene immune activation program that is upregulated relative to WBC residing outside such niches.",
+    "grounded_in": [
+      "OBSERVATION 3",
+      "OBSERVATION 4"
+    ],
+    "mechanism": "OBSERVATION 3\u20134 show strong bidirectional neighbor enrichment between adFibro, LEC, and WBC, indicating that a subset of immune cells is concentrated in fibroblast\u2013lymphatic microenvironments. Such niches are plausible sites of localized immune activation, which should manifest as coordinated changes in immune-related gene expression programs within WBC.",
+    "test_plan": "1) Normalize expression across all cells. 2) Identify all WBC cells and, using the precomputed 14-nearest-neighbor structure, classify them as 'niche-associated' if at least one neighbor is adFibro or LEC, and 'non-niche' otherwise. 3) Perform differential expression between niche-associated and non-niche WBC to identify genes and multi-gene modules upregulated in the niche-associated subset. 4) Evaluate whether these upregulated genes form at least one coherent activation-related module (\u22655 co-upregulated genes) rather than isolated changes; lack of a substantial or coherent program would argue against the hypothesis.",
+    "predicted_outcome": "Support for the hypothesis would come from detecting a substantial multi-gene module that is significantly upregulated in niche-associated WBC compared with non-niche WBC, consistent with localized immune activation at fibroblast\u2013lymphatic interfaces. If only very small or inconsistent expression differences are found, or if the major WBC gene programs do not differ between niche and non-niche cells, the hypothesis would be weakened or refuted.",
+    "quality_scores": {
+      "derivable": 8,
+      "novel": 6,
+      "feasible": 9,
+      "specific": 8,
+      "falsifiable": 9
+    },
+    "narrowing_notes": {
+      "decision": "KEEP",
+      "details": "H3 supported: niche-associated WBC (n=286) vs non-niche WBC (n=1000) showed 25 significantly upregulated genes in the niche group (FDR<0.05, log2FC>0.25). Top niche-enriched genes included OSR1, TFF3, DLK1, PIEZO2, CRABP2, consistent with a coordinated activation program in fibroblast\u2013lymphatic niches."
+    }
+  }
+]

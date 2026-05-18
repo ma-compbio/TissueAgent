@@ -1,0 +1,42 @@
+[
+  {
+    "id": "H2",
+    "statement": "Fibroblast subtypes that form spatially concentrated niches and preferentially neighbor specific cardiomyocyte or endothelial populations exhibit distinct extracellular matrix and remodeling gene programs compared to fibroblasts residing in more compositionally mixed neighborhoods.",
+    "grounded_in": [
+      "OBSERVATION 2",
+      "OBSERVATION 3"
+    ],
+    "mechanism": "OBSERVATION 2 identifies rare but spatially tight labels, including fibroblast-like populations, and OBSERVATION 3 shows that these concentrated labels have non-random enrichment for particular non-self neighbor types, implying specialized microenvironments. If niche fibroblasts are functionally tailored to their neighboring cell types, their ECM-related gene expression should differ from fibroblasts in less structured neighborhoods.",
+    "test_plan": "1) Identify fibroblast labels in the Populations annotation (e.g. labels containing 'Fibro', such as 'vFibro' and 'adFibro'). 2) For each fibroblast cell, compute the composition of its spatial kNN neighborhood (using the existing k=20 neighbor_indices), and assign the cell to categories such as 'CM-neighbor-enriched', 'endothelial-neighbor-enriched', or 'fibroblast-dominated' based on the dominant non-self neighbor type. 3) Define an extracellular matrix/remodeling gene program using all ECM and matrix-remodeling genes present in var_names (e.g. collagens, laminins, fibronectin, periostin, matrix metalloproteinases where available), ensuring at least five genes are included. 4) Compute ECM program scores for each fibroblast cell. 5) Compare ECM scores across the different neighborhood categories using non-parametric tests and visualize their distributions; additionally, perform differential expression between fibroblasts in CM-enriched versus other neighborhoods to see whether ECM and remodeling genes are overrepresented among genes upregulated in the niche-associated fibroblasts.",
+    "predicted_outcome": "If the hypothesis is correct, fibroblasts in neighborhoods enriched for specific cardiomyocyte or endothelial labels will show significantly different ECM program scores than fibroblasts in fibroblast-dominated or mixed neighborhoods, with multiple ECM/remodeling genes appearing among the top markers in differential expression. The hypothesis would be challenged if ECM program scores and ECM gene expression profiles are largely similar across fibroblast neighborhood categories, suggesting little specialization by local partner cell types.",
+    "quality_scores": {
+      "derivable": 8,
+      "novel": 7,
+      "feasible": 8,
+      "specific": 8,
+      "falsifiable": 9
+    },
+    "narrowing_notes": "H2 ECM program (genes=['COL14A1', 'DCN', 'FN1', 'POSTN', 'TNC', 'VCAN'], n=6); main neighbor categories with >=50 fibro cells: ['CM_enriched', 'Endothelium_enriched', 'Fibro_dominated']. H2 Kruskal-Wallis across neighbor categories ['CM_enriched', 'Endothelium_enriched', 'Fibro_dominated', 'Other', 'Vascular_support_enriched']: H=2341.41, p=0.00e+00. H2 ECM CM_enriched vs Fibro_dominated: mean_CM=1.325, mean_Fibro=1.813, U=9481197.5, p=0.00e+00.",
+    "status": "KEEP"
+  },
+  {
+    "id": "H3",
+    "statement": "Endothelial microdomains dominated by lymphatic endothelial cells (LEC) in the developing heart exhibit coordinated enrichment of lymphangiogenic and vascular signaling gene programs relative to generic vascular endothelial clusters (VEC) that are less spatially restricted.",
+    "grounded_in": [
+      "OBSERVATION 2",
+      "OBSERVATION 4"
+    ],
+    "mechanism": "OBSERVATION 4 shows that LEC and VSMC labels have very strong self\u2013self spatial co-localization, consistent with specialized vascular and lymphatic structures, while other endothelial populations are more abundant. If these microdomains correspond to distinct vascular niches, their endothelial cells should upregulate lymphangiogenesis and vascular remodeling programs compared to broadly distributed vascular endothelium.",
+    "test_plan": "1) Define an 'LEC/vessel-associated' endothelial group including cells labeled 'LEC' and endothelial labels that are spatially enriched near VSMC microdomains, and define a 'generic VEC' group from the main vascular endothelial label(s) such as 'VEC'. 2) Confirm spatial distinction by comparing same-label neighbor fractions and distances from VSMC clusters. 3) Using genes available in the panel, assemble at least one vascular/lymphangiogenesis gene program (e.g. including VEGF receptors, PROX1, PDPN, KDR, FLT4, ANGPT family, and other endothelial signaling genes that are present in var_names). 4) Compute module scores for this program for each endothelial cell. 5) Compare program scores between the LEC/vessel-associated group and generic VECs, and perform differential expression analysis between these groups to assess whether vascular remodeling and lymphatic markers are preferentially upregulated in the specialized microdomains.",
+    "predicted_outcome": "If the hypothesis holds, the LEC/vessel-associated endothelial cells will show higher lymphangiogenesis/vascular remodeling program scores and multiple genes from this program will be enriched among the top markers relative to generic VEC cells. The hypothesis would be weakened or falsified if program scores and marker genes do not systematically differ between these endothelial groups.",
+    "quality_scores": {
+      "derivable": 7,
+      "novel": 7,
+      "feasible": 7,
+      "specific": 8,
+      "falsifiable": 8
+    },
+    "narrowing_notes": "H3 vascular program (genes=['ANGPT1', 'CXCL12', 'NRP2', 'PROX1'], n=4): LEC mean=1.164, VEC mean=0.618. H3 LEC vs VEC Mann\u2013Whitney U=4134369.5, p=0.00e+00. H3 DE overlap with vascular program genes in top 20: ['NRP2', 'PROX1'].",
+    "status": "KEEP"
+  }
+]

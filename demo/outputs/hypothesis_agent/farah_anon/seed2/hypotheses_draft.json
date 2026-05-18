@@ -1,0 +1,59 @@
+[
+  {
+    "id": "H1",
+    "statement": "Spatially tight microcommunities built around rare leiden clusters 28 and 15 and their strongly enriched neighbor labels (including 33, 14, 30, and 32) exhibit coordinated upregulation of developmental signaling and transcription-factor gene programs compared to cells of the same clusters that reside outside these enriched neighbor contexts elsewhere in the tissue.",
+    "grounded_in": [
+      2,
+      3,
+      4
+    ],
+    "mechanism": "OBSERVATIONS 2\u20134 show that clusters 28 and 15 are rare yet form highly self-enriched spatial domains that systematically co-localize with specific partner labels, suggesting specialized niches; if these are developmental interaction hubs, cells at these interfaces should express higher levels of signaling ligands, receptors, and developmental transcription factors than more isolated counterparts of the same clusters.",
+    "test_plan": "1. For clusters 28 and 15 separately, use the existing k=15 spatial neighbor graph to compute, for each cell, the fraction of neighbors belonging to that cluster\u2019s most enriched partner labels (for 28: 33 and 14; for 15: 30, 32, and 20). Define 'interface cells' as those in cluster 28 with at least a given fraction (e.g., \u22650.3) of neighbors from 33 or 14, and cells in cluster 15 with at least that fraction of neighbors from 30, 32, or 20; the remaining cells in each cluster are 'non-interface' controls. 2. Within each focal cluster (28 and 15 separately), perform differential expression between interface and non-interface cells using rank-sum statistics, recording genes significantly upregulated in interface cells. 3. For the subset of genes in the panel annotated by name as signaling-related or developmental transcription factors (using the pre-identified gene lists for signaling-like genes and TF-like genes), compute per-cell module scores (mean scaled expression) and compare scores between interface and non-interface cells within each cluster. 4. Summarize whether interface cells show consistent increases in signaling and TF module scores across multiple genes, not driven by a single outlier gene.",
+    "predicted_outcome": "If the hypothesis holds, interface cells in clusters 28 and/or 15 will show significant upregulation of a multi-gene signaling and transcription-factor program relative to non-interface cells of the same cluster, with higher module scores for the predefined signaling-like and TF-like gene sets. A clear absence of such enrichment (no consistent multi-gene increase and similar module scores between interface and non-interface cells) would argue against the hypothesis.",
+    "quality_scores": {
+      "derivable": 8,
+      "novel": 7,
+      "feasible": 8,
+      "specific": 8,
+      "falsifiable": 9
+    }
+  },
+  {
+    "id": "H2",
+    "statement": "Spatial neighborhoods centered on tight rare leiden clusters 29 and 31 and their repeatedly enriched partner labels (including 14, 23, 10, and 18) form structural niches in which cells collectively upregulate extracellular-matrix and tissue-remodeling gene programs compared to the same labels located in more isolated or differently neighbored regions of the heart tissue.",
+    "grounded_in": [
+      2,
+      3,
+      4
+    ],
+    "mechanism": "OBSERVATION 2 identifies clusters 29 and 31 as rare but highly self-clustered, and OBSERVATION 3 shows that their cells preferentially neighbor specific labels such as 14, 23, 10, and 18, suggesting recurrent multi-label microenvironments. If these neighborhoods correspond to structural or fibrotic domains, cells in these local communities should preferentially express extracellular-matrix and remodeling gene programs relative to cells of the same labels in other spatial contexts.",
+    "test_plan": "1. Define a '29/31 neighborhood' set consisting of cells whose leiden labels are 29, 31, 14, 23, 10, or 18 and that have at least a moderate fraction (e.g., \u22650.3) of neighbors from this same label set, using the existing k=15 spatial neighbor graph; define 'context-matched controls' as cells with these labels that do not meet this neighborhood criterion. 2. Compute per-cell module scores for extracellular-matrix\u2013like genes identified in the panel (e.g., collagens and matrix genes from the ECM-like gene list) and compare scores between neighborhood cells and context-matched controls for each involved label and pooled across labels. 3. Perform differential expression between neighborhood cells and controls, focusing on ECM-like genes and assessing whether multiple ECM genes are consistently upregulated in neighborhood cells. 4. As a negative control, compare contractile-program gene scores (using the contractile-like gene list) between these groups to assess whether enrichment is specific to ECM rather than a global expression increase.",
+    "predicted_outcome": "If the hypothesis is correct, cells within the 29/31-centered neighborhoods will show higher ECM module scores and consistent upregulation of several ECM-associated genes compared to context-matched controls of the same labels, while contractile-program scores will not show a parallel increase. Failure to detect such ECM-specific enrichment, or finding similar ECM scores in control regions, would argue against the hypothesis.",
+    "quality_scores": {
+      "derivable": 8,
+      "novel": 7,
+      "feasible": 8,
+      "specific": 8,
+      "falsifiable": 9
+    }
+  },
+  {
+    "id": "H3",
+    "statement": "Rare but spatially tight leiden clusters 28, 15, 20, 29, and 31, together with their enriched neighboring labels, preferentially occupy tissue-edge regions of the MERFISH field and display higher expression of cell-cycle and progenitor-associated gene programs than more abundant, spatially diffuse clusters in the interior of the developing human heart sections.",
+    "grounded_in": [
+      1,
+      2,
+      3
+    ],
+    "mechanism": "OBSERVATION 2 identifies a set of rare clusters that are highly self-enriched in local neighborhoods, suggesting spatially compact domains, and OBSERVATION 1 provides the overall spatial extent. In a developing organ, boundary or rim regions often harbor proliferative or progenitor populations; if these tight domains correspond to such regions, they should be enriched both for edge-proximal locations and for cell-cycle and immaturity-associated gene programs relative to more diffuse clusters.",
+    "test_plan": "1. Normalize spatial coordinates to the rectangular bounding box of the tissue and, for each cell, compute the distance to the nearest boundary; compare the distribution of boundary distances for cells in tight clusters 28, 15, 20, 29, and 31 (and optionally their most enriched neighbor labels) versus all other clusters, using non-parametric tests to assess whether tight clusters are more edge-proximal. 2. Using the pre-identified cell-cycle-like gene list, compute per-cell proliferation module scores and compare scores between tight-cluster cells and cells from the top five most abundant (diffuse) clusters. 3. Similarly, define a progenitor-associated transcription factor module using TF-like genes expressed in the dataset and compare module scores between tight-cluster cells and diffuse clusters. 4. Evaluate whether tight clusters show joint enrichment for edge proximity and higher cell-cycle and progenitor-module scores relative to diffuse clusters.",
+    "predicted_outcome": "Support for the hypothesis would consist of tight clusters being significantly closer to tissue boundaries and showing higher cell-cycle and progenitor TF module scores than more diffuse clusters, with multiple genes contributing to each module. If tight clusters are not boundary-enriched or do not show elevated proliferation or progenitor-associated programs, the hypothesis would be disfavored.",
+    "quality_scores": {
+      "derivable": 7,
+      "novel": 7,
+      "feasible": 7,
+      "specific": 8,
+      "falsifiable": 9
+    }
+  }
+]

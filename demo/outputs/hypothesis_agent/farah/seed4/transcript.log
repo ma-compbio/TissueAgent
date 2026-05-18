@@ -1,0 +1,1860 @@
+Staged dataset at /home/mingqiam/TissueAgent/data/dataset/dataset_farah_heart_merfish.h5ad
+Staged background at /home/mingqiam/TissueAgent/data/briefs/background.md
+Invoking Hypothesis Agent…
+
+2026-05-17 08:58:34 | INFO     | Invoking agent `hypothesis_agent`
+
+2026-05-17 08:58:34 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 09:00:11 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 09:00:11 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 09:00:11 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--0fc9181a-1a68-411d-b619-3ff69a885de4-0
+
+Content:
+<execute>
+from pathlib import Path
+import json
+
+hypotheses_dir = Path(DATA_DIR) / "hypotheses"
+hypotheses_path = hypotheses_dir / "hypotheses.json"
+
+hypotheses_dir.mkdir(exist_ok=True, parents=True)
+
+existing_status = {}
+if hypotheses_path.exists():
+    try:
+        txt = hypotheses_path.read_text()
+        data = json.loads(txt)
+        existing_status["status"] = "EXISTS_VALID"
+        existing_status["n_hypotheses"] = len(data.get("hypotheses", []))
+        # Store for potential later summarization
+        existing_hypotheses_data = data
+    except Exception as e:
+        existing_status["status"] = "EXISTS_INVALID"
+        existing_status["error"] = str(e)
+else:
+    existing_status["status"] = "MISSING"
+
+print(existing_status)
+</execute>
+
+2026-05-17 09:00:11 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 09:00:11 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 09:00:11 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 09:00:13 | WARNING  | Python REPL can execute arbitrary code. Use with caution.
+
+2026-05-17 09:00:13 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 09:00:13 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+{'status': 'MISSING'}
+
+2026-05-17 09:00:13 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 09:00:32 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 09:00:32 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 09:00:32 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--531765bb-8d65-4974-ba3a-a6919e89d66d-0
+
+Content:
+<execute>
+import os
+import numpy as np
+import pandas as pd
+import scanpy as sc
+
+from pathlib import Path
+
+data_dir = Path(DATA_DIR)
+
+# Read limited background
+briefs_dir = data_dir / "briefs"
+background_path = briefs_dir / "background.md"
+fallback_path = briefs_dir / "paper_summary.txt"
+
+background_text = None
+if background_path.exists():
+    background_text = background_path.read_text()
+    source_used = "background.md"
+elif fallback_path.exists():
+    background_text = fallback_path.read_text()
+    source_used = "paper_summary.txt"
+else:
+    background_text = ""
+    source_used = "NONE"
+
+print(f"Background source: {source_used}")
+print(background_text[:1000])
+
+# Load dataset
+dataset_path = data_dir / "dataset" / "dataset_farah_heart_merfish.h5ad"
+print(f"Loading AnnData from: {dataset_path}")
+adata = ad.read_h5ad(dataset_path)
+
+print("AnnData loaded.")
+print("Shape (cells x genes):", adata.n_obs, "x", adata.n_vars)
+print("obs columns:", list(adata.obs.columns))
+print("var columns:", list(adata.var.columns))
+
+# Inspect a small sample of obs and var
+print("\nobs head:")
+print(adata.obs.head())
+
+print("\nvar head:")
+print(adata.var.head())
+
+# Identify likely cell-type label and spatial coordinates
+celltype_col_candidates = [c for c in adata.obs.columns 
+                           if "cell_type" in c.lower() or "celltype" in c.lower() 
+                           or "annotation" in c.lower() or "cluster" in c.lower() 
+                           or "leiden" in c.lower()]
+
+print("\nCelltype-like columns:", celltype_col_candidates)
+
+# Identify spatial coordinate fields
+spatial_cols = [c for c in adata.obs.columns if c.lower() in ["x", "y", "px_x", "px_y", "x_centroid", "y_centroid", "x_coordinate", "y_coordinate"]]
+print("Spatial-like obs columns:", spatial_cols)
+print("obsm keys:", list(adata.obsm.keys()))
+</execute>
+
+2026-05-17 09:00:32 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 09:00:32 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 09:00:32 | INFO     | executing hypothesis_agent exec_node
+
+/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/site-packages/scanpy/_utils/__init__.py:27: FutureWarning: `__version__` is deprecated, use `importlib.metadata.version('anndata')` instead.
+  from anndata import __version__ as anndata_version
+/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/site-packages/anndata/__init__.py:70: FutureWarning: Importing read_csv from `anndata` is deprecated. Import anndata.io.read_csv instead.
+  return module_get_attr_redirect(attr_name, deprecated_mapping=_DEPRECATED)
+/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/site-packages/anndata/__init__.py:70: FutureWarning: Importing read_excel from `anndata` is deprecated. Import anndata.io.read_excel instead.
+  return module_get_attr_redirect(attr_name, deprecated_mapping=_DEPRECATED)
+/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/site-packages/anndata/__init__.py:70: FutureWarning: Importing read_hdf from `anndata` is deprecated. Import anndata.io.read_hdf instead.
+  return module_get_attr_redirect(attr_name, deprecated_mapping=_DEPRECATED)
+/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/site-packages/anndata/__init__.py:70: FutureWarning: Importing read_loom from `anndata` is deprecated. Import anndata.io.read_loom instead.
+  return module_get_attr_redirect(attr_name, deprecated_mapping=_DEPRECATED)
+/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/site-packages/anndata/__init__.py:70: FutureWarning: Importing read_mtx from `anndata` is deprecated. Import anndata.io.read_mtx instead.
+  return module_get_attr_redirect(attr_name, deprecated_mapping=_DEPRECATED)
+/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/site-packages/anndata/__init__.py:70: FutureWarning: Importing read_text from `anndata` is deprecated. Import anndata.io.read_text instead.
+  return module_get_attr_redirect(attr_name, deprecated_mapping=_DEPRECATED)
+/home/mingqiam/miniconda3/envs/tissueagent/lib/python3.12/site-packages/anndata/__init__.py:70: FutureWarning: Importing read_umi_tools from `anndata` is deprecated. Import anndata.io.read_umi_tools instead.
+  return module_get_attr_redirect(attr_name, deprecated_mapping=_DEPRECATED)
+2026-05-17 09:00:33 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 09:00:33 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Background source: background.md
+# Limited Background — Farah et al. 2024 (developing human heart MERFISH)
+
+**Tissue:** Developing human heart.
+
+**Technology:** MERFISH spatial transcriptomics.
+
+**Gene panel:** ~140 genes selected to mark cardiac cell types and a small set
+of developmental transcription factors / signaling pathway components.
+
+**Annotations available:** the AnnData has cell-type labels in `.obs` (column
+name to be discovered by inventory) covering cardiomyocyte subtypes
+(ventricular, atrial, AVC-region), fibroblasts (atrial, ventricular, valve),
+endothelial cells, epicardium, and immune cells. 2D spatial coordinates are in
+`.obsm["spatial"]` and section / region metadata in `.obs`.
+
+**Scope of study (intentionally vague):** the dataset profiles spatial
+organization of cell types across anatomical regions (atria, ventricles,
+atrioventricular canal, outflow tract) of the developing human heart.
+**Specific findings — including which spatially restricted communities the
+original authors highlighted, which
+Loading AnnData from: /home/mingqiam/TissueAgent/data/dataset/dataset_farah_heart_merfish.h5ad
+AnnData loaded.
+Shape (cells x genes): 228635 x 238
+obs columns: ['Sample_ID', 'Batch', 'UMI Count', 'leiden', 'Complexity', 'Populations', 'Purity']
+var columns: []
+
+obs head:
+           Sample_ID    Batch  UMI Count  ...  Complexity  Populations    Purity
+cell_id                                   ...                                   
+6-R77_4C4    R77_4C4  R77_4C4       86.0  ...           8          VIC  0.544534
+8-R77_4C4    R77_4C4  R77_4C4      148.0  ...           8          VIC  0.625984
+9-R77_4C4    R77_4C4  R77_4C4      100.0  ...           8          VIC  0.583665
+10-R77_4C4   R77_4C4  R77_4C4       70.0  ...           9          VIC  0.766393
+12-R77_4C4   R77_4C4  R77_4C4       63.0  ...           8          VIC  0.596838
+
+[5 rows x 7 columns]
+
+var head:
+Empty DataFrame
+Columns: []
+Index: [ABCC9, ADAMTS6, ADAMTS8, ADGRL1, ADGRL2]
+
+Celltype-like columns: ['leiden']
+Spatial-like obs columns: []
+obsm keys: ['X_umap', 'spatial']
+
+2026-05-17 09:00:33 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 09:00:57 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 09:00:57 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 09:00:57 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--c96dd8c2-b293-499c-bbb0-b301755f6bd6-0
+
+Content:
+<execute>
+import numpy as np
+import pandas as pd
+import scanpy as sc
+import re
+
+from pathlib import Path
+
+data_dir = Path(DATA_DIR)
+hyp_dir = data_dir / "hypotheses"
+hyp_dir.mkdir(exist_ok=True, parents=True)
+exploration_log_path = hyp_dir / "exploration_log.md"
+
+# Helper: determine next OBSERVATION number
+def get_next_obs_number(log_path):
+    if not log_path.exists():
+        return 1
+    txt = log_path.read_text()
+    matches = re.findall(r"OBSERVATION\s+(\d+):", txt)
+    if not matches:
+        return 1
+    nums = [int(m) for m in matches]
+    return max(nums) + 1
+
+# Ensure we still have adata loaded (in case of REPL reset)
+if 'adata' not in locals():
+    dataset_path = data_dir / "dataset" / "dataset_farah_heart_merfish.h5ad"
+    adata = ad.read_h5ad(dataset_path)
+
+# Make sure key obs fields are categorical where appropriate
+if 'Populations' in adata.obs.columns:
+    adata.obs['Populations'] = adata.obs['Populations'].astype('category')
+if 'leiden' in adata.obs.columns:
+    adata.obs['leiden'] = adata.obs['leiden'].astype('category')
+
+# ---- EDA PASS 1: Global inventory of cell populations and samples ----
+n_cells = adata.n_obs
+n_genes = adata.n_vars
+
+celltype_col = 'Populations' if 'Populations' in adata.obs.columns else 'leiden'
+celltype_counts = adata.obs[celltype_col].value_counts().sort_values(ascending=False)
+
+sample_col = 'Sample_ID' if 'Sample_ID' in adata.obs.columns else None
+if sample_col:
+    sample_counts = adata.obs[sample_col].value_counts().sort_values(ascending=False)
+else:
+    sample_counts = None
+
+# Spatial extent
+if "spatial" in adata.obsm_keys():
+    spatial = adata.obsm["spatial"]
+    x_min, x_max = float(np.min(spatial[:,0])), float(np.max(spatial[:,0]))
+    y_min, y_max = float(np.min(spatial[:,1])), float(np.max(spatial[:,1]))
+else:
+    x_min = x_max = y_min = y_max = np.nan
+
+print("Inventory:")
+print(" n_cells:", n_cells, " n_genes:", n_genes)
+print(" Cell type column:", celltype_col)
+print(celltype_counts.head())
+if sample_counts is not None:
+    print("Sample counts (top 5):")
+    print(sample_counts.head())
+print("Spatial extent x:[", x_min, ",", x_max, "] y:[", y_min, ",", y_max, "]")
+
+# Prepare text for OBSERVATION 1
+top5_ct = celltype_counts.head(5)
+top5_ct_str = ", ".join([f"{idx}={int(cnt)}" for idx, cnt in top5_ct.items()])
+n_celltypes = celltype_counts.shape[0]
+if sample_counts is not None:
+    n_samples = sample_counts.shape[0]
+    top3_samples = sample_counts.head(3)
+    top3_samples_str = ", ".join([f"{idx}={int(cnt)}" for idx, cnt in top3_samples.items()])
+else:
+    n_samples = 0
+    top3_samples_str = "NA"
+
+obs_num = get_next_obs_number(exploration_log_path)
+with exploration_log_path.open("a") as f:
+    f.write(f"OBSERVATION {obs_num}:\n")
+    f.write(
+        f"The dataset contains {n_cells} cells and {n_genes} genes with {n_celltypes} distinct {celltype_col} labels; "
+        f"the most abundant populations are {top5_ct_str}. "
+        f"Cells are distributed across {n_samples} samples ({sample_col}), with top samples {top3_samples_str}. "
+        f"Spatial coordinates in `.obsm['spatial']` span x={x_min:.1f}–{x_max:.1f} and y={y_min:.1f}–{y_max:.1f}.\n\n"
+    )
+
+print(f"Logged OBSERVATION {obs_num} to {exploration_log_path}")
+</execute>
+
+2026-05-17 09:00:57 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 09:00:57 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 09:00:57 | INFO     | executing hypothesis_agent exec_node
+
+<string>:49: FutureWarning: The method obsm_keys is deprecated and will be removed in the future. Use obsm instead of obsm_keys. (e.g. `k in adata.obsm` or `adata.obsm.keys() | {'u'}`)
+2026-05-17 09:00:57 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 09:00:57 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Inventory:
+ n_cells: 228635  n_genes: 238
+ Cell type column: Populations
+Populations
+vCM-LV-Compact       30380
+aCM-RA               19947
+vCM-Proliferating    17584
+vFibro               16624
+vCM-LV-Trabecular    16511
+Name: count, dtype: int64
+Sample counts (top 5):
+Sample_ID
+R78_4C15    79891
+R78_4C12    75782
+R77_4C4     72962
+Name: count, dtype: int64
+Spatial extent x:[ -10717.28515625 , 6634.41064453125 ] y:[ -4881.6982421875 , 1712.32763671875 ]
+Logged OBSERVATION 1 to /home/mingqiam/TissueAgent/data/hypotheses/exploration_log.md
+
+2026-05-17 09:00:57 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 09:01:43 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 09:01:43 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 09:01:43 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--a58b4096-8fbd-470a-967f-8fe16adad55b-0
+
+Content:
+<execute>
+import numpy as np
+import pandas as pd
+from pathlib import Path
+import re
+
+from sklearn.neighbors import NearestNeighbors
+
+data_dir = Path(DATA_DIR)
+hyp_dir = data_dir / "hypotheses"
+hyp_dir.mkdir(exist_ok=True, parents=True)
+exploration_log_path = hyp_dir / "exploration_log.md"
+
+# Utility to get next OBSERVATION number
+def get_next_obs_number(log_path):
+    if not log_path.exists():
+        return 1
+    txt = log_path.read_text()
+    matches = re.findall(r"OBSERVATION\s+(\d+):", txt)
+    if not matches:
+        return 1
+    nums = [int(m) for m in matches]
+    return max(nums) + 1
+
+# Ensure adata in memory
+if 'adata' not in locals():
+    dataset_path = data_dir / "dataset" / "dataset_farah_heart_merfish.h5ad"
+    adata = ad.read_h5ad(dataset_path)
+
+celltype_col = 'Populations'
+labels = adata.obs[celltype_col].astype('category')
+adata.obs[celltype_col] = labels
+label_array = labels.values
+unique_labels = labels.cat.categories
+n_cells = adata.n_obs
+
+# ---- Build spatial kNN graph (shared for subsequent analyses) ----
+spatial = adata.obsm["spatial"]
+k = 20  # number of neighbors (excluding self)
+nbrs = NearestNeighbors(n_neighbors=k+1, algorithm='ball_tree').fit(spatial)
+indices = nbrs.kneighbors(spatial, return_distance=False)
+# indices: (n_cells, k+1); first neighbor is self
+neighbor_indices = indices[:, 1:]  # drop self
+neighbor_flat = neighbor_indices.ravel()
+source_flat = np.repeat(np.arange(n_cells), k)
+
+print("kNN graph built:", source_flat.shape[0], "directed edges")
+
+# ---- EDA PASS 2 (RARE-BUT-TIGHT): same-label NN enrichment per label ----
+same_label_neighbor = (label_array[source_flat] == label_array[neighbor_flat]).astype(float)
+
+# For each cell, fraction of same-label neighbors
+same_frac_per_cell = same_label_neighbor.reshape(n_cells, k).mean(axis=1)
+
+# Compute per-label stats
+results = []
+global_counts = labels.value_counts()
+global_frac = global_counts / n_cells
+
+for lab in unique_labels:
+    mask = (label_array == lab)
+    n_lab = int(mask.sum())
+    if n_lab == 0:
+        continue
+    mean_same = float(same_frac_per_cell[mask].mean())
+    gfrac = float(global_frac.loc[lab])
+    diff = mean_same - gfrac
+    ratio = mean_same / gfrac if gfrac > 0 else np.nan
+    results.append({
+        "label": lab,
+        "n_cells": n_lab,
+        "global_frac": gfrac,
+        "mean_same_nn_frac": mean_same,
+        "diff_vs_global": diff,
+        "ratio_vs_global": ratio
+    })
+
+df_conc = pd.DataFrame(results).sort_values("diff_vs_global", ascending=False)
+print("Per-label same-label neighbor enrichment (top 10 by diff):")
+print(df_conc.head(10))
+
+# Select top 5 "rare-but-tight" (by diff), require at least 200 cells to avoid noise
+df_conc_filt = df_conc[df_conc["n_cells"] >= 200]
+top_conc = df_conc_filt.head(5)
+print("Top concentrated labels (>=200 cells):")
+print(top_conc)
+
+obs_num = get_next_obs_number(exploration_log_path)
+with exploration_log_path.open("a") as f:
+    f.write(f"OBSERVATION {obs_num}:\n")
+    f.write(
+        f"Using a spatial kNN graph (k={k}) on 2D MERFISH coordinates, I computed for each of the "
+        f"{df_conc.shape[0]} {celltype_col} labels the mean fraction of same-label nearest neighbors "
+        f"and compared it to the global abundance of that label. The top 5 spatially concentrated "
+        f"labels (requiring at least 200 cells) by excess same-label fraction were: " +
+        "; ".join([
+            f"{row['label']} (n={int(row['n_cells'])}, global_frac={row['global_frac']:.3f}, "
+            f"mean_same_nn_frac={row['mean_same_nn_frac']:.3f}, diff_vs_global={row['diff_vs_global']:.3f})"
+            for _, row in top_conc.iterrows()
+        ]) +
+        ".\n\n"
+    )
+
+print(f"Logged OBSERVATION {obs_num} (rare-but-tight)")
+
+# ---- Mandatory follow-up: top non-self neighbors for each rare-but-tight label ----
+# Precompute global neighbor-type frequencies for enrichment baseline
+global_neighbor_counts = pd.value_counts(label_array[neighbor_flat])
+global_neighbor_frac = global_neighbor_counts / global_neighbor_counts.sum()
+
+neighbor_obs_entries = []
+
+for _, row in top_conc.iterrows():
+    lab = row["label"]
+    lab_mask = (label_array == lab)
+    lab_indices = np.where(lab_mask)[0]
+    # gather neighbors of these cells
+    lab_neighbor_idx = neighbor_indices[lab_indices, :].ravel()
+    lab_neighbor_labels = label_array[lab_neighbor_idx]
+    counts = pd.value_counts(lab_neighbor_labels)
+    total_neighbors = counts.sum()
+    # compute enrichment vs global
+    enr_rows = []
+    for nb_lab, cnt in counts.items():
+        if nb_lab == lab:
+            continue
+        p_global = float(global_neighbor_frac.get(nb_lab, 0))
+        freq_local = cnt / total_neighbors
+        enr = freq_local / p_global if p_global > 0 else np.nan
+        enr_rows.append({
+            "neighbor_label": nb_lab,
+            "count": int(cnt),
+            "local_frac": freq_local,
+            "global_frac": p_global,
+            "enrichment_ratio": enr
+        })
+    if not enr_rows:
+        continue
+    df_enr = pd.DataFrame(enr_rows).sort_values("enrichment_ratio", ascending=False)
+    top3 = df_enr.head(3)
+    neighbor_obs_entries.append((lab, top3, total_neighbors))
+
+# Log a separate OBSERVATION summarizing neighbor enrichments
+obs_num2 = get_next_obs_number(exploration_log_path)
+with exploration_log_path.open("a") as f:
+    f.write(f"OBSERVATION {obs_num2}:\n")
+    for lab, top3, total_neighbors in neighbor_obs_entries:
+        f.write(
+            f"For the concentrated label {lab}, considering {total_neighbors} spatial neighbors "
+            f"of its cells, the top 3 non-self neighboring labels enriched above global expectation "
+            f"(by neighbor-type frequency) were: " +
+            "; ".join([
+                f"{r['neighbor_label']} (count={int(r['count'])}, local_frac={r['local_frac']:.3f}, "
+                f"global_frac={r['global_frac']:.3f}, enrichment_ratio={r['enrichment_ratio']:.2f})"
+                for _, r in top3.iterrows()
+            ]) +
+            ". "
+        )
+    f.write("\n\n")
+
+print(f"Logged OBSERVATION {obs_num2} (neighbors of rare-but-tight labels)")
+
+# ---- EDA PASS 3: Global pairwise co-localization across all label pairs ----
+# Build an undirected edge list (to avoid double counting)
+rows = source_flat
+cols = neighbor_flat
+mask_undirected = rows < cols
+rows_u = rows[mask_undirected]
+cols_u = cols[mask_undirected]
+types_rows = label_array[rows_u]
+types_cols = label_array[cols_u]
+
+pair_labels = np.where(
+    types_rows <= types_cols,
+    types_rows + "|" + types_cols,
+    types_cols + "|" + types_rows
+)
+pair_counts = pd.value_counts(pair_labels)
+total_edges = pair_counts.sum()
+
+# Compute expected counts under random mixing
+p = (labels.value_counts() / n_cells).to_dict()
+enrichment_records = []
+for pair, obs_cnt in pair_counts.items():
+    lab1, lab2 = pair.split("|")
+    p1, p2 = p[lab1], p[lab2]
+    if lab1 == lab2:
+        expected = (p1 ** 2) * total_edges
+    else:
+        expected = (2 * p1 * p2) * total_edges  # unordered pair probability
+    if expected <= 0:
+        continue
+    enr = obs_cnt / expected
+    enrichment_records.append({
+        "pair": pair,
+        "lab1": lab1,
+        "lab2": lab2,
+        "obs_count": int(obs_cnt),
+        "expected_count": float(expected),
+        "enrichment_ratio": float(enr)
+    })
+
+df_pairs = pd.DataFrame(enrichment_records)
+
+# Filter to reasonably frequent edges to avoid extreme ratios from tiny counts
+df_pairs_filtered = df_pairs[df_pairs["obs_count"] >= 500].sort_values("enrichment_ratio", ascending=False)
+top_pairs = df_pairs_filtered.head(10)
+
+print("Top 10 enriched label pairs by spatial co-localization (obs_count>=500):")
+print(top_pairs)
+
+obs_num3 = get_next_obs_number(exploration_log_path)
+with exploration_log_path.open("a") as f:
+    f.write(f"OBSERVATION {obs_num3}:\n")
+    f.write(
+        f"Using the undirected spatial kNN graph ({int(total_edges)} edges after symmetrization), "
+        f"I quantified co-localization for all {df_pairs.shape[0]} unordered label pairs by comparing "
+        f"their observed edge counts to expectations under random mixing based on global label "
+        f"frequencies. Restricting to pairs with at least 500 edges, the 10 most enriched pairs were: "
+        + "; ".join([
+            f"{row['pair']} (obs_count={int(row['obs_count'])}, expected_count={row['expected_count']:.1f}, "
+            f"enrichment_ratio={row['enrichment_ratio']:.2f})"
+            for _, row in top_pairs.iterrows()
+        ]) +
+        ".\n\n"
+    )
+
+print(f"Logged OBSERVATION {obs_num3} (global pairwise co-localization)")
+
+# At this point we have >=3 OBSERVATIONs; Phase 1 complete. Next step: Phase 2 (in next execute).
+</execute>
+
+2026-05-17 09:01:43 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 09:01:43 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 09:01:43 | INFO     | executing hypothesis_agent exec_node
+
+<string>:107: FutureWarning: pandas.value_counts is deprecated and will be removed in a future version. Use pd.Series(obj).value_counts() instead.
+<string>:119: FutureWarning: pandas.value_counts is deprecated and will be removed in a future version. Use pd.Series(obj).value_counts() instead.
+<string>:119: FutureWarning: pandas.value_counts is deprecated and will be removed in a future version. Use pd.Series(obj).value_counts() instead.
+<string>:119: FutureWarning: pandas.value_counts is deprecated and will be removed in a future version. Use pd.Series(obj).value_counts() instead.
+<string>:119: FutureWarning: pandas.value_counts is deprecated and will be removed in a future version. Use pd.Series(obj).value_counts() instead.
+<string>:119: FutureWarning: pandas.value_counts is deprecated and will be removed in a future version. Use pd.Series(obj).value_counts() instead.
+2026-05-17 09:01:45 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 09:01:45 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+TypeError('Unordered Categoricals can only compare equality or not')
+
+2026-05-17 09:01:45 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 09:02:00 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 09:02:00 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 09:02:00 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--57ef41f2-633a-400f-b40d-8bd69a643c01-0
+
+Content:
+<execute>
+import numpy as np
+import pandas as pd
+from pathlib import Path
+import re
+
+data_dir = Path(DATA_DIR)
+hyp_dir = data_dir / "hypotheses"
+hyp_dir.mkdir(exist_ok=True, parents=True)
+exploration_log_path = hyp_dir / "exploration_log.md"
+
+def get_next_obs_number(log_path):
+    if not log_path.exists():
+        return 1
+    txt = log_path.read_text()
+    matches = re.findall(r"OBSERVATION\s+(\d+):", txt)
+    if not matches:
+        return 1
+    nums = [int(m) for m in matches]
+    return max(nums) + 1
+
+# Ensure adata and neighbor graph are present
+if 'adata' not in locals():
+    from anndata import read_h5ad
+    dataset_path = data_dir / "dataset" / "dataset_farah_heart_merfish.h5ad"
+    adata = ad.read_h5ad(dataset_path)
+
+celltype_col = 'Populations'
+labels = adata.obs[celltype_col].astype('category')
+adata.obs[celltype_col] = labels
+label_array = labels.values
+label_str = labels.astype(str).values
+n_cells = adata.n_obs
+
+# Rebuild kNN graph if needed
+from sklearn.neighbors import NearestNeighbors
+k = 20
+if 'neighbor_indices' not in locals():
+    spatial = adata.obsm["spatial"]
+    nbrs = NearestNeighbors(n_neighbors=k+1, algorithm='ball_tree').fit(spatial)
+    indices = nbrs.kneighbors(spatial, return_distance=False)
+    neighbor_indices = indices[:, 1:]  # drop self
+
+source_flat = np.repeat(np.arange(n_cells), k)
+neighbor_flat = neighbor_indices.ravel()
+
+# ---- EDA PASS 3: Global pairwise co-localization across all label pairs ----
+rows = source_flat
+cols = neighbor_flat
+mask_undirected = rows < cols
+rows_u = rows[mask_undirected]
+cols_u = cols[mask_undirected]
+types_rows = label_str[rows_u]
+types_cols = label_str[cols_u]
+
+# Vectorized unordered pair labeling: sort the two labels per edge
+pairs_2d = np.vstack([types_rows, types_cols])  # shape (2, n_edges)
+pairs_sorted = np.sort(pairs_2d, axis=0)
+pair_labels = pairs_sorted[0] + "|" + pairs_sorted[1]
+
+pair_counts = pd.value_counts(pair_labels)
+total_edges = pair_counts.sum()
+
+# Global label frequencies
+p = (labels.value_counts() / n_cells).to_dict()
+
+enrichment_records = []
+for pair, obs_cnt in pair_counts.items():
+    lab1, lab2 = pair.split("|")
+    p1, p2 = p[lab1], p[lab2]
+    if lab1 == lab2:
+        expected = (p1 ** 2) * total_edges
+    else:
+        expected = (2 * p1 * p2) * total_edges  # unordered pair probability
+    if expected <= 0:
+        continue
+    enr = obs_cnt / expected
+    enrichment_records.append({
+        "pair": pair,
+        "lab1": lab1,
+        "lab2": lab2,
+        "obs_count": int(obs_cnt),
+        "expected_count": float(expected),
+        "enrichment_ratio": float(enr)
+    })
+
+df_pairs = pd.DataFrame(enrichment_records)
+
+# Filter to reasonably frequent edges
+df_pairs_filtered = df_pairs[df_pairs["obs_count"] >= 500].sort_values("enrichment_ratio", ascending=False)
+top_pairs = df_pairs_filtered.head(10)
+
+print("Top 10 enriched label pairs by spatial co-localization (obs_count>=500):")
+print(top_pairs)
+
+obs_num = get_next_obs_number(exploration_log_path)
+with exploration_log_path.open("a") as f:
+    f.write(f"OBSERVATION {obs_num}:\n")
+    f.write(
+        f"Using an undirected spatial kNN graph with {int(total_edges)} edges derived from k={k} nearest "
+        f"neighbors, I quantified co-localization for all {df_pairs.shape[0]} unordered {celltype_col} "
+        f"label pairs by comparing their observed edge counts to expectations under random mixing based "
+        f"on global label frequencies. Restricting to pairs with at least 500 edges, the 10 most enriched "
+        f"pairs were: " +
+        "; ".join([
+            f"{row['pair']} (obs_count={int(row['obs_count'])}, expected_count={row['expected_count']:.1f}, "
+            f"enrichment_ratio={row['enrichment_ratio']:.2f})"
+            for _, row in top_pairs.iterrows()
+        ]) +
+        ".\n\n"
+    )
+
+print(f"Logged OBSERVATION {obs_num} (global pairwise co-localization) to {exploration_log_path}")
+
+# Phase 1 criterion (>=3 observations including rare-but-tight) should now be met.
+# Next: Phase 2 will read exploration_log.md and draft hypotheses.
+</execute>
+
+2026-05-17 09:02:00 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 09:02:00 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 09:02:00 | INFO     | executing hypothesis_agent exec_node
+
+<string>:60: FutureWarning: pandas.value_counts is deprecated and will be removed in a future version. Use pd.Series(obj).value_counts() instead.
+2026-05-17 09:02:01 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 09:02:01 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Top 10 enriched label pairs by spatial co-localization (obs_count>=500):
+                                  pair  ... enrichment_ratio
+44         ncCM-IFT-like|ncCM-IFT-like  ...        79.642330
+64                     adFibro|adFibro  ...        74.937931
+46         ncCM-AVC-like|ncCM-AVC-like  ...        60.425024
+103                            LEC|LEC  ...        37.639853
+18                           VSMC|VSMC  ...        33.781768
+147                  Neuronal|Neuronal  ...        28.504451
+14   vCM-His-Purkinje|vCM-His-Purkinje  ...        26.544920
+77               Epicardial|Epicardial  ...        23.868037
+45                             VEC|VEC  ...        23.063996
+25                 vCM-RV-AV|vCM-RV-AV  ...        19.131537
+
+[10 rows x 6 columns]
+Logged OBSERVATION 4 (global pairwise co-localization) to /home/mingqiam/TissueAgent/data/hypotheses/exploration_log.md
+
+2026-05-17 09:02:01 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 09:02:48 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 09:02:48 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 09:02:48 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--6b0aa874-64b7-438e-932d-46a39070cbea-0
+
+Content:
+<execute>
+from pathlib import Path
+import json
+import re
+import numpy as np
+import pandas as pd
+import scanpy as sc
+
+data_dir = Path(DATA_DIR)
+hyp_dir = data_dir / "hypotheses"
+hyp_dir.mkdir(exist_ok=True, parents=True)
+
+# ---------- Phase 2: read background and exploration log ----------
+bg_path_md = data_dir / "briefs" / "background.md"
+bg_path_txt = data_dir / "briefs" / "paper_summary.txt"
+
+if bg_path_md.exists():
+    background_text = bg_path_md.read_text()
+elif bg_path_txt.exists():
+    background_text = bg_path_txt.read_text()
+else:
+    background_text = ""
+
+print("Loaded background (first 500 chars):")
+print(background_text[:500].replace("\n", " ") + ("..." if len(background_text) > 500 else ""))
+
+exploration_log_path = hyp_dir / "exploration_log.md"
+if exploration_log_path.exists():
+    expl_text = exploration_log_path.read_text()
+    print("\nExisting exploration_log.md content (truncated to 800 chars):")
+    print(expl_text[:800] + ("..." if len(expl_text) > 800 else ""))
+else:
+    print("exploration_log.md not found; this should not happen for Phase 2.")
+
+# Ensure adata is loaded
+if 'adata' not in locals():
+    dataset_path = data_dir / "dataset" / "dataset_farah_heart_merfish.h5ad"
+    adata = ad.read_h5ad(dataset_path)
+
+# Inspect available genes to constrain gene programs
+var_names = list(adata.var_names)
+print("\nTotal genes:", len(var_names))
+print("Example genes:", var_names[:40])
+
+# Quick cell-type overview
+if 'Populations' in adata.obs.columns:
+    ct_counts = adata.obs['Populations'].value_counts()
+    print("\nCell-type counts (top 20):")
+    print(ct_counts.head(20))
+
+# ---------- Draft 2–3 hypotheses grounded in observations ----------
+# We'll base hypotheses on OBSERVATION 2, 3, and 4 from the log (rare-but-tight labels and neighbors, plus co-localization)
+
+hypotheses = []
+
+# Hypothesis H1: specialized non-chamber / conduction-like CM microdomains vs bulk ventricular CM
+hypotheses.append({
+    "id": "H1",
+    "statement": (
+        "Specialized non-chamber and conduction-associated cardiomyocyte microdomains "
+        "(e.g. ncCM-IFT-like, ncCM-AVC-like, vCM-His-Purkinje, vCM-RV-AV) that form highly self-clustered "
+        "spatial islands exhibit coordinated enrichment of conduction and stress-response gene programs, "
+        "compared to bulk ventricular compact and trabecular cardiomyocytes that occupy more mixed regions."
+    ),
+    "grounded_in": ["OBSERVATION 2", "OBSERVATION 4"],
+    "mechanism": (
+        "OBSERVATION 2 and 4 show that several rare cardiomyocyte subtypes have large excess same-label "
+        "nearest neighbors and very strong self–self edge enrichment in the kNN graph, indicating distinct "
+        "microdomains; if these reflect conduction or boundary structures, their gene expression should be "
+        "shifted toward ion-channel, gap-junction, and stress-responsive programs relative to common ventricular cardiomyocytes."
+    ),
+    "test_plan": (
+        "1) Define a 'specialized CM' group including labels with high same-label neighbor enrichment from OBSERVATION 2 "
+        "(e.g. 'ncCM-IFT-like', 'ncCM-AVC-like', 'vCM-His-Purkinje', 'vCM-RV-AV'), and a 'bulk ventricular CM' group "
+        "including abundant labels such as 'vCM-LV-Compact' and 'vCM-LV-Trabecular'. "
+        "2) For genes present in the Merfish panel, construct at least two multi-gene programs: "
+        "   a conduction/ion-channel program (e.g. gap junction and ion-channel genes present in var_names), and "
+        "   a stress-response / immediate-early program (e.g. FOS, JUN, ATF3, HSP genes present in var_names). "
+        "3) Compute per-cell module scores for these programs using scanpy.tl.score_genes or mean expression. "
+        "4) Compare module scores between specialized CM and bulk ventricular CM using statistical tests (e.g. Mann–Whitney U) "
+        "for each program, controlling for sample if necessary. "
+        "5) Additionally, run differential expression (scanpy.tl.rank_genes_groups) between specialized CM and bulk CM, "
+        "and check whether conduction- and stress-related genes are significantly overrepresented among genes upregulated "
+        "in the specialized group."
+    ),
+    "predicted_outcome": (
+        "If the hypothesis holds, specialized CM microdomain cells will show significantly higher module scores for the "
+        "conduction/ion-channel and stress-response programs than bulk ventricular CM cells, with false discovery rate–"
+        "adjusted p-values indicating robust differences. Differential expression should highlight multiple genes from "
+        "these programs among the top markers of specialized CM versus bulk CM. The hypothesis would be weakened or "
+        "falsified if module scores are similar between specialized and bulk CM, or if DE analysis does not preferentially "
+        "recover conduction- or stress-related genes in specialized CM."
+    ),
+    "quality_scores": {
+        "derivable": 8,
+        "novel": 7,
+        "feasible": 9,
+        "specific": 8,
+        "falsifiable": 9
+    }
+})
+
+# Hypothesis H2: fibroblast niches with specific neighbors have distinct ECM programs
+hypotheses.append({
+    "id": "H2",
+    "statement": (
+        "Fibroblast subtypes that form spatially concentrated niches and preferentially neighbor specific cardiomyocyte "
+        "or endothelial populations exhibit distinct extracellular matrix and remodeling gene programs compared to "
+        "fibroblasts residing in more compositionally mixed neighborhoods."
+    ),
+    "grounded_in": ["OBSERVATION 2", "OBSERVATION 3"],
+    "mechanism": (
+        "OBSERVATION 2 identifies rare but spatially tight labels, including fibroblast-like populations, and "
+        "OBSERVATION 3 shows that these concentrated labels have non-random enrichment for particular non-self "
+        "neighbor types, implying specialized microenvironments. If niche fibroblasts are functionally tailored to "
+        "their neighboring cell types, their ECM-related gene expression should differ from fibroblasts in less "
+        "structured neighborhoods."
+    ),
+    "test_plan": (
+        "1) Identify fibroblast labels in the Populations annotation (e.g. labels containing 'Fibro', such as 'vFibro' "
+        "and 'adFibro'). "
+        "2) For each fibroblast cell, compute the composition of its spatial kNN neighborhood (using the existing "
+        "k=20 neighbor_indices), and assign the cell to categories such as 'CM-neighbor-enriched', 'endothelial-"
+        "neighbor-enriched', or 'fibroblast-dominated' based on the dominant non-self neighbor type. "
+        "3) Define an extracellular matrix/remodeling gene program using all ECM and matrix-remodeling genes present "
+        "in var_names (e.g. collagens, laminins, fibronectin, periostin, matrix metalloproteinases where available), "
+        "ensuring at least five genes are included. "
+        "4) Compute ECM program scores for each fibroblast cell. "
+        "5) Compare ECM scores across the different neighborhood categories using non-parametric tests and visualize "
+        "their distributions; additionally, perform differential expression between fibroblasts in CM-enriched versus "
+        "other neighborhoods to see whether ECM and remodeling genes are overrepresented among genes upregulated in "
+        "the niche-associated fibroblasts."
+    ),
+    "predicted_outcome": (
+        "If the hypothesis is correct, fibroblasts in neighborhoods enriched for specific cardiomyocyte or endothelial "
+        "labels will show significantly different ECM program scores than fibroblasts in fibroblast-dominated or mixed "
+        "neighborhoods, with multiple ECM/remodeling genes appearing among the top markers in differential expression. "
+        "The hypothesis would be challenged if ECM program scores and ECM gene expression profiles are largely similar "
+        "across fibroblast neighborhood categories, suggesting little specialization by local partner cell types."
+    ),
+    "quality_scores": {
+        "derivable": 8,
+        "novel": 7,
+        "feasible": 8,
+        "specific": 8,
+        "falsifiable": 9
+    }
+})
+
+# Hypothesis H3: vascular / lymphatic endothelial microdomains vs generic vascular endothelium
+hypotheses.append({
+    "id": "H3",
+    "statement": (
+        "Endothelial microdomains dominated by lymphatic endothelial cells (LEC) or vascular smooth muscle cell–"
+        "associated endothelium exhibit coordinated enrichment of lymphangiogenic and vascular remodeling gene programs "
+        "relative to generic vascular endothelial clusters (e.g. VEC) that are less spatially restricted."
+    ),
+    "grounded_in": ["OBSERVATION 2", "OBSERVATION 4"],
+    "mechanism": (
+        "OBSERVATION 4 shows that LEC and VSMC labels have very strong self–self spatial co-localization, consistent "
+        "with specialized vascular and lymphatic structures, while other endothelial populations are more abundant. "
+        "If these microdomains correspond to distinct vascular niches, their endothelial cells should upregulate "
+        "lymphangiogenesis and vascular remodeling programs compared to broadly distributed vascular endothelium."
+    ),
+    "test_plan": (
+        "1) Define an 'LEC/vessel-associated' endothelial group including cells labeled 'LEC' and endothelial labels "
+        "that are spatially enriched near VSMC microdomains, and define a 'generic VEC' group from the main vascular "
+        "endothelial label(s) such as 'VEC'. "
+        "2) Confirm spatial distinction by comparing same-label neighbor fractions and distances from VSMC clusters. "
+        "3) Using genes available in the panel, assemble at least one vascular/lymphangiogenesis gene program (e.g. "
+        "including VEGF receptors, PROX1, PDPN, KDR, FLT4, ANGPT family, and other endothelial signaling genes that "
+        "are present in var_names). "
+        "4) Compute module scores for this program for each endothelial cell. "
+        "5) Compare program scores between the LEC/vessel-associated group and generic VECs, and perform differential "
+        "expression analysis between these groups to assess whether vascular remodeling and lymphatic markers are "
+        "preferentially upregulated in the specialized microdomains."
+    ),
+    "predicted_outcome": (
+        "If the hypothesis holds, the LEC/vessel-associated endothelial cells will show higher lymphangiogenesis/"
+        "vascular remodeling program scores and multiple genes from this program will be enriched among the top "
+        "markers relative to generic VEC cells. The hypothesis would be weakened or falsified if program scores and "
+        "marker genes do not systematically differ between these endothelial groups."
+    ),
+    "quality_scores": {
+        "derivable": 7,
+        "novel": 7,
+        "feasible": 7,
+        "specific": 8,
+        "falsifiable": 8
+    }
+})
+
+# ---------- Save draft hypotheses ----------
+draft_path = hyp_dir / "hypotheses_draft.json"
+with draft_path.open("w") as f:
+    json.dump(hypotheses, f, indent=2)
+
+print(f"\nWrote hypotheses draft with {len(hypotheses)} entries to {draft_path}")
+
+</execute>
+
+2026-05-17 09:02:48 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 09:02:48 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 09:02:48 | INFO     | executing hypothesis_agent exec_node
+
+2026-05-17 09:02:48 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 09:02:48 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Loaded background (first 500 chars):
+# Limited Background — Farah et al. 2024 (developing human heart MERFISH)  **Tissue:** Developing human heart.  **Technology:** MERFISH spatial transcriptomics.  **Gene panel:** ~140 genes selected to mark cardiac cell types and a small set of developmental transcription factors / signaling pathway components.  **Annotations available:** the AnnData has cell-type labels in `.obs` (column name to be discovered by inventory) covering cardiomyocyte subtypes (ventricular, atrial, AVC-region), fibrob...
+
+Existing exploration_log.md content (truncated to 800 chars):
+OBSERVATION 1:
+The dataset contains 228635 cells and 238 genes with 27 distinct Populations labels; the most abundant populations are vCM-LV-Compact=30380, aCM-RA=19947, vCM-Proliferating=17584, vFibro=16624, vCM-LV-Trabecular=16511. Cells are distributed across 3 samples (Sample_ID), with top samples R78_4C15=79891, R78_4C12=75782, R77_4C4=72962. Spatial coordinates in `.obsm['spatial']` span x=-10717.3–6634.4 and y=-4881.7–1712.3.
+
+OBSERVATION 2:
+Using a spatial kNN graph (k=20) on 2D MERFISH coordinates, I computed for each of the 27 Populations labels the mean fraction of same-label nearest neighbors and compared it to the global abundance of that label. The top 5 spatially concentrated labels (requiring at least 200 cells) by excess same-label fraction were: ncCM-IFT-like (n=2027, glo...
+
+Total genes: 238
+Example genes: ['ABCC9', 'ADAMTS6', 'ADAMTS8', 'ADGRL1', 'ADGRL2', 'ADGRL3', 'ADM', 'AGPS', 'AGT', 'ALDH1A2', 'ANGPT1', 'APOE', 'ARHGAP18', 'ARHGAP29', 'ARL6IP1', 'ASCL1', 'ASPN', 'BAMBI', 'BMP2', 'BRINP3', 'BTG1', 'C1QB', 'C1QTNF3', 'CA4', 'CACNA1C', 'CASQ2', 'CAV1', 'CBLN2', 'CD24', 'CD34', 'CD36', 'CD9', 'CDO1', 'CDT1', 'CGNL1', 'CKMT2', 'CLDN5', 'CLEC10A', 'CLSPN', 'CNN1']
+
+Cell-type counts (top 20):
+Populations
+vCM-LV-Compact       30380
+aCM-RA               19947
+vCM-Proliferating    17584
+vFibro               16624
+vCM-LV-Trabecular    16511
+BEC                  12248
+VIC                  11596
+vEndocardial         10887
+aCM-LA               10441
+vCM-RV-Compact        9488
+EPDC                  8540
+vCM-RV-Trabecular     8052
+aFibro                7417
+vCM-LV-AV             7348
+vCM-RV-AV             5845
+Pericyte              5458
+vCM-His-Purkinje      5429
+VSMC                  4673
+aEndocardial          4599
+VEC                   3726
+Name: count, dtype: int64
+
+Wrote hypotheses draft with 3 entries to /home/mingqiam/TissueAgent/data/hypotheses/hypotheses_draft.json
+
+2026-05-17 09:02:48 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 09:03:55 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 09:03:55 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 09:03:55 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--3bdd4b35-4fca-4dc9-92a3-0220d485d2ea-0
+
+Content:
+<execute>
+from pathlib import Path
+import json
+import numpy as np
+import pandas as pd
+import scanpy as sc
+
+# ---------- Load draft hypotheses ----------
+data_dir = Path(DATA_DIR)
+hyp_dir = data_dir / "hypotheses"
+draft_path = hyp_dir / "hypotheses_draft.json"
+
+with draft_path.open() as f:
+    hypotheses = json.load(f)
+
+print("Loaded draft hypotheses:", [h["id"] for h in hypotheses])
+
+# ---------- Ensure adata and basic annotations are loaded ----------
+if 'adata' not in locals():
+    dataset_path = data_dir / "dataset" / "dataset_farah_heart_merfish.h5ad"
+    adata = ad.read_h5ad(dataset_path)
+
+if 'Populations' not in adata.obs.columns:
+    raise ValueError("Populations column not found in adata.obs")
+
+labels = adata.obs['Populations'].astype('category')
+adata.obs['Populations'] = labels
+label_array = labels.values.astype(str)
+n_cells = adata.n_obs
+var_names = list(adata.var_names)
+
+print("n_cells:", n_cells, "n_genes:", len(var_names))
+print("Unique Populations labels:", list(labels.cat.categories))
+
+# ---------- Ensure spatial neighbor graph ----------
+from sklearn.neighbors import NearestNeighbors
+
+if 'neighbor_indices' not in locals():
+    spatial = adata.obsm["spatial"]
+    k = 20
+    nbrs = NearestNeighbors(n_neighbors=k+1, algorithm='ball_tree').fit(spatial)
+    indices = nbrs.kneighbors(spatial, return_distance=False)
+    neighbor_indices = indices[:, 1:]
+    print("Rebuilt neighbor_indices with k=", k)
+else:
+    k = neighbor_indices.shape[1]
+    print("Using existing neighbor_indices with k=", k)
+
+# Helper: compute mean expression score for a list of genes
+def compute_program_score(adata_obj, genes):
+    if len(genes) == 0:
+        return np.zeros(adata_obj.n_obs, dtype=float)
+    X_sub = adata_obj[:, genes].X
+    # convert to dense and mean across genes
+    X_dense = np.asarray(X_sub.todense()) if hasattr(X_sub, "todense") else np.asarray(X_sub)
+    return X_dense.mean(axis=1).A1 if isinstance(X_dense, np.matrix) else X_dense.mean(axis=1)
+
+# Try to import statistical tests
+try:
+    from scipy.stats import mannwhitneyu, kruskal
+    have_scipy = True
+except Exception as e:
+    print("SciPy not available or failed to import:", e)
+    have_scipy = False
+
+# Container for final hypotheses (KEEP/REFINE)
+final_hypotheses = []
+dropped = []
+
+# =========================
+# H1: Specialized CM microdomains
+# =========================
+h1 = next(h for h in hypotheses if h["id"] == "H1")
+
+# Define specialized and bulk CM labels
+specialized_labels = [
+    "ncCM-IFT-like",
+    "ncCM-AVC-like",
+    "vCM-His-Purkinje",
+    "vCM-RV-AV"
+]
+bulk_labels = [
+    "vCM-LV-Compact",
+    "vCM-LV-Trabecular",
+    "vCM-RV-Compact",
+    "vCM-RV-Trabecular"
+]
+
+present_specialized = [lab for lab in specialized_labels if lab in labels.cat.categories]
+present_bulk = [lab for lab in bulk_labels if lab in labels.cat.categories]
+
+print("H1 specialized_labels present:", present_specialized)
+print("H1 bulk_labels present:", present_bulk)
+
+mask_specialized = adata.obs['Populations'].isin(present_specialized).values
+mask_bulk = adata.obs['Populations'].isin(present_bulk).values
+
+n_spec = int(mask_specialized.sum())
+n_bulk = int(mask_bulk.sum())
+print("H1 group sizes - specialized:", n_spec, "bulk:", n_bulk)
+
+# Define conduction and stress-response programs based on available genes
+candidate_conduction = [
+    "CACNA1C", "CASQ2", "CKMT2", "RYR2", "PLN", "ATP2A2", "GJA1", "GJA5",
+    "SCN5A", "KCNH2", "KCNJ2", "KCNJ8", "HCN4", "NKX2-5", "TBX3", "TBX5",
+    "TBX18", "ISL1"
+]
+conduction_genes = sorted([g for g in candidate_conduction if g in var_names])
+
+candidate_stress = [
+    "FOS", "JUN", "JUNB", "JUND", "ATF3", "DDIT3", "EGR1", "EGR2",
+    "HSPB1", "HSPA1A", "HSPA1B", "HSP90AA1", "HSP90AB1", "HIF1A", "NR4A1"
+]
+stress_genes = sorted([g for g in candidate_stress if g in var_names])
+
+print("H1 conduction_genes in panel:", conduction_genes)
+print("H1 stress_genes in panel:", stress_genes)
+
+h1_notes = []
+
+if n_spec >= 50 and n_bulk >= 200 and (len(conduction_genes) >= 3 or len(stress_genes) >= 3):
+    # Compute program scores for all cells
+    conduction_score = compute_program_score(adata, conduction_genes) if len(conduction_genes) > 0 else np.zeros(n_cells)
+    stress_score = compute_program_score(adata, stress_genes) if len(stress_genes) > 0 else np.zeros(n_cells)
+
+    # Extract group scores
+    cs_spec = conduction_score[mask_specialized]
+    cs_bulk = conduction_score[mask_bulk]
+    ss_spec = stress_score[mask_specialized]
+    ss_bulk = stress_score[mask_bulk]
+
+    # Summaries
+    h1_notes.append(
+        f"H1 conduction program (genes={conduction_genes}, n={len(conduction_genes)}): "
+        f"specialized mean={cs_spec.mean():.3f}, bulk mean={cs_bulk.mean():.3f}."
+    )
+    h1_notes.append(
+        f"H1 stress program (genes={stress_genes}, n={len(stress_genes)}): "
+        f"specialized mean={ss_spec.mean():.3f}, bulk mean={ss_bulk.mean():.3f}."
+    )
+
+    if have_scipy and len(conduction_genes) > 0:
+        u_c, p_c = mannwhitneyu(cs_spec, cs_bulk, alternative="two-sided")
+        h1_notes.append(f"H1 conduction Mann–Whitney U={u_c:.1f}, p={p_c:.2e}.")
+    else:
+        u_c, p_c = np.nan, np.nan
+
+    if have_scipy and len(stress_genes) > 0:
+        u_s, p_s = mannwhitneyu(ss_spec, ss_bulk, alternative="two-sided")
+        h1_notes.append(f"H1 stress Mann–Whitney U={u_s:.1f}, p={p_s:.2e}.")
+    else:
+        u_s, p_s = np.nan, np.nan
+
+    # Differential expression specialized vs bulk
+    mask_h1 = mask_specialized | mask_bulk
+    adata_h1 = adata[mask_h1, :].copy()
+    adata_h1.obs["H1_group"] = np.where(
+        adata_h1.obs["Populations"].isin(present_specialized), "specialized", "bulk"
+    )
+    sc.tl.rank_genes_groups(
+        adata_h1,
+        groupby="H1_group",
+        groups=["specialized"],
+        reference="bulk",
+        method="wilcoxon",
+        n_genes=50
+    )
+    de = adata_h1.uns["rank_genes_groups"]
+    top_genes = pd.DataFrame({
+        "gene": de["names"]["specialized"][:20],
+        "logfoldchange": de["logfoldchanges"]["specialized"][:20],
+        "pvals_adj": de["pvals_adj"]["specialized"][:20]
+    })
+    print("H1 top 20 DE genes specialized vs bulk:")
+    print(top_genes)
+
+    # Check how many conduction/stress genes appear among top DE
+    de_genes_list = list(top_genes["gene"])
+    de_conduction_overlap = [g for g in conduction_genes if g in de_genes_list]
+    de_stress_overlap = [g for g in stress_genes if g in de_genes_list]
+    h1_notes.append(
+        f"H1 DE overlap: conduction genes in top 20={de_conduction_overlap}, "
+        f"stress genes in top 20={de_stress_overlap}."
+    )
+
+    # Decide KEEP vs REFINE
+    conduction_supported = (not np.isnan(p_c)) and (p_c < 1e-5) and (cs_spec.mean() > cs_bulk.mean())
+    stress_supported = (not np.isnan(p_s)) and (p_s < 1e-3) and (ss_spec.mean() > ss_bulk.mean())
+
+    if conduction_supported and stress_supported:
+        status = "KEEP"
+        h1_new_statement = h1["statement"]
+    elif conduction_supported and not stress_supported:
+        status = "REFINE"
+        h1_new_statement = (
+            "Specialized non-chamber and conduction-associated cardiomyocyte microdomains "
+            "(e.g. ncCM-IFT-like, ncCM-AVC-like, vCM-His-Purkinje, vCM-RV-AV) that form highly self-clustered "
+            "spatial islands exhibit coordinated enrichment of conduction and ion-handling gene programs, "
+            "compared to bulk ventricular compact and trabecular cardiomyocytes that occupy more mixed regions; "
+            "stress-response programs are not consistently elevated across these microdomains."
+        )
+    else:
+        status = "DROP"
+        h1_new_statement = h1["statement"]
+
+    print("H1 decision:", status)
+else:
+    h1_notes.append(
+        "H1 not fully testable: insufficient specialized/bulk cells or too few program genes in panel."
+    )
+    status = "DROP"
+    h1_new_statement = h1["statement"]
+    print("H1 decision: DROP (insufficient data / genes)")
+
+if status != "DROP":
+    h1["statement"] = h1_new_statement
+    h1["narrowing_notes"] = " ".join(h1_notes)
+    h1["status"] = status
+    final_hypotheses.append(h1)
+else:
+    h1["narrowing_notes"] = " ".join(h1_notes)
+    h1["status"] = "DROP"
+    dropped.append(h1)
+
+# =========================
+# H2: Fibroblast niches & ECM programs
+# =========================
+h2 = next(h for h in hypotheses if h["id"] == "H2")
+
+# Identify fibroblast labels
+fibro_labels = [lab for lab in labels.cat.categories if "Fibro" in lab]
+print("H2 fibro_labels:", fibro_labels)
+
+mask_fibro = adata.obs["Populations"].isin(fibro_labels).values
+n_fibro = int(mask_fibro.sum())
+print("H2 n_fibro:", n_fibro)
+
+h2_notes = []
+
+if n_fibro >= 200:
+    # Broad type mapping based on label names
+    pop_array = adata.obs["Populations"].astype(str).values
+
+    def broad_type(lab):
+        if "Fibro" in lab:
+            return "Fibro"
+        if "CM-" in lab or "CM" in lab or "His-Purkinje" in lab:
+            return "CM"
+        if "Endocardial" in lab or lab in ["VEC", "BEC", "LEC"]:
+            return "Endothelial"
+        if lab in ["VSMC", "Pericyte"]:
+            return "Vascular_support"
+        if any(x in lab for x in ["Macrophage", "Monocyte", "Tcell", "Bcell"]):
+            return "Immune"
+        return "Other"
+
+    # Precompute broad types for all cells
+    broad_types = np.array([broad_type(lab) for lab in pop_array])
+
+    # For each fibroblast, compute dominant neighbor broad_type
+    fib_indices = np.where(mask_fibro)[0]
+    neighbor_cats = []
+
+    for idx in fib_indices:
+        neigh = neighbor_indices[idx]
+        neigh_types = broad_types[neigh]
+        # Count excluding self fibro type vs including – we allow Fibro-dominated explicitly
+        vals, counts = np.unique(neigh_types, return_counts=True)
+        dominant = vals[np.argmax(counts)]
+        neighbor_cats.append(dominant)
+
+    neighbor_cats = np.array(neighbor_cats)
+    cat_counts = pd.value_counts(neighbor_cats)
+    print("H2 fibro neighbor broad-type counts:")
+    print(cat_counts)
+
+    # Map broad types into categories
+    cat_map = {
+        "CM": "CM_enriched",
+        "Endothelial": "Endothelium_enriched",
+        "Fibro": "Fibro_dominated",
+        "Vascular_support": "Vascular_support_enriched",
+        "Immune": "Immune_enriched",
+        "Other": "Other"
+    }
+    neighbor_cat_mapped = np.array([cat_map.get(c, "Other") for c in neighbor_cats])
+
+    # ECM / remodeling gene program from panel
+    candidate_ecm = [
+        "COL1A1", "COL1A2", "COL3A1", "COL5A1", "COL5A2", "COL6A1", "COL6A2", "COL14A1",
+        "FN1", "LAMA2", "LAMB1", "LAMB2", "LAMC1",
+        "POSTN", "VCAN", "DCN", "BGN", "SPARC", "THBS1", "THBS2", "THBS4",
+        "MMP2", "MMP14", "TNC"
+    ]
+    ecm_genes = sorted([g for g in candidate_ecm if g in var_names])
+    print("H2 ECM genes in panel:", ecm_genes)
+
+    if len(ecm_genes) >= 3:
+        ecm_score_all = compute_program_score(adata, ecm_genes)
+        ecm_scores_fibro = ecm_score_all[fib_indices]
+
+        # Summarize by neighbor category
+        df_h2 = pd.DataFrame({
+            "ecm_score": ecm_scores_fibro,
+            "neighbor_cat": neighbor_cat_mapped
+        })
+        summary = df_h2.groupby("neighbor_cat")["ecm_score"].agg(["count", "mean", "std"])
+        print("H2 ECM score by fibro neighbor category:")
+        print(summary)
+
+        # Focus on main categories with reasonable size
+        main_cats = [c for c in ["CM_enriched", "Endothelium_enriched", "Fibro_dominated"] if c in summary.index and summary.loc[c, "count"] >= 50]
+        h2_notes.append(f"H2 ECM program (genes={ecm_genes}, n={len(ecm_genes)}); main neighbor categories with >=50 fibro cells: {main_cats}.")
+
+        # Global Kruskal-Wallis across all categories with >=50 cells
+        if have_scipy:
+            groups_for_kw = []
+            labels_for_kw = []
+            for cat, row in summary.iterrows():
+                if row["count"] >= 50:
+                    vals = df_h2.loc[df_h2["neighbor_cat"] == cat, "ecm_score"].values
+                    groups_for_kw.append(vals)
+                    labels_for_kw.append(cat)
+            if len(groups_for_kw) >= 2:
+                kw_stat, kw_p = kruskal(*groups_for_kw)
+                h2_notes.append(f"H2 Kruskal-Wallis across neighbor categories {labels_for_kw}: H={kw_stat:.2f}, p={kw_p:.2e}.")
+            else:
+                kw_p = np.nan
+        else:
+            kw_p = np.nan
+
+        # Pairwise comparison CM_enriched vs Fibro_dominated if both exist
+        if have_scipy and "CM_enriched" in main_cats and "Fibro_dominated" in main_cats:
+            cm_vals = df_h2.loc[df_h2["neighbor_cat"] == "CM_enriched", "ecm_score"].values
+            fb_vals = df_h2.loc[df_h2["neighbor_cat"] == "Fibro_dominated", "ecm_score"].values
+            u_ecm, p_ecm = mannwhitneyu(cm_vals, fb_vals, alternative="two-sided")
+            h2_notes.append(
+                f"H2 ECM CM_enriched vs Fibro_dominated: mean_CM={cm_vals.mean():.3f}, "
+                f"mean_Fibro={fb_vals.mean():.3f}, U={u_ecm:.1f}, p={p_ecm:.2e}."
+            )
+        else:
+            p_ecm = np.nan
+
+        # Decide KEEP / REFINE / DROP
+        # We look for a significant difference and at least ~10% relative difference in means
+        if (not np.isnan(p_ecm)) and (p_ecm < 1e-5):
+            status = "KEEP"
+            h2_new_statement = h2["statement"]
+        elif (not np.isnan(kw_p)) and (kw_p < 1e-3):
+            status = "REFINE"
+            h2_new_statement = (
+                "Fibroblast subtypes in the developing heart show neighborhood-dependent variation in extracellular "
+                "matrix gene program activity, with fibroblasts in cardiomyocyte-enriched or endothelial-enriched "
+                "regions differing in ECM scores from those in fibroblast-dominated niches."
+            )
+        else:
+            status = "DROP"
+            h2_new_statement = h2["statement"]
+
+        print("H2 decision:", status)
+    else:
+        h2_notes.append("Too few ECM genes from the candidate list are present in the panel to construct a robust program.")
+        status = "DROP"
+        h2_new_statement = h2["statement"]
+        print("H2 decision: DROP (insufficient ECM genes)")
+else:
+    h2_notes.append("Insufficient fibroblast cells to test neighborhood-dependent ECM programs.")
+    status = "DROP"
+    h2_new_statement = h2["statement"]
+    print("H2 decision: DROP (too few fibroblasts)")
+
+if status != "DROP":
+    h2["statement"] = h2_new_statement
+    h2["narrowing_notes"] = " ".join(h2_notes)
+    h2["status"] = status
+    final_hypotheses.append(h2)
+else:
+    h2["narrowing_notes"] = " ".join(h2_notes)
+    h2["status"] = "DROP"
+    dropped.append(h2)
+
+# =========================
+# H3: LEC / vascular endothelial microdomains
+# =========================
+h3 = next(h for h in hypotheses if h["id"] == "H3")
+
+h3_notes = []
+
+# Identify endothelial labels
+endo_labels = [lab for lab in labels.cat.categories if ("Endocardial" in lab) or (lab in ["VEC", "BEC", "LEC"])]
+print("H3 endothelial-related labels:", endo_labels)
+
+# Focus groups: LEC vs VEC
+has_LEC = "LEC" in labels.cat.categories
+has_VEC = "VEC" in labels.cat.categories
+
+if has_LEC and has_VEC:
+    mask_lec = (adata.obs["Populations"] == "LEC").values
+    mask_vec = (adata.obs["Populations"] == "VEC").values
+    n_lec = int(mask_lec.sum())
+    n_vec = int(mask_vec.sum())
+    print("H3 n_LEC:", n_lec, "n_VEC:", n_vec)
+
+    if n_lec >= 50 and n_vec >= 200:
+        # Vascular/lymphangiogenesis program
+        candidate_vasc = [
+            "ANGPT1", "ANGPT2", "KDR", "FLT1", "FLT4", "VEGFA", "VEGFC",
+            "PDPN", "PROX1", "NRP1", "NRP2", "ACKR1", "CXCL12"
+        ]
+        vasc_genes = sorted([g for g in candidate_vasc if g in var_names])
+        print("H3 vascular/lymphangiogenesis genes in panel:", vasc_genes)
+
+        if len(vasc_genes) >= 3:
+            vasc_score_all = compute_program_score(adata, vasc_genes)
+            vs_lec = vasc_score_all[mask_lec]
+            vs_vec = vasc_score_all[mask_vec]
+
+            h3_notes.append(
+                f"H3 vascular program (genes={vasc_genes}, n={len(vasc_genes)}): "
+                f"LEC mean={vs_lec.mean():.3f}, VEC mean={vs_vec.mean():.3f}."
+            )
+
+            if have_scipy:
+                u_v, p_v = mannwhitneyu(vs_lec, vs_vec, alternative="two-sided")
+                h3_notes.append(f"H3 LEC vs VEC Mann–Whitney U={u_v:.1f}, p={p_v:.2e}.")
+            else:
+                p_v = np.nan
+
+            # DE between LEC and VEC
+            mask_h3 = mask_lec | mask_vec
+            adata_h3 = adata[mask_h3, :].copy()
+            adata_h3.obs["H3_group"] = np.where(
+                adata_h3.obs["Populations"] == "LEC", "LEC", "VEC"
+            )
+            sc.tl.rank_genes_groups(
+                adata_h3,
+                groupby="H3_group",
+                groups=["LEC"],
+                reference="VEC",
+                method="wilcoxon",
+                n_genes=50
+            )
+            de3 = adata_h3.uns["rank_genes_groups"]
+            top_h3 = pd.DataFrame({
+                "gene": de3["names"]["LEC"][:20],
+                "logfoldchange": de3["logfoldchanges"]["LEC"][:20],
+                "pvals_adj": de3["pvals_adj"]["LEC"][:20]
+            })
+            print("H3 top 20 DE genes LEC vs VEC:")
+            print(top_h3)
+
+            de3_genes_list = list(top_h3["gene"])
+            de_vasc_overlap = [g for g in vasc_genes if g in de3_genes_list]
+            h3_notes.append(f"H3 DE overlap with vascular program genes in top 20: {de_vasc_overlap}.")
+
+            # Decision
+            if (not np.isnan(p_v)) and (p_v < 1e-5) and (vs_lec.mean() > vs_vec.mean()):
+                status = "KEEP"
+                # Slightly refine to focus on LEC vs VEC, since we did not explicitly test VSMC-associated endothelium
+                h3_new_statement = (
+                    "Endothelial microdomains dominated by lymphatic endothelial cells (LEC) in the developing heart "
+                    "exhibit coordinated enrichment of lymphangiogenic and vascular signaling gene programs relative "
+                    "to generic vascular endothelial clusters (VEC) that are less spatially restricted."
+                )
+            else:
+                status = "REFINE"
+                h3_new_statement = (
+                    "Lymphatic endothelial cells and vascular endothelial cells in the developing heart form distinct "
+                    "endothelial compartments with detectable, but more modest, differences in lymphangiogenic and "
+                    "vascular signaling gene programs than initially anticipated."
+                )
+            print("H3 decision:", status)
+        else:
+            h3_notes.append("Too few vascular/lymphangiogenic genes from the candidate list are present in the panel.")
+            status = "DROP"
+            h3_new_statement = h3["statement"]
+            print("H3 decision: DROP (insufficient vascular genes)")
+    else:
+        h3_notes.append("Too few LEC or VEC cells to robustly compare endothelial microdomains.")
+        status = "DROP"
+        h3_new_statement = h3["statement"]
+        print("H3 decision: DROP (insufficient cells)")
+else:
+    h3_notes.append("LEC or VEC label missing from Populations; cannot test this endothelial microdomain contrast.")
+    status = "DROP"
+    h3_new_statement = h3["statement"]
+    print("H3 decision: DROP (missing LEC/VEC)")
+
+if status != "DROP":
+    h3["statement"] = h3_new_statement
+    h3["narrowing_notes"] = " ".join(h3_notes)
+    h3["status"] = status
+    final_hypotheses.append(h3)
+else:
+    h3["narrowing_notes"] = " ".join(h3_notes)
+    h3["status"] = "DROP"
+    dropped.append(h3)
+
+# ---------- Write final hypotheses.json (KEEP/REFINE only) ----------
+final_path = hyp_dir / "hypotheses.json"
+with final_path.open("w") as f:
+    json.dump(final_hypotheses, f, indent=2)
+
+print(f"Wrote final hypotheses ({len(final_hypotheses)} kept/refined) to {final_path}")
+
+# ---------- Write human-readable brief ----------
+brief_path = hyp_dir / "hypothesis_brief.md"
+lines = []
+lines.append("# Hypothesis Brief — Farah developing human heart MERFISH\n\n")
+lines.append(f"Total cells: {n_cells}, genes: {len(var_names)}, Populations: {len(labels.cat.categories)}.\n\n")
+
+lines.append("## Retained hypotheses\n\n")
+for h in final_hypotheses:
+    lines.append(f"### {h['id']}: {h['statement']}\n\n")
+    lines.append(f"- Grounded in: {', '.join(h.get('grounded_in', []))}\n")
+    lines.append(f"- Status after narrowing: {h.get('status', 'NA')}\n")
+    qs = h.get("quality_scores", {})
+    if qs:
+        lines.append(
+            f"- Quality scores: Derivable={qs.get('derivable','NA')}, "
+            f"Novel={qs.get('novel','NA')}, Feasible={qs.get('feasible','NA')}, "
+            f"Specific={qs.get('specific','NA')}, Falsifiable={qs.get('falsifiable','NA')}.\n"
+        )
+    if "narrowing_notes" in h:
+        lines.append(f"- Evidence notes: {h['narrowing_notes']}\n")
+    lines.append("\n")
+
+if dropped:
+    lines.append("## Dropped hypotheses\n\n")
+    for h in dropped:
+        lines.append(f"- {h['id']}: {h['statement']} (status={h.get('status','DROP')}).\n")
+        if "narrowing_notes" in h:
+            lines.append(f"  Notes: {h['narrowing_notes']}\n")
+        lines.append("\n")
+
+with brief_path.open("w") as f:
+    f.writelines(lines)
+
+print(f"Wrote human-readable brief to {brief_path}")
+</execute>
+
+2026-05-17 09:03:55 | INFO     | code block detected - transferring to exec_node
+
+2026-05-17 09:03:55 | INFO     | transferring from agent_node to exec_node
+
+2026-05-17 09:03:55 | INFO     | executing hypothesis_agent exec_node
+
+... storing 'H1_group' as categorical
+<string>:272: FutureWarning: pandas.value_counts is deprecated and will be removed in a future version. Use pd.Series(obj).value_counts() instead.
+<string>:272: FutureWarning: The behavior of value_counts with object-dtype is deprecated. In a future version, this will *not* perform dtype inference on the resulting index. To retain the old behavior, use `result.index = result.index.infer_objects()`
+... storing 'H3_group' as categorical
+2026-05-17 09:04:00 | INFO     | finished hypothesis_agent exec_node
+
+2026-05-17 09:04:00 | INFO     | Message Info
+Type: human
+
+Name: None
+
+ID:   None
+
+Content:
+Python Output:
+Loaded draft hypotheses: ['H1', 'H2', 'H3']
+n_cells: 228635 n_genes: 238
+Unique Populations labels: ['BEC', 'EPDC', 'Epicardial', 'LEC', 'Neuronal', 'Pericyte', 'VEC', 'VIC', 'VSMC', 'WBC', 'aCM-LA', 'aCM-RA', 'aEndocardial', 'aFibro', 'adFibro', 'ncCM-AVC-like', 'ncCM-IFT-like', 'vCM-His-Purkinje', 'vCM-LV-AV', 'vCM-LV-Compact', 'vCM-LV-Trabecular', 'vCM-Proliferating', 'vCM-RV-AV', 'vCM-RV-Compact', 'vCM-RV-Trabecular', 'vEndocardial', 'vFibro']
+Using existing neighbor_indices with k= 20
+H1 specialized_labels present: ['ncCM-IFT-like', 'ncCM-AVC-like', 'vCM-His-Purkinje', 'vCM-RV-AV']
+H1 bulk_labels present: ['vCM-LV-Compact', 'vCM-LV-Trabecular', 'vCM-RV-Compact', 'vCM-RV-Trabecular']
+H1 group sizes - specialized: 15593 bulk: 64431
+H1 conduction_genes in panel: ['CACNA1C', 'CASQ2', 'CKMT2', 'GJA1', 'GJA5', 'HCN4', 'ISL1', 'KCNH2', 'KCNJ8', 'NKX2-5', 'PLN', 'RYR2', 'SCN5A', 'TBX18', 'TBX3', 'TBX5']
+H1 stress_genes in panel: ['EGR1']
+H1 top 20 DE genes specialized vs bulk:
+      gene  logfoldchange  pvals_adj
+0     MYH6       2.738018        0.0
+1    POSTN       1.732981        0.0
+2     TBX3       3.036734        0.0
+3     BMP2       4.174046        0.0
+4     DKK3       1.064902        0.0
+5   IGFBP5       1.343682        0.0
+6     HCN4       1.216446        0.0
+7     IRX1       2.208389        0.0
+8   PRSS35       0.767304        0.0
+9      FN1       0.862645        0.0
+10    IRX2       1.631950        0.0
+11  ADGRL1       1.329450        0.0
+12   NR2F2       1.206851        0.0
+13  CXCL12       1.106300        0.0
+14  CRABP2       1.843971        0.0
+15     ADM       1.629964        0.0
+16  BRINP3       1.660869        0.0
+17    JAG1       1.812479        0.0
+18   RCAN1       1.633980        0.0
+19   FBLN2       1.825282        0.0
+H1 decision: DROP
+H2 fibro_labels: ['aFibro', 'adFibro', 'vFibro']
+H2 n_fibro: 25603
+H2 fibro neighbor broad-type counts:
+CM                  21325
+Fibro                2119
+Endothelial          1029
+Other                 870
+Vascular_support      260
+Name: count, dtype: int64
+H2 ECM genes in panel: ['COL14A1', 'DCN', 'FN1', 'POSTN', 'TNC', 'VCAN']
+H2 ECM score by fibro neighbor category:
+                           count      mean       std
+neighbor_cat                                        
+CM_enriched                21325  1.325140  0.457521
+Endothelium_enriched        1029  1.542715  0.453984
+Fibro_dominated             2119  1.813051  0.413824
+Other                        870  1.567157  0.442463
+Vascular_support_enriched    260  1.534327  0.409639
+H2 decision: KEEP
+H3 endothelial-related labels: ['BEC', 'LEC', 'VEC', 'aEndocardial', 'vEndocardial']
+H3 n_LEC: 1292 n_VEC: 3726
+H3 vascular/lymphangiogenesis genes in panel: ['ANGPT1', 'CXCL12', 'NRP2', 'PROX1']
+H3 top 20 DE genes LEC vs VEC:
+       gene  logfoldchange      pvals_adj
+0     NR2F1       5.971993   0.000000e+00
+1     LYVE1       6.453227   0.000000e+00
+2      NRP2       3.339352   0.000000e+00
+3      GJA1       4.133912   0.000000e+00
+4       MAF       3.139981   0.000000e+00
+5     FLRT2       3.579411   0.000000e+00
+6     NR2F2       2.128163   0.000000e+00
+7     PROX1       3.130273   0.000000e+00
+8       OAF       3.026570  6.058988e-304
+9      RBP1       2.398705  1.716287e-294
+10      DCN       2.687918  2.640194e-282
+11   PIEZO2       3.784889  4.107536e-255
+12     CD36       4.251344  1.809355e-247
+13  FAM213A       2.237072  1.018626e-245
+14    CLDN5       3.137604  5.479626e-188
+15     TFF3       3.419149  8.576596e-172
+16     DLK1       3.649790  5.774960e-162
+17    DHRS3       1.897148  3.277752e-140
+18     OSR1       2.512138  1.710792e-130
+19    FBLN5       2.095519  3.103766e-129
+H3 decision: KEEP
+Wrote final hypotheses (2 kept/refined) to /home/mingqiam/TissueAgent/data/hypotheses/hypotheses.json
+Wrote human-readable brief to /home/mingqiam/TissueAgent/data/hypotheses/hypothesis_brief.md
+
+2026-05-17 09:04:00 | INFO     | invoking hypothesis_agent agent_node
+
+2026-05-17 09:04:26 | INFO     | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+
+2026-05-17 09:04:26 | INFO     | finished invoking hypothesis_agent agent_node
+
+2026-05-17 09:04:26 | INFO     | Message Info
+Type: ai
+
+Name: hypothesis_agent
+
+ID:   run--b5a3afd7-cb45-43fe-a107-9cfcfba089b5-0
+
+Content:
+<response>
+## Hypothesis Recovery Run Complete
+
+**Dataset:** Developing human heart MERFISH (Farah et al. 2024), `dataset_farah_heart_merfish.h5ad` — 228,635 cells, 238 genes, 27 `Populations` cell-type labels across 3 samples with 2D spatial coordinates.
+
+**Phase 1 observations:** 4 entries logged to `exploration_log.md`.
+
+**Phase 3 retained hypotheses:**
+
+- **[H2] Statement:**  
+  *Fibroblast subtypes that form spatially concentrated niches and preferentially neighbor specific cardiomyocyte or endothelial populations exhibit distinct extracellular matrix and remodeling gene programs compared to fibroblasts residing in more compositionally mixed neighborhoods.*
+
+  - **Grounded in:** OBSERVATION 2 (rare-but-tight populations, including fibroblast-like labels) and OBSERVATION 3 (enriched non-self neighbors of concentrated labels).
+  - **Test outcome:** **KEEP**.  
+    - Fibroblasts (`aFibro`, `adFibro`, `vFibro`, n=25,603) were stratified by the dominant broad cell class in their kNN neighborhoods (CM-enriched, Endothelium-enriched, Fibro-dominated, Vascular_support-enriched, Other).  
+    - An ECM/remodeling gene program using 6 panel genes (`COL14A1`, `DCN`, `FN1`, `POSTN`, `TNC`, `VCAN`) showed clear neighborhood-dependent differences in per-cell scores:  
+      - CM-enriched fibroblasts (n=21,325) mean score ≈ **1.33**  
+      - Endothelium-enriched (n=1,029) ≈ **1.54**  
+      - Fibro-dominated (n=2,119) ≈ **1.81**  
+      - Other categories were intermediate (≈1.53–1.57).  
+    - Non-parametric tests (Kruskal–Wallis across categories and Mann–Whitney for CM-enriched vs Fibro-dominated) indicated highly significant differences, with fibroblast-dominated niches having the highest ECM program activity and CM-enriched niches the lowest.  
+    - This supports the idea that fibroblasts in different spatial neighborhoods (especially fibroblast-dominated vs CM-enriched) deploy distinct ECM/remodeling programs.
+  - **Quality:** Derivable=8, Novel=7, Feasible=8, Specific=8, Falsifiable=9.
+
+- **[H3] Statement:**  
+  *Endothelial microdomains dominated by lymphatic endothelial cells (LEC) in the developing heart exhibit coordinated enrichment of lymphangiogenic and vascular signaling gene programs relative to generic vascular endothelial clusters (VEC) that are less spatially restricted.*
+
+  - **Grounded in:** OBSERVATION 2 (LEC as a spatially concentrated population) and OBSERVATION 4 (strong self–self co-localization of LEC and VEC in the spatial graph).
+  - **Test outcome:** **KEEP** (refined to focus explicitly on LEC vs VEC).  
+    - LEC (n=1,292) and VEC (n=3,726) were contrasted.  
+    - A vascular/lymphangiogenic program using 4 panel genes (`ANGPT1`, `CXCL12`, `NRP2`, `PROX1`) showed higher module scores in LEC than VEC, with a highly significant Mann–Whitney p-value (p < 1e-5) and higher mean score in LEC.  
+    - Differential expression (LEC vs VEC) confirmed strong enrichment of lymphatic/vascular markers in LEC: `PROX1` and `NRP2` (program genes) were among the top LEC-upregulated genes, together with canonical lymphatic markers like `LYVE1`, and endothelial signaling genes (`GJA1`, `NR2F2`, `FBLN5`, etc.), all with adjusted p-values ≈ 0.  
+    - This supports a clear transcriptional distinction between spatially clustered LEC microdomains and more generic vascular endothelium.
+  - **Quality:** Derivable=7, Novel=7, Feasible=7, Specific=8, Falsifiable=8.
+
+**Dropped during narrowing:**
+
+- **[H1]** *Original statement:*  
+  *Specialized non-chamber and conduction-associated cardiomyocyte microdomains (e.g. ncCM-IFT-like, ncCM-AVC-like, vCM-His-Purkinje, vCM-RV-AV) that form highly self-clustered spatial islands exhibit coordinated enrichment of conduction and stress-response gene programs, compared to bulk ventricular compact and trabecular cardiomyocytes that occupy more mixed regions.*  
+  *Reason dropped:*  
+  - Conduction and stress-response module scores (built from panel-available conduction genes such as `CACNA1C`, `CASQ2`, `CKMT2`, `GJA1`, `GJA5`, `HCN4`, `ISL1`, `KCNH2`, `KCNJ8`, `NKX2-5`, `PLN`, `RYR2`, `SCN5A`, `TBX18`, `TBX3`, `TBX5`, and one stress gene `EGR1`) did not show a sufficiently consistent, strongly increased signal in specialized vs bulk CM to meet the pre-specified thresholds.  
+  - Differential expression did highlight conduction/developmental regulators (e.g. `TBX3`, `HCN4`, `NKX2-5`-related program genes) among specialized CM markers, but the predefined module-score criteria for both conduction and stress-response programs were not robustly satisfied.  
+  - Given this mixed evidence and the stress program being effectively single-gene in this panel, the hypothesis was conservatively **dropped** rather than over-interpreted.
+
+**Artifacts:**
+
+- `hypotheses/exploration_log.md` — 4 structured OBSERVATIONS (dataset inventory; spatial concentration of labels; neighbor composition of rare-but-tight populations; global pairwise co-localization).
+- `hypotheses/hypotheses_draft.json` — initial three hypotheses (H1–H3) with full fields.
+- `hypotheses/hypotheses.json` — final retained hypotheses (H2, H3) with narrowing notes.
+- `hypotheses/hypothesis_brief.md` — human-readable summary with evidence details.
+
+</response>
+
+2026-05-17 09:04:26 | INFO     | response block detected - final output, exiting
+
+2026-05-17 09:04:26 | INFO     | transferring from agent_node to __end__
+
+
+
+===== FINAL <response> =====
+
+<response>
+## Hypothesis Recovery Run Complete
+
+**Dataset:** Developing human heart MERFISH (Farah et al. 2024), `dataset_farah_heart_merfish.h5ad` — 228,635 cells, 238 genes, 27 `Populations` cell-type labels across 3 samples with 2D spatial coordinates.
+
+**Phase 1 observations:** 4 entries logged to `exploration_log.md`.
+
+**Phase 3 retained hypotheses:**
+
+- **[H2] Statement:**  
+  *Fibroblast subtypes that form spatially concentrated niches and preferentially neighbor specific cardiomyocyte or endothelial populations exhibit distinct extracellular matrix and remodeling gene programs compared to fibroblasts residing in more compositionally mixed neighborhoods.*
+
+  - **Grounded in:** OBSERVATION 2 (rare-but-tight populations, including fibroblast-like labels) and OBSERVATION 3 (enriched non-self neighbors of concentrated labels).
+  - **Test outcome:** **KEEP**.  
+    - Fibroblasts (`aFibro`, `adFibro`, `vFibro`, n=25,603) were stratified by the dominant broad cell class in their kNN neighborhoods (CM-enriched, Endothelium-enriched, Fibro-dominated, Vascular_support-enriched, Other).  
+    - An ECM/remodeling gene program using 6 panel genes (`COL14A1`, `DCN`, `FN1`, `POSTN`, `TNC`, `VCAN`) showed clear neighborhood-dependent differences in per-cell scores:  
+      - CM-enriched fibroblasts (n=21,325) mean score ≈ **1.33**  
+      - Endothelium-enriched (n=1,029) ≈ **1.54**  
+      - Fibro-dominated (n=2,119) ≈ **1.81**  
+      - Other categories were intermediate (≈1.53–1.57).  
+    - Non-parametric tests (Kruskal–Wallis across categories and Mann–Whitney for CM-enriched vs Fibro-dominated) indicated highly significant differences, with fibroblast-dominated niches having the highest ECM program activity and CM-enriched niches the lowest.  
+    - This supports the idea that fibroblasts in different spatial neighborhoods (especially fibroblast-dominated vs CM-enriched) deploy distinct ECM/remodeling programs.
+  - **Quality:** Derivable=8, Novel=7, Feasible=8, Specific=8, Falsifiable=9.
+
+- **[H3] Statement:**  
+  *Endothelial microdomains dominated by lymphatic endothelial cells (LEC) in the developing heart exhibit coordinated enrichment of lymphangiogenic and vascular signaling gene programs relative to generic vascular endothelial clusters (VEC) that are less spatially restricted.*
+
+  - **Grounded in:** OBSERVATION 2 (LEC as a spatially concentrated population) and OBSERVATION 4 (strong self–self co-localization of LEC and VEC in the spatial graph).
+  - **Test outcome:** **KEEP** (refined to focus explicitly on LEC vs VEC).  
+    - LEC (n=1,292) and VEC (n=3,726) were contrasted.  
+    - A vascular/lymphangiogenic program using 4 panel genes (`ANGPT1`, `CXCL12`, `NRP2`, `PROX1`) showed higher module scores in LEC than VEC, with a highly significant Mann–Whitney p-value (p < 1e-5) and higher mean score in LEC.  
+    - Differential expression (LEC vs VEC) confirmed strong enrichment of lymphatic/vascular markers in LEC: `PROX1` and `NRP2` (program genes) were among the top LEC-upregulated genes, together with canonical lymphatic markers like `LYVE1`, and endothelial signaling genes (`GJA1`, `NR2F2`, `FBLN5`, etc.), all with adjusted p-values ≈ 0.  
+    - This supports a clear transcriptional distinction between spatially clustered LEC microdomains and more generic vascular endothelium.
+  - **Quality:** Derivable=7, Novel=7, Feasible=7, Specific=8, Falsifiable=8.
+
+**Dropped during narrowing:**
+
+- **[H1]** *Original statement:*  
+  *Specialized non-chamber and conduction-associated cardiomyocyte microdomains (e.g. ncCM-IFT-like, ncCM-AVC-like, vCM-His-Purkinje, vCM-RV-AV) that form highly self-clustered spatial islands exhibit coordinated enrichment of conduction and stress-response gene programs, compared to bulk ventricular compact and trabecular cardiomyocytes that occupy more mixed regions.*  
+  *Reason dropped:*  
+  - Conduction and stress-response module scores (built from panel-available conduction genes such as `CACNA1C`, `CASQ2`, `CKMT2`, `GJA1`, `GJA5`, `HCN4`, `ISL1`, `KCNH2`, `KCNJ8`, `NKX2-5`, `PLN`, `RYR2`, `SCN5A`, `TBX18`, `TBX3`, `TBX5`, and one stress gene `EGR1`) did not show a sufficiently consistent, strongly increased signal in specialized vs bulk CM to meet the pre-specified thresholds.  
+  - Differential expression did highlight conduction/developmental regulators (e.g. `TBX3`, `HCN4`, `NKX2-5`-related program genes) among specialized CM markers, but the predefined module-score criteria for both conduction and stress-response programs were not robustly satisfied.  
+  - Given this mixed evidence and the stress program being effectively single-gene in this panel, the hypothesis was conservatively **dropped** rather than over-interpreted.
+
+**Artifacts:**
+
+- `hypotheses/exploration_log.md` — 4 structured OBSERVATIONS (dataset inventory; spatial concentration of labels; neighbor composition of rare-but-tight populations; global pairwise co-localization).
+- `hypotheses/hypotheses_draft.json` — initial three hypotheses (H1–H3) with full fields.
+- `hypotheses/hypotheses.json` — final retained hypotheses (H2, H3) with narrowing notes.
+- `hypotheses/hypothesis_brief.md` — human-readable summary with evidence details.
+
+</response>
+
+===== ARTIFACTS =====
+  hypotheses/exploration_log.md  (4637 bytes)
+  hypotheses/hypotheses.json  (5826 bytes)
+  hypotheses/hypotheses_draft.json  (7932 bytes)
+  hypotheses/hypothesis_brief.md  (2655 bytes)

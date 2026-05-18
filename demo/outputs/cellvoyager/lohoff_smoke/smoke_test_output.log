@@ -1,0 +1,51 @@
+Invoking CellVoyager via isolated conda env …
+
+
+returncode: 0
+model_used: gpt-5.1
+run_directory: /home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_130752
+notebook_path: /home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_130752/outputs/lohoff_smoke_20260517_090758/lohoff_smoke_analysis_1.ipynb
+hypotheses parsed: 2
+
+--- stdout_tail (last 50 lines) ---
+0
+🚀 Starting CellVoyager Analysis Agent (v2)
+   H5AD file: /home/mingqiam/TissueAgent/demo/data/dataset_lohoff_et_al_seqfish.h5ad
+   Paper summary: /home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_130752/background.txt
+   Analysis name: lohoff_smoke
+   Model: gpt-5.1
+   Number of analyses: 1
+   Max iterations: 2
+   Execution mode: legacy
+   Self-critique: ✅
+   VLM: ❌
+   Documentation: ✅
+
+Loading anndata for summarization...
+✅ Loaded summary from /home/mingqiam/TissueAgent/demo/data/dataset_lohoff_et_al_seqfish.h5ad
+🔬 Running analyses...
+🧠 Generating new analysis idea...
+🚀 Generated Initial Analysis Plan for Analysis 1
+
+🚀 Executing Analysis 1
+✅ Persistent kernel started
+🚀 Beginning step 1...
+✅ Valid analysis plan generated (attempt 1): 1 steps
+ANALYSIS PLAN AFTER NEXT STEP GENERATION AND AFTER CRITIQUE (length: 1): ['Within each selected mesodermal cell type (and, where feasible, within each Area), compute Moran’s I for the cell-type–specific maturation score (mesoderm_maturation_pc1) using a k-nearest-neighbor graph built from 2D spatial coordinates, assess significance by permutation testing with Benjamini–Hochberg FDR correction across all tested (cell type, Area) strata, and summarize and compare the magnitude and sign of Moran’s I across mesodermal subtypes and Areas.']
+🚀 Beginning step 2...
+💾 Saved notebook to: /home/mingqiam/TissueAgent/data/cellvoyager_agent/run_20260517_130752/outputs/lohoff_smoke_20260517_090758/lohoff_smoke_analysis_1.ipynb
+✅ Persistent kernel stopped
+✅ Completed Analysis 1
+✅ Completed Analysis 1
+✅ Persistent kernel stopped
+
+✅ Analysis complete!
+
+--- stderr_tail (last 20 lines) ---
+[92m09:07:56 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m09:07:56 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+
+--- first parsed hypothesis ---
+{
+  "header": "# Analysis\n\n**Hypothesis**: Within the mouse gastrulation/early organogenesis seqFISH dataset, spatial gradients of mesodermal maturation exist within individual tissue regions, such that early progenitor-like versus more differentiated states of key mesodermal lineages (e.g. somitic/cranial/cardiac mesoderm) show systematic differences in spatial autocorrelation of gene expression along the embryo axis, beyond what is captured by coarse cell-type labels.",
+  "code_excerpt": "import scanpy as sc\nimport numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nimport seaborn as sns\nfrom scipy import stats\nimport warnings\n\n# Set up visualization defaults for better plots\nsc.settings.verbosity = 3\nsc.settings.figsize = (8, 8)\nsc.settings.dpi = 100\nsc.setting

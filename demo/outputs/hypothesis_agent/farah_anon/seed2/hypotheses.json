@@ -1,0 +1,44 @@
+[
+  {
+    "id": "H2",
+    "statement": "Spatial neighborhoods composed of leiden clusters 29, 31 and their enriched partners (14, 23, 10, 18) show higher extracellular-matrix gene program activity than the same labels in less interconnected regions, although this enrichment is not fully specific relative to contractile programs.",
+    "grounded_in": [
+      2,
+      3,
+      4
+    ],
+    "mechanism": "OBSERVATION 2 identifies clusters 29 and 31 as rare but highly self-clustered, and OBSERVATION 3 shows that their cells preferentially neighbor specific labels such as 14, 23, 10, and 18, suggesting recurrent multi-label microenvironments. If these neighborhoods correspond to structural or fibrotic domains, cells in these local communities should preferentially express extracellular-matrix and remodeling gene programs relative to cells of the same labels in other spatial contexts.",
+    "test_plan": "1. Define a '29/31 neighborhood' set consisting of cells whose leiden labels are 29, 31, 14, 23, 10, or 18 and that have at least a moderate fraction (e.g., \u22650.3) of neighbors from this same label set, using the existing k=15 spatial neighbor graph; define 'context-matched controls' as cells with these labels that do not meet this neighborhood criterion. 2. Compute per-cell module scores for extracellular-matrix\u2013like genes identified in the panel (e.g., collagens and matrix genes from the ECM-like gene list) and compare scores between neighborhood cells and context-matched controls for each involved label and pooled across labels. 3. Perform differential expression between neighborhood cells and controls, focusing on ECM-like genes and assessing whether multiple ECM genes are consistently upregulated in neighborhood cells. 4. As a negative control, compare contractile-program gene scores (using the contractile-like gene list) between these groups to assess whether enrichment is specific to ECM rather than a global expression increase.",
+    "predicted_outcome": "If the hypothesis is correct, cells within the 29/31-centered neighborhoods will show higher ECM module scores and consistent upregulation of several ECM-associated genes compared to context-matched controls of the same labels, while contractile-program scores will not show a parallel increase. Failure to detect such ECM-specific enrichment, or finding similar ECM scores in control regions, would argue against the hypothesis.",
+    "quality_scores": {
+      "derivable": 8,
+      "novel": 7,
+      "feasible": 8,
+      "specific": 8,
+      "falsifiable": 9
+    },
+    "status": "REFINE",
+    "narrowing_notes": "H2 label-set cells total: 28956.\nNeighborhood cells (>= 0.30 neighbors from H2 label-set)=18127, context-matched controls=10829.\nECM module scores: mean(neighborhood)=0.075, mean(control)=-0.126, p=1.58e-301.\nContractile module scores: mean(neighborhood)=-0.038, mean(control)=0.064, p=1.23e-148."
+  },
+  {
+    "id": "H3",
+    "statement": "Rare, spatially tight leiden clusters 28, 15, 20, 29, and 31 are closer to the tissue boundary than more abundant diffuse clusters and show modest enrichment for selected proliferation or progenitor transcription-factor programs, rather than a uniformly stronger immature profile across all metrics.",
+    "grounded_in": [
+      1,
+      2,
+      3
+    ],
+    "mechanism": "OBSERVATION 2 identifies a set of rare clusters that are highly self-enriched in local neighborhoods, suggesting spatially compact domains, and OBSERVATION 1 provides the overall spatial extent. In a developing organ, boundary or rim regions often harbor proliferative or progenitor populations; if these tight domains correspond to such regions, they should be enriched both for edge-proximal locations and for cell-cycle and immaturity-associated gene programs relative to more diffuse clusters.",
+    "test_plan": "1. Normalize spatial coordinates to the rectangular bounding box of the tissue and, for each cell, compute the distance to the nearest boundary; compare the distribution of boundary distances for cells in tight clusters 28, 15, 20, 29, and 31 (and optionally their most enriched neighbor labels) versus all other clusters, using non-parametric tests to assess whether tight clusters are more edge-proximal. 2. Using the pre-identified cell-cycle-like gene list, compute per-cell proliferation module scores and compare scores between tight-cluster cells and cells from the top five most abundant (diffuse) clusters. 3. Similarly, define a progenitor-associated transcription factor module using TF-like genes expressed in the dataset and compare module scores between tight-cluster cells and diffuse clusters. 4. Evaluate whether tight clusters show joint enrichment for edge proximity and higher cell-cycle and progenitor-module scores relative to diffuse clusters.",
+    "predicted_outcome": "Support for the hypothesis would consist of tight clusters being significantly closer to tissue boundaries and showing higher cell-cycle and progenitor TF module scores than more diffuse clusters, with multiple genes contributing to each module. If tight clusters are not boundary-enriched or do not show elevated proliferation or progenitor-associated programs, the hypothesis would be disfavored.",
+    "quality_scores": {
+      "derivable": 7,
+      "novel": 7,
+      "feasible": 7,
+      "specific": 8,
+      "falsifiable": 9
+    },
+    "status": "REFINE",
+    "narrowing_notes": "Tight-cluster cells=10554, other cells=218081.\nBoundary distance: median(tight)=1527.6, median(other)=1921.0, p=0.00e+00 (lower median implies closer to edge).\nTop-5 abundant (non-tight) cluster codes used for comparison: ['0', '1', '3', '2', '4'] with total cells=85401.\nCell-cycle module: mean(tight)=-0.060, mean(top5)=0.007, p=8.48e-48.\nProgenitor TF module: mean(tight)=0.011, mean(top5)=-0.001, p=3.81e-11."
+  }
+]

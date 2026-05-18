@@ -1,0 +1,55 @@
+[
+  {
+    "id": "H1",
+    "statement": "Spatially co-localized PX\u2013PY micro-environments form a specialized interface niche where PX and PY cells share a coordinated multi-gene expression program that is distinct from PX and PY cells located in regions without direct PX\u2013PY contact.",
+    "grounded_in": [
+      "OBSERVATION 2",
+      "OBSERVATION 3"
+    ],
+    "mechanism": "OBSERVATION 2 and 3 show very strong reciprocal enrichment of PX and PY as each other\u2019s spatial neighbors, indicating repeated, tight PX\u2013PY communities rather than random mixing. Such recurrent spatial interfaces often reflect shared signaling or stress-response programs that differentiate interface cells from the same populations away from these contacts.",
+    "test_plan": "1) Define PX\u2013PY interface cells as PX or PY cells that have at least one nearest neighbor of the partner label within the 14-neighbor graph; define non-interface PX and PY cells as those with zero partner-label neighbors. 2) Within PX and within PY separately, perform differential expression comparing interface vs non-interface cells using a rank-based test (e.g., Wilcoxon) across all 238 genes, controlling for sample identity. 3) Identify gene sets of at least five genes that are consistently upregulated in both PX and PY interface cells relative to their non-interface counterparts. 4) Optionally summarize these shared upregulated genes by principal component analysis to show a common program. The hypothesis is supported if a multi-gene module is significantly and coherently upregulated in interface PX and PY, and not present in non-interface cells.",
+    "predicted_outcome": "If the hypothesis holds, both PX and PY interface subsets will show a shared pattern where multiple (\u22655) genes are significantly upregulated compared with non-interface PX and PY, and these genes will load together on a leading principal component that clearly separates interface from non-interface cells within each label. The hypothesis would be falsified if interface PX and PY cells show no coordinated multi-gene changes (e.g., only scattered single-gene differences or no significant differences) relative to non-interface cells, or if PX and PY interface programs differ completely from each other.",
+    "quality_scores": {
+      "derivable": 8,
+      "novel": 7,
+      "feasible": 9,
+      "specific": 8,
+      "falsifiable": 9
+    }
+  },
+  {
+    "id": "H2",
+    "statement": "Rare, spatially concentrated PW\u2013PAA\u2013PM communities represent boundary-like stromal niches in which PW and PAA cells exhibit a coordinated extracellular-matrix\u2013associated gene expression program that is stronger than in broadly distributed PM stromal cells elsewhere in the tissue.",
+    "grounded_in": [
+      "OBSERVATION 2"
+    ],
+    "mechanism": "OBSERVATION 2 shows that PW is both rare and extremely spatially concentrated, with a very high same-label neighbor fraction and strong local enrichment for PAA and PM neighbors; PAA itself shows strong enrichment for PW neighbors. Such tightly packed, recurrent PW\u2013PAA\u2013PM combinations are characteristic of boundary or stromal niches, where extracellular matrix remodeling programs are often elevated relative to more diffuse stromal populations like PM.",
+    "test_plan": "1) Identify PW\u2013PAA\u2013PM niche regions by selecting PW cells whose 14-neighbor set contains both PAA and PM neighbors; define the niche core as these PW cells plus their immediate PAA and PM neighbors. 2) Define a comparison set of PM cells that are far from PW and PAA (e.g., PM cells with no PW or PAA neighbors). 3) Perform differential expression between niche-core stromal cells (PW, PAA, PM in niches) and distant PM cells. 4) Test whether a set of extracellular-matrix\u2013associated genes present in the panel (e.g., ADAMTS6, ADAMTS8 and other matrix-related genes in the dataset) are significantly and coordinately upregulated in the niche-core cells. 5) Summarize whether at least one multi-gene ECM-like program (\u22655 genes with consistent upregulation) distinguishes the niche from diffuse PM regions.",
+    "predicted_outcome": "Support for the hypothesis would be observed if PW\u2013PAA\u2013PM niche-core cells show significantly higher expression of a multi-gene extracellular matrix\u2013associated program compared with PM cells distant from PW/PAA, with several matrix-related genes among the top upregulated features. The hypothesis would be falsified if niche-core cells do not show any coherent multi-gene ECM-like upregulation relative to distant PM cells, or if PM cells outside niches display equal or stronger ECM-program expression.",
+    "quality_scores": {
+      "derivable": 7,
+      "novel": 7,
+      "feasible": 8,
+      "specific": 8,
+      "falsifiable": 8
+    }
+  },
+  {
+    "id": "H3",
+    "statement": "Spatially tight PV micro-communities that are enriched for PM and PF neighbors deploy a distinct, multi-gene stress or signaling program compared with PV cells that are not embedded in such PV\u2013PM\u2013PF neighborhoods.",
+    "grounded_in": [
+      "OBSERVATION 2",
+      "OBSERVATION 3"
+    ],
+    "mechanism": "OBSERVATION 2 identifies PV as a rare but highly concentrated population whose neighbors are strongly enriched for PM and PF, suggesting specialized PV\u2013PM\u2013PF micro-communities. Such rare, tightly organized assemblies often correspond to stress-responsive or signaling hubs, where the central population (PV) adopts a distinct gene program when in close contact with specific stromal partners.",
+    "test_plan": "1) Classify PV cells into community-embedded PV (those with at least one PM and one PF neighbor among their 14 nearest spatial neighbors) and isolated PV (those with no PM and no PF neighbors). 2) Confirm that both subsets have sufficient cell counts for analysis. 3) Perform differential expression between community-embedded and isolated PV cells across all genes, using a rank-based test. 4) Identify whether community-embedded PV cells upregulate a coherent multi-gene set (\u22655 genes) related to stress responses or intercellular signaling (e.g., receptors, secreted factors, or matrix-interacting genes present in the panel). 5) Optionally map the spatial location of these PV\u2013PM\u2013PF communities to assess whether they preferentially occur near tissue boundaries or specific anatomical regions.",
+    "predicted_outcome": "If the hypothesis is correct, PV cells embedded in PV\u2013PM\u2013PF communities will show significant, coordinated upregulation of multiple genes associated with signaling or stress responses relative to isolated PV cells, leading to clear separation of the two PV subsets in low-dimensional expression space. The hypothesis would be falsified if community-embedded PV cells are transcriptionally indistinguishable from isolated PV cells or if only sporadic single-gene differences without a coherent program are observed.",
+    "quality_scores": {
+      "derivable": 7,
+      "novel": 6,
+      "feasible": 8,
+      "specific": 8,
+      "falsifiable": 9
+    }
+  }
+]

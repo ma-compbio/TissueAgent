@@ -1,3 +1,6 @@
 [submodule "src/agents/agent_registry/gene_agent/upstream"]
 	path = src/agents/agent_registry/gene_agent/upstream
 	url = https://github.com/ncbi-nlp/GeneAgent.git
+[submodule "src/agents/agent_registry/cellvoyager_agent/upstream"]
+	path = src/agents/agent_registry/cellvoyager_agent/upstream
+	url = https://github.com/zou-group/CellVoyager.git

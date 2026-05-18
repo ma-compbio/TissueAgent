@@ -50,6 +50,7 @@ from agents.agent_registry.critic_agent.prompt import (
 )
 from agents.agent_registry.critic_agent.tools import CriticTools
 from agents.agent_registry.gene_agent import agent_definition as GeneAgentDef
+from agents.agent_registry.cellvoyager_agent import agent_definition as CellVoyagerAgentDef
 from agents.agent_registry.cell_annotater_agent.prompt import (
     CellTissueAnnotationPrompt,
     CellTissueAnnotationDescription
@@ -204,6 +205,14 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         prompt=GeneAgentDef.prompt,
         tools=GeneAgentDef.tools,
         model_ctor=GeneAgentDef.model_ctor,
+    ),
+    ReActAgent(
+        id=CellVoyagerAgentDef.id,
+        name=CellVoyagerAgentDef.name,
+        description=CellVoyagerAgentDef.description,
+        prompt=CellVoyagerAgentDef.prompt,
+        tools=CellVoyagerAgentDef.tools,
+        model_ctor=CellVoyagerAgentDef.model_ctor,
     ),
 
     ReActAgent(
