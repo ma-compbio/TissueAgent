@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import List, Literal
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
@@ -21,6 +21,30 @@ from server.utils import (
 )
 
 router = APIRouter(prefix="/api/sessions")
+
+
+# ---------------------------------------------------------------------------
+# Mode (autopilot / copilot)
+# ---------------------------------------------------------------------------
+
+
+class ModeInfo(BaseModel):
+    """Current execution mode for the session."""
+
+    mode: Literal["autopilot", "copilot"]
+
+
+@router.get("/mode", response_model=ModeInfo)
+async def get_mode() -> ModeInfo:
+    """Return the current execution mode."""
+    return ModeInfo(mode=session.mode)
+
+
+@router.post("/mode", response_model=ModeInfo)
+async def set_mode(payload: ModeInfo) -> ModeInfo:
+    """Update the execution mode."""
+    session.mode = payload.mode
+    return ModeInfo(mode=session.mode)
 
 
 class SessionInfo(BaseModel):
@@ -57,6 +81,7 @@ async def save_current_session():
             uploaded_pdfs=session.uploaded_pdfs,
             replan_count=session.agent_state.get("replan_count", 0),
             replan_history=session.agent_state.get("replan_history", []),
+            mode=session.mode,
         )
     except Exception as e:
         logging.error("Failed to save session", exc_info=e)
@@ -109,9 +134,10 @@ async def load_selected_session(filename: str):
     session.pending_subagent_states.clear()
     session.uploaded_pdfs = data["uploaded_pdfs"]
     session.pending_images = []
+    session.mode = data["mode"]  # type: ignore[assignment]
     session.ensure_display_state()
 
-    return {"status": "loaded", "filename": filename}
+    return {"status": "loaded", "filename": filename, "mode": session.mode}
 
 
 @router.get("/export/html")

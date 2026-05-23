@@ -16,6 +16,7 @@ from agents.agent_utils import file_retriever_tool
 from agents.planner_agent.prompt import PlannerPrompt
 from agents.planner_agent.tools import PlannerTools
 from agents.recruiter_agent.prompt import RecruiterPrompt
+from agents.recruiter_agent.tools_impl.assign_agents_tool import assign_agents_tool
 from agents.manager_agent.prompt import ManagerPrompt
 from agents.manager_agent.tools import ManagerTool
 from agents.evaluator_agent.prompt import EvaluatorPrompt
@@ -127,7 +128,7 @@ RecruiterAgent = ReActAgent(
     name="Recruiter Agent",
     description="",
     prompt=RecruiterPrompt,
-    tools=[file_retriever_tool],
+    tools=[file_retriever_tool, assign_agents_tool],
     model_ctor=DefaultModelCtor,
 )
 

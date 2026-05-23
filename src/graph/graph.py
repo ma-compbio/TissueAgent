@@ -46,6 +46,12 @@ def create_tissueagent_graph(
     wires the five main pipeline agents with conditional routing edges.
     The caller is responsible for compiling the returned graph.
 
+    Execution mode (autopilot vs copilot) is an **app-layer** concern. It
+    lives on :class:`server.session_manager.SessionState` and is honored by
+    the server's WebSocket handlers when they invoke the compiled graph.
+    Direct callers (notebook / CLI) never set up that session and therefore
+    always run autopilot — copilot pauses are server-side wiring only.
+
     Args:
         state_queue: Thread-safe queue where completed sub-agent states are
             placed so the UI can render them.

@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import ChatView from "./components/ChatView";
 import FileBrowser from "./components/FileBrowser";
-import { extractPlanData } from "./components/PlanViewer";
 import Sidebar from "./components/Sidebar";
 import ThemeToggle from "./components/ThemeToggle";
 import { useModels } from "./hooks/useModels";
+import { usePlan } from "./hooks/usePlan";
+import type { PlanPayload } from "./hooks/usePlan";
 import { useSession } from "./hooks/useSession";
 import { useTheme } from "./hooks/useTheme";
 import { useWebSocket } from "./hooks/useWebSocket";
@@ -14,15 +15,18 @@ export default function App() {
   const ws = useWebSocket();
   const session = useSession();
   const modelHook = useModels();
+  const planHook = usePlan();
   const { theme, toggleTheme } = useTheme();
 
   const [enableDebug, setEnableDebug] = useState(false);
   const [showFileBrowser, setShowFileBrowser] = useState(false);
 
-  const planData = useMemo(
-    () => extractPlanData(ws.messages),
-    [ws.messages],
-  );
+  // Forward WebSocket plan_updated events into the plan store.
+  useEffect(() => {
+    if (ws.planEvent) {
+      planHook.applyEvent(ws.planEvent as PlanPayload);
+    }
+  }, [ws.planEvent, planHook]);
 
   return (
     <div className="app-layout">
@@ -39,9 +43,11 @@ export default function App() {
         onLoad={session.loadSession}
         onExportHtml={session.exportHtml}
         hasMessages={ws.messages.length > 0}
-        planPrompt={planData.prompt}
-        planEntries={planData.entries}
+        plan={planHook.plan}
+        planMarkdown={planHook.markdown}
         isRunning={ws.isRunning}
+        mode={ws.mode}
+        onChangeMode={ws.setMode}
         models={modelHook.models}
         modelSelection={modelHook.selection}
         workerPinned={modelHook.workerPinned}

@@ -45,17 +45,48 @@ async def websocket_chat(ws: WebSocket):
     )
     await ws.send_json({"type": "history", "data": history})
 
+    # Send current execution mode on connect so the UI can render the
+    # sidebar toggle in the correct position without an extra fetch.
+    await ws.send_json({"type": "mode_updated", "data": {"mode": session.mode}})
+
     try:
         while True:
             raw = await ws.receive_text()
             data = json.loads(raw)
 
-            if data.get("type") == "send_message":
+            msg_type = data.get("type")
+            if msg_type == "send_message":
                 await _handle_user_message(ws, data)
+            elif msg_type == "set_mode":
+                await _handle_set_mode(ws, data)
     except WebSocketDisconnect:
         logging.info("WebSocket client disconnected")
     except Exception as e:
         logging.error(f"WebSocket error: {e}", exc_info=True)
+
+
+async def _handle_set_mode(ws: WebSocket, data: dict):
+    """Update the session execution mode and echo the new value back."""
+    requested = data.get("mode")
+    if requested not in ("autopilot", "copilot"):
+        await ws.send_json({
+            "type": "run_error",
+            "error_type": "InvalidMode",
+            "detail": f"Unknown mode: {requested!r}",
+        })
+        return
+
+    if session.is_running:
+        # Refuse mid-run mode changes; they would race with interrupt wiring.
+        await ws.send_json({
+            "type": "run_error",
+            "error_type": "ModeChangeBlocked",
+            "detail": "Cannot change mode while the agent is running.",
+        })
+        return
+
+    session.mode = requested  # type: ignore[assignment]
+    await ws.send_json({"type": "mode_updated", "data": {"mode": session.mode}})
 
 
 async def _handle_user_message(ws: WebSocket, data: dict):
@@ -114,6 +145,10 @@ async def _handle_user_message(ws: WebSocket, data: dict):
     session.agent_state["messages"].append(user_message)
     session.agent_state.setdefault("replan_count", 0)
     session.agent_state.setdefault("replan_history", [])
+
+    # New user turn → clear any stale plan from disk so the planner starts fresh.
+    from server.plan_store import plan_store as _plan_store
+    _plan_store.reset()
 
     # Send the user message back to client for display
     await ws.send_json({
@@ -210,6 +245,24 @@ async def _drain_queues(ws: WebSocket):
             event_type, payload = event
 
             if event_type == "message":
+                # plan_updated markers are emitted by write_plan / assign_agents
+                # tools via log_message(); route them to the plan channel
+                # instead of the chat transcript.
+                if getattr(payload, "name", None) == "plan_updated":
+                    plan_payload = (
+                        getattr(payload, "additional_kwargs", {}) or {}
+                    ).get("plan_payload") or {}
+                    from server.plan_store import plan_store as _plan_store
+                    markdown = _plan_store.read_markdown()
+                    await ws.send_json({
+                        "type": "plan_updated",
+                        "data": {
+                            "markdown": markdown,
+                            "plan": plan_payload,
+                        },
+                    })
+                    continue
+
                 # Regular main-agent message
                 if session.append_display_message(payload):
                     await ws.send_json({

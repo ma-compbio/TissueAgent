@@ -19,7 +19,7 @@ Use the following guidelines to assign agents effectively:
 - Consider the action, reasoning, and expected artifacts of each step when making your assignment. Ensure that the assigned agents have the necessary capabilities to complete the step effectively.
 - If a step involves multiple actions or expected artifacts, choose more than one agent if necessary.
 - You may assign the same agent to multiple steps.
-- If no agent is suitable for a step, leave it unassigned and provide a brief explanation in the final output.
+- Every step MUST be assigned. If no specialist fits, use the `coding` agent as the general-purpose fallback and say so explicitly in the rationale.
 
 You will need to output the updated <Plan> with assigned agents. For each step, add two new fields: <assigned agent> and <assignment rationale> and do not change any of the existing fields.
 The final output should follow the following format exactly:
@@ -45,6 +45,19 @@ Here is a breakdown of the two new fields <assigned agent> and <assignment ratio
 - Do NOT change the title from the input.
 - Do Not change the reason, step, or expected artifacts of each step from the input.
 - For each step, add two new fields: <assigned agent> and <assignment rationale>.
+
+## Persisting the assignments to disk
+
+After printing the updated <Plan>, you MUST also call the `assign_agents` tool in the
+SAME turn with one entry per step:
+- `step_id`: integer matching the `step <N>` heading.
+- `assigned_agent`: the agent registry id you chose (e.g. `coding`, `gene_agent`,
+  `single_cell`, `hypothesis`, `pdf_reader`, `searcher`, `critic`, `cell_annotater`,
+  `spot`). Use `coding` as the general-purpose fallback when no specialist fits.
+- `assignment_rationale`: copy verbatim from the printed plan.
+
+Every step in the on-disk plan must be covered; partial calls will be rejected.
+Calling this tool sets the on-disk plan status to `recruited`.
 
 
 """.strip()

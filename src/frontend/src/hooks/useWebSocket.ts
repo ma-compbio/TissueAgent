@@ -4,8 +4,15 @@ import type {
   SendMessageEvent,
   SerializedMessage,
   ServerEvent,
+  SessionMode,
+  SetModeEvent,
   SubagentTranscript,
 } from "../types/messages";
+
+interface PlanUpdatePayload {
+  markdown: string;
+  plan: unknown; // PlanPayload-shaped; consumers cast to the real type.
+}
 
 interface UseWebSocketReturn {
   messages: SerializedMessage[];
@@ -15,6 +22,9 @@ interface UseWebSocketReturn {
   isRunning: boolean;
   elapsed: number | null;
   error: string | null;
+  planEvent: PlanUpdatePayload | null;
+  mode: SessionMode;
+  setMode: (mode: SessionMode) => void;
   sendMessage: (text: string, imageIds?: string[], pdfIds?: string[]) => void;
   clearError: () => void;
 }
@@ -39,6 +49,8 @@ export function useWebSocket(): UseWebSocketReturn {
   const [isRunning, setIsRunning] = useState(false);
   const [elapsed, setElapsed] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [planEvent, setPlanEvent] = useState<PlanUpdatePayload | null>(null);
+  const [mode, setModeState] = useState<SessionMode>("autopilot");
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -147,6 +159,12 @@ export function useWebSocket(): UseWebSocketReturn {
           setError(`${data.error_type}: ${data.detail}`);
           setLiveTraces({});
           break;
+        case "plan_updated":
+          setPlanEvent(data.data as PlanUpdatePayload);
+          break;
+        case "mode_updated":
+          setModeState(data.data.mode);
+          break;
       }
     };
   }, []);
@@ -176,6 +194,15 @@ export function useWebSocket(): UseWebSocketReturn {
     []
   );
 
+  const setMode = useCallback((next: SessionMode) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      setError("Not connected to server");
+      return;
+    }
+    const event: SetModeEvent = { type: "set_mode", mode: next };
+    wsRef.current.send(JSON.stringify(event));
+  }, []);
+
   const clearError = useCallback(() => setError(null), []);
 
   return {
@@ -186,6 +213,9 @@ export function useWebSocket(): UseWebSocketReturn {
     isRunning,
     elapsed,
     error,
+    planEvent,
+    mode,
+    setMode,
     sendMessage,
     clearError,
   };

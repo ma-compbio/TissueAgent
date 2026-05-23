@@ -23,7 +23,7 @@ import models as model_registry
 from graph.graph import create_tissueagent_graph
 from graph.graph_utils import register_ui_event_queue
 from server.rate_limit import with_header_retry
-from server.routes import chat, files, models as models_route, sessions
+from server.routes import chat, files, models as models_route, plan, sessions
 from server.session_manager import session
 from server.utils import reset_data_directories
 
@@ -90,6 +90,7 @@ app.add_middleware(
 app.include_router(chat.router)
 app.include_router(files.router)
 app.include_router(models_route.router)
+app.include_router(plan.router)
 app.include_router(sessions.router)
 
 # Serve React build in production (if dist/ exists)

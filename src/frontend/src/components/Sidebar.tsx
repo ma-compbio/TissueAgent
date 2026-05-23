@@ -1,13 +1,14 @@
-import type { FileInfo, SessionInfo } from "../types/messages";
+import type { FileInfo, SessionInfo, SessionMode } from "../types/messages";
 import type {
   KeyStatusMap,
   ModelOption,
   ModelSelection,
   Provider,
 } from "../hooks/useModels";
+import type { Plan } from "../hooks/usePlan";
 import FileUpload from "./FileUpload";
 import ModelPicker from "./ModelPicker";
-import PlanViewer, { type PlanEntry } from "./PlanViewer";
+import PlanPanel from "./PlanPanel";
 import SessionManager from "./SessionManager";
 
 interface Props {
@@ -23,9 +24,11 @@ interface Props {
   onLoad: (filename: string) => Promise<boolean>;
   onExportHtml: () => void;
   hasMessages: boolean;
-  planPrompt: string | null;
-  planEntries: PlanEntry[];
+  plan: Plan;
+  planMarkdown: string;
   isRunning: boolean;
+  mode: SessionMode;
+  onChangeMode: (mode: SessionMode) => void;
   models: ModelOption[];
   modelSelection: ModelSelection | null;
   workerPinned: boolean;
@@ -49,9 +52,11 @@ export default function Sidebar({
   onLoad,
   onExportHtml,
   hasMessages,
-  planPrompt,
-  planEntries,
+  plan,
+  planMarkdown,
   isRunning,
+  mode,
+  onChangeMode,
   models,
   modelSelection,
   workerPinned,
@@ -85,6 +90,33 @@ export default function Sidebar({
 
         <div className="upload-divider" />
 
+        <div className="mode-toggle" role="radiogroup" aria-label="Execution mode">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === "autopilot"}
+            className={`mode-pill ${mode === "autopilot" ? "active" : ""}`}
+            onClick={() => onChangeMode("autopilot")}
+            disabled={isRunning}
+            title="Run end-to-end without pausing for review"
+          >
+            Autopilot
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === "copilot"}
+            className={`mode-pill ${mode === "copilot" ? "active" : ""}`}
+            onClick={() => onChangeMode("copilot")}
+            disabled={isRunning}
+            title="Pause for review after the plan and after agent assignment"
+          >
+            Copilot
+          </button>
+        </div>
+
+        <div className="upload-divider" />
+
         <div className="sidebar-controls">
           <button className="sidebar-btn" onClick={onToggleFileBrowser}>
             {showFileBrowser ? "Close" : "Open"} File Browser
@@ -112,11 +144,7 @@ export default function Sidebar({
       </div>
 
       <div className="sidebar-bottom">
-        <PlanViewer
-          prompt={planPrompt}
-          entries={planEntries}
-          isRunning={isRunning}
-        />
+        <PlanPanel plan={plan} markdown={planMarkdown} />
       </div>
     </aside>
   );

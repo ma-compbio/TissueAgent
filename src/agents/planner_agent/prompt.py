@@ -129,6 +129,23 @@ Here is a breakdown of the complenents you need to include in each step as well 
 
 Keep each line ≤100 chars.
 
+### Persisting the plan to disk (ROUTE: PLAN only)
+
+When emitting ROUTE: PLAN, you MUST also call the `write_plan` tool in the SAME turn,
+mirroring the step list you printed above. The tool persists a structured copy of the
+plan so the recruiter, the user, and the UI can all act on it.
+
+- `user_request`: one- to two-sentence paraphrase of the user's request.
+- `steps`: ordered list. For every step, copy verbatim from your printed plan:
+  - `title`: short imperative phrase (≤8 words)
+  - `description`: the `step:` field
+  - `reasoning`: the `reason:` field
+  - `expected_artifacts`: the `expected artifacts:` field (split into one path per item)
+
+Do NOT include any `assigned_agent` field — that is the recruiter's responsibility.
+
+Skip the `write_plan` call entirely for ROUTE: DIRECT and ROUTE: CLARIFY.
+
 
 
 ## Exemplars (follow structure and compression)

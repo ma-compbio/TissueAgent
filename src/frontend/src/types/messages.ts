@@ -39,6 +39,10 @@ export interface HistoryData {
   subagent_states: Record<string, SubagentTranscript>;
 }
 
+/** Execution mode. Autopilot runs end-to-end; copilot pauses for human
+ *  review after the planner and after the recruiter. */
+export type SessionMode = "autopilot" | "copilot";
+
 /** WebSocket event types from server. */
 export type ServerEvent =
   | { type: "history"; data: HistoryData }
@@ -48,7 +52,9 @@ export type ServerEvent =
   | { type: "subagent_message"; data: { invocation_id: string; agent_name: string; message: SerializedMessage } }
   | { type: "subagent_end"; data: { invocation_id: string; agent_name: string } }
   | { type: "run_complete"; elapsed_seconds: number }
-  | { type: "run_error"; error_type: string; detail: string };
+  | { type: "run_error"; error_type: string; detail: string }
+  | { type: "plan_updated"; data: { markdown: string; plan: unknown } }
+  | { type: "mode_updated"; data: { mode: SessionMode } };
 
 /** WebSocket event types from client. */
 export interface SendMessageEvent {
@@ -56,6 +62,11 @@ export interface SendMessageEvent {
   text: string;
   image_ids: string[];
   pdf_ids: string[];
+}
+
+export interface SetModeEvent {
+  type: "set_mode";
+  mode: SessionMode;
 }
 
 export interface FileInfo {

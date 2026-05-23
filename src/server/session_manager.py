@@ -8,11 +8,14 @@ thread-safe queues used for real-time UI streaming.
 import threading
 from collections import deque
 from queue import Queue
-from typing import Any, Deque, Dict, List, Optional, Set, Tuple
+from typing import Any, Deque, Dict, List, Literal, Optional, Set, Tuple
 
 from langgraph.graph.state import CompiledStateGraph
 
 from server.utils import message_identity, should_hide_message
+
+
+SessionMode = Literal["autopilot", "copilot"]
 
 
 class SessionState:
@@ -24,6 +27,11 @@ class SessionState:
         # Agent graph (compiled at startup, recompiled when model selection changes)
         self.agent: Optional[CompiledStateGraph] = None
         self.model_revision: Optional[int] = None
+
+        # Execution mode. autopilot = no pauses; copilot = pause for human
+        # review after planner and after recruiter. Default autopilot so
+        # non-app entry points (notebook, CLI) never pause.
+        self.mode: SessionMode = "autopilot"
 
         # Core conversation state
         self.agent_state: Dict[str, Any] = {

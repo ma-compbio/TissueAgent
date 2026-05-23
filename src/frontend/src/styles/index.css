@@ -933,6 +933,42 @@ body {
   margin: 0.5rem 0;
 }
 
+.mode-toggle {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+}
+
+.mode-pill {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-secondary, inherit);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mode-pill:hover:not(:disabled):not(.active) {
+  background: var(--accent-light);
+}
+
+.mode-pill.active {
+  background: var(--accent-light);
+  color: var(--text-primary, inherit);
+  font-weight: 600;
+}
+
+.mode-pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ---- Model Picker ---- */
 
 .model-picker {
@@ -1415,6 +1451,212 @@ body {
 .modal-close-btn:hover {
   background: var(--border-color);
   color: var(--text-primary);
+}
+
+/* ---- Plan Panel (phase 1) ---- */
+
+.plan-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: 0.85rem;
+}
+
+.plan-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.plan-panel-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.plan-panel-status {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+}
+
+.plan-status-empty { color: var(--text-secondary); }
+.plan-status-draft { color: var(--accent); border-color: var(--accent); }
+.plan-status-recruited { color: var(--success); border-color: var(--success); }
+.plan-status-approved { color: var(--success); border-color: var(--success); }
+.plan-status-running { color: var(--live-accent-strong); border-color: var(--live-accent); }
+.plan-status-paused { color: var(--text-secondary); border-color: var(--text-secondary); }
+.plan-status-done { color: var(--success); border-color: var(--success); }
+.plan-status-failed { color: var(--error-text); border-color: var(--error-text); }
+.plan-status-pending { color: var(--text-secondary); border-color: var(--border-color); }
+.plan-status-skipped { color: var(--text-secondary); border-color: var(--border-color); }
+
+.plan-panel-empty {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 0.8rem 1rem;
+}
+
+.plan-panel-prompt {
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--accent-light);
+}
+
+.plan-panel-prompt-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 0.15rem;
+}
+
+.plan-panel-prompt-body {
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+.plan-step-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.plan-step {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.plan-step-status-running {
+  background: var(--live-accent-bg);
+}
+
+.plan-step-status-done {
+  opacity: 0.85;
+}
+
+.plan-step-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.plan-step-num {
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.plan-step-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-step-badge {
+  font-size: 0.65rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.plan-step-field {
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.plan-step-field-label {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 0.1rem;
+}
+
+.plan-step-artifacts {
+  list-style: disc;
+  margin: 0.1rem 0 0 1.1rem;
+  padding: 0;
+}
+
+.plan-step-artifacts li {
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.plan-step-artifacts code {
+  font-family: var(--font-mono);
+  background: var(--bg-secondary);
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+}
+
+.plan-step-assignment .plan-step-agent {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.plan-step-assignment .plan-step-rationale {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.plan-panel-footer {
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-sidebar);
+}
+
+.plan-panel-source-toggle {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.plan-panel-source-toggle:hover {
+  text-decoration: underline;
+}
+
+.plan-panel-source {
+  margin: 0;
+  padding: 0.7rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  background: var(--code-bg);
+  border-top: 1px solid var(--border-color);
+  white-space: pre-wrap;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 /* ---- Plan Viewer ---- */

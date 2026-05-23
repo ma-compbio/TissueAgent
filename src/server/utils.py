@@ -309,6 +309,7 @@ def save_session(
     uploaded_pdfs: List[Dict],
     replan_count: int,
     replan_history: List,
+    mode: str = "autopilot",
 ) -> Path:
     """Save a chat session to a timestamped JSON file.
 
@@ -318,6 +319,7 @@ def save_session(
         uploaded_pdfs: List of uploaded PDF metadata dicts.
         replan_count: Current replan count.
         replan_history: List of replan timestamps.
+        mode: Execution mode at save time ("autopilot" or "copilot").
 
     Returns:
         Path to the saved session file.
@@ -335,6 +337,7 @@ def save_session(
         "uploaded_pdfs": uploaded_pdfs,
         "replan_count": replan_count,
         "replan_history": replan_history,
+        "mode": mode,
     }
 
     SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
@@ -359,12 +362,16 @@ def load_session(path: Path) -> Dict[str, Any]:
     """
     payload = json.loads(path.read_text(encoding="utf-8"))
     restored_messages = messages_from_dict(payload.get("messages", []))
+    mode = payload.get("mode", "autopilot")
+    if mode not in ("autopilot", "copilot"):
+        mode = "autopilot"
     return {
         "messages": restored_messages,
         "subagent_states": payload.get("subagent_states", {}),
         "uploaded_pdfs": payload.get("uploaded_pdfs", []),
         "replan_count": payload.get("replan_count", 0),
         "replan_history": payload.get("replan_history", []),
+        "mode": mode,
     }
 
 
