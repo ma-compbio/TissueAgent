@@ -208,6 +208,16 @@ class PlanStore:
     def __init__(self, plan_dir: Path = _DEFAULT_PLAN_DIR) -> None:
         self._lock = threading.Lock()
         self._dir = plan_dir
+        self._ensure_dir()
+
+    def _ensure_dir(self) -> None:
+        """Create the plan directory if missing.
+
+        The FastAPI lifespan calls ``reset_data_directories()`` at startup
+        which wipes ``sessions/`` — including the directory this store
+        created at import time. Every read/write/reset must therefore
+        re-create the directory rather than assume it exists.
+        """
         self._dir.mkdir(parents=True, exist_ok=True)
 
     @property
@@ -233,17 +243,20 @@ class PlanStore:
         """Persist *doc* to disk and return the markdown that was written."""
         markdown = doc.to_markdown()
         with self._lock:
+            self._ensure_dir()
             self.path.write_text(markdown, encoding="utf-8")
         return markdown
 
     def write_markdown(self, markdown: str) -> None:
         """Persist arbitrary markdown text (used when the user edits)."""
         with self._lock:
+            self._ensure_dir()
             self.path.write_text(markdown, encoding="utf-8")
 
     def reset(self) -> None:
         """Drop the current plan. Called at the start of each new run."""
         with self._lock:
+            self._ensure_dir()
             if self.path.is_file():
                 self.path.unlink()
 
