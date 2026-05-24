@@ -1856,6 +1856,35 @@ body {
   vertical-align: middle;
 }
 
+.plan-provenance {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin: 0.15rem 0 0.35rem;
+  font-style: italic;
+}
+
+.plan-step-params {
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+}
+.plan-step-params summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  user-select: none;
+}
+.plan-step-params summary:hover {
+  color: var(--text-primary, inherit);
+}
+.plan-step-params pre {
+  background: var(--bg-secondary, var(--accent-light));
+  padding: 0.45rem;
+  border-radius: 0.3rem;
+  margin: 0.3rem 0 0;
+  font-size: 0.72rem;
+  overflow-x: auto;
+  white-space: pre;
+}
+
 /* ---- Pipeline stepper ---- */
 
 .pipeline-stepper {

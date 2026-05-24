@@ -31,9 +31,22 @@ export interface PlanStep {
   assignment_rationale: string | null;
   status: StepStatus;
   actual_outputs: string[];
+  /** Args the manager passed to the specialist for this step. Populated
+   *  post-hoc on save / export; absent at planning time. */
+  params?: Record<string, unknown> | null;
 }
 
 export type EditedBy = "planner" | "recruiter" | "manager" | "user";
+
+export type ProvenanceSource = "template" | "denovo";
+
+export interface PlanProvenance {
+  source: ProvenanceSource;
+  template_id?: string | null;
+  version?: string | null;
+  decision?: string | null;
+  score?: number | null;
+}
 
 export interface Plan {
   status: PlanStatus;
@@ -41,6 +54,7 @@ export interface Plan {
   steps: PlanStep[];
   last_edited_by?: EditedBy | null;
   last_edited_at?: string | null;
+  provenance?: PlanProvenance | null;
 }
 
 export interface PlanPayload {
@@ -54,6 +68,7 @@ const EMPTY_PLAN: Plan = {
   steps: [],
   last_edited_by: null,
   last_edited_at: null,
+  provenance: null,
 };
 
 /**

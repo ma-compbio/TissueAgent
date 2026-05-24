@@ -289,6 +289,83 @@ def message_to_serializable(message):
 _TITLE_MAX_LEN = 60
 
 
+def collect_prompts_snapshot() -> Dict[str, str]:
+    """Capture the system prompts of every registered agent.
+
+    Walks both the five main pipeline agents and every specialist in
+    :data:`agents.agent_defns.AgentDefns`. Prompts that are produced by
+    a callable (rather than a literal string) are rendered with the same
+    ``agent_id_descriptions`` mapping the runtime uses, so the snapshot
+    matches what the model actually saw.
+
+    Returns a flat ``{agent_id: prompt_text}`` mapping. Missing or
+    unresolvable prompts are silently skipped — the snapshot is best
+    effort and must never fail the save call.
+    """
+    snapshot: Dict[str, str] = {}
+
+    try:
+        from agents.agent_defns import (
+            AgentDefns,
+            PlannerAgent,
+            RecruiterAgent,
+            ManagerAgent,
+            EvaluatorAgent,
+            ReporterAgent,
+        )
+    except Exception:
+        return snapshot
+
+    # The recruiter/manager prompts are callables that take a mapping of
+    # {node_id: description}. Build that mapping the same way graph.py
+    # does so the snapshot matches the runtime prompt.
+    try:
+        agent_id_descriptions = {
+            f"{a.id}_agent": getattr(a, "description", "") for a in AgentDefns
+        }
+    except Exception:
+        agent_id_descriptions = {}
+
+    main_agents = [
+        PlannerAgent,
+        RecruiterAgent,
+        ManagerAgent,
+        EvaluatorAgent,
+        ReporterAgent,
+    ]
+    for agent in main_agents:
+        try:
+            prompt = getattr(agent, "prompt", None)
+            if callable(prompt):
+                rendered = prompt(agent_id_descriptions)
+            else:
+                rendered = prompt
+            if isinstance(rendered, str) and rendered.strip():
+                snapshot[agent.id] = rendered
+        except Exception:
+            continue
+
+    for agent in AgentDefns:
+        try:
+            prompt = getattr(agent, "prompt", None)
+            if prompt is None:
+                # CustomAgents (coding, hypothesis) don't expose a single
+                # string prompt — their prompts are constructed inside the
+                # ctor closure. Skip; ``description`` already records what
+                # the registry knows about them.
+                continue
+            if callable(prompt):
+                rendered = prompt(agent_id_descriptions)
+            else:
+                rendered = prompt
+            if isinstance(rendered, str) and rendered.strip():
+                snapshot[agent.id] = rendered
+        except Exception:
+            continue
+
+    return snapshot
+
+
 def derive_session_title(messages: Sequence[BaseMessage]) -> str:
     """Pick a short title for a saved session from its first user message.
 
@@ -338,6 +415,7 @@ def save_session(
     replan_history: List,
     mode: str = "autopilot",
     plan_markdown: str = "",
+    prompts_snapshot: Optional[Dict[str, str]] = None,
 ) -> Path:
     """Save a chat session to a timestamped JSON file.
 
@@ -371,6 +449,7 @@ def save_session(
         "replan_history": replan_history,
         "mode": mode,
         "plan_markdown": plan_markdown,
+        "prompts_snapshot": prompts_snapshot or {},
     }
 
     SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
@@ -398,6 +477,9 @@ def load_session(path: Path) -> Dict[str, Any]:
     mode = payload.get("mode", "autopilot")
     if mode not in ("autopilot", "copilot"):
         mode = "autopilot"
+    snapshot_raw = payload.get("prompts_snapshot") or {}
+    if not isinstance(snapshot_raw, dict):
+        snapshot_raw = {}
     return {
         "messages": restored_messages,
         "subagent_states": payload.get("subagent_states", {}),
@@ -407,6 +489,7 @@ def load_session(path: Path) -> Dict[str, Any]:
         "mode": mode,
         "plan_markdown": payload.get("plan_markdown", "") or "",
         "title": payload.get("title", "") or "",
+        "prompts_snapshot": {k: str(v) for k, v in snapshot_raw.items()},
     }
 
 
@@ -533,21 +616,29 @@ def _render_conversation_history_html(
     return "\n".join(blocks)
 
 
-def _render_plan_html(plan_markdown: str) -> str:
+def _render_plan_html(plan_markdown: str, plan_doc=None) -> str:
     """Render a saved plan markdown blob as a top-of-document HTML block.
+
+    If *plan_doc* is provided it takes precedence over re-parsing
+    *plan_markdown*. Callers should pass *plan_doc* when they have
+    already enriched it with run-time data (e.g. ``params`` populated
+    by ``annotate_steps_with_params``) that isn't carried in the
+    on-disk markdown.
 
     Returns an empty string when there is no plan — callers should
     elide the section entirely in that case rather than print an empty
     box.
     """
-    if not plan_markdown or not plan_markdown.strip():
-        return ""
+    if plan_doc is None:
+        if not plan_markdown or not plan_markdown.strip():
+            return ""
+        # Parse via plan_store so the HTML matches what the UI shows.
+        # Imported lazily so this module stays import-cheap.
+        from server.plan_store import _parse_markdown
 
-    # Parse via plan_store so the HTML matches what the UI shows.
-    # Imported lazily so this module stays import-cheap.
-    from server.plan_store import _parse_markdown
-
-    doc = _parse_markdown(plan_markdown)
+        doc = _parse_markdown(plan_markdown)
+    else:
+        doc = plan_doc
     if not doc.steps:
         return ""
 
@@ -565,6 +656,29 @@ def _render_plan_html(plan_markdown: str) -> str:
         )
         + "</div>"
     )
+    if doc.provenance is not None:
+        if doc.provenance.source == "template":
+            prov_text = (
+                f"From template: <code>{escape(doc.provenance.template_id or '?')}</code>"
+                + (
+                    f" v{escape(doc.provenance.version)}"
+                    if doc.provenance.version
+                    else ""
+                )
+                + (
+                    f" ({escape(doc.provenance.decision)})"
+                    if doc.provenance.decision
+                    else ""
+                )
+                + (
+                    f", score {doc.provenance.score:.2f}"
+                    if doc.provenance.score is not None
+                    else ""
+                )
+            )
+        else:
+            prov_text = "De novo plan (no template used)"
+        rows.append(f'<div class="plan-provenance-line">{prov_text}</div>')
     if doc.user_request:
         rows.append(
             f'<div class="plan-request"><strong>Request:</strong> '
@@ -616,6 +730,18 @@ def _render_plan_html(plan_markdown: str) -> str:
                 f'<div class="plan-step-artifacts">'
                 f'<strong>Outputs:</strong><ul>{items}</ul></div>'
             )
+        params = getattr(step, "params", None)
+        if isinstance(params, dict) and params:
+            try:
+                params_json = json.dumps(params, indent=2, ensure_ascii=False, default=str)
+            except Exception:
+                params_json = str(params)
+            rows.append(
+                '<details class="plan-step-params-export">'
+                f"<summary>Parameters ({len(params)})</summary>"
+                f"<pre>{escape(params_json)}</pre>"
+                "</details>"
+            )
         rows.append("</li>")
     rows.append("</ol>")
     rows.append("</section>")
@@ -623,7 +749,11 @@ def _render_plan_html(plan_markdown: str) -> str:
 
 
 def build_session_markdown(
-    messages, plan_markdown: str = "", title: str = ""
+    messages,
+    plan_markdown: str = "",
+    title: str = "",
+    prompts_snapshot: Optional[Mapping[str, str]] = None,
+    plan_doc=None,
 ) -> str:
     """Build a self-contained markdown document from a chat session.
 
@@ -651,11 +781,61 @@ def build_session_markdown(
     if plan_markdown and plan_markdown.strip():
         lines.append("## Plan")
         lines.append("")
+        # Pull provenance into a friendly prose line above the plan body
+        # so it's visible at a glance, not buried in the YAML frontmatter.
+        from server.plan_store import _parse_markdown as _pp
+        try:
+            _doc = _pp(plan_markdown)
+            if _doc.provenance is not None:
+                if _doc.provenance.source == "template":
+                    parts = [
+                        f"`{_doc.provenance.template_id or '?'}`"
+                    ]
+                    if _doc.provenance.version:
+                        parts.append(f"v{_doc.provenance.version}")
+                    if _doc.provenance.decision:
+                        parts.append(f"({_doc.provenance.decision})")
+                    if _doc.provenance.score is not None:
+                        parts.append(f"score {_doc.provenance.score:.2f}")
+                    lines.append(f"_From template: {' '.join(parts)}_")
+                else:
+                    lines.append("_De novo plan (no template used)_")
+                lines.append("")
+        except Exception:
+            pass
         # The on-disk plan markdown already has its own ``# Plan`` heading
         # plus ``## Step N`` subheadings; demote each ``#`` so the export's
         # outline is consistent.
         lines.append(_demote_markdown_headings(plan_markdown, by=1))
         lines.append("")
+
+    # Per-step run parameters — extracted from the conversation post-hoc
+    # (not part of the on-disk plan markdown). Only emitted when *plan_doc*
+    # was provided and at least one step has params.
+    if plan_doc is not None and any(
+        isinstance(getattr(s, "params", None), dict) and s.params
+        for s in plan_doc.steps
+    ):
+        lines.append("## Run parameters")
+        lines.append("")
+        lines.append(
+            "_Args the manager passed to each specialist when it ran._"
+        )
+        lines.append("")
+        for step in plan_doc.steps:
+            params = getattr(step, "params", None)
+            if not isinstance(params, dict) or not params:
+                continue
+            lines.append(f"### Step {step.id} — {step.title}")
+            lines.append("")
+            try:
+                pj = json.dumps(params, indent=2, ensure_ascii=False, default=str)
+            except Exception:
+                pj = str(params)
+            lines.append("```json")
+            lines.append(pj)
+            lines.append("```")
+            lines.append("")
 
     lines.append("## Conversation")
     lines.append("")
@@ -692,6 +872,22 @@ def build_session_markdown(
             lines.append(body)
             lines.append("```")
             lines.append("")
+
+    if prompts_snapshot:
+        lines.append("## Prompts snapshot")
+        lines.append("")
+        lines.append(
+            "_System prompts as they were when the session was saved._"
+        )
+        lines.append("")
+        for agent_id, text in prompts_snapshot.items():
+            lines.append(f"### `{agent_id}`")
+            lines.append("")
+            lines.append("```")
+            lines.append(text)
+            lines.append("```")
+            lines.append("")
+
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -712,7 +908,39 @@ def _demote_markdown_headings(md: str, *, by: int) -> str:
     return re.sub(r"^(#{1,6})( .*)", shift, md, flags=re.MULTILINE)
 
 
-def build_session_html(messages, subagent_states, plan_markdown: str = "") -> str:
+def _render_prompts_snapshot_html(snapshot: Mapping[str, str]) -> str:
+    """Render a prompts snapshot as a collapsible section.
+
+    Returns an empty string if the snapshot is empty so callers can elide
+    the whole section.
+    """
+    if not snapshot:
+        return ""
+    items: List[str] = []
+    for agent_id, text in snapshot.items():
+        items.append(
+            "<details><summary><code>"
+            f"{escape(agent_id)}</code></summary>"
+            f"<pre>{escape(text)}</pre>"
+            "</details>"
+        )
+    return (
+        '<section class="prompts-export">'
+        "<h2>Prompts snapshot</h2>"
+        "<p style=\"font-size:0.8rem;color:#666;\">System prompts as they "
+        "were when the session was saved. Click an entry to expand.</p>"
+        + "".join(items)
+        + "</section>"
+    )
+
+
+def build_session_html(
+    messages,
+    subagent_states,
+    plan_markdown: str = "",
+    prompts_snapshot: Optional[Mapping[str, str]] = None,
+    plan_doc=None,
+) -> str:
     """Build a self-contained HTML document from a chat session.
 
     Args:
@@ -724,7 +952,8 @@ def build_session_html(messages, subagent_states, plan_markdown: str = "") -> st
     Returns:
         A complete HTML string.
     """
-    plan_html = _render_plan_html(plan_markdown)
+    plan_html = _render_plan_html(plan_markdown, plan_doc=plan_doc)
+    prompts_html = _render_prompts_snapshot_html(prompts_snapshot or {})
     rendered_blocks = _render_conversation_history_html(messages, subagent_states)
     return "\n".join(
         [
@@ -784,6 +1013,7 @@ def build_session_html(messages, subagent_states, plan_markdown: str = "") -> st
                 " padding: 0.05rem 0.4rem; font-size: 0.7rem; font-weight: 600;"
                 " background: #fef3c7; color: #7a4e00; border-radius: 0.35rem; }"
             ),
+            ".plan-provenance-line { font-size: 0.8rem; color: #555; font-style: italic; margin: 0.2rem 0 0.5rem; }",
             ".plan-request { font-size: 0.9rem; margin-bottom: 0.8rem; }",
             ".plan-steps { padding-left: 1.25rem; }",
             ".plan-step { margin: 0.6rem 0; padding-bottom: 0.6rem; border-bottom: 1px solid #eaeaea; }",
@@ -804,6 +1034,7 @@ def build_session_html(messages, subagent_states, plan_markdown: str = "") -> st
             plan_html,
             "<h2>Conversation</h2>",
             rendered_blocks,
+            prompts_html,
             "</body>",
             "</html>",
         ]

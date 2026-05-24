@@ -13,7 +13,7 @@ does NOT assign agents — that is the recruiter's job
 
 from __future__ import annotations
 
-from typing import List, Type
+from typing import List, Literal, Optional, Type
 
 from langchain.tools import StructuredTool
 from langchain_core.messages import AIMessage
@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 from graph.graph_utils import log_message
 from server.plan_store import (
     PlanDocument,
+    PlanProvenance,
     PlanStep,
     plan_store,
     serialize_plan,
@@ -75,6 +76,46 @@ class WritePlanArgs(BaseModel):
             "Ordered list of plan steps. Must contain at least one step."
         ),
     )
+    provenance_source: Literal["template", "denovo"] = Field(
+        "denovo",
+        description=(
+            "Where this plan came from. Set to 'template' when you "
+            "adapted a registry template (run ``template_selector_tool`` "
+            "first and copy the relevant fields into the other "
+            "``provenance_*`` arguments). Set to 'denovo' when you "
+            "wrote the plan from scratch with no template."
+        ),
+    )
+    provenance_template_id: Optional[str] = Field(
+        None,
+        description=(
+            "Template id (e.g. 'CELL_ANNOTATION') when "
+            "provenance_source == 'template'. Use the exact id returned "
+            "by ``template_selector_tool``."
+        ),
+    )
+    provenance_version: Optional[str] = Field(
+        None,
+        description=(
+            "Template version string (e.g. '1.0') when "
+            "provenance_source == 'template'."
+        ),
+    )
+    provenance_decision: Optional[Literal["USE", "ADAPT", "NEW"]] = Field(
+        None,
+        description=(
+            "Decision verbatim from ``template_selector_tool``: 'USE' "
+            "(strong match), 'ADAPT' (partial match), or 'NEW' (no fit). "
+            "Required when provenance_source == 'template'."
+        ),
+    )
+    provenance_score: Optional[float] = Field(
+        None,
+        description=(
+            "Match score (0–1) reported by ``template_selector_tool``. "
+            "Optional but useful for later audits."
+        ),
+    )
 
 
 def _emit_plan_updated(doc: PlanDocument) -> None:
@@ -92,7 +133,11 @@ def _emit_plan_updated(doc: PlanDocument) -> None:
         pass
 
 
-def _write_plan_impl(user_request: str, steps: List[PlanStepInput]) -> str:
+def _write_plan_impl(
+    user_request: str,
+    steps: List[PlanStepInput],
+    provenance: Optional[PlanProvenance] = None,
+) -> str:
     """Persist a fresh plan document; returns a short confirmation message."""
     if not steps:
         return "write_plan: no steps provided; nothing written."
@@ -110,19 +155,37 @@ def _write_plan_impl(user_request: str, steps: List[PlanStepInput]) -> str:
             )
             for i, s in enumerate(steps)
         ],
+        provenance=provenance,
     )
     plan_store.write(doc)
     _emit_plan_updated(doc)
+    prov_note = ""
+    if provenance is not None and provenance.source == "template":
+        prov_note = (
+            f" (provenance: template {provenance.template_id} "
+            f"v{provenance.version}, decision {provenance.decision})"
+        )
+    elif provenance is not None and provenance.source == "denovo":
+        prov_note = " (provenance: de novo)"
     return (
         f"write_plan: wrote {len(doc.steps)} step(s) to "
-        f"{plan_store.path}. Plan status is now 'draft'."
+        f"{plan_store.path}. Plan status is now 'draft'.{prov_note}"
     )
 
 
 def _write_plan_tool_runner(**kwargs):
     """Adapter so StructuredTool.args_schema=WritePlanArgs flows through."""
     parsed = WritePlanArgs(**kwargs)
-    return _write_plan_impl(parsed.user_request, parsed.steps)
+    # Always attach provenance; default is "denovo" so an LLM that doesn't
+    # set anything still ends up with a clearly-marked plan.
+    prov = PlanProvenance(
+        source=parsed.provenance_source,
+        template_id=parsed.provenance_template_id,
+        version=parsed.provenance_version,
+        decision=parsed.provenance_decision,
+        score=parsed.provenance_score,
+    )
+    return _write_plan_impl(parsed.user_request, parsed.steps, provenance=prov)
 
 
 write_plan_tool: StructuredTool = StructuredTool.from_function(

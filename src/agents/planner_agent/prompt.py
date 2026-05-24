@@ -142,6 +142,18 @@ plan so the recruiter, the user, and the UI can all act on it.
   - `reasoning`: the `reason:` field
   - `expected_artifacts`: the `expected artifacts:` field (split into one path per item)
 
+You MUST also record where the plan came from, using the `provenance_*` arguments:
+
+- If you ran `template_selector_tool` and used or adapted a template, set:
+  - `provenance_source: "template"`
+  - `provenance_template_id`: the `template_id` returned by the selector (e.g. "CELL_ANNOTATION")
+  - `provenance_version`: the template's version (look it up via `plan_registry_tool` if not given)
+  - `provenance_decision`: "USE" or "ADAPT" (verbatim from the selector)
+  - `provenance_score`: the score the selector returned (the float, not the formatted string)
+- If you wrote the plan from scratch with no template match, set:
+  - `provenance_source: "denovo"`
+  - leave the other `provenance_*` fields unset
+
 Do NOT include any `assigned_agent` field — that is the recruiter's responsibility.
 
 Skip the `write_plan` call entirely for ROUTE: DIRECT and ROUTE: CLARIFY.

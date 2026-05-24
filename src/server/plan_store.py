@@ -57,6 +57,26 @@ StepStatus = Literal[
 EditedBy = Literal["planner", "recruiter", "manager", "user"]
 
 
+ProvenanceSource = Literal["template", "denovo"]
+
+
+@dataclass
+class PlanProvenance:
+    """Records how the plan was produced.
+
+    - ``source == "template"``: the planner adapted a registry template.
+      ``template_id`` and ``decision`` come from ``template_selector_tool``.
+    - ``source == "denovo"``: the planner wrote the plan from scratch.
+      Other fields are ignored.
+    """
+
+    source: ProvenanceSource = "denovo"
+    template_id: Optional[str] = None
+    version: Optional[str] = None
+    decision: Optional[str] = None  # "USE" | "ADAPT" | "NEW" — verbatim from selector
+    score: Optional[float] = None
+
+
 @dataclass
 class PlanStep:
     """One step of the evolving plan."""
@@ -70,6 +90,11 @@ class PlanStep:
     assignment_rationale: Optional[str] = None
     status: StepStatus = "pending"
     actual_outputs: List[str] = field(default_factory=list)
+    # Args the manager passed to the specialist tool when this step ran.
+    # Populated post-hoc by ``annotate_steps_with_params`` from the chat
+    # history. Not persisted in plan.md (the conversation is authoritative);
+    # carried in JSON payloads via ``serialize_plan`` for the UI + exports.
+    params: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -81,6 +106,7 @@ class PlanDocument:
     steps: List[PlanStep] = field(default_factory=list)
     last_edited_by: Optional[EditedBy] = None
     last_edited_at: Optional[str] = None  # ISO-8601 UTC timestamp
+    provenance: Optional[PlanProvenance] = None
 
     def to_markdown(self) -> str:
         """Serialise to the on-disk markdown form."""
@@ -95,6 +121,17 @@ class PlanDocument:
             header["last_edited_by"] = self.last_edited_by
         if self.last_edited_at is not None:
             header["last_edited_at"] = self.last_edited_at
+        if self.provenance is not None:
+            prov: Dict[str, Any] = {"source": self.provenance.source}
+            if self.provenance.template_id is not None:
+                prov["template_id"] = self.provenance.template_id
+            if self.provenance.version is not None:
+                prov["version"] = self.provenance.version
+            if self.provenance.decision is not None:
+                prov["decision"] = self.provenance.decision
+            if self.provenance.score is not None:
+                prov["score"] = self.provenance.score
+            header["provenance"] = prov
         out.append("```yaml")
         out.append(yaml.safe_dump(
             header, sort_keys=False, allow_unicode=True
@@ -167,6 +204,34 @@ def _parse_markdown(text: str) -> PlanDocument:
             edited_at = header.get("last_edited_at")
             if edited_at:
                 doc.last_edited_at = str(edited_at)
+            prov_raw = header.get("provenance")
+            if isinstance(prov_raw, dict):
+                source = prov_raw.get("source")
+                if source in ("template", "denovo"):
+                    score_raw = prov_raw.get("score")
+                    try:
+                        score = float(score_raw) if score_raw is not None else None
+                    except (TypeError, ValueError):
+                        score = None
+                    doc.provenance = PlanProvenance(
+                        source=source,  # type: ignore[arg-type]
+                        template_id=(
+                            str(prov_raw.get("template_id"))
+                            if prov_raw.get("template_id") is not None
+                            else None
+                        ),
+                        version=(
+                            str(prov_raw.get("version"))
+                            if prov_raw.get("version") is not None
+                            else None
+                        ),
+                        decision=(
+                            str(prov_raw.get("decision"))
+                            if prov_raw.get("decision") is not None
+                            else None
+                        ),
+                        score=score,
+                    )
         except yaml.YAMLError:
             pass
 
@@ -316,6 +381,53 @@ class PlanStore:
 plan_store = PlanStore()
 
 
+def annotate_steps_with_params(doc: PlanDocument, messages) -> PlanDocument:
+    """Attach the args each step's specialist was invoked with.
+
+    Walks the message history and matches ``*_agent_transfer_tool`` calls
+    against the ordered list of steps. The mapping is:
+
+    1. For every step in ``doc.steps`` with an ``assigned_agent``, look
+       for the next unmatched tool call where the tool name starts with
+       ``{assigned_agent}_agent_``.
+    2. If a match is found, set ``step.params`` to that call's ``args``.
+
+    A step gets ``params`` only when there's a clear single matching call;
+    when the manager invoked the same specialist multiple times, only
+    the first call's args are recorded (Phase 1 keeps this simple).
+
+    Mutates *doc* in place and returns it.
+    """
+    if not doc.steps:
+        return doc
+
+    # Build an ordered list of (tool_name, args) from the message stream.
+    calls: List[tuple[str, Dict[str, Any]]] = []
+    for msg in messages or []:
+        tool_calls = getattr(msg, "tool_calls", None)
+        if not tool_calls:
+            continue
+        for call in tool_calls:
+            name = (call.get("name") if isinstance(call, dict) else None) or ""
+            args = (call.get("args") if isinstance(call, dict) else None) or {}
+            if name.endswith("_transfer_tool"):
+                calls.append((name, dict(args) if isinstance(args, dict) else {}))
+
+    consumed = [False] * len(calls)
+    for step in doc.steps:
+        if not step.assigned_agent:
+            continue
+        prefix = f"{step.assigned_agent}_agent_"
+        for i, (name, args) in enumerate(calls):
+            if consumed[i]:
+                continue
+            if name.startswith(prefix):
+                step.params = args
+                consumed[i] = True
+                break
+    return doc
+
+
 def serialize_plan(doc: PlanDocument) -> Dict[str, Any]:
     """Return *doc* as a JSON-friendly dict for the wire format."""
     return {
@@ -324,4 +436,5 @@ def serialize_plan(doc: PlanDocument) -> Dict[str, Any]:
         "steps": [asdict(s) for s in doc.steps],
         "last_edited_by": doc.last_edited_by,
         "last_edited_at": doc.last_edited_at,
+        "provenance": asdict(doc.provenance) if doc.provenance is not None else None,
     }

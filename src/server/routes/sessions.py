@@ -89,7 +89,9 @@ async def save_current_session():
         raise HTTPException(status_code=400, detail="No conversation history to save.")
 
     from server.plan_store import plan_store
+    from server.utils import collect_prompts_snapshot
     plan_markdown = plan_store.read_markdown()
+    prompts_snapshot = collect_prompts_snapshot()
 
     try:
         path = save_session(
@@ -100,6 +102,7 @@ async def save_current_session():
             replan_history=session.agent_state.get("replan_history", []),
             mode=session.mode,
             plan_markdown=plan_markdown,
+            prompts_snapshot=prompts_snapshot,
         )
     except Exception as e:
         logging.error("Failed to save session", exc_info=e)
@@ -222,10 +225,20 @@ async def export_session_html():
     if not messages:
         raise HTTPException(status_code=400, detail="No conversation history to export.")
 
-    from server.plan_store import plan_store
+    from server.plan_store import plan_store, annotate_steps_with_params
+    from server.utils import collect_prompts_snapshot
     plan_markdown = plan_store.read_markdown()
+    plan_doc = plan_store.read()
+    annotate_steps_with_params(plan_doc, messages)
+    prompts_snapshot = collect_prompts_snapshot()
 
-    html = build_session_html(messages, session.subagent_states, plan_markdown)
+    html = build_session_html(
+        messages,
+        session.subagent_states,
+        plan_markdown,
+        prompts_snapshot=prompts_snapshot,
+        plan_doc=plan_doc,
+    )
     filename = f"{SESSION_FILENAME_PREFIX}{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
 
     return HTMLResponse(
@@ -241,11 +254,19 @@ async def export_session_markdown():
     if not messages:
         raise HTTPException(status_code=400, detail="No conversation history to export.")
 
-    from server.plan_store import plan_store
+    from server.plan_store import plan_store, annotate_steps_with_params
+    from server.utils import collect_prompts_snapshot
     plan_markdown = plan_store.read_markdown()
+    plan_doc = plan_store.read()
+    annotate_steps_with_params(plan_doc, messages)
     title = derive_session_title(messages)
+    prompts_snapshot = collect_prompts_snapshot()
 
-    body = build_session_markdown(messages, plan_markdown, title)
+    body = build_session_markdown(
+        messages, plan_markdown, title,
+        prompts_snapshot=prompts_snapshot,
+        plan_doc=plan_doc,
+    )
     filename = f"{SESSION_FILENAME_PREFIX}{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.md"
 
     return PlainTextResponse(

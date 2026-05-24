@@ -126,6 +126,20 @@ export default function PlanPanel({
       </span>
     ) : null;
 
+  const provenanceCaption = plan.provenance
+    ? plan.provenance.source === "template"
+      ? `From template: ${plan.provenance.template_id ?? "?"}${
+          plan.provenance.version ? ` v${plan.provenance.version}` : ""
+        }${
+          plan.provenance.decision ? ` (${plan.provenance.decision})` : ""
+        }${
+          typeof plan.provenance.score === "number"
+            ? `, score ${plan.provenance.score.toFixed(2)}`
+            : ""
+        }`
+      : "De novo plan"
+    : null;
+
   // ---------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------
@@ -149,6 +163,10 @@ export default function PlanPanel({
         </span>
         {userEditedBadge}
       </div>
+
+      {provenanceCaption && (
+        <div className="plan-provenance">{provenanceCaption}</div>
+      )}
 
       <PipelineStepper stage={pipelineStage} planStatus={plan.status} />
 
@@ -463,6 +481,15 @@ function StepList({
                 ))}
               </ul>
             </div>
+          )}
+
+          {step.params && Object.keys(step.params).length > 0 && (
+            <details className="plan-step-params">
+              <summary>
+                Parameters ({Object.keys(step.params).length})
+              </summary>
+              <pre>{JSON.stringify(step.params, null, 2)}</pre>
+            </details>
           )}
         </li>
       ))}
