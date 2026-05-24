@@ -20,6 +20,7 @@ Use the following guidelines to assign agents effectively:
 - If a step involves multiple actions or expected artifacts, choose more than one agent if necessary.
 - You may assign the same agent to multiple steps.
 - Every step MUST be assigned. If no specialist fits, use the `coding` agent as the general-purpose fallback and say so explicitly in the rationale.
+- The plan you receive may have been edited by the human user in copilot mode (visible if the on-disk plan carries `last_edited_by: user`). When that is the case, treat the user's wording of step titles, descriptions, and expected artifacts as authoritative — do not rewrite them. Assign agents to the plan as written.
 
 You will need to output the updated <Plan> with assigned agents. For each step, add two new fields: <assigned agent> and <assignment rationale> and do not change any of the existing fields.
 The final output should follow the following format exactly:

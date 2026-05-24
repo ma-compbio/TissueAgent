@@ -6,6 +6,8 @@ import type {
   Provider,
 } from "../hooks/useModels";
 import type { Plan } from "../hooks/usePlan";
+import type { AgentInfo } from "../hooks/useAgents";
+import type { ReviewState } from "../hooks/useWebSocket";
 import FileUpload from "./FileUpload";
 import ModelPicker from "./ModelPicker";
 import PlanPanel from "./PlanPanel";
@@ -29,6 +31,15 @@ interface Props {
   isRunning: boolean;
   mode: SessionMode;
   onChangeMode: (mode: SessionMode) => void;
+  reviewState: ReviewState;
+  agents: AgentInfo[];
+  onApprovePlan: () => void;
+  onEditPlan: (markdown: string) => void;
+  onPlanFeedback: (text: string) => void;
+  onApproveAssignments: () => void;
+  onEditAssignments: (markdown: string) => void;
+  onAssignmentsFeedback: (text: string) => void;
+  onCancelRun: () => void;
   models: ModelOption[];
   modelSelection: ModelSelection | null;
   workerPinned: boolean;
@@ -57,6 +68,15 @@ export default function Sidebar({
   isRunning,
   mode,
   onChangeMode,
+  reviewState,
+  agents,
+  onApprovePlan,
+  onEditPlan,
+  onPlanFeedback,
+  onApproveAssignments,
+  onEditAssignments,
+  onAssignmentsFeedback,
+  onCancelRun,
   models,
   modelSelection,
   workerPinned,
@@ -144,7 +164,19 @@ export default function Sidebar({
       </div>
 
       <div className="sidebar-bottom">
-        <PlanPanel plan={plan} markdown={planMarkdown} />
+        <PlanPanel
+          plan={plan}
+          markdown={planMarkdown}
+          reviewState={reviewState}
+          agents={agents}
+          onApprovePlan={onApprovePlan}
+          onEditPlan={onEditPlan}
+          onPlanFeedback={onPlanFeedback}
+          onApproveAssignments={onApproveAssignments}
+          onEditAssignments={onEditAssignments}
+          onAssignmentsFeedback={onAssignmentsFeedback}
+          onCancelRun={onCancelRun}
+        />
       </div>
     </aside>
   );

@@ -5,7 +5,9 @@ const API = import.meta.env.DEV ? "http://localhost:8000" : "";
 export type PlanStatus =
   | "empty"
   | "draft"
+  | "awaiting_plan_review"
   | "recruited"
+  | "awaiting_assignment_review"
   | "approved"
   | "running"
   | "paused"
@@ -31,10 +33,14 @@ export interface PlanStep {
   actual_outputs: string[];
 }
 
+export type EditedBy = "planner" | "recruiter" | "manager" | "user";
+
 export interface Plan {
   status: PlanStatus;
   user_request: string;
   steps: PlanStep[];
+  last_edited_by?: EditedBy | null;
+  last_edited_at?: string | null;
 }
 
 export interface PlanPayload {
@@ -46,6 +52,8 @@ const EMPTY_PLAN: Plan = {
   status: "empty",
   user_request: "",
   steps: [],
+  last_edited_by: null,
+  last_edited_at: null,
 };
 
 /**

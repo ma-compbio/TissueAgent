@@ -30,10 +30,16 @@ from config import DATA_DIR, NOTEBOOK_DIR
 
 
 class CodeActState(MessagesState):
-    """Extended message state carrying the current code/response block and a persistent REPL."""
+    """Extended message state carrying the current code/response block.
+
+    The persistent ``PythonREPL`` used by ``exec_node`` is **not** part of
+    this state. It lives in a closure-local holder inside
+    :func:`create_coding_agent` so it never reaches the checkpointer
+    (msgpack cannot serialise a ``PythonREPL``, and we never need to
+    resume the coding sub-graph mid-flight anyway).
+    """
 
     status_block: str  # content of <execute> or <response> block
-    repl: Optional[PythonREPL]
 
 
 def create_coding_agent(state_queue: Queue):
@@ -145,6 +151,12 @@ def create_coding_agent(state_queue: Queue):
         logging.info(f"transferring from agent_node to {next_node}")
         return Command(goto=next_node, update={"messages": response})
 
+    # Closure-local holder for the persistent REPL. Reset to ``None`` at
+    # the start of each ``agent_invocation_tool`` call so a fresh REPL is
+    # built per invocation; reused across multiple ``exec_node`` calls
+    # within the same invocation so imports/defs persist.
+    repl_holder: dict = {"repl": None}
+
     def exec_node(state: CodeActState):
         """Extract and run the <execute> code block in a persistent Python REPL."""
         messages = state["messages"]
@@ -155,7 +167,7 @@ def create_coding_agent(state_queue: Queue):
 
         assert code_block is not None
 
-        repl = state.get("repl")
+        repl = repl_holder["repl"]
         if repl is None:
             repl = PythonREPL()
             # Keep globals/locals shared so imports & defs stay visible inside functions.
@@ -173,13 +185,14 @@ def create_coding_agent(state_queue: Queue):
             }
 
             g.update(initial_context)
+            repl_holder["repl"] = repl
 
         output = repl.run(code_block)
 
         logging.info("finished exec_node")
 
         log_message(HumanMessage("Python Output:\n" + output))
-        return {"messages": [HumanMessage(output)], "repl": repl}
+        return {"messages": [HumanMessage(output)]}
 
     graph.add_node(agent_node_id, agent_node)
     graph.add_node(exec_node_id, exec_node)
@@ -191,6 +204,10 @@ def create_coding_agent(state_queue: Queue):
     def agent_invocation_tool(prompt: str) -> str:
         """Run the coding agent graph on a prompt and return the final message."""
         logging.info(f"Invoking agent `{id}`")
+        # Fresh REPL per invocation — matches the prior behavior where
+        # ``state.get("repl")`` was None at the start of each invoke.
+        repl_holder["repl"] = None
+
         image_parts = get_latest_user_image_parts()
         if image_parts:
             logging.info("Forwarding latest user image attachments to coding agent.")

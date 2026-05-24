@@ -1,23 +1,42 @@
 /**
- * Read-only view of the evolving plan (phase 1).
+ * Plan panel — read-only by default; copilot mode adds review controls.
  *
- * Renders the plan's structured fields per step. The raw markdown source
- * is available behind a "view source" toggle for debugging and for
- * users who'd rather copy the plan into their own editor.
+ * When ``reviewState === "plan"`` the panel exposes Approve / Edit / Feedback
+ * / Cancel controls for the plan gate (between planner and recruiter).
+ *
+ * When ``reviewState === "assignment"`` it exposes per-step ``assigned_agent``
+ * dropdowns and the same Approve / Feedback / Cancel pattern for the
+ * assignment gate (between recruiter and manager).
+ *
+ * Outside of copilot reviews the panel is the same read-only view it has
+ * always been — including showing the markdown source on demand.
  */
 
-import { useState } from "react";
-import type { Plan } from "../hooks/usePlan";
+import { useEffect, useState } from "react";
+import type { Plan, PlanStep } from "../hooks/usePlan";
+import type { AgentInfo } from "../hooks/useAgents";
+import type { ReviewState } from "../hooks/useWebSocket";
 
 interface Props {
   plan: Plan;
   markdown: string;
+  reviewState: ReviewState;
+  agents: AgentInfo[];
+  onApprovePlan: () => void;
+  onEditPlan: (markdown: string) => void;
+  onPlanFeedback: (text: string) => void;
+  onApproveAssignments: () => void;
+  onEditAssignments: (markdown: string) => void;
+  onAssignmentsFeedback: (text: string) => void;
+  onCancelRun: () => void;
 }
 
 const STATUS_LABEL: Record<string, string> = {
   empty: "no plan yet",
   draft: "draft — recruiter has not assigned agents",
+  awaiting_plan_review: "awaiting your review",
   recruited: "ready — assignments complete",
+  awaiting_assignment_review: "awaiting your review of assignments",
   approved: "approved",
   running: "running",
   paused: "paused",
@@ -25,32 +44,89 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "failed",
 };
 
-export default function PlanPanel({ plan, markdown }: Props) {
+export default function PlanPanel({
+  plan,
+  markdown,
+  reviewState,
+  agents,
+  onApprovePlan,
+  onEditPlan,
+  onPlanFeedback,
+  onApproveAssignments,
+  onEditAssignments,
+  onAssignmentsFeedback,
+  onCancelRun,
+}: Props) {
   const [showSource, setShowSource] = useState(false);
 
-  if (plan.status === "empty" || plan.steps.length === 0) {
+  // Edit-mode markdown buffer for plan-gate edits.
+  const [planDraft, setPlanDraft] = useState<string>("");
+  const [editingPlan, setEditingPlan] = useState(false);
+  // Per-step agent picks for the assignment gate (id → assigned_agent | null).
+  const [assignmentDrafts, setAssignmentDrafts] = useState<
+    Record<number, string | null>
+  >({});
+  // Free-text feedback buffers, one per gate.
+  const [planFeedback, setPlanFeedbackText] = useState("");
+  const [assignmentsFeedback, setAssignmentsFeedbackText] = useState("");
+
+  // Reset local edit state whenever the review gate (re)opens.
+  useEffect(() => {
+    if (reviewState === "plan") {
+      setPlanDraft(markdown);
+      setEditingPlan(false);
+      setPlanFeedbackText("");
+    } else if (reviewState === "assignment") {
+      const initial: Record<number, string | null> = {};
+      for (const s of plan.steps) initial[s.id] = s.assigned_agent;
+      setAssignmentDrafts(initial);
+      setAssignmentsFeedbackText("");
+    }
+  }, [reviewState, markdown, plan.steps]);
+
+  // ---------------------------------------------------------------------
+  // Empty-state short-circuit
+  // ---------------------------------------------------------------------
+
+  if (
+    (plan.status === "empty" || plan.steps.length === 0) &&
+    reviewState === null
+  ) {
     return (
       <div className="plan-panel">
         <div className="plan-panel-header">
           <span className="plan-panel-title">Plan</span>
-          <span className="plan-panel-status plan-status-empty">no plan yet</span>
+          <span className="plan-panel-status plan-status-empty">
+            no plan yet
+          </span>
         </div>
         <div className="plan-panel-empty">
-          Send a message that needs analysis — the planner will draft a plan here.
+          Send a message that needs analysis — the planner will draft a plan
+          here.
         </div>
       </div>
     );
   }
 
+  const userEditedBadge =
+    plan.last_edited_by === "user" ? (
+      <span className="plan-edit-badge" title={plan.last_edited_at ?? ""}>
+        edited by you
+      </span>
+    ) : null;
+
+  // ---------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------
+
   return (
     <div className="plan-panel">
       <div className="plan-panel-header">
         <span className="plan-panel-title">Plan</span>
-        <span
-          className={`plan-panel-status plan-status-${plan.status}`}
-        >
+        <span className={`plan-panel-status plan-status-${plan.status}`}>
           {STATUS_LABEL[plan.status] ?? plan.status}
         </span>
+        {userEditedBadge}
       </div>
 
       {plan.user_request && (
@@ -60,74 +136,71 @@ export default function PlanPanel({ plan, markdown }: Props) {
         </div>
       )}
 
-      <ol className="plan-step-list">
-        {plan.steps.map((step) => (
-          <li key={step.id} className={`plan-step plan-step-status-${step.status}`}>
-            <div className="plan-step-head">
-              <span className="plan-step-num">Step {step.id}</span>
-              <span className="plan-step-title">{step.title}</span>
-              <span className={`plan-step-badge plan-status-${step.status}`}>
-                {step.status}
-              </span>
-            </div>
+      {/* Plan gate — markdown edit takes over the step list entirely */}
+      {reviewState === "plan" && editingPlan ? (
+        <PlanEditView
+          draft={planDraft}
+          onChange={setPlanDraft}
+          onSave={() => onEditPlan(planDraft)}
+          onCancel={() => {
+            setEditingPlan(false);
+            setPlanDraft(markdown);
+          }}
+        />
+      ) : (
+        <StepList
+          steps={plan.steps}
+          reviewState={reviewState}
+          agents={agents}
+          assignmentDrafts={assignmentDrafts}
+          onChangeAssignment={(stepId, agentId) =>
+            setAssignmentDrafts((d) => ({ ...d, [stepId]: agentId || null }))
+          }
+        />
+      )}
 
-            {step.description && (
-              <div className="plan-step-field">
-                <span className="plan-step-field-label">Description</span>
-                <div>{step.description}</div>
-              </div>
-            )}
+      {/* Review action bar */}
+      {reviewState === "plan" && !editingPlan && (
+        <ReviewActions
+          gate="plan"
+          onApprove={onApprovePlan}
+          onEdit={() => setEditingPlan(true)}
+          feedback={planFeedback}
+          onFeedbackChange={setPlanFeedbackText}
+          onSendFeedback={() => {
+            if (planFeedback.trim()) {
+              onPlanFeedback(planFeedback.trim());
+              setPlanFeedbackText("");
+            }
+          }}
+          onCancel={onCancelRun}
+        />
+      )}
 
-            {step.reasoning && (
-              <div className="plan-step-field">
-                <span className="plan-step-field-label">Reasoning</span>
-                <div>{step.reasoning}</div>
-              </div>
-            )}
-
-            {step.expected_artifacts.length > 0 && (
-              <div className="plan-step-field">
-                <span className="plan-step-field-label">Expected artifacts</span>
-                <ul className="plan-step-artifacts">
-                  {step.expected_artifacts.map((a) => (
-                    <li key={a}>
-                      <code>{a}</code>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {step.assigned_agent && (
-              <div className="plan-step-field plan-step-assignment">
-                <span className="plan-step-field-label">Assigned</span>
-                <div>
-                  <span className="plan-step-agent">{step.assigned_agent}</span>
-                  {step.assignment_rationale && (
-                    <span className="plan-step-rationale">
-                      {" "}
-                      — {step.assignment_rationale}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {step.actual_outputs.length > 0 && (
-              <div className="plan-step-field">
-                <span className="plan-step-field-label">Outputs</span>
-                <ul className="plan-step-artifacts">
-                  {step.actual_outputs.map((a) => (
-                    <li key={a}>
-                      <code>{a}</code>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </li>
-        ))}
-      </ol>
+      {reviewState === "assignment" && (
+        <ReviewActions
+          gate="assignment"
+          onApprove={onApproveAssignments}
+          onEdit={() => {
+            const updated = updateAssignmentsInMarkdown(
+              markdown,
+              plan,
+              assignmentDrafts,
+            );
+            onEditAssignments(updated);
+          }}
+          editLabel="Save assignments"
+          feedback={assignmentsFeedback}
+          onFeedbackChange={setAssignmentsFeedbackText}
+          onSendFeedback={() => {
+            if (assignmentsFeedback.trim()) {
+              onAssignmentsFeedback(assignmentsFeedback.trim());
+              setAssignmentsFeedbackText("");
+            }
+          }}
+          onCancel={onCancelRun}
+        />
+      )}
 
       <div className="plan-panel-footer">
         <button
@@ -139,9 +212,316 @@ export default function PlanPanel({ plan, markdown }: Props) {
         </button>
       </div>
 
-      {showSource && (
-        <pre className="plan-panel-source">{markdown}</pre>
-      )}
+      {showSource && <pre className="plan-panel-source">{markdown}</pre>}
     </div>
   );
 }
+
+// =====================================================================
+// Sub-components
+// =====================================================================
+
+interface StepListProps {
+  steps: PlanStep[];
+  reviewState: ReviewState;
+  agents: AgentInfo[];
+  assignmentDrafts: Record<number, string | null>;
+  onChangeAssignment: (stepId: number, agentId: string) => void;
+}
+
+function StepList({
+  steps,
+  reviewState,
+  agents,
+  assignmentDrafts,
+  onChangeAssignment,
+}: StepListProps) {
+  const isAssignmentReview = reviewState === "assignment";
+
+  return (
+    <ol className="plan-step-list">
+      {steps.map((step) => (
+        <li
+          key={step.id}
+          className={`plan-step plan-step-status-${step.status}`}
+        >
+          <div className="plan-step-head">
+            <span className="plan-step-num">Step {step.id}</span>
+            <span className="plan-step-title">{step.title}</span>
+            <span className={`plan-step-badge plan-status-${step.status}`}>
+              {step.status}
+            </span>
+          </div>
+
+          {step.description && (
+            <div className="plan-step-field">
+              <span className="plan-step-field-label">Description</span>
+              <div>{step.description}</div>
+            </div>
+          )}
+
+          {step.reasoning && (
+            <div className="plan-step-field">
+              <span className="plan-step-field-label">Reasoning</span>
+              <div>{step.reasoning}</div>
+            </div>
+          )}
+
+          {step.expected_artifacts.length > 0 && (
+            <div className="plan-step-field">
+              <span className="plan-step-field-label">Expected artifacts</span>
+              <ul className="plan-step-artifacts">
+                {step.expected_artifacts.map((a) => (
+                  <li key={a}>
+                    <code>{a}</code>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Assignment view: dropdown when reviewing; otherwise plain text */}
+          {isAssignmentReview ? (
+            <div className="plan-step-field plan-step-assignment">
+              <span className="plan-step-field-label">Assigned</span>
+              <select
+                className="plan-step-agent-select"
+                value={assignmentDrafts[step.id] ?? ""}
+                onChange={(e) =>
+                  onChangeAssignment(step.id, e.target.value)
+                }
+              >
+                <option value="" disabled>
+                  -- choose agent --
+                </option>
+                {agents.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+              {step.assignment_rationale && (
+                <div className="plan-step-rationale">
+                  {step.assignment_rationale}
+                </div>
+              )}
+            </div>
+          ) : (
+            step.assigned_agent && (
+              <div className="plan-step-field plan-step-assignment">
+                <span className="plan-step-field-label">Assigned</span>
+                <div>
+                  <span className="plan-step-agent">
+                    {step.assigned_agent}
+                  </span>
+                  {step.assignment_rationale && (
+                    <span className="plan-step-rationale">
+                      {" "}
+                      — {step.assignment_rationale}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          )}
+
+          {step.actual_outputs.length > 0 && (
+            <div className="plan-step-field">
+              <span className="plan-step-field-label">Outputs</span>
+              <ul className="plan-step-artifacts">
+                {step.actual_outputs.map((a) => (
+                  <li key={a}>
+                    <code>{a}</code>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+interface PlanEditViewProps {
+  draft: string;
+  onChange: (v: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+function PlanEditView({ draft, onChange, onSave, onCancel }: PlanEditViewProps) {
+  return (
+    <div className="plan-edit-view">
+      <div className="plan-edit-help">
+        Edit the plan markdown directly. Keep the <code>## Step N — Title</code>{" "}
+        headings and the YAML fences. The server re-validates on save.
+      </div>
+      <textarea
+        className="plan-edit-textarea"
+        value={draft}
+        onChange={(e) => onChange(e.target.value)}
+        spellCheck={false}
+        rows={Math.min(28, Math.max(12, draft.split("\n").length + 1))}
+      />
+      <div className="plan-edit-actions">
+        <button
+          type="button"
+          className="plan-action-btn primary"
+          onClick={onSave}
+        >
+          Save & resume
+        </button>
+        <button type="button" className="plan-action-btn" onClick={onCancel}>
+          Discard
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface ReviewActionsProps {
+  gate: "plan" | "assignment";
+  onApprove: () => void;
+  onEdit?: () => void;
+  editLabel?: string;
+  feedback: string;
+  onFeedbackChange: (v: string) => void;
+  onSendFeedback: () => void;
+  onCancel: () => void;
+}
+
+function ReviewActions({
+  gate,
+  onApprove,
+  onEdit,
+  editLabel,
+  feedback,
+  onFeedbackChange,
+  onSendFeedback,
+  onCancel,
+}: ReviewActionsProps) {
+  const approveLabel =
+    gate === "plan" ? "Approve plan" : "Approve assignments";
+
+  return (
+    <div className="plan-review-bar">
+      <div className="plan-review-buttons">
+        <button
+          type="button"
+          className="plan-action-btn primary"
+          onClick={onApprove}
+        >
+          {approveLabel}
+        </button>
+        {onEdit && (
+          <button type="button" className="plan-action-btn" onClick={onEdit}>
+            {editLabel ?? "Edit"}
+          </button>
+        )}
+        <button type="button" className="plan-action-btn danger" onClick={onCancel}>
+          Cancel run
+        </button>
+      </div>
+      <div className="plan-review-feedback">
+        <textarea
+          className="plan-review-feedback-input"
+          placeholder={
+            gate === "plan"
+              ? "Feedback to the planner (triggers a replan)…"
+              : "Feedback to the planner about agent choice…"
+          }
+          value={feedback}
+          onChange={(e) => onFeedbackChange(e.target.value)}
+          rows={2}
+        />
+        <button
+          type="button"
+          className="plan-action-btn"
+          onClick={onSendFeedback}
+          disabled={!feedback.trim()}
+        >
+          Send feedback
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// Helpers
+// =====================================================================
+
+/**
+ * Build a fresh plan markdown string with updated ``assigned_agent``
+ * values, mirroring ``PlanDocument.to_markdown`` in ``plan_store.py``.
+ *
+ * Only the assigned-agent values change — everything else is preserved
+ * from the current ``plan`` object. The on-server ``apply_user_edit``
+ * still re-validates the result.
+ */
+function updateAssignmentsInMarkdown(
+  _currentMarkdown: string,
+  plan: Plan,
+  drafts: Record<number, string | null>,
+): string {
+  const yaml = (obj: Record<string, unknown>): string => {
+    // Tiny YAML emitter that handles strings, nulls, and lists of strings —
+    // matches what the backend's yaml.safe_dump produces for our payloads.
+    const lines: string[] = [];
+    for (const [k, v] of Object.entries(obj)) {
+      if (v === null || v === undefined) {
+        lines.push(`${k}: null`);
+      } else if (Array.isArray(v)) {
+        if (v.length === 0) lines.push(`${k}: []`);
+        else {
+          lines.push(`${k}:`);
+          for (const item of v) lines.push(`- ${yamlScalar(String(item))}`);
+        }
+      } else {
+        lines.push(`${k}: ${yamlScalar(String(v))}`);
+      }
+    }
+    return lines.join("\n");
+  };
+
+  const out: string[] = ["# Plan", ""];
+  const header: Record<string, unknown> = {
+    status: plan.status,
+    user_request: plan.user_request.trim(),
+  };
+  if (plan.last_edited_by) header.last_edited_by = plan.last_edited_by;
+  if (plan.last_edited_at) header.last_edited_at = plan.last_edited_at;
+  out.push("```yaml", yaml(header), "```", "");
+
+  for (const step of plan.steps) {
+    const assigned = drafts[step.id] ?? step.assigned_agent;
+    out.push(`## Step ${step.id} — ${step.title}`, "");
+    out.push(
+      "```yaml",
+      yaml({
+        status: step.status,
+        assigned_agent: assigned,
+        assigned_rationale: step.assignment_rationale,
+        expected_artifacts: step.expected_artifacts,
+        actual_outputs: step.actual_outputs,
+      }),
+      "```",
+    );
+    if (step.description) out.push("", `**Description:** ${step.description}`);
+    if (step.reasoning) out.push("", `**Reasoning:** ${step.reasoning}`);
+    out.push("");
+  }
+  return out.join("\n").replace(/\n+$/, "") + "\n";
+}
+
+/** Quote a YAML scalar if it might be ambiguous; otherwise emit bare. */
+function yamlScalar(s: string): string {
+  if (s === "") return '""';
+  if (/^[A-Za-z_][A-Za-z0-9_./-]*$/.test(s) && !["null", "true", "false", "yes", "no"].includes(s.toLowerCase())) {
+    return s;
+  }
+  // Quote and escape backslash + double-quote.
+  return `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+

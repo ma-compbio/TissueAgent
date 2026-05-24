@@ -3,6 +3,7 @@ import ChatView from "./components/ChatView";
 import FileBrowser from "./components/FileBrowser";
 import Sidebar from "./components/Sidebar";
 import ThemeToggle from "./components/ThemeToggle";
+import { useAgents } from "./hooks/useAgents";
 import { useModels } from "./hooks/useModels";
 import { usePlan } from "./hooks/usePlan";
 import type { PlanPayload } from "./hooks/usePlan";
@@ -16,6 +17,7 @@ export default function App() {
   const session = useSession();
   const modelHook = useModels();
   const planHook = usePlan();
+  const agentsHook = useAgents();
   const { theme, toggleTheme } = useTheme();
 
   const [enableDebug, setEnableDebug] = useState(false);
@@ -48,6 +50,15 @@ export default function App() {
         isRunning={ws.isRunning}
         mode={ws.mode}
         onChangeMode={ws.setMode}
+        reviewState={ws.reviewState}
+        agents={agentsHook.agents}
+        onApprovePlan={ws.approvePlan}
+        onEditPlan={ws.editPlan}
+        onPlanFeedback={ws.sendPlanFeedback}
+        onApproveAssignments={ws.approveAssignments}
+        onEditAssignments={ws.editAssignments}
+        onAssignmentsFeedback={ws.sendAssignmentsFeedback}
+        onCancelRun={ws.cancelRun}
         models={modelHook.models}
         modelSelection={modelHook.selection}
         workerPinned={modelHook.workerPinned}

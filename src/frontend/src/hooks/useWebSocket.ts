@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
+  AssignmentsApprovedEvent,
+  AssignmentsEditedEvent,
+  AssignmentsFeedbackEvent,
   HistoryData,
+  PlanApprovedEvent,
+  PlanEditedEvent,
+  PlanFeedbackEvent,
+  RunCancelledClientEvent,
   SendMessageEvent,
   SerializedMessage,
   ServerEvent,
@@ -13,6 +20,9 @@ interface PlanUpdatePayload {
   markdown: string;
   plan: unknown; // PlanPayload-shaped; consumers cast to the real type.
 }
+
+/** Which copilot review gate is open. ``null`` ⇒ no review pending. */
+export type ReviewState = "plan" | "assignment" | null;
 
 interface UseWebSocketReturn {
   messages: SerializedMessage[];
@@ -27,6 +37,14 @@ interface UseWebSocketReturn {
   setMode: (mode: SessionMode) => void;
   sendMessage: (text: string, imageIds?: string[], pdfIds?: string[]) => void;
   clearError: () => void;
+  reviewState: ReviewState;
+  approvePlan: () => void;
+  editPlan: (markdown: string) => void;
+  sendPlanFeedback: (text: string) => void;
+  approveAssignments: () => void;
+  editAssignments: (markdown: string) => void;
+  sendAssignmentsFeedback: (text: string) => void;
+  cancelRun: () => void;
 }
 
 const WS_URL =
@@ -51,6 +69,7 @@ export function useWebSocket(): UseWebSocketReturn {
   const [error, setError] = useState<string | null>(null);
   const [planEvent, setPlanEvent] = useState<PlanUpdatePayload | null>(null);
   const [mode, setModeState] = useState<SessionMode>("autopilot");
+  const [reviewState, setReviewState] = useState<ReviewState>(null);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -153,17 +172,32 @@ export function useWebSocket(): UseWebSocketReturn {
           setIsRunning(false);
           setElapsed(data.elapsed_seconds);
           setLiveTraces({});
+          setReviewState(null);
           break;
         case "run_error":
           setIsRunning(false);
           setError(`${data.error_type}: ${data.detail}`);
           setLiveTraces({});
+          // Note: don't clear reviewState on errors that come *during* a
+          // review (e.g. PlanEditError). Only clear it on terminal errors
+          // — for simplicity we leave it set; the user can retry or cancel.
           break;
         case "plan_updated":
           setPlanEvent(data.data as PlanUpdatePayload);
           break;
         case "mode_updated":
           setModeState(data.data.mode);
+          break;
+        case "plan_review_requested":
+          setReviewState("plan");
+          break;
+        case "assignment_review_requested":
+          setReviewState("assignment");
+          break;
+        case "run_cancelled":
+          setIsRunning(false);
+          setLiveTraces({});
+          setReviewState(null);
           break;
       }
     };
@@ -177,31 +211,83 @@ export function useWebSocket(): UseWebSocketReturn {
     };
   }, [connect]);
 
+  const send = useCallback((payload: object) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      setError("Not connected to server");
+      return;
+    }
+    wsRef.current.send(JSON.stringify(payload));
+  }, []);
+
   const sendMessage = useCallback(
     (text: string, imageIds: string[] = [], pdfIds: string[] = []) => {
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        setError("Not connected to server");
-        return;
-      }
       const event: SendMessageEvent = {
         type: "send_message",
         text,
         image_ids: imageIds,
         pdf_ids: pdfIds,
       };
-      wsRef.current.send(JSON.stringify(event));
+      send(event);
     },
-    []
+    [send]
   );
 
-  const setMode = useCallback((next: SessionMode) => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      setError("Not connected to server");
-      return;
-    }
-    const event: SetModeEvent = { type: "set_mode", mode: next };
-    wsRef.current.send(JSON.stringify(event));
-  }, []);
+  const setMode = useCallback(
+    (next: SessionMode) => {
+      const event: SetModeEvent = { type: "set_mode", mode: next };
+      send(event);
+    },
+    [send]
+  );
+
+  // ---- copilot review actions ----
+
+  const approvePlan = useCallback(() => {
+    const event: PlanApprovedEvent = { type: "plan_approved" };
+    send(event);
+  }, [send]);
+
+  const editPlan = useCallback(
+    (markdown: string) => {
+      const event: PlanEditedEvent = { type: "plan_edited", markdown };
+      send(event);
+    },
+    [send]
+  );
+
+  const sendPlanFeedback = useCallback(
+    (text: string) => {
+      const event: PlanFeedbackEvent = { type: "plan_feedback", text };
+      send(event);
+    },
+    [send]
+  );
+
+  const approveAssignments = useCallback(() => {
+    const event: AssignmentsApprovedEvent = { type: "assignments_approved" };
+    send(event);
+  }, [send]);
+
+  const editAssignments = useCallback(
+    (markdown: string) => {
+      const event: AssignmentsEditedEvent = { type: "assignments_edited", markdown };
+      send(event);
+    },
+    [send]
+  );
+
+  const sendAssignmentsFeedback = useCallback(
+    (text: string) => {
+      const event: AssignmentsFeedbackEvent = { type: "assignments_feedback", text };
+      send(event);
+    },
+    [send]
+  );
+
+  const cancelRun = useCallback(() => {
+    const event: RunCancelledClientEvent = { type: "run_cancelled" };
+    send(event);
+  }, [send]);
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -218,5 +304,13 @@ export function useWebSocket(): UseWebSocketReturn {
     setMode,
     sendMessage,
     clearError,
+    reviewState,
+    approvePlan,
+    editPlan,
+    sendPlanFeedback,
+    approveAssignments,
+    editAssignments,
+    sendAssignmentsFeedback,
+    cancelRun,
   };
 }

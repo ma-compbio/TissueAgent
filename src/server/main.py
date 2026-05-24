@@ -18,12 +18,20 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from langgraph.checkpoint.memory import MemorySaver
 
 import models as model_registry
 from graph.graph import create_tissueagent_graph
 from graph.graph_utils import register_ui_event_queue
 from server.rate_limit import with_header_retry
-from server.routes import chat, files, models as models_route, plan, sessions
+from server.routes import (
+    agents as agents_route,
+    chat,
+    files,
+    models as models_route,
+    plan,
+    sessions,
+)
 from server.session_manager import session
 from server.utils import reset_data_directories
 
@@ -39,9 +47,16 @@ def _bind_retry(model):
 
 
 def _compile_graph() -> None:
-    """(Re)compile the agent graph using the currently-selected models."""
+    """(Re)compile the agent graph using the currently-selected models.
+
+    Compiles with an in-memory checkpointer so copilot mode can pause via
+    ``interrupt_before`` and resume by invoking with ``input=None`` against
+    the same ``thread_id``. Autopilot ignores both — it never passes
+    ``interrupt_before`` and never resumes — so the checkpointer is
+    effectively no-op overhead for autopilot runs.
+    """
     graph = create_tissueagent_graph(session.state_queue, _bind_retry)
-    session.agent = graph.compile()
+    session.agent = graph.compile(checkpointer=MemorySaver())
     session.model_revision = model_registry.get_revision()
     logging.info(
         "TissueAgent graph compiled with selection=%s (rev %d).",
@@ -87,6 +102,7 @@ app.add_middleware(
 )
 
 # Mount API routes
+app.include_router(agents_route.router)
 app.include_router(chat.router)
 app.include_router(files.router)
 app.include_router(models_route.router)

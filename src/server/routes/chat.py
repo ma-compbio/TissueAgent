@@ -9,6 +9,7 @@ import json
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
 
 import anthropic
 import openai
@@ -59,6 +60,20 @@ async def websocket_chat(ws: WebSocket):
                 await _handle_user_message(ws, data)
             elif msg_type == "set_mode":
                 await _handle_set_mode(ws, data)
+            elif msg_type == "plan_approved":
+                await _handle_resume(ws, expected_pause="before_recruiter")
+            elif msg_type == "assignments_approved":
+                await _handle_resume(ws, expected_pause="before_manager")
+            elif msg_type == "plan_edited":
+                await _handle_plan_edited(ws, data)
+            elif msg_type == "assignments_edited":
+                await _handle_assignments_edited(ws, data)
+            elif msg_type == "plan_feedback":
+                await _handle_plan_feedback(ws, data)
+            elif msg_type == "assignments_feedback":
+                await _handle_assignments_feedback(ws, data)
+            elif msg_type == "run_cancelled":
+                await _handle_run_cancelled(ws)
     except WebSocketDisconnect:
         logging.info("WebSocket client disconnected")
     except Exception as e:
@@ -146,9 +161,12 @@ async def _handle_user_message(ws: WebSocket, data: dict):
     session.agent_state.setdefault("replan_count", 0)
     session.agent_state.setdefault("replan_history", [])
 
-    # New user turn → clear any stale plan from disk so the planner starts fresh.
+    # New user turn → fresh checkpointer thread, clear any stale plan + pause.
     from server.plan_store import plan_store as _plan_store
+    from server.session_manager import _new_thread_id
     _plan_store.reset()
+    session.thread_id = _new_thread_id()
+    session.paused_at = None
 
     # Send the user message back to client for display
     await ws.send_json({
@@ -161,37 +179,88 @@ async def _handle_user_message(ws: WebSocket, data: dict):
     # Clear pending images after sending
     session.pending_images = []
 
-    # Record prefix for post-run linkage
-    rendered_prefix = len(session.agent_state["messages"])
-
     # Rebuild the agent graph if the user changed the model since the last turn.
     from server.main import ensure_graph_current
     ensure_graph_current()
 
-    # Invoke agent in background thread
+    # First invocation of this turn: pass the current message state in.
+    await _run_graph(ws, graph_input=session.agent_state)
+
+
+# ---------------------------------------------------------------------------
+# Graph driver — shared by initial invoke and copilot resume
+# ---------------------------------------------------------------------------
+
+# Node IDs where copilot pauses. Match `assign_agent_node_id` in graph.py.
+_PAUSE_BEFORE_NODES = ["recruiter_agent", "manager_agent"]
+
+
+def _interrupt_label(next_nodes) -> Optional[str]:
+    """Map LangGraph's ``next`` tuple onto our pause-name vocabulary."""
+    if not next_nodes:
+        return None
+    if "recruiter_agent" in next_nodes:
+        return "before_recruiter"
+    if "manager_agent" in next_nodes:
+        return "before_manager"
+    return None
+
+
+async def _run_graph(ws: WebSocket, graph_input):
+    """Invoke or resume the graph, then process the outcome.
+
+    *graph_input* is the initial state dict for a fresh turn, or ``None``
+    to resume from a checkpoint after a copilot pause.
+    """
+    config = {
+        "recursion_limit": RECURSION_LIMIT,
+        "configurable": {"thread_id": session.thread_id},
+    }
+    invoke_kwargs = {}
+    if session.mode == "copilot":
+        invoke_kwargs["interrupt_before"] = list(_PAUSE_BEFORE_NODES)
+
+    # Record prefix for post-run linkage. For resumes the canonical state
+    # still tracks every message produced so far in this turn.
+    rendered_prefix = len(session.agent_state["messages"])
+
     session.is_running = True
     start_time = time.perf_counter()
 
-    loop = asyncio.get_event_loop()
     future = _executor.submit(
         session.agent.invoke,
-        session.agent_state,
-        {"recursion_limit": RECURSION_LIMIT},
+        graph_input,
+        config,
+        **invoke_kwargs,
     )
 
     try:
-        # Drain queues while agent runs
         while not future.done():
             await _drain_queues(ws)
             await asyncio.sleep(0.05)
 
-        # Get result (may raise)
-        session.agent_state = future.result()
+        result = future.result()
+        # Mirror back so the rest of the codebase can keep reading
+        # ``session.agent_state`` as the canonical message list.
+        if isinstance(result, dict) and "messages" in result:
+            session.agent_state = result
 
-        # Final drain
         await _drain_queues(ws)
 
-        # Link tool messages to sub-agent states and send them
+        # Did we land on a copilot interrupt? Inspect the checkpoint.
+        graph_state = session.agent.get_state(config)
+        pause_label = (
+            _interrupt_label(graph_state.next) if session.mode == "copilot" else None
+        )
+
+        if pause_label is not None:
+            session.paused_at = pause_label
+            await _emit_pause(ws, pause_label)
+            # Don't link subagent states or send run_complete; we're paused.
+            return
+
+        # No pause → run finished. Link subagent transcripts as before.
+        session.paused_at = None
         linked_ids = _link_subagent_states(rendered_prefix)
         for tool_id in linked_ids:
             agent_name, final_state, invocation_id = session.subagent_states[tool_id]
@@ -231,8 +300,205 @@ async def _handle_user_message(ws: WebSocket, data: dict):
         })
     finally:
         session.is_running = False
-        # Final drain in case of error
         await _drain_queues(ws)
+
+
+async def _emit_pause(ws: WebSocket, pause_label: str) -> None:
+    """Flip plan_store status and notify the frontend that a review is due."""
+    from server.plan_store import plan_store as _plan_store
+
+    if pause_label == "before_recruiter":
+        new_status = "awaiting_plan_review"
+        event_type = "plan_review_requested"
+    else:  # before_manager
+        new_status = "awaiting_assignment_review"
+        event_type = "assignment_review_requested"
+
+    # Update the on-disk plan status so a reload reflects the pause.
+    doc = _plan_store.read()
+    if doc.status != "empty":
+        doc.status = new_status  # type: ignore[assignment]
+        _plan_store.write(doc)
+        await ws.send_json({
+            "type": "plan_updated",
+            "data": {
+                "markdown": _plan_store.read_markdown(),
+                "plan": {
+                    "status": doc.status,
+                    "user_request": doc.user_request,
+                    "steps": [s.__dict__ for s in doc.steps],
+                    "last_edited_by": doc.last_edited_by,
+                    "last_edited_at": doc.last_edited_at,
+                },
+            },
+        })
+
+    await ws.send_json({"type": event_type, "data": {"pause": pause_label}})
+
+
+async def _require_paused_at(ws: WebSocket, expected_pause: str) -> bool:
+    """Validate that the session is paused at the expected gate.
+
+    Returns ``True`` if the caller may proceed. On a mismatch, sends a
+    ``run_error`` over *ws* and returns ``False``.
+    """
+    if session.paused_at is None:
+        await ws.send_json({
+            "type": "run_error",
+            "error_type": "NotPaused",
+            "detail": "No copilot run is awaiting review.",
+        })
+        return False
+    if session.paused_at != expected_pause:
+        await ws.send_json({
+            "type": "run_error",
+            "error_type": "WrongPauseGate",
+            "detail": (
+                f"Expected action for {expected_pause!r} "
+                f"but the run is paused at {session.paused_at!r}."
+            ),
+        })
+        return False
+    return True
+
+
+async def _handle_resume(ws: WebSocket, expected_pause: str) -> None:
+    """Resume a copilot-paused run after the user approves as-is."""
+    if not await _require_paused_at(ws, expected_pause):
+        return
+    session.paused_at = None
+    # Resume with input=None — LangGraph reads the checkpoint and proceeds.
+    await _run_graph(ws, graph_input=None)
+
+
+async def _handle_plan_edited(ws: WebSocket, data: dict) -> None:
+    """Persist user-edited plan markdown, emit plan_updated, then resume."""
+    if not await _require_paused_at(ws, "before_recruiter"):
+        return
+    markdown = data.get("markdown") or ""
+    await _apply_user_plan_edit_and_resume(ws, markdown, pause="before_recruiter")
+
+
+async def _handle_assignments_edited(ws: WebSocket, data: dict) -> None:
+    """Persist user-edited assignment markdown and resume to manager."""
+    if not await _require_paused_at(ws, "before_manager"):
+        return
+    markdown = data.get("markdown") or ""
+    await _apply_user_plan_edit_and_resume(ws, markdown, pause="before_manager")
+
+
+async def _apply_user_plan_edit_and_resume(
+    ws: WebSocket, markdown: str, pause: str
+) -> None:
+    """Common path for plan_edited and assignments_edited.
+
+    Validates and persists *markdown* via ``plan_store.apply_user_edit``,
+    pushes a ``plan_updated`` event so the UI reflects the saved form,
+    and resumes the graph with ``input=None``.
+    """
+    from server.plan_store import plan_store as _plan_store, PlanEditError, serialize_plan
+
+    try:
+        doc = _plan_store.apply_user_edit(markdown)
+    except PlanEditError as e:
+        await ws.send_json({
+            "type": "run_error",
+            "error_type": "PlanEditError",
+            "detail": str(e),
+        })
+        return
+
+    await ws.send_json({
+        "type": "plan_updated",
+        "data": {
+            "markdown": _plan_store.read_markdown(),
+            "plan": serialize_plan(doc),
+        },
+    })
+
+    session.paused_at = None
+    await _run_graph(ws, graph_input=None)
+
+
+async def _handle_plan_feedback(ws: WebSocket, data: dict) -> None:
+    """Rewind to the planner with the user's feedback appended."""
+    if not await _require_paused_at(ws, "before_recruiter"):
+        return
+    await _rewind_to_planner_with_feedback(ws, data.get("text") or "")
+
+
+async def _handle_assignments_feedback(ws: WebSocket, data: dict) -> None:
+    """Rewind to the planner with assignment-stage feedback.
+
+    Both feedback paths re-enter at the planner (see Milestone 4 design):
+    simpler, matches the existing REPLAN loop, and the planner can decide
+    whether to actually re-plan or pass through.
+    """
+    if not await _require_paused_at(ws, "before_manager"):
+        return
+    await _rewind_to_planner_with_feedback(ws, data.get("text") or "")
+
+
+async def _rewind_to_planner_with_feedback(ws: WebSocket, text: str) -> None:
+    """Append feedback as a HumanMessage and re-invoke from the top.
+
+    Cycles ``thread_id`` so the new run is a fresh checkpointer thread —
+    the old interrupt state is orphaned, which is intentional. The
+    feedback message is what the planner sees on its next pass.
+    """
+    feedback = (text or "").strip()
+    if not feedback:
+        await ws.send_json({
+            "type": "run_error",
+            "error_type": "EmptyFeedback",
+            "detail": "Feedback text was empty; submit at least one character.",
+        })
+        return
+
+    from server.plan_store import plan_store as _plan_store
+    from server.session_manager import _new_thread_id
+
+    feedback_message = HumanMessage(
+        content=f"[Copilot feedback from user] {feedback}"
+    )
+    record_user_message(feedback_message)
+    log_message(feedback_message)
+    session.agent_state["messages"].append(feedback_message)
+    session.append_display_message(feedback_message)
+    await ws.send_json({
+        "type": "message",
+        "data": serialize_message(feedback_message),
+    })
+
+    # Fresh thread + cleared plan so the planner starts clean.
+    _plan_store.reset()
+    session.thread_id = _new_thread_id()
+    session.paused_at = None
+
+    await _run_graph(ws, graph_input=session.agent_state)
+
+
+async def _handle_run_cancelled(ws: WebSocket) -> None:
+    """Cancel an in-progress copilot run.
+
+    The checkpointer thread is abandoned (a fresh one is generated for
+    the next turn). The on-disk plan is wiped so the UI doesn't keep
+    showing a stale review prompt.
+    """
+    if session.paused_at is None and not session.is_running:
+        # Nothing to cancel — still acknowledge so the UI clears state.
+        await ws.send_json({"type": "run_cancelled", "data": {}})
+        return
+
+    from server.plan_store import plan_store as _plan_store
+    from server.session_manager import _new_thread_id
+
+    _plan_store.reset()
+    session.paused_at = None
+    session.thread_id = _new_thread_id()
+    session.is_running = False
+
+    await ws.send_json({"type": "run_cancelled", "data": {}})
 
 
 async def _drain_queues(ws: WebSocket):

@@ -1501,6 +1501,12 @@ body {
 .plan-status-failed { color: var(--error-text); border-color: var(--error-text); }
 .plan-status-pending { color: var(--text-secondary); border-color: var(--border-color); }
 .plan-status-skipped { color: var(--text-secondary); border-color: var(--border-color); }
+.plan-status-awaiting_plan_review,
+.plan-status-awaiting_assignment_review {
+  color: var(--live-accent-strong);
+  border-color: var(--live-accent);
+  background: var(--accent-light);
+}
 
 .plan-panel-empty {
   font-size: 0.85rem;
@@ -1812,4 +1818,147 @@ body {
   object-fit: contain;
   margin: 1rem auto;
   display: block;
+}
+
+/* ---- Copilot review controls ---- */
+
+.plan-edit-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--accent-light);
+  color: var(--text-primary, inherit);
+  border-radius: 0.35rem;
+  vertical-align: middle;
+}
+
+.plan-review-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--live-accent);
+  border-radius: 0.5rem;
+  background: var(--accent-light);
+}
+
+.plan-review-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.plan-action-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.35rem;
+  background: var(--bg-primary);
+  color: var(--text-primary, inherit);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.plan-action-btn:hover:not(:disabled) {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+
+.plan-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.plan-action-btn.primary {
+  background: var(--accent);
+  color: var(--bg-primary);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.plan-action-btn.primary:hover:not(:disabled) {
+  background: var(--live-accent-strong);
+  border-color: var(--live-accent-strong);
+}
+
+.plan-action-btn.danger {
+  border-color: var(--error-text);
+  color: var(--error-text);
+}
+
+.plan-action-btn.danger:hover:not(:disabled) {
+  background: var(--error-text);
+  color: var(--bg-primary);
+}
+
+.plan-review-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.plan-review-feedback-input {
+  width: 100%;
+  padding: 0.4rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.35rem;
+  background: var(--bg-primary);
+  color: var(--text-primary, inherit);
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+.plan-edit-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.plan-edit-help {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.plan-edit-help code {
+  background: var(--bg-secondary, var(--accent-light));
+  padding: 0 0.25rem;
+  border-radius: 0.2rem;
+  font-size: 0.7rem;
+}
+
+.plan-edit-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  border: 1px solid var(--border-color);
+  border-radius: 0.35rem;
+  background: var(--bg-primary);
+  color: var(--text-primary, inherit);
+  resize: vertical;
+}
+
+.plan-edit-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.plan-step-agent-select {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.3rem;
+  background: var(--bg-primary);
+  color: var(--text-primary, inherit);
+  max-width: 100%;
 }

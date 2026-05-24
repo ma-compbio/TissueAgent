@@ -13,6 +13,19 @@ TissueAgent is a role-based multi-agent framework that turns open-ended natural-
 
 ![TISSUEAGENT overview figure](docs/figures/tissueagent_overall_design.png)
 
+## Execution modes
+
+TissueAgent runs in one of two modes, controlled by a toggle in the web UI's sidebar:
+
+- **Autopilot** *(default)* — the planner, recruiter, manager, evaluator, and reporter run end-to-end without pausing. This is the only mode available outside the web UI (notebook and CLI entry points always run autopilot).
+- **Copilot** — the run pauses after the planner finishes drafting the plan, and again after the recruiter assigns agents. At each pause the plan panel surfaces four actions:
+  - **Approve** to accept and continue,
+  - **Edit** to modify the plan markdown (or change per-step agent assignments) and resume,
+  - **Send feedback** to give free-text guidance that rewinds the run back to the planner,
+  - **Cancel run** to abort and start fresh.
+
+Mode is persisted with the session and survives reloads. Switching modes mid-run is blocked — finish or cancel the current run first.
+
 ## Project Structure
 
 ```text
@@ -20,11 +33,13 @@ TissueAgent/
 ├── src/
 │   ├── agents/
 │   │   ├── planner_agent/
+│   │   │   └── plan_registry/     # YAML workflow templates the planner retrieves
 │   │   ├── recruiter_agent/
 │   │   ├── manager_agent/
 │   │   ├── evaluator_agent/
 │   │   ├── reporter_agent/
-│   │   └── agent_registry/        # domain/specialized agents and tools
+│   │   ├── agent_registry/        # domain/specialized agents and tools
+│   │   └── skill_registry/        # shared markdown playbooks (scaffold; not wired)
 │   ├── graph/                     # workflow graph/state orchestration
 │   ├── server/                    # FastAPI backend and routes
 │   └── frontend/                  # React + TypeScript frontend

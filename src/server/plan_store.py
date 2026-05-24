@@ -24,6 +24,7 @@ from __future__ import annotations
 import re
 import threading
 from dataclasses import dataclass, field, asdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
@@ -32,13 +33,19 @@ import yaml
 from config import SESSIONS_DIR
 
 
+class PlanEditError(ValueError):
+    """Raised when user-submitted plan markdown fails validation."""
+
+
 PlanDocStatus = Literal[
-    "empty",     # no plan yet
-    "draft",     # planner has written; recruiter has not annotated
-    "recruited", # recruiter has annotated all steps
-    "approved",  # user has reviewed and approved (phase 2)
-    "running",   # manager is executing (phase 2)
-    "paused",    # user paused execution (phase 3)
+    "empty",                       # no plan yet
+    "draft",                       # planner has written; recruiter has not annotated
+    "awaiting_plan_review",        # copilot: planner done, user reviewing plan
+    "recruited",                   # recruiter has annotated all steps
+    "awaiting_assignment_review",  # copilot: recruiter done, user reviewing assignments
+    "approved",                    # user has reviewed and approved (phase 2)
+    "running",                     # manager is executing (phase 2)
+    "paused",                      # user paused execution (phase 3)
     "done",
     "failed",
 ]
@@ -46,6 +53,8 @@ PlanDocStatus = Literal[
 StepStatus = Literal[
     "pending", "running", "done", "skipped", "failed",
 ]
+
+EditedBy = Literal["planner", "recruiter", "manager", "user"]
 
 
 @dataclass
@@ -70,16 +79,22 @@ class PlanDocument:
     status: PlanDocStatus = "empty"
     user_request: str = ""
     steps: List[PlanStep] = field(default_factory=list)
+    last_edited_by: Optional[EditedBy] = None
+    last_edited_at: Optional[str] = None  # ISO-8601 UTC timestamp
 
     def to_markdown(self) -> str:
         """Serialise to the on-disk markdown form."""
         out: List[str] = []
         out.append("# Plan")
         out.append("")
-        header = {
+        header: Dict[str, Any] = {
             "status": self.status,
             "user_request": _block_string(self.user_request),
         }
+        if self.last_edited_by is not None:
+            header["last_edited_by"] = self.last_edited_by
+        if self.last_edited_at is not None:
+            header["last_edited_at"] = self.last_edited_at
         out.append("```yaml")
         out.append(yaml.safe_dump(
             header, sort_keys=False, allow_unicode=True
@@ -146,6 +161,12 @@ def _parse_markdown(text: str) -> PlanDocument:
             header = yaml.safe_load(header_match.group(1)) or {}
             doc.status = str(header.get("status", "empty"))  # type: ignore[assignment]
             doc.user_request = str(header.get("user_request", ""))
+            edited_by = header.get("last_edited_by")
+            if edited_by in ("planner", "recruiter", "manager", "user"):
+                doc.last_edited_by = edited_by  # type: ignore[assignment]
+            edited_at = header.get("last_edited_at")
+            if edited_at:
+                doc.last_edited_at = str(edited_at)
         except yaml.YAMLError:
             pass
 
@@ -260,6 +281,36 @@ class PlanStore:
             if self.path.is_file():
                 self.path.unlink()
 
+    def apply_user_edit(self, markdown: str) -> PlanDocument:
+        """Persist a user-edited markdown plan.
+
+        Parses *markdown*, validates that it carries a usable plan,
+        stamps ``last_edited_by="user"`` and a fresh ``last_edited_at``,
+        re-serialises through :meth:`PlanDocument.to_markdown` (so the
+        on-disk form is normalised), and writes it.
+
+        Raises:
+            PlanEditError: if *markdown* is empty or contains no steps.
+        """
+        if not markdown or not markdown.strip():
+            raise PlanEditError("Edited plan is empty.")
+
+        doc = _parse_markdown(markdown)
+        if not doc.steps:
+            raise PlanEditError(
+                "Edited plan has no steps — keep at least one '## Step N — Title' heading."
+            )
+
+        # Authoritative metadata: ignore whatever the user typed for these.
+        doc.last_edited_by = "user"
+        doc.last_edited_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+        normalised = doc.to_markdown()
+        with self._lock:
+            self._ensure_dir()
+            self.path.write_text(normalised, encoding="utf-8")
+        return doc
+
 
 # Singleton instance — the rest of the codebase imports this.
 plan_store = PlanStore()
@@ -271,4 +322,6 @@ def serialize_plan(doc: PlanDocument) -> Dict[str, Any]:
         "status": doc.status,
         "user_request": doc.user_request,
         "steps": [asdict(s) for s in doc.steps],
+        "last_edited_by": doc.last_edited_by,
+        "last_edited_at": doc.last_edited_at,
     }

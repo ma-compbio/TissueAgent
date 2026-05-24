@@ -24,5 +24,7 @@ def get_plan() -> dict:
             "status": doc.status,
             "user_request": doc.user_request,
             "steps": [asdict(s) for s in doc.steps],
+            "last_edited_by": doc.last_edited_by,
+            "last_edited_at": doc.last_edited_at,
         },
     }

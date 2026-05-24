@@ -43,6 +43,9 @@ export interface HistoryData {
  *  review after the planner and after the recruiter. */
 export type SessionMode = "autopilot" | "copilot";
 
+/** Copilot pause labels — must match server-side `_interrupt_label`. */
+export type PauseLabel = "before_recruiter" | "before_manager";
+
 /** WebSocket event types from server. */
 export type ServerEvent =
   | { type: "history"; data: HistoryData }
@@ -54,7 +57,10 @@ export type ServerEvent =
   | { type: "run_complete"; elapsed_seconds: number }
   | { type: "run_error"; error_type: string; detail: string }
   | { type: "plan_updated"; data: { markdown: string; plan: unknown } }
-  | { type: "mode_updated"; data: { mode: SessionMode } };
+  | { type: "mode_updated"; data: { mode: SessionMode } }
+  | { type: "plan_review_requested"; data: { pause: PauseLabel } }
+  | { type: "assignment_review_requested"; data: { pause: PauseLabel } }
+  | { type: "run_cancelled"; data: Record<string, never> };
 
 /** WebSocket event types from client. */
 export interface SendMessageEvent {
@@ -67,6 +73,41 @@ export interface SendMessageEvent {
 export interface SetModeEvent {
   type: "set_mode";
   mode: SessionMode;
+}
+
+/** Approve the currently-paused plan as-is. */
+export interface PlanApprovedEvent {
+  type: "plan_approved";
+}
+
+/** Submit edited plan markdown; server validates + persists + resumes. */
+export interface PlanEditedEvent {
+  type: "plan_edited";
+  markdown: string;
+}
+
+/** Submit free-text feedback on the plan; rewinds to the planner. */
+export interface PlanFeedbackEvent {
+  type: "plan_feedback";
+  text: string;
+}
+
+export interface AssignmentsApprovedEvent {
+  type: "assignments_approved";
+}
+
+export interface AssignmentsEditedEvent {
+  type: "assignments_edited";
+  markdown: string;
+}
+
+export interface AssignmentsFeedbackEvent {
+  type: "assignments_feedback";
+  text: string;
+}
+
+export interface RunCancelledClientEvent {
+  type: "run_cancelled";
 }
 
 export interface FileInfo {
