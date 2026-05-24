@@ -51,6 +51,7 @@ export default function App() {
         mode={ws.mode}
         onChangeMode={ws.setMode}
         reviewState={ws.reviewState}
+        pipelineStage={ws.pipelineStage}
         agents={agentsHook.agents}
         onApprovePlan={ws.approvePlan}
         onEditPlan={ws.editPlan}

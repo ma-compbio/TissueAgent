@@ -227,6 +227,17 @@ async def _run_graph(ws: WebSocket, graph_input):
     session.is_running = True
     start_time = time.perf_counter()
 
+    # On a resume (graph_input is None), the plan's on-disk status may
+    # still read ``awaiting_*`` from the pause. Flip it to ``running`` so
+    # the UI doesn't keep telling the user "your review is needed".
+    # Downstream agents (recruiter's assign_agents_tool, etc.) may
+    # overwrite this with a more specific status as they run.
+    if graph_input is None:
+        from server.plan_store import plan_store as _plan_store
+        current = _plan_store.read().status
+        if current in ("awaiting_plan_review", "awaiting_assignment_review"):
+            await _set_plan_status_and_emit(ws, "running")
+
     future = _executor.submit(
         session.agent.invoke,
         graph_input,
@@ -271,6 +282,9 @@ async def _run_graph(ws: WebSocket, graph_input):
                 "data": data,
             })
 
+        # Final plan status flip so the UI shows the pipeline as complete.
+        await _set_plan_status_and_emit(ws, "done")
+
         elapsed = time.perf_counter() - start_time
         await ws.send_json({
             "type": "run_complete",
@@ -305,8 +319,6 @@ async def _run_graph(ws: WebSocket, graph_input):
 
 async def _emit_pause(ws: WebSocket, pause_label: str) -> None:
     """Flip plan_store status and notify the frontend that a review is due."""
-    from server.plan_store import plan_store as _plan_store
-
     if pause_label == "before_recruiter":
         new_status = "awaiting_plan_review"
         event_type = "plan_review_requested"
@@ -314,26 +326,35 @@ async def _emit_pause(ws: WebSocket, pause_label: str) -> None:
         new_status = "awaiting_assignment_review"
         event_type = "assignment_review_requested"
 
-    # Update the on-disk plan status so a reload reflects the pause.
-    doc = _plan_store.read()
-    if doc.status != "empty":
-        doc.status = new_status  # type: ignore[assignment]
-        _plan_store.write(doc)
-        await ws.send_json({
-            "type": "plan_updated",
-            "data": {
-                "markdown": _plan_store.read_markdown(),
-                "plan": {
-                    "status": doc.status,
-                    "user_request": doc.user_request,
-                    "steps": [s.__dict__ for s in doc.steps],
-                    "last_edited_by": doc.last_edited_by,
-                    "last_edited_at": doc.last_edited_at,
-                },
-            },
-        })
-
+    await _set_plan_status_and_emit(ws, new_status, only_if_present=True)
     await ws.send_json({"type": event_type, "data": {"pause": pause_label}})
+
+
+async def _set_plan_status_and_emit(
+    ws: WebSocket, new_status: str, *, only_if_present: bool = True
+) -> None:
+    """Flip the on-disk plan's top-level status and notify the frontend.
+
+    No-op when the plan is empty (status ``"empty"``) — there's nothing to
+    update, and we don't want to fabricate a plan document just to carry
+    a status. Set ``only_if_present=False`` to force-write regardless.
+    """
+    from server.plan_store import plan_store as _plan_store, serialize_plan
+
+    doc = _plan_store.read()
+    if only_if_present and doc.status == "empty":
+        return
+    if doc.status == new_status:
+        return  # No change to broadcast.
+    doc.status = new_status  # type: ignore[assignment]
+    _plan_store.write(doc)
+    await ws.send_json({
+        "type": "plan_updated",
+        "data": {
+            "markdown": _plan_store.read_markdown(),
+            "plan": serialize_plan(doc),
+        },
+    })
 
 
 async def _require_paused_at(ws: WebSocket, expected_pause: str) -> bool:

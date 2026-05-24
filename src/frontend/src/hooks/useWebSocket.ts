@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   AssignmentsApprovedEvent,
   AssignmentsEditedEvent,
@@ -24,6 +24,30 @@ interface PlanUpdatePayload {
 /** Which copilot review gate is open. ``null`` ⇒ no review pending. */
 export type ReviewState = "plan" | "assignment" | null;
 
+/** Identifiers of the five main pipeline agents, in execution order. */
+export type PipelineStage =
+  | "planner"
+  | "recruiter"
+  | "manager"
+  | "evaluator"
+  | "reporter";
+
+export const PIPELINE_STAGES: PipelineStage[] = [
+  "planner",
+  "recruiter",
+  "manager",
+  "evaluator",
+  "reporter",
+];
+
+const _AGENT_NAME_TO_STAGE: Record<string, PipelineStage> = {
+  planner_agent: "planner",
+  recruiter_agent: "recruiter",
+  manager_agent: "manager",
+  evaluator_agent: "evaluator",
+  reporter_agent: "reporter",
+};
+
 interface UseWebSocketReturn {
   messages: SerializedMessage[];
   subagentStates: Record<string, SubagentTranscript>;
@@ -38,6 +62,8 @@ interface UseWebSocketReturn {
   sendMessage: (text: string, imageIds?: string[], pdfIds?: string[]) => void;
   clearError: () => void;
   reviewState: ReviewState;
+  /** Most recent pipeline stage observed in the message stream, or null. */
+  pipelineStage: PipelineStage | null;
   approvePlan: () => void;
   editPlan: (markdown: string) => void;
   sendPlanFeedback: (text: string) => void;
@@ -291,6 +317,19 @@ export function useWebSocket(): UseWebSocketReturn {
 
   const clearError = useCallback(() => setError(null), []);
 
+  // Pipeline stage is derived from the most recent main-agent message in
+  // the chat stream. We look only at the tail because messages from the
+  // earlier stages stay in history forever and would otherwise pin the
+  // stepper to "planner" indefinitely.
+  const pipelineStage = useMemo<PipelineStage | null>(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const name = messages[i]?.name ?? "";
+      const stage = _AGENT_NAME_TO_STAGE[name];
+      if (stage) return stage;
+    }
+    return null;
+  }, [messages]);
+
   return {
     messages,
     subagentStates,
@@ -305,6 +344,7 @@ export function useWebSocket(): UseWebSocketReturn {
     sendMessage,
     clearError,
     reviewState,
+    pipelineStage,
     approvePlan,
     editPlan,
     sendPlanFeedback,

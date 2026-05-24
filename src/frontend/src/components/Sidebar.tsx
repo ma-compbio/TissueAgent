@@ -7,7 +7,7 @@ import type {
 } from "../hooks/useModels";
 import type { Plan } from "../hooks/usePlan";
 import type { AgentInfo } from "../hooks/useAgents";
-import type { ReviewState } from "../hooks/useWebSocket";
+import type { PipelineStage, ReviewState } from "../hooks/useWebSocket";
 import FileUpload from "./FileUpload";
 import ModelPicker from "./ModelPicker";
 import PlanPanel from "./PlanPanel";
@@ -32,6 +32,7 @@ interface Props {
   mode: SessionMode;
   onChangeMode: (mode: SessionMode) => void;
   reviewState: ReviewState;
+  pipelineStage: PipelineStage | null;
   agents: AgentInfo[];
   onApprovePlan: () => void;
   onEditPlan: (markdown: string) => void;
@@ -69,6 +70,7 @@ export default function Sidebar({
   mode,
   onChangeMode,
   reviewState,
+  pipelineStage,
   agents,
   onApprovePlan,
   onEditPlan,
@@ -168,6 +170,7 @@ export default function Sidebar({
           plan={plan}
           markdown={planMarkdown}
           reviewState={reviewState}
+          pipelineStage={pipelineStage}
           agents={agents}
           onApprovePlan={onApprovePlan}
           onEditPlan={onEditPlan}

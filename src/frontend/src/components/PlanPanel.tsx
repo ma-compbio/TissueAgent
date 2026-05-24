@@ -15,12 +15,14 @@
 import { useEffect, useState } from "react";
 import type { Plan, PlanStep } from "../hooks/usePlan";
 import type { AgentInfo } from "../hooks/useAgents";
-import type { ReviewState } from "../hooks/useWebSocket";
+import type { PipelineStage, ReviewState } from "../hooks/useWebSocket";
+import { PIPELINE_STAGES } from "../hooks/useWebSocket";
 
 interface Props {
   plan: Plan;
   markdown: string;
   reviewState: ReviewState;
+  pipelineStage: PipelineStage | null;
   agents: AgentInfo[];
   onApprovePlan: () => void;
   onEditPlan: (markdown: string) => void;
@@ -30,6 +32,14 @@ interface Props {
   onAssignmentsFeedback: (text: string) => void;
   onCancelRun: () => void;
 }
+
+const STAGE_LABELS: Record<PipelineStage, string> = {
+  planner: "Planner",
+  recruiter: "Recruiter",
+  manager: "Manager",
+  evaluator: "Evaluator",
+  reporter: "Reporter",
+};
 
 const STATUS_LABEL: Record<string, string> = {
   empty: "no plan yet",
@@ -48,6 +58,7 @@ export default function PlanPanel({
   plan,
   markdown,
   reviewState,
+  pipelineStage,
   agents,
   onApprovePlan,
   onEditPlan,
@@ -121,6 +132,16 @@ export default function PlanPanel({
 
   return (
     <div className="plan-panel">
+      {reviewState !== null && (
+        <ReviewBanner
+          reviewState={reviewState}
+          editingPlan={editingPlan}
+          onApprovePlan={onApprovePlan}
+          onApproveAssignments={onApproveAssignments}
+          onStartEditPlan={() => setEditingPlan(true)}
+        />
+      )}
+
       <div className="plan-panel-header">
         <span className="plan-panel-title">Plan</span>
         <span className={`plan-panel-status plan-status-${plan.status}`}>
@@ -128,6 +149,8 @@ export default function PlanPanel({
         </span>
         {userEditedBadge}
       </div>
+
+      <PipelineStepper stage={pipelineStage} planStatus={plan.status} />
 
       {plan.user_request && (
         <div className="plan-panel-prompt">
@@ -220,6 +243,110 @@ export default function PlanPanel({
 // =====================================================================
 // Sub-components
 // =====================================================================
+
+interface PipelineStepperProps {
+  stage: PipelineStage | null;
+  planStatus: string;
+}
+
+/**
+ * Horizontal 5-stage pipeline indicator: Planner → Recruiter → Manager →
+ * Evaluator → Reporter. Stages before the active one are marked "done",
+ * the active one is highlighted, later stages are dim.
+ */
+function PipelineStepper({ stage, planStatus }: PipelineStepperProps) {
+  // "done" plan status visually marks all stages complete.
+  const done = planStatus === "done";
+  const activeIndex = stage ? PIPELINE_STAGES.indexOf(stage) : -1;
+
+  return (
+    <ol className="pipeline-stepper" aria-label="Pipeline progress">
+      {PIPELINE_STAGES.map((s, i) => {
+        let cls = "pipeline-step";
+        if (done) {
+          cls += " pipeline-step-done";
+        } else if (activeIndex === -1) {
+          cls += " pipeline-step-pending";
+        } else if (i < activeIndex) {
+          cls += " pipeline-step-done";
+        } else if (i === activeIndex) {
+          cls += " pipeline-step-active";
+        } else {
+          cls += " pipeline-step-pending";
+        }
+        return (
+          <li key={s} className={cls} title={STAGE_LABELS[s]}>
+            <span className="pipeline-step-dot" aria-hidden="true" />
+            <span className="pipeline-step-label">{STAGE_LABELS[s]}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+interface ReviewBannerProps {
+  reviewState: Exclude<ReviewState, null>;
+  editingPlan: boolean;
+  onApprovePlan: () => void;
+  onApproveAssignments: () => void;
+  onStartEditPlan: () => void;
+}
+
+/**
+ * Sticky high-visibility banner pinned to the top of the panel when a
+ * copilot review gate is open. The primary action (Approve) is the most
+ * prominent button. The full review action bar (Edit, Feedback, Cancel)
+ * still lives below the step list so the user can pick a non-primary
+ * action without losing the textarea / dropdowns.
+ */
+function ReviewBanner({
+  reviewState,
+  editingPlan,
+  onApprovePlan,
+  onApproveAssignments,
+  onStartEditPlan,
+}: ReviewBannerProps) {
+  const headline =
+    reviewState === "plan"
+      ? "Your review is needed"
+      : "Confirm agent assignments";
+  const subline =
+    reviewState === "plan"
+      ? "The planner drafted a plan. Approve to continue, or edit/give feedback below."
+      : "The recruiter chose an agent for each step. Approve to start execution, or change picks below.";
+  const onPrimary =
+    reviewState === "plan" ? onApprovePlan : onApproveAssignments;
+  const primaryLabel =
+    reviewState === "plan" ? "Approve plan" : "Approve assignments";
+
+  return (
+    <div className="plan-review-banner" role="alert">
+      <div className="plan-review-banner-text">
+        <strong>{headline}</strong>
+        <span>{subline}</span>
+      </div>
+      <div className="plan-review-banner-actions">
+        <button
+          type="button"
+          className="plan-action-btn primary"
+          onClick={onPrimary}
+        >
+          {primaryLabel}
+        </button>
+        {reviewState === "plan" && !editingPlan && (
+          <button
+            type="button"
+            className="plan-action-btn"
+            onClick={onStartEditPlan}
+          >
+            Edit plan
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface StepListProps {
   steps: PlanStep[];
