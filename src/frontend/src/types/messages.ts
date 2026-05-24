@@ -129,4 +129,6 @@ export interface SessionInfo {
   filename: string;
   label: string;
   path: string;
+  /** First user message, derived at save time. Empty for legacy sessions. */
+  title?: string;
 }

@@ -1312,6 +1312,28 @@ body {
   color: var(--success);
 }
 
+.session-row-actions,
+.session-export-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.session-row-actions .sidebar-btn,
+.session-export-actions .sidebar-btn {
+  flex: 1 1 0;
+  text-align: center;
+}
+
+.session-btn-danger {
+  border-color: var(--error-text, #b91c1c);
+  color: var(--error-text, #b91c1c);
+}
+
+.session-btn-danger:hover:not(:disabled) {
+  background: var(--error-text, #b91c1c);
+  color: var(--bg-primary, #fff);
+}
+
 /* ---- File Browser ---- */
 
 .file-browser-header {

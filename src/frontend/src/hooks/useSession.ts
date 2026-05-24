@@ -12,13 +12,20 @@ export function useSession() {
     if (res.ok) setSessions(await res.json());
   }, []);
 
-  const saveSession = useCallback(async () => {
+  const saveSession = useCallback(async (): Promise<true | string> => {
     const res = await fetch(`${API}/api/sessions/save`, { method: "POST" });
     if (res.ok) {
       await fetchSessions();
       return true;
     }
-    return false;
+    // Surface the server's detail so the user knows *why*. e.g. 409
+    // when a run is in progress, 400 when there's nothing to save.
+    try {
+      const body = await res.json();
+      return typeof body?.detail === "string" ? body.detail : "Failed to save.";
+    } catch {
+      return "Failed to save.";
+    }
   }, [fetchSessions]);
 
   const loadSession = useCallback(async (filename: string) => {
@@ -29,19 +36,53 @@ export function useSession() {
     return res.ok;
   }, []);
 
-  const exportHtml = useCallback(async () => {
-    const res = await fetch(`${API}/api/sessions/export/html`);
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download =
-      res.headers.get("content-disposition")?.match(/filename="(.+)"/)?.[1] ??
-      "session.html";
-    a.click();
-    URL.revokeObjectURL(url);
-  }, []);
+  const _download = useCallback(
+    async (path: string, fallbackName: string) => {
+      const res = await fetch(`${API}${path}`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download =
+        res.headers
+          .get("content-disposition")
+          ?.match(/filename="(.+)"/)?.[1] ?? fallbackName;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    [],
+  );
+
+  const exportHtml = useCallback(
+    () => _download("/api/sessions/export/html", "session.html"),
+    [_download],
+  );
+
+  const exportMarkdown = useCallback(
+    () => _download("/api/sessions/export/markdown", "session.md"),
+    [_download],
+  );
+
+  const deleteSession = useCallback(
+    async (filename: string): Promise<true | string> => {
+      const res = await fetch(
+        `${API}/api/sessions/${encodeURIComponent(filename)}`,
+        { method: "DELETE" },
+      );
+      if (res.ok) {
+        await fetchSessions();
+        return true;
+      }
+      try {
+        const body = await res.json();
+        return typeof body?.detail === "string" ? body.detail : "Failed to delete.";
+      } catch {
+        return "Failed to delete.";
+      }
+    },
+    [fetchSessions],
+  );
 
   const uploadFiles = useCallback(async (files: FileList) => {
     const form = new FormData();
@@ -63,6 +104,8 @@ export function useSession() {
     saveSession,
     loadSession,
     exportHtml,
+    exportMarkdown,
+    deleteSession,
     uploadFiles,
   };
 }

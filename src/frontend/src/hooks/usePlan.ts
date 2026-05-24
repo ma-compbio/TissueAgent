@@ -95,5 +95,18 @@ export function usePlan() {
     setMarkdown("");
   }, []);
 
-  return { plan, markdown, applyEvent, clear };
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/plan`);
+      if (!res.ok) return;
+      const data = (await res.json()) as PlanPayload;
+      if (!mountedRef.current) return;
+      setPlan(data.plan ?? EMPTY_PLAN);
+      setMarkdown(data.markdown ?? "");
+    } catch {
+      // Non-fatal — caller can retry.
+    }
+  }, []);
+
+  return { plan, markdown, applyEvent, clear, refresh };
 }

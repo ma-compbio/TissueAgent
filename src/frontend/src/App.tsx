@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ChatView from "./components/ChatView";
 import FileBrowser from "./components/FileBrowser";
 import Sidebar from "./components/Sidebar";
@@ -30,6 +30,21 @@ export default function App() {
     }
   }, [ws.planEvent, planHook]);
 
+  // Composite load: hit the load endpoint, then refresh the frontend in
+  // place — reconnect the WS so the server re-sends history + mode, and
+  // refetch the plan from REST. Replaces the old ``window.location.reload``
+  // so users keep their open file browser, scroll position, etc.
+  const handleLoadSession = useCallback(
+    async (filename: string) => {
+      const ok = await session.loadSession(filename);
+      if (!ok) return false;
+      ws.reconnect();
+      await planHook.refresh();
+      return true;
+    },
+    [session, ws, planHook],
+  );
+
   return (
     <div className="app-layout">
       <Sidebar
@@ -42,8 +57,10 @@ export default function App() {
         sessions={session.sessions}
         onFetchSessions={session.fetchSessions}
         onSave={session.saveSession}
-        onLoad={session.loadSession}
+        onLoad={handleLoadSession}
+        onDelete={session.deleteSession}
         onExportHtml={session.exportHtml}
+        onExportMarkdown={session.exportMarkdown}
         hasMessages={ws.messages.length > 0}
         plan={planHook.plan}
         planMarkdown={planHook.markdown}

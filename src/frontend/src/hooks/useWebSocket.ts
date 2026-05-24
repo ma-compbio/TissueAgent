@@ -71,6 +71,10 @@ interface UseWebSocketReturn {
   editAssignments: (markdown: string) => void;
   sendAssignmentsFeedback: (text: string) => void;
   cancelRun: () => void;
+  /** Force a reconnect so the server re-sends history + mode. Used after a
+   *  session load so the frontend picks up the restored state in place,
+   *  without a hard ``window.location.reload``. */
+  reconnect: () => void;
 }
 
 const WS_URL =
@@ -315,6 +319,27 @@ export function useWebSocket(): UseWebSocketReturn {
     send(event);
   }, [send]);
 
+  const reconnect = useCallback(() => {
+    // Cancel any pending auto-reconnect, drop the current socket, and
+    // immediately re-open. The fresh socket fires the normal ``history``
+    // and ``mode_updated`` payloads from the server.
+    clearTimeout(reconnectTimer.current);
+    reconnectTimer.current = undefined;
+    if (wsRef.current) {
+      // Detach handlers so the close doesn't schedule a 2s auto-reconnect.
+      const sock = wsRef.current;
+      sock.onclose = null;
+      sock.onerror = null;
+      try {
+        sock.close();
+      } catch {
+        // Ignore; we're about to open a new socket.
+      }
+      wsRef.current = null;
+    }
+    connect();
+  }, [connect]);
+
   const clearError = useCallback(() => setError(null), []);
 
   // Pipeline stage is derived from the most recent main-agent message in
@@ -352,5 +377,6 @@ export function useWebSocket(): UseWebSocketReturn {
     editAssignments,
     sendAssignmentsFeedback,
     cancelRun,
+    reconnect,
   };
 }

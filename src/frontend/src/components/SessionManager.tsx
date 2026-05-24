@@ -4,9 +4,13 @@ import type { SessionInfo } from "../types/messages";
 interface Props {
   sessions: SessionInfo[];
   onFetchSessions: () => void;
-  onSave: () => Promise<boolean>;
+  /** Returns ``true`` on success, or an error detail string on failure. */
+  onSave: () => Promise<true | string>;
   onLoad: (filename: string) => Promise<boolean>;
+  /** Returns ``true`` on success, or an error detail string on failure. */
+  onDelete: (filename: string) => Promise<true | string>;
   onExportHtml: () => void;
+  onExportMarkdown: () => void;
   hasMessages: boolean;
 }
 
@@ -15,26 +19,49 @@ export default function SessionManager({
   onFetchSessions,
   onSave,
   onLoad,
+  onDelete,
   onExportHtml,
+  onExportMarkdown,
   hasMessages,
 }: Props) {
   const [selected, setSelected] = useState("");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [loadStatus, setLoadStatus] = useState<string | null>(null);
 
   useEffect(() => {
     onFetchSessions();
   }, [onFetchSessions]);
 
+  const showStatus = (msg: string, ms = 3000) => {
+    setLoadStatus(msg);
+    setTimeout(() => setLoadStatus(null), ms);
+  };
+
   const handleSave = async () => {
-    const ok = await onSave();
-    setSaveStatus(ok ? "Session saved!" : "Failed to save.");
-    setTimeout(() => setSaveStatus(null), 3000);
+    const result = await onSave();
+    setSaveStatus(result === true ? "Session saved!" : result);
+    setTimeout(() => setSaveStatus(null), 4000);
   };
 
   const handleLoad = async () => {
     if (!selected) return;
     const ok = await onLoad(selected);
-    if (ok) window.location.reload(); // Reload to re-establish WS with new state
+    showStatus(ok ? "Session loaded." : "Failed to load.");
+  };
+
+  const handleDelete = async () => {
+    if (!selected) return;
+    const target = sessions.find((s) => s.filename === selected);
+    const label = target?.title || target?.label || selected;
+    const ok = window.confirm(`Delete saved session?\n\n${label}`);
+    if (!ok) return;
+    const result = await onDelete(selected);
+    if (result === true) {
+      setSelected(""); // session is gone; clear the dropdown
+      showStatus("Session deleted.");
+    } else {
+      showStatus(result, 4000);
+    }
   };
 
   return (
@@ -59,22 +86,38 @@ export default function SessionManager({
         ))}
       </select>
 
-      <button
-        className="sidebar-btn"
-        onClick={handleLoad}
-        disabled={!selected}
-      >
-        📂 Load Selected Session
-      </button>
+      <div className="session-row-actions">
+        <button
+          className="sidebar-btn"
+          onClick={handleLoad}
+          disabled={!selected}
+        >
+          📂 Load
+        </button>
+        <button
+          className="sidebar-btn session-btn-danger"
+          onClick={handleDelete}
+          disabled={!selected}
+          title="Delete the selected saved session"
+        >
+          🗑 Delete
+        </button>
+      </div>
+      {loadStatus && <div className="save-status">{loadStatus}</div>}
 
       {sessions.length === 0 && (
         <div className="no-files">No saved sessions yet.</div>
       )}
 
       {hasMessages && (
-        <button className="sidebar-btn" onClick={onExportHtml}>
-          ⬇ Download as HTML
-        </button>
+        <div className="session-export-actions">
+          <button className="sidebar-btn" onClick={onExportHtml}>
+            ⬇ HTML
+          </button>
+          <button className="sidebar-btn" onClick={onExportMarkdown}>
+            ⬇ Markdown
+          </button>
+        </div>
       )}
     </div>
   );

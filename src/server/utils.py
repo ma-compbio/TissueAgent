@@ -286,8 +286,30 @@ def message_to_serializable(message):
     return {"type": message.type, "data": data}
 
 
+_TITLE_MAX_LEN = 60
+
+
+def derive_session_title(messages: Sequence[BaseMessage]) -> str:
+    """Pick a short title for a saved session from its first user message.
+
+    Returns an empty string when no usable text is found. The caller
+    decides how to fall back (typically to the timestamp).
+    """
+    for m in messages:
+        if isinstance(m, HumanMessage):
+            text = stringify_chat_content(m.content).strip()
+            if not text:
+                continue
+            # Single line, ellipsised at TITLE_MAX_LEN chars.
+            first_line = text.splitlines()[0].strip()
+            if len(first_line) > _TITLE_MAX_LEN:
+                first_line = first_line[: _TITLE_MAX_LEN - 1].rstrip() + "…"
+            return first_line
+    return ""
+
+
 def format_session_label(session_path: Path) -> str:
-    """Format a session path into a human-readable label."""
+    """Format a session path into a human-readable timestamp label."""
     stem = session_path.stem
     if stem.startswith(SESSION_FILENAME_PREFIX):
         stem = stem[len(SESSION_FILENAME_PREFIX):]
@@ -298,9 +320,14 @@ def format_session_label(session_path: Path) -> str:
         return stem
 
 
-def session_option_label(session_path: Path) -> str:
-    """Create a label for session selection dropdown."""
-    return f"{format_session_label(session_path)} ({session_path.name})"
+def session_option_label(session_path: Path, title: str = "") -> str:
+    """Create a label for the session selection dropdown.
+
+    Combines the title (when available) with the timestamp. Falls back
+    to the raw timestamp when no title was saved.
+    """
+    ts = format_session_label(session_path)
+    return f"{title} — {ts}" if title else ts
 
 
 def save_session(
@@ -310,6 +337,7 @@ def save_session(
     replan_count: int,
     replan_history: List,
     mode: str = "autopilot",
+    plan_markdown: str = "",
 ) -> Path:
     """Save a chat session to a timestamped JSON file.
 
@@ -320,6 +348,9 @@ def save_session(
         replan_count: Current replan count.
         replan_history: List of replan timestamps.
         mode: Execution mode at save time ("autopilot" or "copilot").
+        plan_markdown: The current evolving plan as on-disk markdown.
+            Saved verbatim so it can be restored on load and rendered in
+            HTML exports.
 
     Returns:
         Path to the saved session file.
@@ -332,12 +363,14 @@ def save_session(
 
     payload = {
         "saved_at": datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
+        "title": derive_session_title(messages),
         "messages": [message_to_serializable(m) for m in messages],
         "subagent_states": subagent_states,
         "uploaded_pdfs": uploaded_pdfs,
         "replan_count": replan_count,
         "replan_history": replan_history,
         "mode": mode,
+        "plan_markdown": plan_markdown,
     }
 
     SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
@@ -372,7 +405,22 @@ def load_session(path: Path) -> Dict[str, Any]:
         "replan_count": payload.get("replan_count", 0),
         "replan_history": payload.get("replan_history", []),
         "mode": mode,
+        "plan_markdown": payload.get("plan_markdown", "") or "",
+        "title": payload.get("title", "") or "",
     }
+
+
+def read_session_title(path: Path) -> str:
+    """Cheap title lookup without parsing the whole message list.
+
+    Used by the list endpoint so we don't deserialise every saved
+    session's messages just to render the dropdown.
+    """
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return str(payload.get("title", "") or "")
+    except Exception:
+        return ""
 
 
 # ---------------------------------------------------------------------------
@@ -485,16 +533,198 @@ def _render_conversation_history_html(
     return "\n".join(blocks)
 
 
-def build_session_html(messages, subagent_states) -> str:
+def _render_plan_html(plan_markdown: str) -> str:
+    """Render a saved plan markdown blob as a top-of-document HTML block.
+
+    Returns an empty string when there is no plan — callers should
+    elide the section entirely in that case rather than print an empty
+    box.
+    """
+    if not plan_markdown or not plan_markdown.strip():
+        return ""
+
+    # Parse via plan_store so the HTML matches what the UI shows.
+    # Imported lazily so this module stays import-cheap.
+    from server.plan_store import _parse_markdown
+
+    doc = _parse_markdown(plan_markdown)
+    if not doc.steps:
+        return ""
+
+    rows: List[str] = []
+    rows.append('<section class="plan-export">')
+    rows.append("<h2>Plan</h2>")
+    rows.append(
+        f'<div class="plan-meta">'
+        f'<span class="plan-status-pill plan-status-{escape(doc.status)}">'
+        f"{escape(doc.status)}</span>"
+        + (
+            f' <span class="plan-edited">edited by you</span>'
+            if doc.last_edited_by == "user"
+            else ""
+        )
+        + "</div>"
+    )
+    if doc.user_request:
+        rows.append(
+            f'<div class="plan-request"><strong>Request:</strong> '
+            f"{escape(doc.user_request)}</div>"
+        )
+
+    rows.append('<ol class="plan-steps">')
+    for step in doc.steps:
+        rows.append('<li class="plan-step">')
+        rows.append(
+            f'<div class="plan-step-head">'
+            f'<span class="plan-step-num">Step {step.id}</span> '
+            f'<span class="plan-step-title">{escape(step.title)}</span> '
+            f'<span class="plan-step-badge plan-status-{escape(step.status)}">'
+            f"{escape(step.status)}</span>"
+            "</div>"
+        )
+        if step.description:
+            rows.append(
+                f'<p><strong>Description:</strong> {escape(step.description)}</p>'
+            )
+        if step.reasoning:
+            rows.append(
+                f'<p><strong>Reasoning:</strong> {escape(step.reasoning)}</p>'
+            )
+        if step.assigned_agent:
+            rationale = (
+                f' — {escape(step.assignment_rationale)}'
+                if step.assignment_rationale
+                else ""
+            )
+            rows.append(
+                f'<p><strong>Assigned:</strong> '
+                f'<code>{escape(step.assigned_agent)}</code>{rationale}</p>'
+            )
+        if step.expected_artifacts:
+            items = "".join(
+                f"<li><code>{escape(a)}</code></li>" for a in step.expected_artifacts
+            )
+            rows.append(
+                f'<div class="plan-step-artifacts">'
+                f'<strong>Expected artifacts:</strong><ul>{items}</ul></div>'
+            )
+        if step.actual_outputs:
+            items = "".join(
+                f"<li><code>{escape(a)}</code></li>" for a in step.actual_outputs
+            )
+            rows.append(
+                f'<div class="plan-step-artifacts">'
+                f'<strong>Outputs:</strong><ul>{items}</ul></div>'
+            )
+        rows.append("</li>")
+    rows.append("</ol>")
+    rows.append("</section>")
+    return "\n".join(rows)
+
+
+def build_session_markdown(
+    messages, plan_markdown: str = "", title: str = ""
+) -> str:
+    """Build a self-contained markdown document from a chat session.
+
+    Unlike the HTML export, this one is plain prose designed for
+    copy/paste into a notebook, paper draft, or issue tracker. No
+    avatars, no styles, no sub-agent ReAct scratchpads.
+
+    Args:
+        messages: Sequence of LangChain messages from the session.
+        plan_markdown: The evolving plan as on-disk markdown. Inlined
+            verbatim at the top of the document when non-empty.
+        title: Optional session title shown in the heading.
+
+    Returns:
+        A complete markdown string.
+    """
+    lines: List[str] = []
+    when = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    header_title = f"TissueAgent session — {title}" if title else "TissueAgent session"
+    lines.append(f"# {header_title}")
+    lines.append("")
+    lines.append(f"*Exported {when}*")
+    lines.append("")
+
+    if plan_markdown and plan_markdown.strip():
+        lines.append("## Plan")
+        lines.append("")
+        # The on-disk plan markdown already has its own ``# Plan`` heading
+        # plus ``## Step N`` subheadings; demote each ``#`` so the export's
+        # outline is consistent.
+        lines.append(_demote_markdown_headings(plan_markdown, by=1))
+        lines.append("")
+
+    lines.append("## Conversation")
+    lines.append("")
+    for idx, message in enumerate(messages, start=1):
+        if isinstance(message, HumanMessage):
+            text = stringify_chat_content(message.content).strip()
+            if not text:
+                continue
+            lines.append(f"### {idx}. User")
+            lines.append("")
+            lines.append(text)
+            lines.append("")
+        elif isinstance(message, AIMessage):
+            text = stringify_chat_content(message.content).strip()
+            if not text:
+                continue
+            _, role_label = lookup_agent_badge(message.name)
+            lines.append(f"### {idx}. {role_label}")
+            lines.append("")
+            route, body = split_route_and_body(text)
+            if route:
+                lines.append(f"_ROUTE: {route}_")
+                lines.append("")
+            lines.append(body or text)
+            lines.append("")
+        elif isinstance(message, ToolMessage):
+            tool_name = getattr(message, "name", "") or "tool"
+            body = stringify_chat_content(message.content).strip()
+            if not body:
+                continue
+            lines.append(f"### {idx}. Tool — `{tool_name}`")
+            lines.append("")
+            lines.append("```")
+            lines.append(body)
+            lines.append("```")
+            lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _demote_markdown_headings(md: str, *, by: int) -> str:
+    """Shift every ATX-style heading by *by* levels (max 6).
+
+    Used so an inlined plan markdown that starts at ``# Plan`` becomes
+    ``## Plan`` inside the export's outline.
+    """
+    if by <= 0:
+        return md
+
+    def shift(match: "re.Match[str]") -> str:
+        hashes, rest = match.group(1), match.group(2)
+        new = "#" * min(6, len(hashes) + by)
+        return f"{new}{rest}"
+
+    return re.sub(r"^(#{1,6})( .*)", shift, md, flags=re.MULTILINE)
+
+
+def build_session_html(messages, subagent_states, plan_markdown: str = "") -> str:
     """Build a self-contained HTML document from a chat session.
 
     Args:
         messages: Sequence of LangChain messages comprising the session.
         subagent_states: Mapping of tool message IDs to (agent_name, final_state) tuples.
+        plan_markdown: The evolving plan as on-disk markdown. Rendered
+            as the first block in the export when non-empty.
 
     Returns:
         A complete HTML string.
     """
+    plan_html = _render_plan_html(plan_markdown)
     rendered_blocks = _render_conversation_history_html(messages, subagent_states)
     return "\n".join(
         [
@@ -503,7 +733,9 @@ def build_session_html(messages, subagent_states) -> str:
             '<meta charset="utf-8" />',
             "<title>TissueAgent Session Export</title>",
             "<style>",
-            "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 2rem; }",
+            "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 2rem; max-width: 1100px; }",
+            "h1 { font-size: 1.5rem; }",
+            "h2 { margin-top: 2rem; }",
             ".message { margin-bottom: 1.5rem; padding: 1rem; border-radius: 0.75rem; border: 1px solid #e0e0e0; }",
             ".role-user { background-color: #f0f4ff; }",
             ".role-ai { background-color: #f4fff0; }",
@@ -532,10 +764,45 @@ def build_session_html(messages, subagent_states) -> str:
                 " background: #fafafa; padding: 0.5rem;"
                 " border-radius: 0.4rem; border: 1px solid #e3e3e3; }"
             ),
+            # Plan-export styles
+            (
+                ".plan-export { background: #fafbff; border: 1px solid #d0d7ff;"
+                " border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 2rem; }"
+            ),
+            ".plan-export h2 { margin-top: 0; }",
+            ".plan-meta { margin-bottom: 0.5rem; }",
+            (
+                ".plan-status-pill { display: inline-block; padding: 0.15rem 0.55rem;"
+                " border-radius: 999px; font-size: 0.75rem;"
+                " background: #e0e7ff; color: #1f2a44; font-weight: 600; }"
+            ),
+            ".plan-status-done, .plan-status-recruited { background: #d6f5d6; color: #1f4d1f; }",
+            ".plan-status-failed { background: #ffe0e0; color: #6b1f1f; }",
+            ".plan-status-running { background: #fff3cd; color: #5a4500; }",
+            (
+                ".plan-edited { display: inline-block; margin-left: 0.4rem;"
+                " padding: 0.05rem 0.4rem; font-size: 0.7rem; font-weight: 600;"
+                " background: #fef3c7; color: #7a4e00; border-radius: 0.35rem; }"
+            ),
+            ".plan-request { font-size: 0.9rem; margin-bottom: 0.8rem; }",
+            ".plan-steps { padding-left: 1.25rem; }",
+            ".plan-step { margin: 0.6rem 0; padding-bottom: 0.6rem; border-bottom: 1px solid #eaeaea; }",
+            ".plan-step:last-child { border-bottom: none; }",
+            ".plan-step-head { font-weight: 600; margin-bottom: 0.3rem; }",
+            ".plan-step-num { color: #6b7280; margin-right: 0.4rem; }",
+            (
+                ".plan-step-badge { display: inline-block; margin-left: 0.4rem;"
+                " padding: 0.05rem 0.4rem; font-size: 0.7rem; font-weight: 600;"
+                " border-radius: 0.35rem; background: #e5e7eb; color: #374151; }"
+            ),
+            ".plan-step-artifacts { font-size: 0.85rem; }",
+            ".plan-step-artifacts ul { margin: 0.2rem 0 0.5rem 1rem; padding: 0; }",
             "</style>",
             "</head>",
             "<body>",
             f"<h1>TissueAgent Session Export — {escape(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))}</h1>",
+            plan_html,
+            "<h2>Conversation</h2>",
             rendered_blocks,
             "</body>",
             "</html>",

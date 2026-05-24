@@ -22,9 +22,11 @@ interface Props {
   onUploadFiles: (files: FileList) => void;
   sessions: SessionInfo[];
   onFetchSessions: () => void;
-  onSave: () => Promise<boolean>;
+  onSave: () => Promise<true | string>;
   onLoad: (filename: string) => Promise<boolean>;
+  onDelete: (filename: string) => Promise<true | string>;
   onExportHtml: () => void;
+  onExportMarkdown: () => void;
   hasMessages: boolean;
   plan: Plan;
   planMarkdown: string;
@@ -62,7 +64,9 @@ export default function Sidebar({
   onFetchSessions,
   onSave,
   onLoad,
+  onDelete,
   onExportHtml,
+  onExportMarkdown,
   hasMessages,
   plan,
   planMarkdown,
@@ -160,7 +164,9 @@ export default function Sidebar({
           onFetchSessions={onFetchSessions}
           onSave={onSave}
           onLoad={onLoad}
+          onDelete={onDelete}
           onExportHtml={onExportHtml}
+          onExportMarkdown={onExportMarkdown}
           hasMessages={hasMessages}
         />
       </div>
