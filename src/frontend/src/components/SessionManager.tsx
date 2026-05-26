@@ -8,6 +8,8 @@ interface Props {
   onSave: () => Promise<true | string>;
   onLoad: (filename: string) => Promise<boolean>;
   /** Returns ``true`` on success, or an error detail string on failure. */
+  onClear: () => Promise<true | string>;
+  /** Returns ``true`` on success, or an error detail string on failure. */
   onDelete: (filename: string) => Promise<true | string>;
   onExportHtml: () => void;
   onExportMarkdown: () => void;
@@ -19,6 +21,7 @@ export default function SessionManager({
   onFetchSessions,
   onSave,
   onLoad,
+  onClear,
   onDelete,
   onExportHtml,
   onExportMarkdown,
@@ -40,6 +43,18 @@ export default function SessionManager({
   const handleSave = async () => {
     const result = await onSave();
     setSaveStatus(result === true ? "Session saved!" : result);
+    setTimeout(() => setSaveStatus(null), 4000);
+  };
+
+  const handleClear = async () => {
+    const ok = window.confirm(
+      "Clear the current session?\n\n" +
+        "This wipes the chat, sub-agent traces, and plan. " +
+        "Saved sessions on disk are not affected.",
+    );
+    if (!ok) return;
+    const result = await onClear();
+    setSaveStatus(result === true ? "Session cleared." : result);
     setTimeout(() => setSaveStatus(null), 4000);
   };
 
@@ -68,9 +83,32 @@ export default function SessionManager({
     <div className="session-manager">
       <div className="session-label">Save or load chat sessions.</div>
 
-      <button className="sidebar-btn" onClick={handleSave} disabled={!hasMessages}>
-        💾 Save Current Session
-      </button>
+      <div className="session-row-actions">
+        <button
+          className="sidebar-btn"
+          onClick={handleSave}
+          disabled={!hasMessages}
+          title={
+            hasMessages
+              ? "Save the current chat, plan, and prompts snapshot"
+              : "Nothing to save yet"
+          }
+        >
+          💾 Save
+        </button>
+        <button
+          className="sidebar-btn session-btn-danger"
+          onClick={handleClear}
+          disabled={!hasMessages}
+          title={
+            hasMessages
+              ? "Wipe the current chat, traces, and plan"
+              : "Nothing to clear"
+          }
+        >
+          🧹 Clear
+        </button>
+      </div>
       {saveStatus && <div className="save-status">{saveStatus}</div>}
 
       <select

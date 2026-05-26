@@ -72,6 +72,36 @@ class SaveResult(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+@router.post("/clear")
+async def clear_current_session():
+    """Wipe the current in-memory session.
+
+    Clears the message history, sub-agent traces, file metadata, the
+    on-disk plan, and the LangGraph thread state. Refuses while the
+    agent is running — the caller should cancel an in-flight run first.
+    Returns the cleared mode so the client can update its toggle if it
+    cares (mode itself is preserved, since it's a user preference).
+    """
+    if session.is_running:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "The agent is currently running. Wait for the run to finish "
+                "(or cancel it) before clearing."
+            ),
+        )
+
+    # Reset in-memory session state. ``reset()`` preserves the compiled
+    # agent graph and the user's mode preference; everything else goes.
+    session.reset()
+
+    # The plan store is a separate on-disk file; wipe it too.
+    from server.plan_store import plan_store
+    plan_store.reset()
+
+    return {"status": "cleared", "mode": session.mode}
+
+
 @router.post("/save", response_model=SaveResult)
 async def save_current_session():
     """Save the current chat session to disk."""

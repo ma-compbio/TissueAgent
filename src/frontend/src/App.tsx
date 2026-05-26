@@ -84,6 +84,17 @@ export default function App() {
     [session, ws, planHook],
   );
 
+  // Composite clear: wipe server state, then refresh the frontend in
+  // place — WS reconnects to pick up empty history, plan refetches as
+  // empty. Mirrors handleLoadSession's pattern.
+  const handleClearSession = useCallback(async () => {
+    const result = await session.clearSession();
+    if (result !== true) return result;
+    ws.reconnect();
+    await planHook.refresh();
+    return true;
+  }, [session, ws, planHook]);
+
   // Tutorial and Contact: single-column doc layout, no sidebar.
   if (page === "tutorial" || page === "contact") {
     return (
@@ -125,6 +136,7 @@ export default function App() {
         onFetchSessions={session.fetchSessions}
         onSave={session.saveSession}
         onLoad={handleLoadSession}
+        onClear={handleClearSession}
         onDelete={session.deleteSession}
         onExportHtml={session.exportHtml}
         onExportMarkdown={session.exportMarkdown}

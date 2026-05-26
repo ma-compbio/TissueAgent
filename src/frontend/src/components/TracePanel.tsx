@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { SubagentTranscript, SerializedMessage } from "../types/messages";
+import AgentAvatar from "./AgentAvatar";
 
 interface Props {
   state: SubagentTranscript;
@@ -156,7 +157,11 @@ export default function TracePanel({ state, onClose }: Props) {
     <div className="trace-panel">
       <div className="trace-panel-header">
         <div className="trace-panel-title">
-          <span className="avatar">{state.avatar}</span>
+          <AgentAvatar
+            name={state.agent_name}
+            fallback={state.avatar}
+            size={22}
+          />
           <span className="trace-panel-name">{state.agent_name}</span>
         </div>
         <button className="trace-close-btn" onClick={onClose}>

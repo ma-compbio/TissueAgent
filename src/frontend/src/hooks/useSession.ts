@@ -64,6 +64,22 @@ export function useSession() {
     [_download],
   );
 
+  const clearSession = useCallback(async (): Promise<true | string> => {
+    const res = await fetch(`${API}/api/sessions/clear`, { method: "POST" });
+    if (res.ok) {
+      // Clear the locally-tracked file list too; uploaded files
+      // metadata is gone server-side now.
+      setUploadedFiles([]);
+      return true;
+    }
+    try {
+      const body = await res.json();
+      return typeof body?.detail === "string" ? body.detail : "Failed to clear.";
+    } catch {
+      return "Failed to clear.";
+    }
+  }, []);
+
   const deleteSession = useCallback(
     async (filename: string): Promise<true | string> => {
       const res = await fetch(
@@ -103,6 +119,7 @@ export function useSession() {
     fetchSessions,
     saveSession,
     loadSession,
+    clearSession,
     exportHtml,
     exportMarkdown,
     deleteSession,

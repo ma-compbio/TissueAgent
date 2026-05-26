@@ -24,6 +24,7 @@ interface Props {
   onFetchSessions: () => void;
   onSave: () => Promise<true | string>;
   onLoad: (filename: string) => Promise<boolean>;
+  onClear: () => Promise<true | string>;
   onDelete: (filename: string) => Promise<true | string>;
   onExportHtml: () => void;
   onExportMarkdown: () => void;
@@ -64,6 +65,7 @@ export default function Sidebar({
   onFetchSessions,
   onSave,
   onLoad,
+  onClear,
   onDelete,
   onExportHtml,
   onExportMarkdown,
@@ -193,6 +195,7 @@ export default function Sidebar({
           onFetchSessions={onFetchSessions}
           onSave={onSave}
           onLoad={onLoad}
+          onClear={onClear}
           onDelete={onDelete}
           onExportHtml={onExportHtml}
           onExportMarkdown={onExportMarkdown}
