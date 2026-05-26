@@ -24,6 +24,12 @@ interface PlanUpdatePayload {
 /** Which copilot review gate is open. ``null`` ⇒ no review pending. */
 export type ReviewState = "plan" | "assignment" | null;
 
+/** Three-state connection status. ``connecting`` covers both the
+ *  initial WebSocket handshake and any in-flight auto-reconnect — both
+ *  of which produce a flicker of ``onerror`` / ``onclose`` events that
+ *  shouldn't be shown to the user as a hard error. */
+export type ConnectionStatus = "connecting" | "connected" | "disconnected";
+
 /** Identifiers of the five main pipeline agents, in execution order. */
 export type PipelineStage =
   | "planner"
@@ -53,6 +59,7 @@ interface UseWebSocketReturn {
   subagentStates: Record<string, SubagentTranscript>;
   liveTraces: Record<string, SubagentTranscript>;
   isConnected: boolean;
+  connectionStatus: ConnectionStatus;
   isRunning: boolean;
   elapsed: number | null;
   error: string | null;
@@ -94,7 +101,10 @@ export function useWebSocket(): UseWebSocketReturn {
     Record<string, SubagentTranscript>
   >({});
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>("connecting");
   const [isRunning, setIsRunning] = useState(false);
+  const disconnectEscalation = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [elapsed, setElapsed] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [planEvent, setPlanEvent] = useState<PlanUpdatePayload | null>(null);
@@ -107,19 +117,41 @@ export function useWebSocket(): UseWebSocketReturn {
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
+    // Until we either open or definitively give up, we're "connecting".
+    setConnectionStatus("connecting");
+
     ws.onopen = () => {
       setIsConnected(true);
+      setConnectionStatus("connected");
+      // Clear any stale error from a previous lost connection.
       setError(null);
+      clearTimeout(disconnectEscalation.current);
+      disconnectEscalation.current = undefined;
     };
 
     ws.onclose = () => {
       setIsConnected(false);
-      // Reconnect after 2 seconds
+      // Stay in "connecting" while the auto-reconnect (2s below) does
+      // its thing — the user shouldn't see a hard "Disconnected" state
+      // during a brief blip. Escalate to "disconnected" only if we
+      // haven't reconnected within a longer grace window.
+      setConnectionStatus("connecting");
+      clearTimeout(disconnectEscalation.current);
+      disconnectEscalation.current = setTimeout(() => {
+        setConnectionStatus("disconnected");
+      }, 6000);
       reconnectTimer.current = setTimeout(connect, 2000);
     };
 
+    /* onerror always fires together with onclose for connect-time
+       failures. We don't surface its message — it's the browser's
+       generic "WebSocket connection error" and reads as if something
+       is actually wrong, when in practice it just means "the server
+       isn't up yet" or "I'm still reconnecting". The connection-status
+       badge tells the user whether we're connecting or disconnected. */
     ws.onerror = () => {
-      setError("WebSocket connection error");
+      // Intentional no-op for user-facing state. The onclose handler
+      // owns the lifecycle.
     };
 
     ws.onmessage = (event) => {
@@ -237,6 +269,7 @@ export function useWebSocket(): UseWebSocketReturn {
     connect();
     return () => {
       clearTimeout(reconnectTimer.current);
+      clearTimeout(disconnectEscalation.current);
       wsRef.current?.close();
     };
   }, [connect]);
@@ -270,15 +303,22 @@ export function useWebSocket(): UseWebSocketReturn {
     [send]
   );
 
-  // ---- copilot review actions ----
+  // ---- copilot review actions --------------------------------------
+  // Each action optimistically clears ``reviewState`` so the review
+  // banner disappears the moment the user clicks — it has done its
+  // job. If the server pauses again later (e.g. at the next gate, or
+  // after a feedback-triggered replan), a fresh ``*_review_requested``
+  // event will set ``reviewState`` again.
 
   const approvePlan = useCallback(() => {
+    setReviewState(null);
     const event: PlanApprovedEvent = { type: "plan_approved" };
     send(event);
   }, [send]);
 
   const editPlan = useCallback(
     (markdown: string) => {
+      setReviewState(null);
       const event: PlanEditedEvent = { type: "plan_edited", markdown };
       send(event);
     },
@@ -287,6 +327,7 @@ export function useWebSocket(): UseWebSocketReturn {
 
   const sendPlanFeedback = useCallback(
     (text: string) => {
+      setReviewState(null);
       const event: PlanFeedbackEvent = { type: "plan_feedback", text };
       send(event);
     },
@@ -294,12 +335,14 @@ export function useWebSocket(): UseWebSocketReturn {
   );
 
   const approveAssignments = useCallback(() => {
+    setReviewState(null);
     const event: AssignmentsApprovedEvent = { type: "assignments_approved" };
     send(event);
   }, [send]);
 
   const editAssignments = useCallback(
     (markdown: string) => {
+      setReviewState(null);
       const event: AssignmentsEditedEvent = { type: "assignments_edited", markdown };
       send(event);
     },
@@ -308,6 +351,7 @@ export function useWebSocket(): UseWebSocketReturn {
 
   const sendAssignmentsFeedback = useCallback(
     (text: string) => {
+      setReviewState(null);
       const event: AssignmentsFeedbackEvent = { type: "assignments_feedback", text };
       send(event);
     },
@@ -315,6 +359,7 @@ export function useWebSocket(): UseWebSocketReturn {
   );
 
   const cancelRun = useCallback(() => {
+    setReviewState(null);
     const event: RunCancelledClientEvent = { type: "run_cancelled" };
     send(event);
   }, [send]);
@@ -325,6 +370,8 @@ export function useWebSocket(): UseWebSocketReturn {
     // and ``mode_updated`` payloads from the server.
     clearTimeout(reconnectTimer.current);
     reconnectTimer.current = undefined;
+    clearTimeout(disconnectEscalation.current);
+    disconnectEscalation.current = undefined;
     if (wsRef.current) {
       // Detach handlers so the close doesn't schedule a 2s auto-reconnect.
       const sock = wsRef.current;
@@ -360,6 +407,7 @@ export function useWebSocket(): UseWebSocketReturn {
     subagentStates,
     liveTraces,
     isConnected,
+    connectionStatus,
     isRunning,
     elapsed,
     error,

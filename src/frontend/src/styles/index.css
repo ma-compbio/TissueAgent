@@ -250,6 +250,8 @@ code, pre, .num {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  background: var(--text-tertiary);
+  flex-shrink: 0;
 }
 
 .status-dot.connected {
@@ -258,6 +260,25 @@ code, pre, .num {
 
 .status-dot.disconnected {
   background: var(--error-text);
+}
+
+/* Connecting: amber dot that breathes calmly — same vocabulary as the
+   pause indicator on the review banner. Reads as "in progress" not
+   "broken". */
+.status-dot.connecting {
+  background: var(--live-accent-strong);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--live-accent-strong), transparent 75%);
+  animation: indicator-breath 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Connecting label color matches — slightly muted so it reads as a
+   transient state, not an error. */
+.connection-status.status-connecting {
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot.connecting { animation: none; }
 }
 
 .top-bar-right {

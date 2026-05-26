@@ -49,6 +49,14 @@ class SessionState:
         # resume or new turn. None ⇒ no pause is active.
         self.paused_at: Optional[str] = None
 
+        # LangGraph's ``interrupt_before`` is sticky — once a node is in
+        # the list, the graph pauses *every* time it's about to enter
+        # that node, including inner-loop returns (e.g. manager_tools →
+        # manager_agent). We want each gate to fire **at most once** per
+        # turn. Track which gates have already fired so we can drop them
+        # from ``interrupt_before`` on subsequent resumes.
+        self.gates_fired: Set[str] = set()
+
         # Core conversation state
         self.agent_state: Dict[str, Any] = {
             "messages": [],
@@ -96,6 +104,7 @@ class SessionState:
             self.is_running = False
             self.thread_id = _new_thread_id()
             self.paused_at = None
+            self.gates_fired = set()
 
     def ensure_display_state(self) -> None:
         """Synchronise display_messages with the canonical agent message list."""

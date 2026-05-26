@@ -164,6 +164,7 @@ async def _handle_user_message(ws: WebSocket, data: dict):
     _plan_store.reset()
     session.thread_id = _new_thread_id()
     session.paused_at = None
+    session.gates_fired = set()
 
     # Send the user message back to client for display
     await ws.send_json({
@@ -191,6 +192,12 @@ async def _handle_user_message(ws: WebSocket, data: dict):
 # Node IDs where copilot pauses. Match `assign_agent_node_id` in graph.py.
 _PAUSE_BEFORE_NODES = ["recruiter_agent", "manager_agent"]
 
+# Each gate's user-facing label. Keep in sync with ``_interrupt_label``.
+_NODE_TO_GATE: dict[str, str] = {
+    "recruiter_agent": "before_recruiter",
+    "manager_agent":   "before_manager",
+}
+
 
 def _interrupt_label(next_nodes) -> Optional[str]:
     """Map LangGraph's ``next`` tuple onto our pause-name vocabulary."""
@@ -201,6 +208,22 @@ def _interrupt_label(next_nodes) -> Optional[str]:
     if "manager_agent" in next_nodes:
         return "before_manager"
     return None
+
+
+def _pending_interrupt_nodes() -> list[str]:
+    """Nodes that should pause on the *next* invoke for this run.
+
+    LangGraph's ``interrupt_before`` is sticky — a node listed there
+    pauses every time the graph is about to enter it, including
+    inner-loop returns (e.g. ``manager_tools`` → ``manager_agent``).
+    We want each gate to fire **at most once** per turn, so we exclude
+    gates that have already fired (tracked on ``session.gates_fired``).
+    """
+    return [
+        node
+        for node in _PAUSE_BEFORE_NODES
+        if _NODE_TO_GATE[node] not in session.gates_fired
+    ]
 
 
 async def _run_graph(ws: WebSocket, graph_input):
@@ -223,7 +246,9 @@ async def _run_graph(ws: WebSocket, graph_input):
     }
     invoke_kwargs = {}
     if run_mode == "copilot":
-        invoke_kwargs["interrupt_before"] = list(_PAUSE_BEFORE_NODES)
+        pending = _pending_interrupt_nodes()
+        if pending:
+            invoke_kwargs["interrupt_before"] = pending
 
     # Record prefix for post-run linkage. For resumes the canonical state
     # still tracks every message produced so far in this turn.
@@ -273,6 +298,11 @@ async def _run_graph(ws: WebSocket, graph_input):
 
         if pause_label is not None:
             session.paused_at = pause_label
+            # Record that this gate has fired so subsequent resumes drop
+            # it from ``interrupt_before`` — otherwise the manager would
+            # pause again on every loop-back from ``manager_tools`` to
+            # ``manager_agent`` and the run would stall after each step.
+            session.gates_fired.add(pause_label)
             await _emit_pause(ws, pause_label)
             # Don't link subagent states or send run_complete; we're paused.
             return
@@ -498,10 +528,13 @@ async def _rewind_to_planner_with_feedback(ws: WebSocket, text: str) -> None:
         "data": serialize_message(feedback_message),
     })
 
-    # Fresh thread + cleared plan so the planner starts clean.
+    # Fresh thread + cleared plan so the planner starts clean. Reset
+    # ``gates_fired`` too — this is a brand-new run, both gates should
+    # fire again.
     _plan_store.reset()
     session.thread_id = _new_thread_id()
     session.paused_at = None
+    session.gates_fired = set()
 
     await _run_graph(ws, graph_input=session.agent_state)
 
@@ -524,6 +557,7 @@ async def _handle_run_cancelled(ws: WebSocket) -> None:
     _plan_store.reset()
     session.paused_at = None
     session.thread_id = _new_thread_id()
+    session.gates_fired = set()
     session.is_running = False
 
     await ws.send_json({"type": "run_cancelled", "data": {}})

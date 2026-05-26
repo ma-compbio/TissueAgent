@@ -167,11 +167,17 @@ export default function App() {
           </div>
           <TopNav current={page} onNavigate={setPage} />
           <div className="top-bar-right">
-            <div className="connection-status">
-              <span
-                className={`status-dot ${ws.isConnected ? "connected" : "disconnected"}`}
-              />
-              {ws.isConnected ? "Connected" : "Disconnected"}
+            <div
+              className={`connection-status status-${ws.connectionStatus}`}
+              role="status"
+              aria-live="polite"
+            >
+              <span className={`status-dot ${ws.connectionStatus}`} />
+              {ws.connectionStatus === "connected"
+                ? "Connected"
+                : ws.connectionStatus === "connecting"
+                  ? "Connecting…"
+                  : "Disconnected"}
             </div>
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
