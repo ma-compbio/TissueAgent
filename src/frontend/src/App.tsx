@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import ChatView from "./components/ChatView";
+import ContactPage from "./components/ContactPage";
 import FileBrowser from "./components/FileBrowser";
 import Sidebar from "./components/Sidebar";
 import ThemeToggle from "./components/ThemeToggle";
+import TopNav from "./components/TopNav";
+import TutorialPage from "./components/TutorialPage";
 import { useAgents } from "./hooks/useAgents";
 import { useModels } from "./hooks/useModels";
 import { usePlan } from "./hooks/usePlan";
@@ -11,6 +14,18 @@ import { useSession } from "./hooks/useSession";
 import { useTheme } from "./hooks/useTheme";
 import { useWebSocket } from "./hooks/useWebSocket";
 import "./styles/index.css";
+
+/** Three top-level views. The chat page keeps the sidebar; tutorial
+ *  and contact are single-column reference pages. */
+export type Page = "chat" | "tutorial" | "contact";
+
+const PAGES: readonly Page[] = ["chat", "tutorial", "contact"] as const;
+
+function _readPageFromUrl(): Page {
+  if (typeof window === "undefined") return "chat";
+  const raw = new URLSearchParams(window.location.search).get("page");
+  return PAGES.includes(raw as Page) ? (raw as Page) : "chat";
+}
 
 export default function App() {
   const ws = useWebSocket();
@@ -22,6 +37,30 @@ export default function App() {
 
   const [enableDebug, setEnableDebug] = useState(false);
   const [showFileBrowser, setShowFileBrowser] = useState(false);
+  const [page, setPage] = useState<Page>(_readPageFromUrl);
+
+  // Sync ?page=... in the URL so reloads + bookmarks land on the right view.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const current = url.searchParams.get("page");
+    if (page === "chat") {
+      if (current !== null) {
+        url.searchParams.delete("page");
+        window.history.replaceState({}, "", url.toString());
+      }
+    } else if (current !== page) {
+      url.searchParams.set("page", page);
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [page]);
+
+  // Honor back/forward navigation in the browser.
+  useEffect(() => {
+    const onPop = () => setPage(_readPageFromUrl());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   // Forward WebSocket plan_updated events into the plan store.
   useEffect(() => {
@@ -44,6 +83,34 @@ export default function App() {
     },
     [session, ws, planHook],
   );
+
+  // Tutorial and Contact: single-column doc layout, no sidebar.
+  if (page === "tutorial" || page === "contact") {
+    return (
+      <div className="app-layout app-layout-doc">
+        <main className="main-area">
+          <div className="top-bar">
+            <div className="app-brand">
+              <img
+                src="/tissueagent-icon.png"
+                alt=""
+                aria-hidden="true"
+                className="app-logo"
+              />
+              <h1 className="app-title">TissueAgent</h1>
+            </div>
+            <TopNav current={page} onNavigate={setPage} />
+            <div className="top-bar-right">
+              <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            </div>
+          </div>
+          <div className="content-area-doc">
+            {page === "tutorial" ? <TutorialPage /> : <ContactPage />}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app-layout">
@@ -98,6 +165,7 @@ export default function App() {
             />
             <h1 className="app-title">TissueAgent</h1>
           </div>
+          <TopNav current={page} onNavigate={setPage} />
           <div className="top-bar-right">
             <div className="connection-status">
               <span
