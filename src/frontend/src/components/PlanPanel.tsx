@@ -325,13 +325,15 @@ function ReviewBanner({
   onApproveAssignments,
   onStartEditPlan,
 }: ReviewBannerProps) {
+  const eyebrow =
+    reviewState === "plan" ? "PAUSED · PLAN GATE" : "PAUSED · ASSIGNMENT GATE";
   const headline =
     reviewState === "plan"
       ? "Your review is needed"
       : "Confirm agent assignments";
   const subline =
     reviewState === "plan"
-      ? "The planner drafted a plan. Approve to continue, or edit/give feedback below."
+      ? "The planner drafted a plan. Approve to continue, or edit / give feedback below."
       : "The recruiter chose an agent for each step. Approve to start execution, or change picks below.";
   const onPrimary =
     reviewState === "plan" ? onApprovePlan : onApproveAssignments;
@@ -340,9 +342,11 @@ function ReviewBanner({
 
   return (
     <div className="plan-review-banner" role="alert">
+      <span className="plan-review-indicator" aria-hidden="true" />
       <div className="plan-review-banner-text">
+        <span className="plan-review-eyebrow">{eyebrow}</span>
         <strong>{headline}</strong>
-        <span>{subline}</span>
+        <span className="plan-review-subline">{subline}</span>
       </div>
       <div className="plan-review-banner-actions">
         <button

@@ -81,22 +81,19 @@ async def websocket_chat(ws: WebSocket):
 
 
 async def _handle_set_mode(ws: WebSocket, data: dict):
-    """Update the session execution mode and echo the new value back."""
+    """Update the session execution mode and echo the new value back.
+
+    Mode changes take effect on the *next* user prompt. A run that's
+    already in flight keeps the mode it started with — ``_run_graph``
+    snapshots mode at invoke time, so toggling mid-run is safe and does
+    not affect the current run's pause behavior.
+    """
     requested = data.get("mode")
     if requested not in ("autopilot", "copilot"):
         await ws.send_json({
             "type": "run_error",
             "error_type": "InvalidMode",
             "detail": f"Unknown mode: {requested!r}",
-        })
-        return
-
-    if session.is_running:
-        # Refuse mid-run mode changes; they would race with interrupt wiring.
-        await ws.send_json({
-            "type": "run_error",
-            "error_type": "ModeChangeBlocked",
-            "detail": "Cannot change mode while the agent is running.",
         })
         return
 
@@ -211,13 +208,21 @@ async def _run_graph(ws: WebSocket, graph_input):
 
     *graph_input* is the initial state dict for a fresh turn, or ``None``
     to resume from a checkpoint after a copilot pause.
+
+    The session mode is **snapshotted** at the start of the run. A user
+    that toggles autopilot/copilot mid-run will see the change take
+    effect on the *next* prompt, not the current one. This keeps the
+    pause-detection consistent: a run that started in copilot must
+    finish in copilot, otherwise a paused state would be misread as a
+    completion the moment the user flips to autopilot.
     """
+    run_mode: str = session.mode
     config = {
         "recursion_limit": RECURSION_LIMIT,
         "configurable": {"thread_id": session.thread_id},
     }
     invoke_kwargs = {}
-    if session.mode == "copilot":
+    if run_mode == "copilot":
         invoke_kwargs["interrupt_before"] = list(_PAUSE_BEFORE_NODES)
 
     # Record prefix for post-run linkage. For resumes the canonical state
@@ -259,9 +264,11 @@ async def _run_graph(ws: WebSocket, graph_input):
         await _drain_queues(ws)
 
         # Did we land on a copilot interrupt? Inspect the checkpoint.
+        # Use the *run-start* mode snapshot, not session.mode, so a
+        # toggle mid-run can't be misread as "this run was autopilot".
         graph_state = session.agent.get_state(config)
         pause_label = (
-            _interrupt_label(graph_state.next) if session.mode == "copilot" else None
+            _interrupt_label(graph_state.next) if run_mode == "copilot" else None
         )
 
         if pause_label is not None:

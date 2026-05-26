@@ -1,83 +1,141 @@
 /* ====================================================================
-   TissueAgent – Chat UI Styles
+   TissueAgent — UI Styles
+   Designed as a lab instrument: calm, precise, scientific.
    ==================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,300..800&family=Geist+Mono:wght@400;500;600&display=swap");
 
 :root {
   --sidebar-width: 300px;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-sidebar: #f3f4f6;
-  --bg-card: #ffffff;
-  --border-color: #e5e7eb;
-  --text-primary: #1f2937;
-  --text-secondary: #6b7280;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --accent-light: #eff6ff;
-  --user-bg: #f0f4ff;
-  --ai-bg: #f4fff0;
-  --tool-bg: #fffaf0;
-  --error-bg: #fef2f2;
-  --error-text: #dc2626;
-  --success: #22c55e;
-  --route-pill-bg: #e0e7ff;
-  --route-pill-text: #1f2a44;
-  --tool-pill-bg: #f3e8ff;
-  --tool-pill-text: #7c3aed;
-  --tag-response-bg: #f0fdf4;
-  --tag-response-border: #22c55e;
-  --tag-scratchpad-bg: #fefce8;
-  --tag-scratchpad-border: #eab308;
-  --tag-plan-bg: #eff6ff;
-  --tag-plan-border: #3b82f6;
-  --code-bg: #f8f9fa;
-  --output-bg: #1e1e1e;
-  --output-text: #d4d4d4;
-  --manager-accent: #8b5cf6;
-  --manager-accent-bg: #f5f3ff;
-  --live-accent: #f59e0b;
-  --live-accent-bg: #fffbeb;
-  --live-accent-strong: #d97706;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+
+  /* --------- Spacing scale (4pt; named semantically, not numerically) --- */
+  --space-2xs: 0.25rem;   /*  4px  */
+  --space-xs:  0.5rem;    /*  8px  */
+  --space-sm:  0.75rem;   /* 12px  */
+  --space-md:  1rem;      /* 16px  */
+  --space-lg:  1.5rem;    /* 24px  */
+  --space-xl:  2rem;      /* 32px  */
+  --space-2xl: 3rem;      /* 48px  */
+
+  /* --------- Type scale (fixed rem for product UI; 1.25 ratio) ---------- */
+  --text-2xs:  0.6875rem; /* 11 — micro labels, mono captions */
+  --text-xs:   0.75rem;   /* 12 — captions */
+  --text-sm:   0.8125rem; /* 13 — secondary UI */
+  --text-base: 0.9375rem; /* 15 — body */
+  --text-md:   1.125rem;  /* 18 — section heads */
+  --text-lg:   1.4375rem; /* 23 — page titles */
+
+  /* --------- Type families ---------------------------------------------- */
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", system-ui, sans-serif;
+  --font-sans:    "Bricolage Grotesque", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono:    "Geist Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+  /* --------- Surfaces (OKLCH, neutrals tinted toward instrument-cyan) --- */
+  --bg-primary:   oklch(0.99   0.003 200);  /* near-white, hint of cyan */
+  --bg-secondary: oklch(0.975  0.005 200);
+  --bg-sidebar:   oklch(0.965  0.006 200);
+  --bg-card:      oklch(1      0     0);     /* pure white for true contrast lift */
+
+  --border-color:  oklch(0.91  0.006 200);
+  --border-strong: oklch(0.82  0.010 200);
+
+  --text-primary:   oklch(0.20 0.020 220);   /* near-black with deep slate */
+  --text-secondary: oklch(0.48 0.012 215);
+  --text-tertiary:  oklch(0.62 0.010 215);
+
+  /* --------- Accent — instrument cyan (the everyday "structural" accent) */
+  --accent:       oklch(0.55 0.10 200);
+  --accent-hover: oklch(0.48 0.11 200);
+  --accent-light: oklch(0.95 0.025 200);
+  --accent-ink:   oklch(0.99 0.005 200);     /* foreground on accent fills */
+
+  /* --------- Live state — amber (the rare, attention-demanding accent) -- */
+  --live-accent:        oklch(0.72 0.16 70);
+  --live-accent-strong: oklch(0.62 0.18 60);
+  --live-accent-bg:     oklch(0.97 0.04 75);
+  --live-accent-ink:    oklch(0.20 0.04 60);
+
+  /* --------- Semantic colors ------------------------------------------- */
+  --success:    oklch(0.62 0.15 150);
+  --error-text: oklch(0.52 0.20 28);
+  --error-bg:   oklch(0.97 0.03 28);
+
+  /* --------- Existing pinned tokens (kept for legacy callers) ---------- */
+  --user-bg:   var(--bg-secondary);
+  --ai-bg:     var(--bg-card);
+  --tool-bg:   oklch(0.985 0.012 80);
+  --route-pill-bg:   var(--accent-light);
+  --route-pill-text: oklch(0.30 0.07 215);
+  --tool-pill-bg:    oklch(0.96 0.015 290);
+  --tool-pill-text:  oklch(0.42 0.13 290);
+  --tag-response-bg:        oklch(0.97 0.03 150);
+  --tag-response-border:    var(--success);
+  --tag-scratchpad-bg:      oklch(0.97 0.04 95);
+  --tag-scratchpad-border:  oklch(0.75 0.13 95);
+  --tag-plan-bg:            var(--accent-light);
+  --tag-plan-border:        var(--accent);
+  --code-bg:    var(--bg-secondary);
+  --output-bg:  oklch(0.18 0.012 220);
+  --output-text: oklch(0.88 0.005 200);
+  --manager-accent:    oklch(0.55 0.11 280);
+  --manager-accent-bg: oklch(0.96 0.025 280);
+
+  /* Layer effects: a sharp 1px border + a soft instrument-shadow */
+  --shadow-card: 0 1px 0 oklch(0.91 0.006 200), 0 8px 24px -16px oklch(0.30 0.02 220 / 0.18);
+  --shadow-banner: 0 1px 0 oklch(0.82 0.010 200), 0 14px 32px -20px oklch(0.30 0.02 220 / 0.30);
+
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bg-primary: #15171c;
-  --bg-secondary: #1c1f26;
-  --bg-sidebar: #181a20;
-  --bg-card: #1c1f26;
-  --border-color: #2a2e38;
-  --text-primary: #e5e7eb;
-  --text-secondary: #9ca3af;
-  --accent: #60a5fa;
-  --accent-hover: #93c5fd;
-  --accent-light: #1e2a44;
-  --user-bg: #1b2233;
-  --ai-bg: #1a2820;
-  --tool-bg: #2a2417;
-  --error-bg: #2a1818;
-  --error-text: #f87171;
-  --success: #4ade80;
-  --route-pill-bg: #1e2a44;
-  --route-pill-text: #cbd5e1;
-  --tool-pill-bg: #2a1f3d;
-  --tool-pill-text: #c4b5fd;
-  --tag-response-bg: #142019;
-  --tag-response-border: #22c55e;
-  --tag-scratchpad-bg: #1f1d10;
-  --tag-scratchpad-border: #eab308;
-  --tag-plan-bg: #15203a;
-  --tag-plan-border: #60a5fa;
-  --code-bg: #20232b;
-  --output-bg: #0f1115;
-  --output-text: #d4d4d4;
-  --manager-accent: #a78bfa;
-  --manager-accent-bg: #221b3a;
-  --live-accent: #fbbf24;
-  --live-accent-bg: #2a2110;
-  --live-accent-strong: #fcd34d;
+  --bg-primary:   oklch(0.18 0.012 220);
+  --bg-secondary: oklch(0.22 0.012 220);
+  --bg-sidebar:   oklch(0.20 0.012 220);
+  --bg-card:      oklch(0.24 0.012 220);
+
+  --border-color:  oklch(0.30 0.015 220);
+  --border-strong: oklch(0.42 0.018 215);
+
+  --text-primary:   oklch(0.94 0.008 200);
+  --text-secondary: oklch(0.72 0.012 215);
+  --text-tertiary:  oklch(0.58 0.012 215);
+
+  --accent:       oklch(0.78 0.10 200);
+  --accent-hover: oklch(0.85 0.11 200);
+  --accent-light: oklch(0.32 0.04 200);
+  --accent-ink:   oklch(0.15 0.02 220);
+
+  --live-accent:        oklch(0.80 0.14 75);
+  --live-accent-strong: oklch(0.86 0.16 70);
+  --live-accent-bg:     oklch(0.30 0.05 65);
+  --live-accent-ink:    oklch(0.15 0.04 60);
+
+  --success:    oklch(0.78 0.14 150);
+  --error-text: oklch(0.78 0.16 28);
+  --error-bg:   oklch(0.30 0.06 28);
+
+  --user-bg:   var(--bg-secondary);
+  --ai-bg:     var(--bg-card);
+  --tool-bg:   oklch(0.28 0.025 80);
+  --route-pill-bg:   var(--accent-light);
+  --route-pill-text: oklch(0.88 0.04 215);
+  --tool-pill-bg:    oklch(0.30 0.05 290);
+  --tool-pill-text:  oklch(0.85 0.10 290);
+  --tag-response-bg:        oklch(0.28 0.05 150);
+  --tag-response-border:    var(--success);
+  --tag-scratchpad-bg:      oklch(0.28 0.06 95);
+  --tag-scratchpad-border:  oklch(0.80 0.13 95);
+  --tag-plan-bg:            var(--accent-light);
+  --tag-plan-border:        var(--accent);
+  --code-bg:    var(--bg-secondary);
+  --output-bg:  oklch(0.12 0.012 220);
+  --output-text: oklch(0.85 0.005 200);
+  --manager-accent:    oklch(0.78 0.11 280);
+  --manager-accent-bg: oklch(0.30 0.06 280);
+
+  --shadow-card: 0 1px 0 oklch(0.30 0.015 220), 0 8px 24px -16px oklch(0 0 0 / 0.6);
+  --shadow-banner: 0 1px 0 oklch(0.42 0.018 215), 0 14px 32px -20px oklch(0 0 0 / 0.7);
+
   color-scheme: dark;
 }
 
@@ -91,7 +149,17 @@ body {
   font-family: var(--font-sans);
   color: var(--text-primary);
   background: var(--bg-primary);
+  font-size: var(--text-base);
   line-height: 1.5;
+  font-feature-settings: "ss01", "cv11";  /* alt 'a' + tabular numerals where supported */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Numeric values, paths, parameters — always tabular for alignment */
+code, pre, .num {
+  font-feature-settings: "tnum", "zero";
+  font-variant-ligatures: none;
 }
 
 /* ---- Layout ---- */
@@ -113,8 +181,8 @@ body {
 }
 
 .sidebar-top {
-  flex: 0 1 auto;
-  max-height: 50%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: 1rem;
   display: flex;
@@ -123,8 +191,8 @@ body {
 }
 
 .sidebar-bottom {
-  flex: 1 1 0;
-  min-height: 0;
+  flex: 0 0 auto;
+  max-height: 50vh;
   overflow-y: auto;
   border-top: 1px solid var(--border-color);
 }
@@ -933,40 +1001,153 @@ body {
   margin: 0.5rem 0;
 }
 
+/* Pinned mode bar — always visible at the very top of the sidebar.
+   Sits OUTSIDE the scrollable .sidebar-top container so it can never
+   be scrolled out of view or pushed below the fold when content grows. */
+.sidebar-mode-bar {
+  flex: 0 0 auto;
+  padding: var(--space-sm) var(--space-md) var(--space-xs);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-sidebar);
+}
+
+/* Mode toggle — instrument switch, not a rounded pill */
 .mode-toggle {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
   background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  /* No overflow:hidden — the per-pill hover tooltip needs to escape. */
 }
 
 .mode-pill {
-  flex: 1;
-  padding: 0.35rem 0.5rem;
+  position: relative;
+  padding: var(--space-xs) var(--space-sm);
   background: transparent;
   border: none;
-  border-radius: 0.35rem;
+  border-radius: 0;
   cursor: pointer;
-  font-size: 0.8rem;
-  color: var(--text-secondary, inherit);
-  transition: background 0.15s ease, color 0.15s ease;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  transition: background 180ms ease-out, color 180ms ease-out;
+}
+
+.mode-pill + .mode-pill {
+  border-left: 1px solid var(--border-strong);
 }
 
 .mode-pill:hover:not(:disabled):not(.active) {
-  background: var(--accent-light);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 
 .mode-pill.active {
-  background: var(--accent-light);
-  color: var(--text-primary, inherit);
+  background: var(--text-primary);
+  color: var(--bg-primary);
   font-weight: 600;
 }
 
 .mode-pill:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* ---- Mode tooltip — explains what each mode does on hover/focus -------- */
+
+.mode-tooltip {
+  position: absolute;
+  top: calc(100% + var(--space-sm));
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  width: max-content;
+  max-width: 18rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: oklch(0.18 0.020 220);              /* match the review banner */
+  color: oklch(0.94 0.008 200);
+  border-radius: 2px;
+  box-shadow: var(--shadow-banner);
+  text-align: left;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 160ms;
+}
+
+[data-theme="dark"] .mode-tooltip {
+  background: oklch(0.12 0.012 220);
+}
+
+/* Small arrow pointing up at the originating pill */
+.mode-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 1px;
+}
+
+.mode-pill:hover .mode-tooltip,
+.mode-pill:focus-visible .mode-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  visibility: visible;
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0s;
+  transition-delay: 200ms, 200ms, 0s;  /* small dwell before showing */
+}
+
+.mode-tooltip-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: oklch(0.96 0.005 200);
+}
+
+.mode-tooltip-body {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  line-height: 1.5;
+  color: oklch(0.82 0.012 215);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.mode-tooltip-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--live-accent);
+  padding-top: var(--space-2xs);
+  border-top: 1px solid oklch(0.30 0.020 220);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-tooltip {
+    transition-duration: 0s;
+  }
 }
 
 /* ---- Model Picker ---- */
@@ -1477,19 +1658,23 @@ body {
 
 /* ---- Plan Panel (phase 1) ---- */
 
+/* ====================================================================
+   Plan panel — lab notebook entries, not a chat card
+   ==================================================================== */
+
 .plan-panel {
   display: flex;
   flex-direction: column;
   height: 100%;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 .plan-panel-header {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md) var(--space-xs);
   background: var(--bg-sidebar);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
@@ -1498,161 +1683,267 @@ body {
 }
 
 .plan-panel-title {
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-md);
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
 }
 
+/* Status — mono indicator with a leading bullet, not a pill */
 .plan-panel-status {
-  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  background: var(--bg-primary);
+  letter-spacing: 0.08em;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
 }
 
-.plan-status-empty { color: var(--text-secondary); }
-.plan-status-draft { color: var(--accent); border-color: var(--accent); }
-.plan-status-recruited { color: var(--success); border-color: var(--success); }
-.plan-status-approved { color: var(--success); border-color: var(--success); }
-.plan-status-running { color: var(--live-accent-strong); border-color: var(--live-accent); }
-.plan-status-paused { color: var(--text-secondary); border-color: var(--text-secondary); }
-.plan-status-done { color: var(--success); border-color: var(--success); }
-.plan-status-failed { color: var(--error-text); border-color: var(--error-text); }
-.plan-status-pending { color: var(--text-secondary); border-color: var(--border-color); }
-.plan-status-skipped { color: var(--text-secondary); border-color: var(--border-color); }
+.plan-panel-status::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  background: var(--text-tertiary);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.plan-status-empty           { color: var(--text-tertiary); }
+.plan-status-empty::before   { background: var(--text-tertiary); }
+.plan-status-draft           { color: var(--accent); }
+.plan-status-draft::before   { background: var(--accent); }
+.plan-status-recruited       { color: var(--accent); }
+.plan-status-recruited::before { background: var(--accent); }
+.plan-status-approved        { color: var(--success); }
+.plan-status-approved::before { background: var(--success); }
+.plan-status-running         { color: var(--live-accent-strong); }
+.plan-status-running::before {
+  background: var(--live-accent-strong);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--live-accent-strong), transparent 75%);
+  animation: indicator-breath 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.plan-status-paused          { color: var(--text-secondary); }
+.plan-status-paused::before  { background: var(--text-secondary); }
+.plan-status-done            { color: var(--success); }
+.plan-status-done::before    { background: var(--success); }
+.plan-status-failed          { color: var(--error-text); }
+.plan-status-failed::before  { background: var(--error-text); }
+.plan-status-pending         { color: var(--text-tertiary); }
+.plan-status-pending::before { background: var(--text-tertiary); }
+.plan-status-skipped         { color: var(--text-tertiary); }
+.plan-status-skipped::before { background: var(--text-tertiary); }
 .plan-status-awaiting_plan_review,
 .plan-status-awaiting_assignment_review {
   color: var(--live-accent-strong);
-  border-color: var(--live-accent);
-  background: var(--accent-light);
+}
+.plan-status-awaiting_plan_review::before,
+.plan-status-awaiting_assignment_review::before {
+  background: var(--live-accent-strong);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--live-accent-strong), transparent 70%);
+  animation: indicator-breath 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-panel-status::before { animation: none !important; }
 }
 
 .plan-panel-empty {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
-  font-style: italic;
-  padding: 0.8rem 1rem;
+  padding: var(--space-md) var(--space-md);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .plan-panel-prompt {
-  padding: 0.55rem 1rem;
+  padding: var(--space-sm) var(--space-md);
   border-bottom: 1px solid var(--border-color);
-  background: var(--accent-light);
+  background: var(--bg-card);
 }
 
 .plan-panel-prompt-label {
   display: block;
-  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-  margin-bottom: 0.15rem;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2xs);
 }
 
 .plan-panel-prompt-body {
-  font-size: 0.85rem;
-  white-space: pre-wrap;
-  line-height: 1.4;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-primary);
+  max-width: 70ch;
 }
+
+/* ---- Step list ---------------------------------------------------------- */
 
 .plan-step-list {
   list-style: none;
   padding: 0;
   margin: 0;
+  counter-reset: step;
 }
 
 .plan-step {
-  padding: 0.7rem 1rem;
+  position: relative;
+  padding: var(--space-md) var(--space-md) var(--space-md) calc(var(--space-md) + 2.5rem);
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-primary);
+  counter-increment: step;
+}
+
+/* Large mono step number anchored to the left margin */
+.plan-step::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: var(--space-md);
+  top: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  width: 2rem;
 }
 
 .plan-step-status-running {
-  background: var(--live-accent-bg);
+  background: linear-gradient(
+    to right,
+    var(--live-accent-bg),
+    color-mix(in oklch, var(--live-accent-bg), var(--bg-primary) 60%)
+  );
 }
+.plan-step-status-running::before { color: var(--live-accent-strong); }
 
-.plan-step-status-done {
-  opacity: 0.85;
-}
+.plan-step-status-done    { opacity: 0.78; }
+.plan-step-status-failed::before { color: var(--error-text); }
 
 .plan-step-head {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
+  align-items: baseline;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
 }
 
+/* The .plan-step-num inside head is now redundant with the leading number;
+   keep it visually present but de-emphasised so existing markup still
+   works without a JSX change. */
 .plan-step-num {
-  font-weight: 600;
-  font-size: 0.78rem;
-  color: var(--accent);
-  flex-shrink: 0;
+  display: none;
 }
 
 .plan-step-title {
   flex: 1;
   min-width: 0;
+  font-family: var(--font-display);
   font-weight: 600;
-  font-size: 0.85rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: var(--text-base);
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+  color: var(--text-primary);
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .plan-step-badge {
-  font-size: 0.65rem;
-  letter-spacing: 0.03em;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 0.05rem 0.4rem;
-  border-radius: 999px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
 }
 
+.plan-step-badge::before {
+  content: "";
+  width: 0.35rem;
+  height: 0.35rem;
+  background: currentColor;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Step badge uses the same color rules as the plan-panel status above, so
+   no duplicate state CSS needed — the existing .plan-status-* classes apply. */
+
 .plan-step-field {
-  margin-top: 0.35rem;
-  font-size: 0.82rem;
-  line-height: 1.4;
+  margin-top: var(--space-xs);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-primary);
+  max-width: 68ch;
 }
 
 .plan-step-field-label {
   display: block;
-  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-  margin-bottom: 0.1rem;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2xs);
 }
 
 .plan-step-artifacts {
-  list-style: disc;
-  margin: 0.1rem 0 0 1.1rem;
+  list-style: none;
+  margin: 0;
   padding: 0;
 }
 
 .plan-step-artifacts li {
-  font-size: 0.78rem;
-  line-height: 1.5;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+}
+
+.plan-step-artifacts li::before {
+  content: "→";
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
 }
 
 .plan-step-artifacts code {
   font-family: var(--font-mono);
+  font-size: var(--text-xs);
   background: var(--bg-secondary);
-  padding: 0.05rem 0.3rem;
+  padding: 0.08rem 0.4rem;
   border-radius: 3px;
+  color: var(--text-primary);
 }
 
 .plan-step-assignment .plan-step-agent {
+  font-family: var(--font-mono);
   font-weight: 600;
+  font-size: var(--text-sm);
   color: var(--accent);
 }
 
 .plan-step-assignment .plan-step-rationale {
   color: var(--text-secondary);
-  font-style: italic;
+  font-size: var(--text-sm);
+  font-style: normal;
 }
 
 .plan-panel-footer {
@@ -1845,239 +2136,375 @@ body {
 /* ---- Copilot review controls ---- */
 
 .plan-edit-badge {
-  display: inline-block;
-  margin-left: 0.4rem;
-  padding: 0.05rem 0.4rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  background: var(--accent-light);
-  color: var(--text-primary, inherit);
-  border-radius: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--space-2xs);
+  padding: 0 var(--space-xs);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
   vertical-align: middle;
+  font-weight: 500;
 }
 
 .plan-provenance {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  margin: 0.15rem 0 0.35rem;
-  font-style: italic;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  padding: 0 var(--space-md) var(--space-xs);
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-color);
+  margin: 0;
+  font-style: normal;
 }
 
 .plan-step-params {
-  margin-top: 0.4rem;
-  font-size: 0.78rem;
+  margin-top: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
 }
 .plan-step-params summary {
   cursor: pointer;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
   user-select: none;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.plan-step-params summary::-webkit-details-marker { display: none; }
+.plan-step-params summary::before {
+  content: "▸";
+  display: inline-block;
+  transition: transform 180ms ease-out;
+  color: var(--text-tertiary);
+}
+.plan-step-params[open] summary::before {
+  transform: rotate(90deg);
 }
 .plan-step-params summary:hover {
-  color: var(--text-primary, inherit);
+  color: var(--text-secondary);
 }
 .plan-step-params pre {
-  background: var(--bg-secondary, var(--accent-light));
-  padding: 0.45rem;
-  border-radius: 0.3rem;
-  margin: 0.3rem 0 0;
-  font-size: 0.72rem;
+  background: var(--output-bg);
+  color: var(--output-text);
+  padding: var(--space-sm);
+  border-radius: 2px;
+  margin: var(--space-xs) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.5;
   overflow-x: auto;
   white-space: pre;
 }
 
 /* ---- Pipeline stepper ---- */
 
+/* ---- Pipeline stepper — the protagonist ---------------------------------
+   Reads as a row of instrument panel indicators: an index number in mono,
+   a label, and a thin connector that fills in as stages complete. Active
+   stage gets a calm breathing animation; nothing flashes. */
+
 .pipeline-stepper {
   list-style: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem;
-  margin: 0.5rem 0 0.75rem;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.4rem;
-  background: var(--bg-primary);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: stretch;
+  gap: 0;
+  margin: var(--space-sm) 0 var(--space-md);
+  padding: 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-card);
+  counter-reset: stage;
 }
 
 .pipeline-step {
-  flex: 1 1 0;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-width: 0;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-xs) var(--space-xs);
+  min-width: 0;
+  counter-increment: stage;
+  font-family: var(--font-mono);
 }
 
-.pipeline-step + .pipeline-step::before {
+/* Connector line — runs along the top edge, fills as stages complete */
+.pipeline-step::before {
   content: "";
   position: absolute;
-  left: -0.25rem;
-  top: 50%;
-  width: 0.5rem;
-  height: 1px;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
   background: var(--border-color);
+  transition: background 0.4s ease-out;
 }
 
+.pipeline-step-done::before,
+.pipeline-step-active::before {
+  background: var(--accent);
+}
+
+/* Stage index — "01", "02"… in tabular mono */
+.pipeline-step::after {
+  content: "0" counter(stage);
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The dot is now a small filled square — instrument indicator, not chat bubble */
 .pipeline-step-dot {
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
-  background: var(--border-color);
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--border-strong);
   flex-shrink: 0;
+  margin-top: 2px;
+  transition: background 0.25s ease-out, box-shadow 0.25s ease-out;
 }
 
 .pipeline-step-label {
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* --- States --- */
+
 .pipeline-step-done .pipeline-step-dot {
-  background: var(--success, var(--accent));
+  background: var(--accent);
 }
 .pipeline-step-done .pipeline-step-label {
-  color: var(--text-primary, inherit);
+  color: var(--text-primary);
 }
 
 .pipeline-step-active .pipeline-step-dot {
-  background: var(--live-accent-strong, var(--accent));
-  box-shadow: 0 0 0 3px var(--accent-light);
-  animation: pipeline-pulse 1.4s ease-in-out infinite;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-light);
+  animation: pipeline-pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 .pipeline-step-active .pipeline-step-label {
-  color: var(--text-primary, inherit);
-  font-weight: 600;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.pipeline-step-active::after {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .pipeline-step-pending .pipeline-step-dot {
   background: var(--border-color);
 }
 .pipeline-step-pending .pipeline-step-label {
-  color: var(--text-secondary);
-  opacity: 0.7;
+  color: var(--text-tertiary);
 }
 
 @keyframes pipeline-pulse {
-  0%, 100% { box-shadow: 0 0 0 3px var(--accent-light); }
-  50%      { box-shadow: 0 0 0 5px var(--accent-light); }
+  0%, 100% { box-shadow: 0 0 0 4px var(--accent-light); }
+  50%      { box-shadow: 0 0 0 7px color-mix(in oklch, var(--accent-light), transparent 40%); }
 }
 
-/* ---- Review banner (sticky, prominent) ---- */
+@media (prefers-reduced-motion: reduce) {
+  .pipeline-step-active .pipeline-step-dot { animation: none; }
+}
+
+/* ---- Review banner — the ceremonial pause moment ------------------------
+   Reads as a lab-instrument's "waiting for operator" signal. Dark surface,
+   sharp amber indicator dot (breathes calmly), mono eyebrow + display
+   headline, and a primary action that's unmistakable. */
 
 .plan-review-banner {
   position: sticky;
   top: 0;
-  z-index: 2;
-  display: flex;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin: -0.5rem -0.5rem 0.75rem;
-  padding: 0.75rem 0.9rem;
-  background: var(--live-accent-strong, var(--accent));
-  color: var(--bg-primary, #fff);
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-  animation: review-banner-in 0.18s ease-out;
+  gap: var(--space-md);
+  margin: calc(-1 * var(--space-xs)) calc(-1 * var(--space-xs)) var(--space-md);
+  padding: var(--space-md) var(--space-md);
+  background: oklch(0.18 0.020 220);              /* deep instrument-slate */
+  color: var(--bg-primary);
+  border-radius: 0;
+  box-shadow: var(--shadow-banner);
+  animation: review-banner-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="dark"] .plan-review-banner {
+  background: oklch(0.12 0.012 220);
+}
+
+/* Amber indicator on the left — the "you, operator" signal */
+.plan-review-indicator {
+  width: 0.625rem;
+  height: 0.625rem;
+  background: var(--live-accent-strong);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px color-mix(in oklch, var(--live-accent-strong), transparent 70%),
+    0 0 12px var(--live-accent-strong);
+  animation: indicator-breath 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-review-indicator { animation: none; }
+  .plan-review-banner    { animation: none; }
 }
 
 .plan-review-banner-text {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: var(--space-2xs);
   min-width: 0;
 }
 
-.plan-review-banner-text strong {
-  font-size: 0.85rem;
-  font-weight: 700;
+.plan-review-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.12em;
+  color: var(--live-accent);
+  font-weight: 500;
 }
 
-.plan-review-banner-text span {
-  font-size: 0.75rem;
-  opacity: 0.9;
-  line-height: 1.3;
+.plan-review-banner-text strong {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: oklch(0.96 0.005 200);
+  line-height: 1.2;
+}
+
+.plan-review-subline {
+  font-size: var(--text-xs);
+  color: oklch(0.78 0.012 215);
+  line-height: 1.4;
+  max-width: 56ch;
 }
 
 .plan-review-banner-actions {
   display: flex;
-  gap: 0.35rem;
+  gap: var(--space-xs);
   flex-shrink: 0;
 }
 
 .plan-review-banner .plan-action-btn {
-  background: var(--bg-primary, #fff);
-  color: var(--text-primary, inherit);
-  border-color: transparent;
+  background: transparent;
+  color: oklch(0.92 0.008 200);
+  border: 1px solid oklch(0.45 0.025 220);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  padding: var(--space-xs) var(--space-sm);
 }
 
 .plan-review-banner .plan-action-btn.primary {
-  background: var(--bg-primary, #fff);
-  color: var(--live-accent-strong, var(--accent));
+  background: var(--live-accent-strong);
+  color: var(--live-accent-ink);
+  border-color: var(--live-accent-strong);
   font-weight: 700;
 }
 
 .plan-review-banner .plan-action-btn:hover:not(:disabled) {
-  background: var(--accent-light);
-  color: var(--text-primary, inherit);
+  background: oklch(0.26 0.018 220);
+  border-color: oklch(0.55 0.025 220);
+  color: oklch(0.96 0.005 200);
+}
+
+.plan-review-banner .plan-action-btn.primary:hover:not(:disabled) {
+  background: var(--live-accent);
+  border-color: var(--live-accent);
+  color: var(--live-accent-ink);
 }
 
 @keyframes review-banner-in {
-  from { transform: translateY(-6px); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
 
+@keyframes indicator-breath {
+  0%, 100% {
+    box-shadow:
+      0 0 0 4px color-mix(in oklch, var(--live-accent-strong), transparent 70%),
+      0 0 10px var(--live-accent-strong);
+  }
+  50% {
+    box-shadow:
+      0 0 0 7px color-mix(in oklch, var(--live-accent-strong), transparent 50%),
+      0 0 18px var(--live-accent-strong);
+  }
+}
+
+/* Review action bar (under the step list, secondary to the banner) */
 .plan-review-bar {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  margin-top: 0.75rem;
-  padding: 0.75rem;
-  border: 1px solid var(--live-accent);
-  border-radius: 0.5rem;
-  background: var(--accent-light);
+  gap: var(--space-sm);
+  margin: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
 }
 
 .plan-review-buttons {
   display: flex;
-  gap: 0.4rem;
+  gap: var(--space-xs);
   flex-wrap: wrap;
 }
 
 .plan-action-btn {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.35rem;
+  padding: var(--space-xs) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
   background: var(--bg-primary);
-  color: var(--text-primary, inherit);
+  color: var(--text-primary);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 180ms ease-out, border-color 180ms ease-out, color 180ms ease-out;
 }
 
 .plan-action-btn:hover:not(:disabled) {
-  background: var(--accent-light);
-  border-color: var(--accent);
+  background: var(--bg-secondary);
+  border-color: var(--text-secondary);
 }
 
 .plan-action-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .plan-action-btn.primary {
-  background: var(--accent);
+  background: var(--text-primary);
   color: var(--bg-primary);
-  border-color: var(--accent);
-  font-weight: 600;
+  border-color: var(--text-primary);
+  font-weight: 700;
 }
 
 .plan-action-btn.primary:hover:not(:disabled) {
-  background: var(--live-accent-strong);
-  border-color: var(--live-accent-strong);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .plan-action-btn.danger {

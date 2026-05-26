@@ -94,6 +94,62 @@ export default function Sidebar({
 }: Props) {
   return (
     <aside className="sidebar">
+      {/* Mode toggle is pinned at the top of the sidebar, outside any
+          scrolling container, so it stays visible regardless of run
+          state or scroll position. */}
+      <div className="sidebar-mode-bar">
+        <div className="mode-toggle" role="radiogroup" aria-label="Execution mode">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === "autopilot"}
+            className={`mode-pill ${mode === "autopilot" ? "active" : ""}`}
+            onClick={() => onChangeMode("autopilot")}
+            aria-describedby="tooltip-autopilot"
+          >
+            Autopilot
+            <span className="mode-tooltip" id="tooltip-autopilot" role="tooltip">
+              <span className="mode-tooltip-heading">Autopilot</span>
+              <span className="mode-tooltip-body">
+                The agent runs end-to-end without pauses. Planner →
+                Recruiter → Manager → Evaluator → Reporter, all
+                automatic. Use when you trust the plan or just want
+                results.
+              </span>
+              {isRunning && (
+                <span className="mode-tooltip-meta">
+                  Takes effect on the next prompt.
+                </span>
+              )}
+            </span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === "copilot"}
+            className={`mode-pill ${mode === "copilot" ? "active" : ""}`}
+            onClick={() => onChangeMode("copilot")}
+            aria-describedby="tooltip-copilot"
+          >
+            Copilot
+            <span className="mode-tooltip" id="tooltip-copilot" role="tooltip">
+              <span className="mode-tooltip-heading">Copilot</span>
+              <span className="mode-tooltip-body">
+                The agent pauses twice for your review — once after the
+                planner drafts the plan, and again after the recruiter
+                assigns agents. At each pause you can approve, edit,
+                send feedback, or cancel.
+              </span>
+              {isRunning && (
+                <span className="mode-tooltip-meta">
+                  Takes effect on the next prompt.
+                </span>
+              )}
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div className="sidebar-top">
         <FileUpload
           uploadedFiles={uploadedFiles}
@@ -113,33 +169,6 @@ export default function Sidebar({
           onSaveKey={onSaveApiKey}
           disabled={isRunning}
         />
-
-        <div className="upload-divider" />
-
-        <div className="mode-toggle" role="radiogroup" aria-label="Execution mode">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={mode === "autopilot"}
-            className={`mode-pill ${mode === "autopilot" ? "active" : ""}`}
-            onClick={() => onChangeMode("autopilot")}
-            disabled={isRunning}
-            title="Run end-to-end without pausing for review"
-          >
-            Autopilot
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={mode === "copilot"}
-            className={`mode-pill ${mode === "copilot" ? "active" : ""}`}
-            onClick={() => onChangeMode("copilot")}
-            disabled={isRunning}
-            title="Pause for review after the plan and after agent assignment"
-          >
-            Copilot
-          </button>
-        </div>
 
         <div className="upload-divider" />
 
