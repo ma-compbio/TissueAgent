@@ -332,22 +332,49 @@ code, pre, .num {
   flex: 1 1 auto;
   min-height: 0;             /* allow flex parent to shrink below content */
   overflow-y: auto;
-  padding: var(--space-2xl) clamp(var(--space-lg), 8vw, var(--space-2xl));
+  padding: var(--space-2xl) clamp(var(--space-lg), 6vw, var(--space-2xl));
+}
+
+/* Two-column doc layout for the Tutorial page: sticky TOC sidebar on
+   the left, content article on the right. Collapses to single column
+   on narrower viewports (the TOC moves above the content). */
+.doc-layout {
+  display: grid;
+  grid-template-columns: minmax(14rem, 16rem) minmax(0, 1fr);
+  gap: clamp(var(--space-xl), 4vw, var(--space-2xl));
+  max-width: 78rem;
+  width: 100%;
+  margin: 0 auto;
+  padding-bottom: var(--space-lg);
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .doc-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
 }
 
 .doc-page {
-  max-width: 64rem;
+  max-width: 56rem;
   width: 100%;
-  margin: 0 auto;             /* centered without a flex parent */
   font-family: var(--font-sans);
   color: var(--text-primary);
   line-height: 1.65;
+  min-width: 0;
   /* Make sure the very last section can actually be scrolled to. Some
      browsers (Safari especially) treat the bottom of a scrollable area
      as the parent's content edge; explicit padding here is the parent's
      ``var(--space-2xl)`` and ensures the final ``<section>`` isn't
      visually flush with the bottom edge. */
   padding-bottom: var(--space-lg);
+}
+
+/* Center the article inside the right column when the layout has
+   collapsed to a single column. */
+.doc-layout > .doc-page {
+  margin: 0;
 }
 
 /* ====================================================================
@@ -398,6 +425,48 @@ code, pre, .num {
   padding: 0;
   display: grid;
   gap: var(--space-md);
+}
+
+/* Float modifier — the figure sits to the right of the section's body
+   text. Capped at ~22rem so there's enough room for the paragraph to
+   actually wrap. Display has to switch to ``block`` because ``grid`` on
+   a floated element collapses to one column-width. */
+.doc-figure-float {
+  float: right;
+  display: block;
+  width: clamp(18rem, 38%, 22rem);
+  max-width: 100%;
+  margin: 0 0 var(--space-md) var(--space-lg);
+  shape-outside: margin-box;
+}
+
+.doc-figure-float .doc-figure-thumb {
+  max-width: none;
+  margin-bottom: var(--space-sm);
+}
+
+.doc-figure-float figcaption {
+  max-width: none;
+}
+
+/* Restore single-column flow on narrow viewports — wrapping a 22rem
+   figure into a 28rem column leaves no room for the prose. */
+@media (max-width: 720px) {
+  .doc-figure-float {
+    float: none;
+    width: 100%;
+    margin: 0 0 var(--space-lg);
+  }
+}
+
+/* Inside the Overview section, the expert-agents block (subhead + dl)
+   must clear the float so it starts on its own row below the figure.
+   The numbered pipeline list does NOT clear — it's allowed to wrap
+   alongside the figure, which closes the gap that would otherwise sit
+   between the lede paragraph and the list. */
+.doc-section .doc-agents,
+.doc-section .doc-subhead {
+  clear: both;
 }
 
 /* Thumbnail wrapper. The image is capped at ~28rem (~448px) so it reads
@@ -472,31 +541,15 @@ code, pre, .num {
 }
 
 .doc-figure figcaption {
-  display: grid;
-  grid-template-columns: minmax(4.5rem, auto) 1fr;
-  gap: var(--space-md);
-  align-items: baseline;
   padding-top: var(--space-sm);
   border-top: 1px solid var(--border-color);
-  max-width: 28rem;
-}
-
-.doc-figure-label {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-}
-
-.doc-figure-body {
   font-size: var(--text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
+  max-width: 28rem;
 }
 
-.doc-figure-body strong {
+.doc-figure figcaption strong {
   font-family: var(--font-display);
   font-weight: 700;
   color: var(--text-primary);
@@ -576,14 +629,24 @@ code, pre, .num {
 
 /* ---- Table of contents — chapter listing ---- */
 
-.doc-contents {
-  margin: 0 0 var(--space-2xl);
+/* TOC aside — sticky on the left, scrolls with the content but pins
+   itself to the top of the viewport when it has more vertical space
+   than the content above it. */
+.doc-contents-aside {
+  position: sticky;
+  top: var(--space-md);
+  align-self: start;
   padding: 0;
+  margin: 0;
+  /* Constrain height so the TOC scrolls internally rather than pushing
+     the viewport when many chapters exist. */
+  max-height: calc(100vh - var(--space-2xl) * 2);
+  overflow-y: auto;
 }
 
 .doc-contents-label {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-2xs);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text-tertiary);
@@ -607,53 +670,56 @@ code, pre, .num {
 
 .doc-contents-list a {
   display: grid;
-  grid-template-columns: minmax(3.5rem, auto) auto 1fr;
+  grid-template-columns: 2rem 1fr;
   align-items: baseline;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-2xs);
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-2xs);
   text-decoration: none;
-  color: var(--text-primary);
-  transition: background 180ms ease-out;
+  color: var(--text-secondary);
+  transition: background 180ms ease-out, color 180ms ease-out;
 }
 
-.doc-contents-list a:hover {
+.doc-contents-list a:hover,
+.doc-contents-list a:focus-visible {
   background: var(--bg-secondary);
+  color: var(--text-primary);
+  outline: none;
 }
 
 .doc-contents-num {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-2xs);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
   color: var(--accent);
+  font-weight: 500;
 }
 
 .doc-contents-title {
   font-family: var(--font-display);
-  font-size: var(--text-base);
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: 500;
   letter-spacing: -0.005em;
-  color: var(--text-primary);
+  color: inherit;
+  line-height: 1.35;
 }
 
-.doc-contents-rule {
-  display: block;
-  height: 1px;
-  background: var(--border-color);
-  position: relative;
-  top: -0.35em;
-  transition: background 180ms ease-out;
+.doc-contents-list a:hover .doc-contents-title,
+.doc-contents-list a:focus-visible .doc-contents-title {
+  font-weight: 600;
 }
 
-.doc-contents-list a:hover .doc-contents-rule {
-  background: var(--accent);
-}
-
-@media (max-width: 540px) {
-  .doc-contents-list a {
-    grid-template-columns: minmax(2.75rem, auto) 1fr;
+/* On narrow viewports the layout collapses to a single column; let the
+   TOC release its sticky anchor and read as a normal block above the
+   content. */
+@media (max-width: 860px) {
+  .doc-contents-aside {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border-color);
   }
-  .doc-contents-rule { display: none; }
 }
 
 /* ---- Section ---- */
@@ -858,11 +924,22 @@ code, pre, .num {
 
 /* ---- Mode comparison table ---- */
 
+/* Comparison table — Autopilot vs. Copilot.
+   Uses ``table-layout: fixed`` plus a <colgroup> so column widths are
+   predictable: the row-label column is fixed, the two data columns
+   split the remaining space equally. */
 .doc-compare {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   margin: var(--space-md) 0 var(--space-lg);
   font-size: var(--text-sm);
+  border-top: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.doc-compare-col-label {
+  width: 9rem;
 }
 
 .doc-compare th,
@@ -875,54 +952,38 @@ code, pre, .num {
   line-height: 1.55;
 }
 
+/* Last row drops its bottom border — the table's outer bottom border
+   provides the closing rule. Avoids the doubled hairline that
+   border-collapse can show when the inner cell border and the table
+   border don't agree on width. */
+.doc-compare tbody tr:last-child th,
+.doc-compare tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Vertical column separator after the row-label column. Quieter than
+   a full grid — keeps the table from feeling boxed-in. */
+.doc-compare th + th,
+.doc-compare th + td,
+.doc-compare td + td {
+  border-left: 1px solid var(--border-color);
+}
+
 .doc-compare thead th {
-  border-bottom: 1px solid var(--border-strong);
-  padding-bottom: var(--space-sm);
-}
-
-.doc-compare-axis {
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  white-space: nowrap;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2xs);
-}
-
-.doc-compare-axis-eyebrow {
-  color: var(--text-tertiary);
-}
-
-.doc-compare-axis-title {
-  font-family: var(--font-display);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: -0.005em;
-  color: var(--text-primary);
-}
-
-.doc-compare-head {
-  display: block;
   font-family: var(--font-display);
   font-size: var(--text-md);
   font-weight: 700;
   letter-spacing: -0.015em;
   color: var(--text-primary);
+  border-bottom: 1px solid var(--border-strong);
+  padding-top: var(--space-md);
+  padding-bottom: var(--space-md);
+  line-height: 1.2;
 }
 
-.doc-compare-sub {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-top: var(--space-2xs);
-  font-weight: 500;
+/* The empty top-left cell — present for grid alignment, visually blank. */
+.doc-compare thead th[aria-hidden="true"] {
+  background: transparent;
 }
 
 .doc-compare tbody th {
@@ -931,48 +992,26 @@ code, pre, .num {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-tertiary);
-  white-space: nowrap;
 }
 
 .doc-compare tbody td {
   color: var(--text-primary);
 }
 
-@media (max-width: 720px) {
-  .doc-compare,
-  .doc-compare thead,
-  .doc-compare tbody,
-  .doc-compare tr,
+@media (max-width: 540px) {
+  .doc-compare-col-label {
+    width: 6.5rem;
+  }
   .doc-compare th,
   .doc-compare td {
-    display: block;
-  }
-  .doc-compare thead {
-    border-bottom: 1px solid var(--border-strong);
-    margin-bottom: var(--space-md);
-  }
-  .doc-compare thead tr th:first-child { display: none; }
-  .doc-compare thead th { padding: 0 0 var(--space-sm); border: none; }
-  .doc-compare tbody tr {
-    margin-bottom: var(--space-md);
-    border-bottom: 1px solid var(--border-color);
-  }
-  .doc-compare tbody th,
-  .doc-compare tbody td {
-    border: none;
-    padding: var(--space-2xs) 0;
-  }
-  .doc-compare tbody td::before {
-    content: attr(data-col);
-    font-family: var(--font-mono);
-    font-size: var(--text-2xs);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--accent);
-    display: block;
-    margin-top: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
   }
 }
+
+/* On narrow viewports keep the table grid intact — it&apos;s only three
+   columns and the row-label column is already compact. Just shrink the
+   horizontal padding (handled in the main rule above via the 540px
+   breakpoint) so the table stays scannable without restructuring. */
 
 /* ---- First-run steps (numbered, grid layout) ---- */
 

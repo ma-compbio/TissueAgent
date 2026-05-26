@@ -52,35 +52,53 @@ export default function TutorialPage() {
   }, [lightboxOpen]);
 
   return (
-    <article className="doc-page">
-      {/* Hero ---------------------------------------------------------- */}
-      <header className="doc-header">
-        <p className="doc-eyebrow">Getting started</p>
-        <h1 className="doc-title">TissueAgent Tutorial</h1>
-      </header>
+    <div className="doc-layout">
+      {/* Left sidebar — table of contents (sticky) ------------------- */}
+      <aside className="doc-contents-aside" aria-label="Table of contents">
+        <p className="doc-contents-label">Contents</p>
+        <ol className="doc-contents-list">
+          {CHAPTERS.map((ch, i) => (
+            <li key={ch.id}>
+              <a href={`#${ch.id}`}>
+                <span className="doc-contents-num">{pad(i + 1)}</span>
+                <span className="doc-contents-title">{ch.title}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </aside>
 
-      {/* Method figure — thumbnail; click to enlarge in a lightbox ---- */}
-      <figure className="doc-figure">
-        <button
-          type="button"
-          className="doc-figure-thumb"
-          onClick={() => setLightboxOpen(true)}
-          aria-label="Open the TissueAgent overview figure at full size"
-        >
-          <img src={FIG_SRC} alt={FIG_ALT} loading="lazy" />
-          <span className="doc-figure-zoom" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.4" />
-              <line x1="9.5" y1="9.5" x2="13" y2="13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              <line x1="6" y1="3.6" x2="6" y2="8.4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              <line x1="3.6" y1="6" x2="8.4" y2="6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
-            <span>Click to enlarge</span>
-          </span>
-        </button>
-        <figcaption>
-          <span className="doc-figure-label">Fig. 1</span>
-          <span className="doc-figure-body">
+      {/* Right column — the actual content --------------------------- */}
+      <article className="doc-page">
+        {/* Hero -------------------------------------------------------- */}
+        <header className="doc-header">
+          <p className="doc-eyebrow">Getting started</p>
+          <h1 className="doc-title">TissueAgent Tutorial</h1>
+        </header>
+
+        {/* §01 Overview ----------------------------------------------- */}
+      <Section id="overview" index={1} title="Overview">
+        {/* Method figure — floats right so the body text wraps around it.
+            Clickable thumbnail; lightbox opens at full size. */}
+        <figure className="doc-figure doc-figure-float">
+          <button
+            type="button"
+            className="doc-figure-thumb"
+            onClick={() => setLightboxOpen(true)}
+            aria-label="Open the TissueAgent overview figure at full size"
+          >
+            <img src={FIG_SRC} alt={FIG_ALT} loading="lazy" />
+            <span className="doc-figure-zoom" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.4" />
+                <line x1="9.5" y1="9.5" x2="13" y2="13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <line x1="6" y1="3.6" x2="6" y2="8.4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                <line x1="3.6" y1="6" x2="8.4" y2="6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
+              <span>Click to enlarge</span>
+            </span>
+          </button>
+          <figcaption>
             Overview of TissueAgent.{" "}
             <strong>a · Concept.</strong> A user submits a text query
             and heterogeneous inputs (dataset files, PDFs, images).
@@ -92,28 +110,9 @@ export default function TutorialPage() {
             <strong>c · Plan-updating routine.</strong> A single
             evolving plan serves as shared memory and a coordination
             protocol.
-          </span>
-        </figcaption>
-      </figure>
+          </figcaption>
+        </figure>
 
-      {/* Table of contents — chapter listing, not a row of links ------ */}
-      <nav className="doc-contents" aria-label="Table of contents">
-        <p className="doc-contents-label">Contents</p>
-        <ol className="doc-contents-list">
-          {CHAPTERS.map((ch, i) => (
-            <li key={ch.id}>
-              <a href={`#${ch.id}`}>
-                <span className="doc-contents-num">{pad(i + 1)}</span>
-                <span className="doc-contents-title">{ch.title}</span>
-                <span className="doc-contents-rule" aria-hidden="true" />
-              </a>
-            </li>
-          ))}
-        </ol>
-      </nav>
-
-      {/* §01 Overview ------------------------------------------------- */}
-      <Section id="overview" index={1} title="Overview">
         <p>
           TissueAgent is a role-based multi-agent framework for spatial
           transcriptomics. Five main agents coordinate the work, each
@@ -159,11 +158,6 @@ export default function TutorialPage() {
           </li>
         </ol>
 
-        <p>
-          The pipeline indicator at the top of the plan panel shows
-          which stage is currently active.
-        </p>
-
         <h3 className="doc-subhead">Expert agents</h3>
         <p>
           Each plan step is handed off to one expert agent from the
@@ -203,20 +197,16 @@ export default function TutorialPage() {
         </p>
 
         <table className="doc-compare">
+          <colgroup>
+            <col className="doc-compare-col-label" />
+            <col />
+            <col />
+          </colgroup>
           <thead>
             <tr>
-              <th scope="col" className="doc-compare-axis">
-                <span className="doc-compare-axis-eyebrow">Compare</span>
-                <span className="doc-compare-axis-title">Mode behavior</span>
-              </th>
-              <th scope="col">
-                <span className="doc-compare-head">Autopilot</span>
-                <span className="doc-compare-sub">Default</span>
-              </th>
-              <th scope="col">
-                <span className="doc-compare-head">Copilot</span>
-                <span className="doc-compare-sub">Web UI only</span>
-              </th>
+              <th scope="col" aria-hidden="true" />
+              <th scope="col">Autopilot</th>
+              <th scope="col">Copilot</th>
             </tr>
           </thead>
           <tbody>
@@ -241,18 +231,14 @@ export default function TutorialPage() {
             <tr>
               <th scope="row">Best for</th>
               <td>
-                Routine analyses where the planner&apos;s output is
-                likely to be correct.
+                Routine analyses where you don&apos;t need much
+                background context to interpret what the agent will
+                do.
               </td>
               <td>
-                Novel datasets, ambiguous requests, or anything you
-                want to audit before it runs.
+                Ambiguous requests, or any analysis where you want
+                control over each step.
               </td>
-            </tr>
-            <tr>
-              <th scope="row">Where it works</th>
-              <td>Web UI, notebooks, CLI.</td>
-              <td>Web UI only.</td>
             </tr>
           </tbody>
         </table>
@@ -393,6 +379,7 @@ export default function TutorialPage() {
           a colleague can audit what was actually done.
         </p>
       </Section>
+      </article>
 
       {lightboxOpen && (
         <div
@@ -425,7 +412,7 @@ export default function TutorialPage() {
           <p className="doc-lightbox-hint">Press ESC or click outside to close</p>
         </div>
       )}
-    </article>
+    </div>
   );
 }
 
