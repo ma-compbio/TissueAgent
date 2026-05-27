@@ -7,10 +7,11 @@ __marimo__/
 # OSX
 .DS_Store
 
-# Data and Test directories
+# data and test directories
 /logs/
+datasets/
 cache/
-data/*
+workspace/*
 eval/
 temp/
 test/
@@ -24,3 +25,7 @@ node_modules/
 
 # build artifacts
 *.egg-info/
+
+# direnv
+.direnv/
+.envrc

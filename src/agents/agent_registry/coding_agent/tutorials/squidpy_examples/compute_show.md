@@ -1,18 +1,19 @@
+---
+title: "Show layers of the ImageContainer"
+keywords:
+  - "squidpy"
+  - "imagecontainer"
+  - "show"
+  - "visualization"
+  - "segmentation overlay"
+  - "mibitof"
+  - "image layers"
+  - "concat"
+---
+
 # Show layers of the ImageContainer
 
-This example shows how to use {func}`squidpy.im.ImageContainer.show`.
-
-This function is useful to visualize statically different layers of the
-`squidpy.im.ImageContainer` class.
-
-:::{seealso}
--   See {doc}`compute_crops` and
-    {doc}`compute_smooth` for additional
-    examples on methods of the {class}`squidpy.im.ImageContainer`.
-
-:::
-
-
+This example shows how to use `squidpy.im.ImageContainer.show` to visualize image layers, including segmentation overlays.
 
 ```python
 import squidpy as sq
@@ -20,16 +21,11 @@ import squidpy as sq
 
 Load the Mibitof dataset.
 
-
-
 ```python
 adata = sq.datasets.mibitof()
 ```
 
-We can briefly visualize the data to understand the type of images we
-have.
-
-
+Visualize the spatial segments.
 
 ```python
 sq.pl.spatial_segment(
@@ -42,12 +38,7 @@ sq.pl.spatial_segment(
 )
 ```
 
-We have three different tissue samples. We also have segmentation masks
-for each tissue sample. Let\'s extract the image from the
-`anndata.AnnData` object and create a `squidpy.im.ImageContainer`
-object.
-
-
+Extract images from the anndata object and create an `ImageContainer`.
 
 ```python
 imgs = []
@@ -65,19 +56,13 @@ for library_id in adata.uns["spatial"].keys():
 img = sq.im.ImageContainer.concat(imgs)
 ```
 
-We can visualize each image of the object with
-{func}`squidpy.im.ImageContainer.show`.
-
-
+Show each image in the container.
 
 ```python
 img.show("image")
 ```
 
-{func}`squidpy.im.ImageContainer.show` also allows to overlay the results of
-segmentation.
-
-
+Overlay segmentation results on the image.
 
 ```python
 img.show("image", segmentation_layer="segmentation", segmentation_alpha=0.5)

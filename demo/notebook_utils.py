@@ -45,8 +45,8 @@ from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, SESSIONS_DIR, UPLOADS
 def _reset_data_directories() -> None:
     """Clear and keep explicitly listed runtime folders, and delete all other subdirectories.
 
-    - Keeps (but clears): data/dataset, data/uploads, data/pdfs, sessions/
-    - Deletes entirely: any other subdirectories under data/
+    - Keeps (but clears): workspace/dataset, workspace/uploads, workspace/pdfs, sessions/
+    - Deletes entirely: any other subdirectories under workspace/
     """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     keep_and_clear = {DATASET_DIR, UPLOADS_DIR, PDF_UPLOADS_DIR}

@@ -14,7 +14,7 @@ This folder contains notebooks for several tasks described in the manuscript. Ea
 
 4. Start a jupyter server with `jupyter notebook`.
 
-5. Open a notebook and run it top-to-bottom to reproduce a task. Data can be accessed in `demo/data` and outputs are written to `data/` and copied into `demo/outputs/{TASK}`. The run is logged to `demo/outputs/{TASK}/transcript.log`.
+5. Open a notebook and run it top-to-bottom to reproduce a task. Data can be accessed in `demo/data` and outputs are written to `workspace/` and copied into `demo/outputs/{TASK}`. The run is logged to `demo/outputs/{TASK}/transcript.log`.
 
 > [!WARNING]
 > LLM outputs are inherently stochastic, so TissueAgent may produce slightly different outputs between runs. 

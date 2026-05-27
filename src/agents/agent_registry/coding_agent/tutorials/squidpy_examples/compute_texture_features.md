@@ -1,51 +1,32 @@
+---
+title: "Extract texture features"
+keywords:
+  - "squidpy"
+  - "texture features"
+  - "glcm"
+  - "image features"
+  - "calculate_image_features"
+  - "visium"
+  - "co-occurrence matrix"
+  - "spot_scale"
+---
+
 # Extract texture features
 
-This example shows how to extract texture features from the tissue
-image.
+This example shows how to extract texture features based on a grey-level co-occurrence matrix (GLCM). Use `features='texture'` with `calculate_image_features`.
 
-Textures features give give a measure of how the image intensity at
-different distances and angles varies by calculating a grey-level
-co-occurrence matrix
-([GLCM](https://en.wikipedia.org/wiki/Co-occurrence_matrix)). The GLCM
-includes the number of times that grey-level $j$ occurs at a distance
-$d$ and at an angle $\\theta$ from grey-level $i$. From this data,
-different features (`props`) are calculated. See also
-`skimage.feature.greycomatrix`.
+Key `features_kwargs` parameters:
+- `distances` - distances for finding repeating patterns
+- `angles` - angles for the GLCM
+- `props` - texture properties extracted from the GLCM
 
-Texture features are calculated by using `features = 'texture'`, which
-calls {func}`squidpy.im.ImageContainer.features_texture`. In addition to
-`feature_name` and `channels`, we can also specify the following
-`features_kwargs`:
-
-> -   `distances` - distances that are taken into account for finding
->     repeating patterns.
-> -   `angles` - range on which values are binned. Default is the whole
->     image range.
-> -   `props` - texture features that are extracted from the GLCM.
-
-:::{seealso}
-
-    See {doc}`compute_features` for general usage
-    of {func}`squidpy.im.calculate_image_features`.
-    
-:::
-
-
+For texture features, consider using a larger crop size (e.g., `spot_scale=2` or `spot_scale=4`).
 
 ```python
 import squidpy as sq
 ```
 
-Let\'s load the fluorescence Visium dataset and calculate texture
-features with default `features_kwargs`.
-
-Note that for texture features it may make sense to compute them over a
-larger crop size to include more context, e.g., `spot_scale = 2` or
-`spit_scale = 4` which will extract crops with double or four times the
-radius than the original Visium spot size. For more details on the image
-cropping, See {doc}`compute_crops`.
-
-
+Load the fluorescence Visium dataset and calculate texture features with `spot_scale=2`.
 
 ```python
 # get spatial dataset including high-resolution tissue image
@@ -63,22 +44,13 @@ sq.im.calculate_image_features(
 )
 ```
 
-The result is stored in {attr}`adata.obsm['texture_features']`.
-
-
+The result is stored in `adata.obsm['texture_features']`.
 
 ```python
 adata.obsm["texture_features"].head()
 ```
 
-Use `squidpy.pl.extract` to plot the texture features on the tissue
-image or have a look at [our interactive visualization
-tutorial](../../tutorials/tutorial_napari.ipynb) to learn how to use our
-interactive `napari` plugin. Here, we show the contrast feature for
-channels 0 and 1. The two stains, DAPI in channel 0, and GFAP in channel
-1 show different regions of high contrast.
-
-
+Plot the texture features on the tissue image.
 
 ```python
 sq.pl.spatial_scatter(

@@ -15,7 +15,7 @@ keywords:
 ---
 # Prior Knowledge
 
-LIANA+ (typically) relies heavily on prior knowledge to infer intercellular communication and the intracellular signaling pathways that are activated in response to communication. This notebook provides a brief overview of the prior knowledge typically used by LIANA+. 
+LIANA+ (typically) relies heavily on prior knowledge to infer intercellular communication and the intracellular signaling pathways that are activated in response to communication. This notebook provides a brief overview of the prior knowledge typically used by LIANA+.
 
 
 ```python
@@ -33,9 +33,8 @@ In the simplest case, for reproducibility purposes, LIANA+ provides a frozen set
 li.resource.show_resources()
 ```
 
-    
-By default, `liana` uses the `consensus` resource, which is composed by multiple expert-curated ligand-receptor resources, including CellPhoneDB, CellChat, ICELLNET, connectomeDB2020, and CellTalkDB.
 
+By default, `liana` uses the `consensus` resource, which is composed by multiple expert-curated ligand-receptor resources, including CellPhoneDB, CellChat, ICELLNET, connectomeDB2020, and CellTalkDB.
 
 
 ```python
@@ -43,9 +42,9 @@ resource = li.rs.select_resource('consensus')
 resource.head()
 ```
 
-All of the ligand-receptor resource in LIANA+ were pre-generated using the [OmniPath](https://github.com/saezlab/omnipath) meta-database. Though any custom resource can also be passed, including those provided by the user or generated using the `omnipath` client package. 
+All of the ligand-receptor resource in LIANA+ were pre-generated using the OmniPath meta-database. Though any custom resource can also be passed, including those provided by the user or generated using the `omnipath` client package.
 
-Via this client, in addition to ligand-receptor interactions, users can obtain the PubMed IDs of the references (`references`) that were used support each interaction, as well as the database that reported the interaction in the first place. 
+Via this client, in addition to ligand-receptor interactions, users can obtain the PubMed IDs of the references (`references`) that were used support each interaction, as well as the database that reported the interaction in the first place.
 
 Users can also modify the resource according to their preferences, for example:
 
@@ -64,11 +63,10 @@ ligrec.head()
 ```
 
 This function provides a rich list of annotations, such as the modes of action,inhibition or stimulation, the curation effort, types of signalling, etc.
-For a more comprehensive overview of the information that is available, please refer to the [OmniPath documentation](https://omnipathdb.org/).
+For a more comprehensive overview of the information that is available, please refer to the OmniPath documentation.
 
 ## Homology Mapping
 
-Similarly, LIANA+ provides on demand homology mapping beyond mouse symbols. It utilises the [HCOP database](https://www.genenames.org/help/hcop/) to obtain homologous genes across species. Specifically, we download the resource from the frequently-updated Bulk Download FTP section of the HCOP database: https://ftp.ebi.ac.uk/pub/databases/genenames/hcop/.
 
 The homology mapping is accessible through the `resource` module:
 
@@ -126,19 +124,13 @@ If you use HCOP function, please reference the original HCOP papers:
 - Eyre, T.A., Wright, M.W., Lush, M.J. and Bruford, E.A., 2007. HCOP: a searchable database of human orthology predictions. Briefings in bioinformatics, 8(1), pp.2-5.
 - Yates, B., Gray, K.A., Jones, T.E. and Bruford, E.A., 2021. Updates to HCOP: the HGNC comparison of orthology predictions tool. Briefings in Bioinformatics, 22(6), p.bbab155.
 
-<div class="alert alert-block alert-info">
-
-All methods of LIANA+ accept a ``resource`` parameter that can be used to pass any custom resource, beyond such from homology conversion.
-
-</div>
 
 ## Annotating Ligand-Receptors
 
-In addition to ligand-receptors, we can also obtain other annotations via [OmniPath](https://github.com/saezlab/omnipath). While these can be tissue locations, TF regulons, cytokine signatures, or other types of annotations, the most common use case is to obtain the pathways that are associated with each ligand-receptor interaction.
 
 ### Pathway Annotations
 
-We use commonly [PROGENy](https://www.nature.com/articles/s41467-017-02391-6) pathway weights to assign interactions to certain canonical pathways, such that all members of the interactions (i.e. incl. complex subunits) are present in the same pathway with the same weight sign. This is done to ensure that the interaction is not only present in the same pathway, but also that it is likely to be active in the same direction.
+We use commonly PROGENy pathway weights to assign interactions to certain canonical pathways, such that all members of the interactions (i.e. incl. complex subunits) are present in the same pathway with the same weight sign. This is done to ensure that the interaction is not only present in the same pathway, but also that it is likely to be active in the same direction.
 
 
 ```python
@@ -162,7 +154,7 @@ lr_progeny = li.rs.generate_lr_geneset(lr_pairs, progeny, lr_sep="^")
 lr_progeny.head()
 ```
 
-We can additionally performed enrichment analysis of certain ligand-receptor scores using this newly-generated dataframe. For example, see the [application with Tensor-cell2cell](https://liana-py.readthedocs.io/en/latest/notebooks/liana_c2c.html#Downstream-Analysis)
+We can additionally performed enrichment analysis of certain ligand-receptor scores using this newly-generated dataframe. For example, see the application with Tensor-cell2cell
 
 ### Disease Annotations
 As another example, we can also annotate ligand-receptors to diseases in which both the ligand and the receptor are involved.
@@ -200,9 +192,8 @@ See `op.requests.Annotations.resources()`
 
 ## Intracellular Signaling
 
-While we can obtain the pathways that are associated with each ligand-receptor interaction, we can also obtain the intracellular signaling pathways that are activated in response to the interaction. This is again done using the `omnipath` client package, but this time in combination with [decoupler](https://decoupler-py.readthedocs.io/en/latest/), which enables the enrichment of pathways, transcription factors, and other annotations.
 
-One specific scenario, heavily reliant on OmniPath knowledge and enrichment analysis with decoupler is presented in the [Differential Analysis Vignette](https://liana-py.readthedocs.io/en/latest/notebooks/targeted.html).
+One specific scenario, heavily reliant on OmniPath knowledge and enrichment analysis with decoupler is presented in the Differential Analysis Vignette.
 
 There, to find putative causal networks between deregulated CCC interactions and transcription factors (TFs) we use:
 
@@ -215,18 +206,18 @@ ppis.head()
 ```
 
 ### 2) Transcription Factor Regulons
-Provided via the [CollecTRI](https://academic.oup.com/nar/article/51/20/10934/7318114?login=false) resource:
+Provided via the CollecTRI resource:
 
 
 ```python
 dc.op.collectri(organism='human', remove_complexes=False, license='academic', verbose=False).head()
 ```
 
-These are then linked using the a modification of the ILP problem proposed in [CARNIVAL](https://www.nature.com/articles/s41540-019-0118-z), solved using [CORNETO](https://github.com/saezlab/corneto) - a Unified Omics-Driven Framework for Network Inference.
+These are then linked using the a modification of the ILP problem proposed in CARNIVAL, solved using CORNETO - a Unified Omics-Driven Framework for Network Inference.
 
 ## Metabolite-Receptor Interactions
 
-Via LIANA+ we also provide access to the [MetalinksDB knowledge graph - a customisable database](https://github.com/biocypher/metalinks) of metabolite-receptor interactions, part of the [BioCypher](https://biocypher.org/) ecosystem. For more information please refer to [Farr et al, 2023](https://www.biorxiv.org/content/10.1101/2023.12.30.573715v1.abstract).
+Via LIANA+ we also provide access to the MetalinksDB knowledge graph - a customisable database of metabolite-receptor interactions, part of the BioCypher ecosystem. For more information please refer to Farr et al, 2023.
 
 Specifically, to enable light-weight access, we have converted the MetalinksDB knowledge graph into a database.
 

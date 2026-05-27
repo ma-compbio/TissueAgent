@@ -1,10 +1,19 @@
+---
+title: "Nuclei segmentation using StarDist"
+keywords:
+  - "squidpy"
+  - "stardist"
+  - "segmentation"
+  - "nuclei"
+  - "fluorescence"
+  - "h&e"
+---
 # Nuclei segmentation using StarDist
 
-In this tutorial, we show how we can use the `StarDist` segmentation method in `squidpy.im.segment` for nuclei segmentation. 
+In this tutorial, we show how we can use the `StarDist` segmentation method in `squidpy.im.segment` for nuclei segmentation.
 
-**StarDist** <cite data-cite="stardist_schmidt2018">Schmidt et al. (2018)</cite> and <cite data-cite="stardist_weigert2020">Weigert et al. (2020)</cite> , ([code](https://github.com/stardist/stardist))  uses star-convex polygons to localize cell for which a convolutional neural network was trained to predict pixel-wise polygons for each cell position. 
+**StarDist**  and  , (code)  uses star-convex polygons to localize cell for which a convolutional neural network was trained to predict pixel-wise polygons for each cell position.
 
-To run the notebook locally, create a conda environment as *conda env create -f stardist_environment.yml* using this [stardist_environment.yml](https://github.com/scverse/squidpy_notebooks/blob/main/envs/stardist_environment.yml), which installs Squidpy, TensorFlow, and StarDist.
 
 **Note:** We frequently recognized a dying notebook kernel when importing other packages before StarDist with the following message "The kernel appears to have died. It will restart automatically." We therefore recommend to import StarDist first.
 
@@ -23,7 +32,7 @@ import matplotlib.pyplot as plt
 import squidpy as sq
 ```
 
-StarDist has four pre-trained models for 2D images. We will show an example for the Versatile (fluorescent nuclei) model and the Versatile (H&E nuclei). To use the StarDist model, we define a wrapper that normalizes the image with the recommended method, initializes the model and returns the segmentation mask. 
+StarDist has four pre-trained models for 2D images. We will show an example for the Versatile (fluorescent nuclei) model and the Versatile (H&E nuclei). To use the StarDist model, we define a wrapper that normalizes the image with the recommended method, initializes the model and returns the segmentation mask.
 
 
 ```python
@@ -31,10 +40,9 @@ StarDist2D.from_pretrained()
 ```
 
 The method parameter of the `sq.im.segment` method accepts any callable with the signature:
-`numpy.ndarray` ``(height, width, channels)`` **->** `numpy.ndarray` ``(height, width[, channels])``. Additional model specific arguments will also be passed on. 
+`numpy.ndarray`(height, width, channels)`` **->** `numpy.ndarray`(height, width[, channels])``. Additional model specific arguments will also be passed on.
 
 ## Cell segmentation on Visium fluorescence data
-
 
 
 ```python
@@ -44,7 +52,7 @@ crop = img.crop_corner(1000, 1000, size=1000)
 crop.show(channelwise=True)
 ```
 
-Additionally, we will have a look at the pre-trained StarDist model. The `2D_versatile_fluo model` works on one channel, as `n_channel_in = 1`. We will run the segmentation on the first channel of the image in this example. 
+Additionally, we will have a look at the pre-trained StarDist model. The `2D_versatile_fluo model` works on one channel, as `n_channel_in = 1`. We will run the segmentation on the first channel of the image in this example.
 
 
 ```python
@@ -60,7 +68,7 @@ Calling `model.predict_instances` will:
 - render all remaining polygon instances in a label image.
 - return the label instances image and also the details (coordinates, etc.) of all remaining polygons.
 
-For our purpose, we will only return the respective labels. Check the detailed example StarDist [notebook](https://github.com/stardist/stardist/blob/main/examples/2D/3_prediction.ipynb) for more information.
+For our purpose, we will only return the respective labels. Check the detailed example StarDist notebook for more information.
 
 
 ```python
@@ -126,7 +134,7 @@ def stardist_2D_versatile_he(img, nms_thresh=None, prob_thresh=None):
     return labels
 ```
 
-StarDist H&E segmentation method works on three input channels as `n_channel_in = 3`. We therefore pass `channel = None` 
+StarDist H&E segmentation method works on three input channels as `n_channel_in = 3`. We therefore pass `channel = None`
  to the `sq.img.segment` method which will then run the given segmentation method on all given channels.
 
 

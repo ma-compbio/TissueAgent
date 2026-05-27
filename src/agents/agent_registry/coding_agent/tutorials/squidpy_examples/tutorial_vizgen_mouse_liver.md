@@ -1,5 +1,16 @@
+---
+title: "Vizgen Mouse Liver Squidpy Vignette"
+keywords:
+  - "squidpy"
+  - "vizgen"
+  - "merfish"
+  - "mouse-liver"
+  - "hepatocyte-zonation"
+  - "neighborhood-enrichment"
+  - "centrality"
+---
 # Vizgen Mouse Liver Squidpy Vignette
-This vignette shows how to use Squidpy and Scanpy to analyze MERFISH data from the [Vizgen MERFISH Mouse Liver Map](https://info.vizgen.com/mouse-liver-access). This notebook analyzes the Liver1Slice1 MERFISH dataset that measures 347 genes across over >300,000 liver cells in a single mouse liver slice.
+This vignette shows how to use Squidpy and Scanpy to analyze MERFISH data from the Vizgen MERFISH Mouse Liver Map. This notebook analyzes the Liver1Slice1 MERFISH dataset that measures 347 genes across over >300,000 liver cells in a single mouse liver slice.
 
 
 ```python
@@ -18,7 +29,7 @@ import squidpy as sq
 ```
 
 ## Single-Cell Clustering of Vizgen MERFISH Mouse Liver Data
-### Obtain Data from Vizgen 
+### Obtain Data from Vizgen
 We will use the Liver1Slice1 dataset from Vizgen's MERFISH Mouse Liver Map: https://info.vizgen.com/mouse-liver-access. In order to run this tutorial we will download the `cell_by_gene.csv` and `meta_cell.csv`. Please follow the instructions to obtain access to the showcase data and download the data - here we save the data to a directory called `tutorial_data/` in the same directory as this notebook.
 
 
@@ -99,7 +110,7 @@ sc.pl.umap(adata, color=["leiden"], size=5)
 ```
 
 ### Spatial Distributions of Cells
-Here we visualize the spatial locations of cells in the mouse liver colored by Leiden cluster. We observe distinct spatial localizations of Leiden clusters throughout the tissue. We see some clusters line blood vessels and while others form concentric patterns reflecting hepatic zonation ([Cunningham et. al. 2021](https://www.frontiersin.org/articles/10.3389/fphys.2021.732929/full)). Our next step is to assign tentative cell type to our Leiden clusters and assess their spatial localizations in the liver.
+Here we visualize the spatial locations of cells in the mouse liver colored by Leiden cluster. We observe distinct spatial localizations of Leiden clusters throughout the tissue. We see some clusters line blood vessels and while others form concentric patterns reflecting hepatic zonation (Cunningham et. al. 2021). Our next step is to assign tentative cell type to our Leiden clusters and assess their spatial localizations in the liver.
 
 
 ```python
@@ -111,7 +122,7 @@ sq.pl.spatial_scatter(
 ## Assign Cell Types
 ### Reference Cell Type Marker Gene Sets
 
-In order to tentatively assign liver cell types we utilize a gene-level cell type marker reference from the publication [Spatial transcriptome profiling by MERFISH reveals fetal liver hematopoietic stem cell niche architecture](https://www.nature.com/articles/s41421-021-00266-1). These marker genes will be used to assess cell type composition of the Leiden clusters. See MERFISH gene panel metadata: https://www.nature.com/articles/s41421-021-00266-1.
+In order to tentatively assign liver cell types we utilize a gene-level cell type marker reference from the publication Spatial transcriptome profiling by MERFISH reveals fetal liver hematopoietic stem cell niche architecture. These marker genes will be used to assess cell type composition of the Leiden clusters. See MERFISH gene panel metadata: https://www.nature.com/articles/s41421-021-00266-1.
 
 
 ```python
@@ -216,12 +227,10 @@ adata.obs["Cluster"] = adata.obs["leiden"].apply(
 ```
 
 ## Hepatocyte Zonation
-Hepatocytes are the most abundant cell in the liver and have multiple roles in metabolism, endocrine production, protein synthesis, and detoxification. Hepatocytes form complex, radial structures called lobules that contain a central vein (with low blood oxygen level) surrounded by peripheral portal veins (with high blood oxygen level). Hepatocytes can also be broadly classified as peri-central or peri-portal based on their proximity to central and portal veins, respectively. 
 
 ### Central and Portal Blood Vessels
-We can use the gene Vwf to identify endothelial cells ([Horvath et. al.  2004](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2716260/)) that line liver blood vessels. Plotting Vwf expression level in single cells (below) shows clear enrichment at blood vessel borders. Note that Vwf expression can also be used to distinguish artifactual holes/tears in the liver from blood vessels.
 
-Next, we use the expression of Axin2 to mark peri-central regions ([Sun et. al. 2020](https://pubmed.ncbi.nlm.nih.gov/31866224/)). Plotting Axin2 expression level in single cells shows Axin2 lining a subset of all Vwf positive blood vessels, which allows us to distinguish peri-portal (Axin2 negative) and peri-central (Axin2 positive) blood vessels. Similarly, we can use Axin2 expression to identify peri-central hepatocyte Leiden clusters (see next section).
+Next, we use the expression of Axin2 to mark peri-central regions (Sun et. al. 2020). Plotting Axin2 expression level in single cells shows Axin2 lining a subset of all Vwf positive blood vessels, which allows us to distinguish peri-portal (Axin2 negative) and peri-central (Axin2 positive) blood vessels. Similarly, we can use Axin2 expression to identify peri-central hepatocyte Leiden clusters (see next section).
 
 
 ```python
@@ -231,7 +240,7 @@ sq.pl.spatial_scatter(
 ```
 
 ### Distinguishing Peri-Portal and Peri-Central Hepatocytes
-As described above, we use the expression of Axin2 as a marker for peri-central hepatocytes ([see Sun et. al.](https://pubmed.ncbi.nlm.nih.gov/31866224/)). 
+As described above, we use the expression of Axin2 as a marker for peri-central hepatocytes (see Sun et. al.).
 
 
 ```python
@@ -262,9 +271,8 @@ sq.pl.spatial_scatter(
 ```
 
 ## Neighborhood Enrichment
-In this section we will use Squidpy to identify clusters that are spatially enriched for one another using a neighborhood enrichment test {func}`squidpy.gr.nhood_enrichment`. This test determines if cells belonging to two different clusters are close to each other more often than expected. 
 
-In order to run this test we first have to calculate a connectivity graph using the {func}`squidpy.gr.spatial_neighbors` method. This graph consists of cells (nodes) and cell-cell interactions (edges). 
+In order to run this test we first have to calculate a connectivity graph using the `squidpy.gr.spatial_neighbors` method. This graph consists of cells (nodes) and cell-cell interactions (edges).
 
 We also visualize the neighborhood enrichment using a hierarchically clustered heatmap which shows clusters of enriched neighborhoods in our tissue.
 
@@ -284,7 +292,6 @@ sq.pl.nhood_enrichment(
 ```
 
 ### Neighborhood Enrichment Clusters
-Here we visualize clusters from our neighborhood enrichment data obtained by hierarchically clustering the Z-scored neighborhood enrichment scores. We observe a cluster containing three peri-portal hepatocyte leiden clusters (`Hepatocyte_Leiden-0`, `Hepatocyte_Leiden-4`, and `Hepatocyte_Leiden-6`
 ) and a large cluster containing several peri-central hepatocytes (`Hepatocyte_Leiden-1`, `Hepatocyte_Leiden-2`, `Hepatocyte_Leiden-25`). This demonstrates that we can recapitulate known spatial enrichment of peri-portal and peri-central hepatocytes using neighborhood enrichment.
 
 
@@ -319,7 +326,7 @@ for inst_cluster in all_clusters:
 ```
 
 ## Network Centrality Scores
-In addition to neighborhood enrichment we can also calculate network-based centrality scores for the Leiden clusters. These include 
+In addition to neighborhood enrichment we can also calculate network-based centrality scores for the Leiden clusters. These include
 
 * closeness centrality: how close a group is to other nodes
 * degree centrality: fraction of connected non-group members
@@ -388,7 +395,6 @@ sq.pl.spatial_scatter(
 These cluster have particularly low non-group member connections and similarly to the results from the closeness score we see that these clusters tend to be near blood vessels. We also note that more of the clusters tend to be lower abundance clusters (Leiden cluster numbers are ranked by abundance).
 
 
-
 ```python
 inst_clusters = ser_degree.index.tolist()[-5:]
 print(inst_clusters)
@@ -410,7 +416,7 @@ sq.pl.spatial_scatter(
 ```
 
 ### Low Clustering Coefficient
-Again, we see that non-isolated groups tend to be more evenly distributed throughout the tissue. Interestingly, these clusters mostly consist of hepatocytes. 
+Again, we see that non-isolated groups tend to be more evenly distributed throughout the tissue. Interestingly, these clusters mostly consist of hepatocytes.
 
 
 ```python
@@ -421,10 +427,10 @@ sq.pl.spatial_scatter(
 )
 ```
 
-##  Autocorrelation: Moran's I Score 
-Our previous focus has been mainly on the distribution of cell clusters throughout the tissue. However we can also use Squidpy to investigate the spatial distributions of genes expressed in the tissue. 
+##  Autocorrelation: Moran's I Score
+Our previous focus has been mainly on the distribution of cell clusters throughout the tissue. However we can also use Squidpy to investigate the spatial distributions of genes expressed in the tissue.
 
-Here we use Squidpy to calculate the Moran's I global spatial auto-correlation statistic, which can be used to identify genes that are non-randomly distributed in the tissue. We will visualize the top and bottom 20 scoring genes to highlight specific examples of genes with high and low auto-correlation. 
+Here we use Squidpy to calculate the Moran's I global spatial auto-correlation statistic, which can be used to identify genes that are non-randomly distributed in the tissue. We will visualize the top and bottom 20 scoring genes to highlight specific examples of genes with high and low auto-correlation.
 
 
 ```python
@@ -472,12 +478,4 @@ sq.pl.spatial_scatter(
 sig_leiden.loc[bot_autocorr].mean(axis=0).sort_values(ascending=False).index.tolist()[
     :5
 ]
-```
-
-## Conclusion
-This tutorial shows how we can use Squidpy and Scanpy to explore the spatial distribution of single-cells and gene expression in mouse liver tissue from Vizgen's MERFISH Mouse Liver Map. One of the main highlights is the intricate hepatic zonation patterns and their relationship to portal/central veins in the mouse liver.
-
-
-```python
-
 ```

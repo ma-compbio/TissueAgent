@@ -1,4 +1,14 @@
-# Analyze Xenium data 
+---
+title: "Analyze Xenium data"
+keywords:
+  - "squidpy"
+  - "xenium"
+  - "spatialdata"
+  - "spatial-statistics"
+  - "co-occurrence"
+  - "moran"
+---
+# Analyze Xenium data
 
 
 ```python
@@ -12,7 +22,7 @@ import scanpy as sc
 import squidpy as sq
 ```
 
-A reader for Xenium data is available in `spatialdata-io`. We use it to parse and convert to Zarr a [Xenium dataset of Human Lung Cancer](https://www.10xgenomics.com/datasets/preview-data-ffpe-human-lung-cancer-with-xenium-multimodal-cell-segmentation-1-standard).
+A reader for Xenium data is available in `spatialdata-io`. We use it to parse and convert to Zarr a Xenium dataset of Human Lung Cancer.
 
 After downloading and extracting the dataset into a directory named Xenium, we specify the path to the dataset and where we want to store our Zarr files.
 
@@ -44,7 +54,7 @@ sdata = sd.read_zarr(zarr_path)
 sdata
 ```
 
-For the analysis we use the `anndata.AnnData` object, which contains the count matrix, cell and gene annotations. It is stored in the `spatialdata.tables` layer. 
+For the analysis we use the `anndata.AnnData` object, which contains the count matrix, cell and gene annotations. It is stored in the `spatialdata.tables` layer.
 
 
 ```python
@@ -57,14 +67,14 @@ adata
 adata.obs
 ```
 
-Squidpy looks for cell coordinates in `.obsm["spatial"]`. By using the Xenium reader from `spatialdata-io` this is already automatically set. For more complex data this needs to be set manually, more details can be found in this [spatialdata tutorial on squidpy integration](https://spatialdata.scverse.org/en/latest/tutorials/notebooks/notebooks/examples/squidpy_integration.html).
+Squidpy looks for cell coordinates in `.obsm["spatial"]`. By using the Xenium reader from `spatialdata-io` this is already automatically set. For more complex data this needs to be set manually, more details can be found in this spatialdata tutorial on squidpy integration.
 
 
 ```python
 adata.obsm["spatial"]
 ```
 
-## Calculate quality control metrics 
+## Calculate quality control metrics
 
 Calculate the quality control metrics on the `anndata.AnnData` using `scanpy.pp.calculate_qc_metrics`.
 
@@ -150,7 +160,7 @@ sc.tl.umap(adata)
 sc.tl.leiden(adata)
 ```
 
-## Visualize annotation on UMAP and spatial coordinates 
+## Visualize annotation on UMAP and spatial coordinates
 
 Subplot with scatter plot in UMAP (Uniform Manifold Approximation and Projection) basis. The embedded points were colored, respectively, according to the total counts, number of genes by counts, and leiden clusters in each of the subplots. This gives us some idea of what the data looks like.
 
@@ -180,7 +190,7 @@ sq.pl.spatial_scatter(
 )
 ```
 
-## Computation of spatial statistics 
+## Computation of spatial statistics
 
 This example shows how to compute centrality scores, given a spatial graph and cell type annotation.
 
@@ -203,7 +213,7 @@ First, we need to compute a connectivity matrix from spatial coordinates to calc
 sq.gr.spatial_neighbors(adata, coord_type="generic", delaunay=True)
 ```
 
-### Compute centrality scores 
+### Compute centrality scores
 
 Centrality scores are calculated with `squidpy.gr.centrality_scores`, with the Leiden groups as clusters.
 
@@ -219,15 +229,12 @@ The results were visualized by plotting the average centrality, closeness centra
 sq.pl.centrality_scores(adata, cluster_key="leiden", figsize=(16, 5))
 ```
 
-### Compute co-occurrence probability 
+### Compute co-occurrence probability
 
 This example shows how to compute the co-occurrence probability.
 
 The co-occurrence score is defined as:
 
-$\frac{p(exp|cond)}{p(exp)}$
-
-where $p(exp|cond)$ is the conditional probability of observing a cluster $exp$ conditioned on the presence of a cluster $cond$, whereas $p(exp)$ is the probability of observing $exp$ in the radius size of interest. The score is computed across increasing radii size around each cell in the tissue.
 
 We can compute the co-occurrence score with `squidpy.gr.co_occurrence`. Results of co-occurrence probability ratio can be visualized with `squidpy.pl.co_occurrence`. The ‘3’ in the $\frac{p(exp|cond)}{p(exp)}$ represents a Leiden clustered group.
 
@@ -267,7 +274,7 @@ sq.pl.spatial_scatter(
 )
 ```
 
-### Neighbors enrichment analysis 
+### Neighbors enrichment analysis
 
 
 This example shows how to run the neighbors enrichment analysis routine.
@@ -296,7 +303,7 @@ sq.pl.nhood_enrichment(
 sq.pl.spatial_scatter(adata_subsample, color="leiden", shape=None, size=2, ax=ax[1])
 ```
 
-### Compute Moran's I score 
+### Compute Moran's I score
 
 
 This example shows how to compute the Moran’s I global spatial auto-correlation statistics.
@@ -366,5 +373,3 @@ Interactive(sdata)
 ```
 
 Here we visualize AREG expression across all cells:
-
-![title](napari_screenshots/Xenium_tutorial_napari_viewer.png)

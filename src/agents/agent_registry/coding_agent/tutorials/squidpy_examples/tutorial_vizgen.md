@@ -1,3 +1,13 @@
+---
+title: "Analyze Vizgen data"
+keywords:
+  - "squidpy"
+  - "vizgen"
+  - "merfish"
+  - "spatial-statistics"
+  - "co-occurrence"
+  - "moran"
+---
 # Analyze Vizgen data
 
 
@@ -16,9 +26,8 @@ import squidpy as sq
 sc.logging.print_header()
 ```
 
-Download the data from [Vizgen MERFISH Mouse Brain Receptor Dataset](https://info.vizgen.com/mouse-brain-map?submissionGuid=a66ccb7f-87cf-4c55-83b9-5a2b6c0c12b9). Unpack the `.tar.gz` file. The dataset contains a MERFISH measurement of a gene panel containing 483 total genes including canonical brain cell type markers, GPCRs, and RTKs measured on 3 full coronal slices across 3 biological replicates. This is one slice of replicate 1.
 
-Unfortunately, the data needs to be downloaded manually. You need these 3 files in a new folder `tutorial_data` in the same path as your notebook. 
+Unfortunately, the data needs to be downloaded manually. You need these 3 files in a new folder `tutorial_data` in the same path as your notebook.
 - `datasets_mouse_brain_map_BrainReceptorShowcase_Slice1_Replicate1_cell_by_gene_S1R1.csv`
 - `datasets_mouse_brain_map_BrainReceptorShowcase_Slice1_Replicate1_cell_metadata_S1R1.csv`
 - `datasets_mouse_brain_map_BrainReceptorShowcase_Slice1_Replicate1_images_micron_to_mosaic_pixel_transform.csv`
@@ -46,8 +55,7 @@ adata = sq.read.vizgen(
 )
 ```
 
-Calculate quality control metrics
----------------------------------
+## Calculate quality control metrics
 
 Calculate the quality control metrics on the `anndata.AnnData` using `scanpy.pp.calculate_qc_metrics`.
 
@@ -98,11 +106,10 @@ sns.histplot(
 )
 ```
 
-All cells that do not contain at least 10 transcripts are filtered out with `sc.pp.filter_cells`  
-Genes could similiarly be filtered with `sc.pp.filter_genes`.  
-Values should be determined from distribution graphs.  
-Other filter criteria might be volume, stain signal like DAPI or a minimum of unique transcripts.  
-
+All cells that do not contain at least 10 transcripts are filtered out with `sc.pp.filter_cells`
+Genes could similiarly be filtered with `sc.pp.filter_genes`.
+Values should be determined from distribution graphs.
+Other filter criteria might be volume, stain signal like DAPI or a minimum of unique transcripts.
 
 
 ```python
@@ -119,11 +126,6 @@ You may have to install `scikit-misc` package for highly variable genes identifi
 
 
 ```python
-# !pip install scikit-misc
-```
-
-
-```python
 adata.layers["counts"] = adata.X.copy()
 sc.pp.highly_variable_genes(adata, flavor="seurat_v3", n_top_genes=4000)
 sc.pp.normalize_total(adata, inplace=True)
@@ -134,8 +136,7 @@ sc.tl.umap(adata)
 sc.tl.leiden(adata)
 ```
 
-Visualize annotation on UMAP and spatial coordinates
-----------------------------------------------------
+## Visualize annotation on UMAP and spatial coordinates
 
 Subplot with scatter plot in UMAP (Uniform Manifold Approximation and Projection) basis. The embedded points were colored, respectively, according to the total counts, number of genes by counts, and leiden clusters in each of the subplots. This gives us some idea of what the data looks like.
 
@@ -164,15 +165,10 @@ sq.pl.spatial_scatter(
 )
 ```
 
-From this point clusters can be annotated by differentially expressed genes, e.g. `sc.tl.rank_genes_groups`or by integrating scRNA and transferring labels e.g. [Tangram](https://www.nature.com/articles/s41592-021-01264-7) or [Harmony](https://www.nature.com/articles/s41592-019-0619-0).
 
-----
+## Computation of spatial statistics
 
-Computation of spatial statistics
----------------------------------
-
-Building the spatial neighbors graphs
--------------------------------------
+## Building the spatial neighbors graphs
 
 This example shows how to compute centrality scores, given a spatial graph and cell type annotation.
 
@@ -192,8 +188,7 @@ First, we need to compute a connectivity matrix from spatial coordinates to calc
 sq.gr.spatial_neighbors(adata, coord_type="generic", delaunay=True)
 ```
 
-Compute centrality scores
--------------------------
+## Compute centrality scores
 
 Centrality scores are calculated with `squidpy.gr.centrality_scores`, with the Leiden groups as clusters.
 
@@ -209,23 +204,13 @@ The results were visualized by plotting the average centrality, closeness centra
 sq.pl.centrality_scores(adata, cluster_key="leiden", figsize=(16, 5))
 ```
 
-----
 
-Compute co-occurrence probability
----------------------------------
+## Compute co-occurrence probability
 
 This example shows how to compute the co-occurrence probability.
 
 The co-occurrence score is defined as:
 
-\begin{equation}
-\frac{p(exp|cond)}{p(exp)}
-\end{equation}
-where $p(exp|cond)$ is the conditional probability of observing a
-cluster $exp$ conditioned on the presence of a cluster $cond$, whereas
-$p(exp)$ is the probability of observing $exp$ in the radius size of
-interest. The score is computed across increasing radii size around each
-cell in the tissue.
 
 We can compute the co-occurrence score with `squidpy.gr.co_occurrence`.
 Results of co-occurrence probability ratio can be visualized with `squidpy.pl.co_occurrence`. The '3' in the $\frac{p(exp|cond)}{p(exp)}$ represents a Leiden clustered group.
@@ -257,10 +242,8 @@ sq.pl.spatial_scatter(
 )
 ```
 
-----
 
-Neighbors enrichment analysis
------------------------------
+## Neighbors enrichment analysis
 
 This example shows how to run the neighbors enrichment analysis routine.
 
@@ -288,18 +271,15 @@ sq.pl.nhood_enrichment(
 sq.pl.spatial_scatter(adata_subsample, color="leiden", shape=None, size=2, ax=ax[1])
 ```
 
-----
 
-Compute Ripley's statistics
----------------------------
+## Compute Ripley's statistics
 
 This example shows how to compute the Ripley's L function.
 
-The Ripley's L function is a descriptive statistics function generally used to determine whether points have a random, dispersed or clustered distribution pattern at certain scale. The Ripley's L is a variance-normalized version of the Ripley's K statistic. There are also 2 other Ripley's statistics available (that are closely related): 'G' and 'F'.
 
 Ripley's G monitors the portion of points for which the nearest neighbor is within a given distance threshold, and plots that cumulative percentage against the increasing distance radii.
 
-For increasing separation range, Ripley's F function assembles the percentage of points which can be found in the aforementioned range from an arbitrary point pattern spawned in the expanse of the noticed pattern. 
+For increasing separation range, Ripley's F function assembles the percentage of points which can be found in the aforementioned range from an arbitrary point pattern spawned in the expanse of the noticed pattern.
 
 We can compute the Ripley's L function with `squidpy.gr.ripley`.
 Results can be visualized with `squidpy.pl.ripley`. The other Ripley's statistics can be specified using `mode = 'G'` or `mode = 'F'`.
@@ -322,10 +302,8 @@ sq.pl.spatial_scatter(
 )
 ```
 
-----
 
-Compute Moran's I score
------------------------
+## Compute Moran's I score
 
 This example shows how to compute the Moran's I global spatial auto-correlation statistics.
 
@@ -345,7 +323,7 @@ sq.gr.spatial_autocorr(
 adata_subsample.uns["moranI"].head(10)
 ```
 
-We can visualize some of those genes with `squidpy.pl.spatial_scatter`. We could also pass `mode = 'geary'` to compute a closely related auto-correlation statistic, [Geary's C](https://en.wikipedia.org/wiki/Geary%27s_C). See `squidpy.gr.spatial_autocorr` for more information.
+We can visualize some of those genes with `squidpy.pl.spatial_scatter`. We could also pass `mode = 'geary'` to compute a closely related auto-correlation statistic, Geary's C. See `squidpy.gr.spatial_autocorr` for more information.
 
 
 ```python

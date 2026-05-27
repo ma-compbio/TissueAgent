@@ -1,6 +1,18 @@
 [
   {
     "method": "squidpy.datasets.visium_hne_image",
+    "keywords": [
+      "10x genomics",
+      "dataset",
+      "datasets",
+      "histology",
+      "hne",
+      "image",
+      "image container",
+      "squidpy",
+      "visium",
+      "visium_hne_image"
+    ],
     "signature": "squidpy.datasets.visium_hne_image(path=None, **kwargs)",
     "description": "H&E image from 10x Genomics Visium dataset. The shape of this image is (11757, 11291).",
     "params": [
@@ -19,6 +31,16 @@
   },
   {
     "method": "squidpy.datasets.slideseqv2",
+    "keywords": [
+      "anndata",
+      "dataset",
+      "datasets",
+      "image processing",
+      "slide",
+      "slide-seq",
+      "slideseqv2",
+      "squidpy"
+    ],
     "signature": "squidpy.datasets.slideseqv2(path=None, **kwargs)",
     "description": "Pre-processed SlideseqV2 dataset from Stickles et al. The shape of this anndata.AnnData object is (41786, 4000).",
     "params": [
@@ -42,6 +64,16 @@
   },
   {
     "method": "squidpy.pl.ligrec",
+    "keywords": [
+      "clustering",
+      "ligand",
+      "ligrec",
+      "permutation test",
+      "plotting",
+      "receptor",
+      "squidpy",
+      "visualization"
+    ],
     "signature": "squidpy.pl.ligrec(adata, cluster_key=None, source_groups=None, target_groups=None, means_range=(-inf, inf), pvalue_threshold=1.0, remove_empty_interactions=True, remove_nonsig_interactions=False, dendrogram=None, alpha=0.001, swap_axes=False, title=None, figsize=None, dpi=None, save=None, **kwargs)",
     "description": "Plot the result of a receptor-ligand permutation test.",
     "params": [
@@ -150,6 +182,13 @@
   },
   {
     "method": "squidpy.gr.mask_graph",
+    "keywords": [
+      "graph",
+      "mask",
+      "mask_graph",
+      "spatial",
+      "squidpy"
+    ],
     "signature": "squidpy.gr.mask_graph(sdata, table_key, polygon_mask, negative_mask=False, spatial_key='spatial', key_added='mask', copy=False)",
     "description": "Mask the graph based on a polygon mask.",
     "params": [
@@ -198,6 +237,17 @@
   },
   {
     "method": "squidpy.gr.centrality_scores",
+    "keywords": [
+      "centrality",
+      "centrality_scores",
+      "clustering",
+      "gene expression",
+      "graph",
+      "network",
+      "scores",
+      "scoring",
+      "squidpy"
+    ],
     "signature": "squidpy.gr.centrality_scores(adata, cluster_key, score=None, connectivity_key=None, copy=False, n_jobs=None, backend='loky', show_progress_bar=False)",
     "description": "Compute centrality scores per cluster or cell type.",
     "params": [
@@ -251,6 +301,16 @@
   },
   {
     "method": "squidpy.datasets.sc_mouse_cortex",
+    "keywords": [
+      "anndata",
+      "cortex",
+      "dataset",
+      "datasets",
+      "image processing",
+      "mouse",
+      "sc_mouse_cortex",
+      "squidpy"
+    ],
     "signature": "squidpy.datasets.sc_mouse_cortex(path=None, **kwargs)",
     "description": "Pre-processed scRNA-seq mouse cortex dataset.",
     "params": [
@@ -274,6 +334,13 @@
   },
   {
     "method": "squidpy.tl.var_by_distance",
+    "keywords": [
+      "distance",
+      "observations",
+      "squidpy",
+      "var",
+      "var_by_distance"
+    ],
     "signature": "squidpy.tl.var_by_distance(adata, groups, cluster_key=None, library_key=None, library_id=None, design_matrix_key='design_matrix', covariates=None, metric='euclidean', spatial_key='spatial', copy=False)",
     "description": "Build a design matrix consisting of distance measurements to selected anchor point(s) for each observation.",
     "params": [
@@ -337,6 +404,16 @@
   },
   {
     "method": "squidpy.datasets.four_i",
+    "keywords": [
+      "4i",
+      "anndata",
+      "dataset",
+      "datasets",
+      "four",
+      "four_i",
+      "image processing",
+      "squidpy"
+    ],
     "signature": "squidpy.datasets.four_i(path=None, **kwargs)",
     "description": "Pre-processed subset 4i dataset from Gut et al. The shape of this anndata.AnnData object is (270876, 43).",
     "params": [
@@ -360,6 +437,16 @@
   },
   {
     "method": "squidpy.pl.spatial_segment",
+    "keywords": [
+      "plotting",
+      "scatter",
+      "segment",
+      "segmentation",
+      "spatial",
+      "spatial_segment",
+      "squidpy",
+      "visualization"
+    ],
     "signature": "squidpy.pl.spatial_segment(adata, color=None, groups=None, library_id=None, library_key=None, spatial_key='spatial', img=True, img_res_key='hires', img_alpha=None, img_cmap=None, img_channel=None, seg=None, seg_key='segmentation', seg_cell_id=None, seg_contourpx=None, seg_outline=False, use_raw=None, layer=None, alt_var=None, crop_coord=None, cmap=None, palette=None, alpha=1.0, norm=None, na_color=(0, 0, 0, 0), connectivity_key=None, edges_width=1.0, edges_color='grey', library_first=True, frameon=None, wspace=None, hspace=0.25, ncols=4, outline=False, outline_color=('black', 'white'), outline_width=(0.3, 0.05), legend_loc='right margin', legend_fontsize=None, legend_fontweight='bold', legend_fontoutline=None, legend_na=True, colorbar=True, scalebar_dx=None, scalebar_units=None, title=None, axis_label=None, fig=None, ax=None, return_ax=False, figsize=None, dpi=None, save=None, scalebar_kwargs=mappingproxy({}), edges_kwargs=mappingproxy({}), **kwargs)",
     "description": "Plot spatial omics data with segmentation masks on top.",
     "params": [
@@ -648,6 +735,18 @@
   },
   {
     "method": "squidpy.datasets.visium_hne_image_crop",
+    "keywords": [
+      "squidpy",
+      "10x genomics",
+      "cropping",
+      "histology",
+      "image",
+      "visium",
+      "crop",
+      "dataset",
+      "datasets",
+      "hne"
+    ],
     "signature": "squidpy.datasets.visium_hne_image_crop(path=None, **kwargs)",
     "description": "Cropped H&E image from 10x Genomics Visium dataset.\nThe shape of this image is (3527, 3527).",
     "params": [
@@ -671,6 +770,13 @@
   },
   {
     "method": "squidpy.im.segment",
+    "keywords": [
+      "image",
+      "imaging",
+      "segment",
+      "segmentation",
+      "squidpy"
+    ],
     "signature": "squidpy.im.segment(img, layer=None, library_id=None, method='watershed', channel=0, chunks=None, lazy=False, layer_added=None, copy=False, **kwargs)",
     "description": "Segment an image.",
     "params": [
@@ -717,7 +823,7 @@
       {
         "name": "thresh",
         "type": "Any",
-        "desc": "Threshold for creation of masked image. The areas to segment should be contained in this mask. If None, it is determined by Otsu’s method. Only used if `method = 'watershed'`."
+        "desc": "Threshold for creation of masked image. The areas to segment should be contained in this mask. If None, it is determined by Otsu\u2019s method. Only used if `method = 'watershed'`."
       },
       {
         "name": "geq",
@@ -744,8 +850,18 @@
   },
   {
     "method": "squidpy.pl.ripley",
+    "keywords": [
+      "clustering",
+      "plotting",
+      "raw counts",
+      "ripley",
+      "spatial",
+      "spatial statistics",
+      "squidpy",
+      "visualization"
+    ],
     "signature": "squidpy.pl.ripley(adata, cluster_key, mode='F', plot_sims=True, palette=None, figsize=None, dpi=None, save=None, ax=None, legend_kwargs=mappingproxy({}), **kwargs)",
-    "description": "Plot Ripley’s statistics for each cluster.",
+    "description": "Plot Ripley\u2019s statistics for each cluster.",
     "params": [
       {
         "name": "adata",
@@ -760,7 +876,7 @@
       {
         "name": "mode",
         "type": "Literal['F', 'G', 'L']",
-        "desc": "Ripley’s statistics to be plotted."
+        "desc": "Ripley\u2019s statistics to be plotted."
       },
       {
         "name": "plot_sims",
@@ -827,6 +943,16 @@
   },
   {
     "method": "squidpy.read.vizgen",
+    "keywords": [
+      "anndata",
+      "io",
+      "loading",
+      "read",
+      "scatter",
+      "spatial",
+      "squidpy",
+      "vizgen"
+    ],
     "signature": "squidpy.read.vizgen(path, *, counts_file, meta_file, transformation_file=None, library_id='library', **kwargs)",
     "description": "Read *Vizgen* formatted dataset. In addition to reading the regular *Vizgen* output, it loads the metadata file and optionally loads the transformation matrix.",
     "params": [
@@ -865,6 +991,17 @@
   },
   {
     "method": "squidpy.im.calculate_image_features",
+    "keywords": [
+      "anndata",
+      "calculate",
+      "calculate_image_features",
+      "feature extraction",
+      "features",
+      "image",
+      "imaging",
+      "observations",
+      "squidpy"
+    ],
     "signature": "squidpy.im.calculate_image_features(adata, img, layer=None, library_id=None, features='summary', features_kwargs=mappingproxy({}), key_added='img_features', copy=False, n_jobs=None, backend='loky', show_progress_bar=True, **kwargs)",
     "description": "Calculate image features for all observations in 'adata'.",
     "params": [
@@ -934,10 +1071,22 @@
         "desc": "If 'copy = True', returns a pandas.DataFrame where columns correspond to the calculated features. Otherwise, modifies the 'adata' object with the following key: anndata.AnnData.uns '['{key_added}']' - the above mentioned dataframe."
       }
     ],
-    "misc": "Raises: ValueError – If a feature is not known."
+    "misc": "Raises: ValueError \u2013 If a feature is not known."
   },
   {
     "method": "squidpy.pl.var_by_distance",
+    "keywords": [
+      "distance",
+      "feature selection",
+      "plotting",
+      "regression",
+      "smoothing",
+      "squidpy",
+      "var",
+      "var_by_distance",
+      "variables",
+      "visualization"
+    ],
     "signature": "squidpy.pl.var_by_distance(adata, var, anchor_key, design_matrix_key='design_matrix', stack_vars=False, covariate=None, order=5, show_scatter=True, color=None, line_palette=None, scatter_palette='viridis', dpi=None, figsize=None, save=None, title=None, axis_label=None, return_ax=None, regplot_kwargs=mappingproxy({}), scatterplot_kwargs=mappingproxy({}))",
     "description": "Plot a variable using a smooth regression line with increasing distance to an anchor point.",
     "params": [
@@ -964,7 +1113,7 @@
       {
         "name": "stack_vars",
         "type": "bool",
-        "desc": "Whether to show multiple variables on the same plot. Only works if ‘covariate’ is not specified."
+        "desc": "Whether to show multiple variables on the same plot. Only works if \u2018covariate\u2019 is not specified."
       },
       {
         "name": "covariate",
@@ -984,7 +1133,7 @@
       {
         "name": "color",
         "type": "str | None",
-        "desc": "Variables in adata.obs to plot if ‘show_scatter==True’."
+        "desc": "Variables in adata.obs to plot if \u2018show_scatter==True\u2019."
       },
       {
         "name": "line_palette",
@@ -1046,6 +1195,15 @@
   },
   {
     "method": "squidpy.gr.nhood_enrichment",
+    "keywords": [
+      "enrichment",
+      "graph",
+      "neighborhood",
+      "nhood",
+      "nhood_enrichment",
+      "permutation test",
+      "squidpy"
+    ],
     "signature": "squidpy.gr.nhood_enrichment(adata, cluster_key, library_key=None, connectivity_key=None, n_perms=1000, numba_parallel=False, seed=None, copy=False, n_jobs=None, backend='loky', show_progress_bar=True)",
     "description": "Compute neighborhood enrichment by permutation test.",
     "params": [
@@ -1077,7 +1235,7 @@
       {
         "name": "numba_parallel",
         "type": "bool",
-        "desc": "Whether to use `numba.prange` or not. If None, it is determined automatically. For small datasets or small number of interactions, it’s recommended to set this to False."
+        "desc": "Whether to use `numba.prange` or not. If None, it is determined automatically. For small datasets or small number of interactions, it\u2019s recommended to set this to False."
       },
       {
         "name": "seed",
@@ -1114,6 +1272,15 @@
   },
   {
     "method": "squidpy.pl.centrality_scores",
+    "keywords": [
+      "centrality",
+      "centrality_scores",
+      "plotting",
+      "scores",
+      "scoring",
+      "squidpy",
+      "visualization"
+    ],
     "signature": "squidpy.pl.centrality_scores(adata, cluster_key, score=None, legend_kwargs=mappingproxy({}), palette=None, figsize=None, dpi=None, save=None, **kwargs)",
     "description": "Plot centrality scores.",
     "params": [
@@ -1182,6 +1349,14 @@
   },
   {
     "method": "squidpy.datasets.seqfish",
+    "keywords": [
+      "anndata",
+      "dataset",
+      "datasets",
+      "image processing",
+      "seqfish",
+      "squidpy"
+    ],
     "signature": "squidpy.datasets.seqfish(path=None, **kwargs)",
     "description": "Pre-processed subset seqFISH dataset from Lohoff et al. The shape of this anndata.AnnData object (19416, 351).",
     "params": [
@@ -1205,8 +1380,17 @@
   },
   {
     "method": "squidpy.gr.spatial_autocorr",
+    "keywords": [
+      "autocorr",
+      "correlation",
+      "graph",
+      "spatial",
+      "spatial autocorrelation",
+      "spatial_autocorr",
+      "squidpy"
+    ],
     "signature": "squidpy.gr.spatial_autocorr(adata, connectivity_key='spatial_connectivities', genes=None, mode='moran', transformation=True, n_perms=None, two_tailed=False, corr_method='fdr_bh', attr='X', layer=None, seed=None, use_raw=False, copy=False, n_jobs=None, backend='loky', show_progress_bar=True)",
-    "description": "Calculate Global Autocorrelation Statistic (Moran’s I or Geary’s C).",
+    "description": "Calculate Global Autocorrelation Statistic (Moran\u2019s I or Geary\u2019s C).",
     "params": [
       {
         "name": "adata",
@@ -1221,12 +1405,12 @@
       {
         "name": "genes",
         "type": "str | int | Sequence[str] | Sequence[int] | None",
-        "desc": "Depending on the attr:\n> - if `attr = 'X'`, it corresponds to genes stored in anndata.AnnData.var_names.\n>   If None, it’s computed anndata.AnnData.var ['highly_variable'],\n>   if present. Otherwise, it’s computed for all genes.\n> - if `attr = 'obs'`, it corresponds to a list of columns in anndata.AnnData.obs.\n>   If None, use all numerical columns.\n> - if `attr = 'obsm'`, it corresponds to indices in anndata.AnnData.obsm ['{layer}'].\n>   If None, all indices are used."
+        "desc": "Depending on the attr:\n> - if `attr = 'X'`, it corresponds to genes stored in anndata.AnnData.var_names.\n>   If None, it\u2019s computed anndata.AnnData.var ['highly_variable'],\n>   if present. Otherwise, it\u2019s computed for all genes.\n> - if `attr = 'obs'`, it corresponds to a list of columns in anndata.AnnData.obs.\n>   If None, use all numerical columns.\n> - if `attr = 'obsm'`, it corresponds to indices in anndata.AnnData.obsm ['{layer}'].\n>   If None, all indices are used."
       },
       {
         "name": "mode",
         "type": "Union[SpatialAutocorr, Literal['moran', 'geary']]",
-        "desc": "Mode of score calculation:\n> - ’moran’ - Moran’s I autocorrelation.\n> - ’geary’ - Geary’s C autocorrelation."
+        "desc": "Mode of score calculation:\n> - \u2019moran\u2019 - Moran\u2019s I autocorrelation.\n> - \u2019geary\u2019 - Geary\u2019s C autocorrelation."
       },
       {
         "name": "transformation",
@@ -1291,13 +1475,20 @@
       {
         "name": "return",
         "type": "DataFrame | None",
-        "desc": "If `copy = True`, returns a pandas.DataFrame with the following keys:\n> - ’I’ or ‘C’ - Moran’s I or Geary’s C statistic.\n> - ’pval_norm’ - p-value under normality assumption.\n> - ’var_norm’ - variance of ‘score’ under normality assumption.\n> - ’{p_val}_{corr_method}’ - the corrected p-values if `corr_method != None` .\n\nIf `n_perms != None`, additionally returns the following columns:\n> - ’pval_z_sim’ - p-value based on standard normal approximation from permutations.\n> - ’pval_sim’ - p-value based on permutations.\n> - ’var_sim’ - variance of ‘score’ from permutations.\n\nOtherwise, modifies the `adata` with the following key:\n> - anndata.AnnData.uns ['moranI'] - the above mentioned dataframe, if `mode = 'moran'`.\n> - anndata.AnnData.uns ['gearyC'] - the above mentioned dataframe, if `mode = 'geary'`."
+        "desc": "If `copy = True`, returns a pandas.DataFrame with the following keys:\n> - \u2019I\u2019 or \u2018C\u2019 - Moran\u2019s I or Geary\u2019s C statistic.\n> - \u2019pval_norm\u2019 - p-value under normality assumption.\n> - \u2019var_norm\u2019 - variance of \u2018score\u2019 under normality assumption.\n> - \u2019{p_val}_{corr_method}\u2019 - the corrected p-values if `corr_method != None` .\n\nIf `n_perms != None`, additionally returns the following columns:\n> - \u2019pval_z_sim\u2019 - p-value based on standard normal approximation from permutations.\n> - \u2019pval_sim\u2019 - p-value based on permutations.\n> - \u2019var_sim\u2019 - variance of \u2018score\u2019 from permutations.\n\nOtherwise, modifies the `adata` with the following key:\n> - anndata.AnnData.uns ['moranI'] - the above mentioned dataframe, if `mode = 'moran'`.\n> - anndata.AnnData.uns ['gearyC'] - the above mentioned dataframe, if `mode = 'geary'`."
       }
     ],
     "misc": "See Rey and Anselin, 2010 for reference."
   },
   {
     "method": "squidpy.im.process",
+    "keywords": [
+      "image",
+      "image processing",
+      "imaging",
+      "process",
+      "squidpy"
+    ],
     "signature": "squidpy.im.process(img, layer=None, library_id=None, method='smooth', chunks=None, lazy=False, layer_added=None, channel_dim=None, copy=False, apply_kwargs=mappingproxy({}), **kwargs)",
     "description": "Process an image by applying a transformation.",
     "params": [
@@ -1319,7 +1510,7 @@
       {
         "name": "method",
         "type": "str | Callable[..., ndarray[tuple[int, ...], dtype[Any]]]",
-        "desc": "Processing method to use. Valid options are:\n> - ’smooth’ - `skimage.filters.gaussian()`.\n> - ’gray’ - `skimage.color.rgb2gray()`.\nAlternatively, any `callable()` can be passed as long as it has the following signature:\n`numpy.ndarray (height, width, channels) -> numpy.ndarray (height, width[, channels])`."
+        "desc": "Processing method to use. Valid options are:\n> - \u2019smooth\u2019 - `skimage.filters.gaussian()`.\n> - \u2019gray\u2019 - `skimage.color.rgb2gray()`.\nAlternatively, any `callable()` can be passed as long as it has the following signature:\n`numpy.ndarray (height, width, channels) -> numpy.ndarray (height, width[, channels])`."
       },
       {
         "name": "chunks",
@@ -1362,10 +1553,17 @@
         "desc": "If `copy = True`, returns a new container with the processed image in `'{layer_added}'.\n\nOtherwise, modifies the `img` with the following key:\n> - `squidpy.im.ImageContainer ['{layer_added}']` - the processed image."
       }
     ],
-    "misc": "Raises: **NotImplementedError** – If `method` has not been implemented."
+    "misc": "Raises: **NotImplementedError** \u2013 If `method` has not been implemented."
   },
   {
     "method": "squidpy.gr.co_occurrence",
+    "keywords": [
+      "clustering",
+      "co_occurrence",
+      "graph",
+      "occurrence",
+      "squidpy"
+    ],
     "signature": "squidpy.gr.co_occurrence(adata, cluster_key, spatial_key='spatial', interval=50, copy=False, n_splits=None, n_jobs=None, backend='loky', show_progress_bar=True)",
     "description": "Compute co-occurrence probability of clusters.",
     "params": [
@@ -1424,6 +1622,18 @@
   },
   {
     "method": "squidpy.datasets.visium_fluo_image_crop",
+    "keywords": [
+      "10x genomics",
+      "crop",
+      "cropping",
+      "dataset",
+      "datasets",
+      "fluo",
+      "image",
+      "squidpy",
+      "visium",
+      "visium_fluo_image_crop"
+    ],
     "signature": "squidpy.datasets.visium_fluo_image_crop(path=None, **kwargs)",
     "description": "Cropped Fluorescent image from 10x Genomics Visium dataset. The shape of this image is `(7272, 7272)`.",
     "params": [
@@ -1447,6 +1657,13 @@
   },
   {
     "method": "squidpy.gr.spatial_neighbors",
+    "keywords": [
+      "graph",
+      "neighbors",
+      "spatial",
+      "spatial_neighbors",
+      "squidpy"
+    ],
     "signature": "squidpy.gr.spatial_neighbors(adata, spatial_key='spatial', elements_to_coordinate_systems=None, table_key=None, library_key=None, coord_type=None, n_neighs=6, radius=None, delaunay=False, n_rings=1, percentile=None, transform=None, set_diag=False, key_added='spatial', copy=False)",
     "description": "Create a graph from spatial coordinates.",
     "params": [
@@ -1540,8 +1757,17 @@
   },
   {
     "method": "squidpy.pl.spatial_scatter",
+    "keywords": [
+      "plotting",
+      "scatter",
+      "segmentation",
+      "spatial",
+      "spatial_scatter",
+      "squidpy",
+      "visualization"
+    ],
     "signature": "squidpy.pl.spatial_scatter(adata, shape=None, color=None, groups=None, library_id=None, library_key=None, spatial_key='spatial', img=True, img_res_key='hires', img_alpha=None, img_cmap=None, img_channel=None, use_raw=None, layer=None, alt_var=None, size=None, size_key='spot_diameter_fullres', scale_factor=None, crop_coord=None, cmap=None, palette=None, alpha=1.0, norm=None, na_color=(0, 0, 0, 0), connectivity_key=None, edges_width=1.0, edges_color='grey', library_first=True, frameon=None, wspace=None, hspace=0.25, ncols=4, outline=False, outline_color=('black', 'white'), outline_width=(0.3, 0.05), legend_loc='right margin', legend_fontsize=None, legend_fontweight='bold', legend_fontoutline=None, legend_na=True, colorbar=True, scalebar_dx=None, scalebar_units=None, title=None, axis_label=None, fig=None, ax=None, return_ax=False, figsize=None, dpi=None, save=None, scalebar_kwargs=mappingproxy({}), edges_kwargs=mappingproxy({}), **kwargs)",
-    "description": "Plot spatial omics data with data overlayed on top. The plotted shapes (circles, squares or hexagons) have a real “size” with respect to their coordinate space, which can be specified via the `size` or `size_key` argument.",
+    "description": "Plot spatial omics data with data overlayed on top. The plotted shapes (circles, squares or hexagons) have a real \u201csize\u201d with respect to their coordinate space, which can be specified via the `size` or `size_key` argument.",
     "params": [
       {
         "name": "adata",
@@ -1823,6 +2049,15 @@
   },
   {
     "method": "squidpy.pl.nhood_enrichment",
+    "keywords": [
+      "enrichment",
+      "neighborhood",
+      "nhood",
+      "nhood_enrichment",
+      "plotting",
+      "squidpy",
+      "visualization"
+    ],
     "signature": "squidpy.pl.nhood_enrichment(adata, cluster_key, mode='zscore', annotate=False, method=None, title=None, cmap='viridis', palette=None, cbar_kwargs=mappingproxy({}), figsize=None, dpi=None, save=None, ax=None, **kwargs)",
     "description": "Plot neighborhood enrichment. The enrichment is computed by `squidpy.gr.nhood_enrichment()`.",
     "params": [
@@ -1839,7 +2074,7 @@
       {
         "name": "mode",
         "type": "Literal['zscore', 'count']",
-        "desc": "Which `squidpy.gr.nhood_enrichment()` result to plot. Valid options are:\n> - ’zscore’ - z-score values of enrichment statistic.\n> - ’count’ - enrichment count."
+        "desc": "Which `squidpy.gr.nhood_enrichment()` result to plot. Valid options are:\n> - \u2019zscore\u2019 - z-score values of enrichment statistic.\n> - \u2019count\u2019 - enrichment count."
       },
       {
         "name": "annotate",
@@ -1906,6 +2141,14 @@
   },
   {
     "method": "squidpy.gr.ripley",
+    "keywords": [
+      "graph",
+      "image processing",
+      "ripley",
+      "spatial statistics",
+      "squidpy",
+      "variables"
+    ],
     "signature": "squidpy.gr.ripley(adata, cluster_key, mode='F', spatial_key='spatial', metric='euclidean', n_neigh=2, n_simulations=100, n_observations=1000, max_dist=None, n_steps=50, seed=None, copy=False)",
     "description": "Calculate various Ripley's statistics for point processes.",
     "params": [
@@ -1922,7 +2165,7 @@
       {
         "name": "mode",
         "type": "Literal['F', 'G', 'L']",
-        "desc": "Which Ripley’s statistic to compute."
+        "desc": "Which Ripley\u2019s statistic to compute."
       },
       {
         "name": "spatial_key",
@@ -1972,13 +2215,22 @@
       {
         "name": "return",
         "type": "dict[str, DataFrame | ndarray[tuple[int, ...], dtype[Any]]]",
-        "desc": "If copy = True, returns a dict with keys:\n- ‘{mode}_stat’ - DataFrame containing the statistics of choice for the real observations.\n- ‘sims_stat’ - DataFrame containing the statistics of choice for the simulations.\n- ‘bins’ - ndarray containing the support.\n- ‘pvalues’ - ndarray containing the p-values for the statistics of interest.\nOtherwise, modifies the adata object with the following key:\n- anndata.AnnData.uns ['{key_added}'] - the above mentioned dict.\nStatistics and p-values are computed for each cluster anndata.AnnData.obs ['{cluster_key}'] separately."
+        "desc": "If copy = True, returns a dict with keys:\n- \u2018{mode}_stat\u2019 - DataFrame containing the statistics of choice for the real observations.\n- \u2018sims_stat\u2019 - DataFrame containing the statistics of choice for the simulations.\n- \u2018bins\u2019 - ndarray containing the support.\n- \u2018pvalues\u2019 - ndarray containing the p-values for the statistics of interest.\nOtherwise, modifies the adata object with the following key:\n- anndata.AnnData.uns ['{key_added}'] - the above mentioned dict.\nStatistics and p-values are computed for each cluster anndata.AnnData.obs ['{cluster_key}'] separately."
       }
     ],
     "misc": "For reference, Ripley's statistics can be found on Wikipedia or in the paper by Baddeley et al., 2015."
   },
   {
     "method": "squidpy.pl.interaction_matrix",
+    "keywords": [
+      "clustering",
+      "interaction",
+      "interaction_matrix",
+      "matrix",
+      "plotting",
+      "squidpy",
+      "visualization"
+    ],
     "signature": "squidpy.pl.interaction_matrix(adata, cluster_key, annotate=False, method=None, title=None, cmap='viridis', palette=None, cbar_kwargs=mappingproxy({}), figsize=None, dpi=None, save=None, ax=None, **kwargs)",
     "description": "Plot cluster interaction matrix.",
     "params": [
@@ -2057,6 +2309,17 @@
   },
   {
     "method": "squidpy.read.visium",
+    "keywords": [
+      "squidpy",
+      "10x genomics",
+      "factorization",
+      "image",
+      "scaling",
+      "scatter",
+      "io",
+      "loading",
+      "read"
+    ],
     "signature": "squidpy.read.visium(path, *, counts_file='filtered_feature_bc_matrix.h5', library_id=None, load_images=True, source_image_path=None, **kwargs)",
     "description": "Read *10x Genomics* Visium formatted dataset. In addition to reading the regular *Visium* output, it looks for the *spatial* directory and loads the images, spatial coordinates and scale factors.",
     "params": [
@@ -2090,6 +2353,13 @@
   },
   {
     "method": "squidpy.gr.ligrec",
+    "keywords": [
+      "clustering",
+      "graph",
+      "ligrec",
+      "permutation test",
+      "squidpy"
+    ],
     "signature": "squidpy.gr.ligrec(adata, cluster_key, interactions=None, complex_policy='min', threshold=0.01, corr_method=None, corr_axis='clusters', use_raw=True, copy=False, key_added=None, gene_symbols=None, **kwargs)",
     "description": "Perform the permutation test as described in Efremova et al., 2020.",
     "params": [
@@ -2154,10 +2424,22 @@
         "desc": "If `copy = True`, returns a dict with following keys: 'means', 'pvalues', and 'metadata'. Otherwise, modifies the `adata` object with the key: `anndata.AnnData.uns` ['{key_added}']."
       }
     ],
-    "misc": "NaN p-values mark combinations for which the mean expression of one of the interacting components was 0 or it didn’t pass the `threshold` percentage of cells being expressed within a given cluster."
+    "misc": "NaN p-values mark combinations for which the mean expression of one of the interacting components was 0 or it didn\u2019t pass the `threshold` percentage of cells being expressed within a given cluster."
   },
   {
     "method": "squidpy.datasets.visium_hne_adata_crop",
+    "keywords": [
+      "squidpy",
+      "10x genomics",
+      "anndata",
+      "histology",
+      "image processing",
+      "visium",
+      "adata",
+      "crop",
+      "dataset",
+      "datasets"
+    ],
     "signature": "squidpy.datasets.visium_hne_adata_crop(path=None, **kwargs)",
     "description": "Pre-processed subset 10x Genomics Visium H&E dataset.",
     "params": [
@@ -2181,6 +2463,18 @@
   },
   {
     "method": "squidpy.datasets.visium_fluo_adata_crop",
+    "keywords": [
+      "squidpy",
+      "10x genomics",
+      "anndata",
+      "image processing",
+      "visium",
+      "adata",
+      "crop",
+      "dataset",
+      "datasets",
+      "fluo"
+    ],
     "signature": "squidpy.datasets.visium_fluo_adata_crop(path=None, **kwargs)",
     "description": "Pre-processed subset 10x Genomics Visium Fluorescent dataset. The shape of this `anndata.AnnData` object `(704, 16562)`.",
     "params": [
@@ -2204,6 +2498,15 @@
   },
   {
     "method": "squidpy.datasets.imc",
+    "keywords": [
+      "anndata",
+      "dataset",
+      "datasets",
+      "image processing",
+      "imaging mass cytometry",
+      "imc",
+      "squidpy"
+    ],
     "signature": "squidpy.datasets.imc(path=None, **kwargs)",
     "description": "Pre-processed subset IMC dataset from Jackson et al. The shape of this anndata.AnnData object (4668, 34).",
     "params": [
@@ -2227,6 +2530,14 @@
   },
   {
     "method": "squidpy.datasets.merfish",
+    "keywords": [
+      "anndata",
+      "dataset",
+      "datasets",
+      "image processing",
+      "merfish",
+      "squidpy"
+    ],
     "signature": "squidpy.datasets.merfish(path=None, **kwargs)",
     "description": "Pre-processed MERFISH dataset from Moffitt et al.",
     "params": [
@@ -2250,6 +2561,17 @@
   },
   {
     "method": "squidpy.read.nanostring",
+    "keywords": [
+      "anndata",
+      "image",
+      "io",
+      "loading",
+      "nanostring",
+      "read",
+      "scatter",
+      "spatial",
+      "squidpy"
+    ],
     "signature": "squidpy.read.nanostring(path, *, counts_file, meta_file, fov_file=None)",
     "description": "Read *Nanostring* formatted dataset.\n\nIn addition to reading the regular *Nanostring* output, it loads the metadata file, if present *CellComposite* and *CellLabels* directories containing the images and optionally the field of view file.",
     "params": [
@@ -2283,6 +2605,18 @@
   },
   {
     "method": "squidpy.datasets.visium_hne_adata",
+    "keywords": [
+      "squidpy",
+      "10x genomics",
+      "anndata",
+      "histology",
+      "image processing",
+      "visium",
+      "adata",
+      "dataset",
+      "datasets",
+      "hne"
+    ],
     "signature": "squidpy.datasets.visium_hne_adata(path=None, **kwargs)",
     "description": "Pre-processed 10x Genomics Visium H&E dataset.",
     "params": [
@@ -2306,6 +2640,15 @@
   },
   {
     "method": "squidpy.gr.sepal",
+    "keywords": [
+      "squidpy",
+      "anndata",
+      "diffusion",
+      "feature selection",
+      "gene expression",
+      "graph",
+      "sepal"
+    ],
     "signature": "squidpy.gr.sepal(adata, max_neighs, genes=None, n_iter=30000, dt=0.001, thresh=1e-08, connectivity_key='spatial_connectivities', spatial_key='spatial', layer=None, use_raw=False, copy=False, n_jobs=None, backend='loky', show_progress_bar=True)",
     "description": "Identify spatially variable genes with Sepal. Sepal is a method that simulates a diffusion process to quantify spatial structure in tissue.",
     "params": [
@@ -2322,7 +2665,7 @@
       {
         "name": "genes",
         "type": "str | Sequence[str] | None",
-        "desc": "List of gene names, used to compute sepal score. If None, it’s computed based on available data."
+        "desc": "List of gene names, used to compute sepal score. If None, it\u2019s computed based on available data."
       },
       {
         "name": "n_iter",
@@ -2389,6 +2732,13 @@
   },
   {
     "method": "squidpy.datasets.visium",
+    "keywords": [
+      "10x genomics",
+      "dataset",
+      "datasets",
+      "squidpy",
+      "visium"
+    ],
     "signature": "squidpy.datasets.visium(sample_id, *, include_hires_tiff=False, base_dir=None)",
     "description": "Download Visium datasets from 10x Genomics.",
     "params": [
@@ -2417,6 +2767,14 @@
   },
   {
     "method": "squidpy.gr.interaction_matrix",
+    "keywords": [
+      "clustering",
+      "graph",
+      "interaction",
+      "interaction_matrix",
+      "matrix",
+      "squidpy"
+    ],
     "signature": "squidpy.gr.interaction_matrix(adata, cluster_key, connectivity_key=None, normalized=False, copy=False, weights=False)",
     "description": "Compute interaction matrix for clusters.",
     "params": [
@@ -2460,6 +2818,14 @@
   },
   {
     "method": "squidpy.datasets.mibitof",
+    "keywords": [
+      "anndata",
+      "dataset",
+      "datasets",
+      "image processing",
+      "mibitof",
+      "squidpy"
+    ],
     "signature": "squidpy.datasets.mibitof(path=None, **kwargs)",
     "description": "Pre-processed MIBI-TOF dataset from Hartmann et al. The shape of this anndata.AnnData object is (3309, 36).",
     "params": [
@@ -2483,6 +2849,15 @@
   },
   {
     "method": "squidpy.pl.extract",
+    "keywords": [
+      "anndata",
+      "extract",
+      "observations",
+      "plotting",
+      "scanpy",
+      "squidpy",
+      "visualization"
+    ],
     "signature": "squidpy.pl.extract(adata, obsm_key='img_features', prefix=None)",
     "description": "Create a temporary AnnData object for plotting by moving columns from AnnData.obsm to AnnData.obs to enable the use of scanpy.plotting functions.",
     "params": [
@@ -2511,6 +2886,18 @@
   },
   {
     "method": "squidpy.datasets.visium_fluo_adata",
+    "keywords": [
+      "10x genomics",
+      "adata",
+      "anndata",
+      "dataset",
+      "datasets",
+      "fluo",
+      "image processing",
+      "squidpy",
+      "visium",
+      "visium_fluo_adata"
+    ],
     "signature": "squidpy.datasets.visium_fluo_adata(path=None, **kwargs)",
     "description": "Pre-processed 10x Genomics Visium Fluorecent dataset.",
     "params": [
@@ -2534,6 +2921,15 @@
   },
   {
     "method": "squidpy.pl.co_occurrence",
+    "keywords": [
+      "clustering",
+      "co-occurrence",
+      "co_occurrence",
+      "occurrence",
+      "plotting",
+      "squidpy",
+      "visualization"
+    ],
     "signature": "squidpy.pl.co_occurrence(adata, cluster_key, palette=None, clusters=None, figsize=None, dpi=None, save=None, legend_kwargs=mappingproxy({}), **kwargs)",
     "description": "Plot co-occurrence probability ratio for each cluster.",
     "params": [

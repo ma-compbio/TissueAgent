@@ -29,7 +29,7 @@ TissueAgent/
 │   ├── server/                    # FastAPI backend and routes
 │   └── frontend/                  # React + TypeScript frontend
 ├── demo/                          # notebooks, sample inputs, and outputs
-├── data/                          # local datasets and analysis inputs
+├── workspace/                     # local datasets and analysis inputs
 ├── docs/figures/                  # README/manuscript figures
 ├── notebooks/                     # exploratory notebooks
 ├── logs/                          # runtime logs
@@ -226,7 +226,7 @@ Notebook-based demos are available in `demo/` and can be run end-to-end to repro
 - `demo/figure_recreation_lohoff-2e.ipynb`: figure reproduction workflow demo 2
 - `demo/spot_deconvolution_visium_heart.ipynb`: cell-type deconvolution task
 
-Outputs are written to `data/` and copied into `demo/outputs/{TASK}`. Execution transcripts are saved to `demo/outputs/{TASK}/transcript.log`.
+Outputs are written to `workspace/` and copied into `demo/outputs/{TASK}`. Execution transcripts are saved to `demo/outputs/{TASK}/transcript.log`.
 
 See `demo/README.md` for more details.
 

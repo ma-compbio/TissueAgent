@@ -1,9 +1,18 @@
+---
+title: "Nuclei segmentation using Cellpose"
+keywords:
+  - "squidpy"
+  - "cellpose"
+  - "segmentation"
+  - "nuclei"
+  - "fluorescence"
+  - "h&e"
+---
 # Nuclei segmentation using Cellpose
 
 In this tutorial we show how we can use the anatomical segmentation algorithm Cellpose in `squidpy.im.segment` for nuclei segmentation.
 
-**Cellpose** <cite data-cite="cellpose">Stringer, Carsen, et al. (2021)</cite>, ([code](https://github.com/MouseLand/cellpose)) is a novel anatomical segmentation algorithm. To use it in this example, we need to install it first via: `pip install cellpose`.
-To run the notebook locally, create a conda environment as *conda env create -f cellpose_environment.yml* using this [cellpose_environment.yml](https://github.com/scverse/squidpy_notebooks/blob/main/envs/cellpose_environment.yml), which installs Squidpy and Cellpose.
+**Cellpose** , (code) is a novel anatomical segmentation algorithm. To use it in this example, we need to install it first via: `pip install cellpose`.
 
 
 ```python
@@ -27,7 +36,6 @@ The method parameter of the `sq.im.segment` method accepts any callable with the
 `numpy.ndarray` (height, width, channels) -> `numpy.ndarray` (height, width[, channels]).
 Additional model specific arguments will also be passed on.
 To use the Cellpose model, we define a wrapper that initializes the model, evaluates it and returns the
-segmentation masks. We can make use of Cellpose specific options by passing on arguments like the minimum
 number of pixels per mask `min_size`.
 
 
@@ -75,8 +83,7 @@ crop.show("segmented_custom", cmap="jet", interpolation="none", ax=axes[1])
 _ = axes[1].set_title("Cellpose segmentation")
 ```
 
-The `sq.im.segment` method will pass any additional arguments to the `cellpose` function, 
-so we can also filter out segments with less than 200 pixels and compare the results to the
+The `sq.im.segment` method will pass any additional arguments to the `cellpose` function,
 segmentation result from above that works with the default of 15 pixels.
 
 
@@ -95,12 +102,10 @@ _ = axes[1].set_title("Cellpose segmentation")
 
 ## Cell segmentation on H&E stained tissue data
 
-For the fluorescence data, we did nuclei segmentation on the DAPI channel simply by just passing on that channel to the Cellpose model. For the H&E images, we will use the `nuclei` model again. The [`Cellpose` documentation](https://cellpose.readthedocs.io/en/latest/models.html#nucleus-model-nuclei) states:
+For the fluorescence data, we did nuclei segmentation on the DAPI channel simply by just passing on that channel to the Cellpose model. For the H&E images, we will use the `nuclei` model again. The `Cellpose` documentation states:
 
-> The nuclear model in cellpose is trained on two-channel images, where the first channel is the channel to segment, and the second channel is always set to an array of zeros. Therefore set the first channel as 0=grayscale, 1=red, 2=green, 3=blue; and set the second channel to zero, e.g. channels = [0,0] if you want to segment nuclei in grayscale or for single channel images, or channels = [3,0] if you want to segment blue nuclei.
 
 Let's look at the image below
-
 
 
 ```python
@@ -125,7 +130,7 @@ A) Due to the H&E staining process, the nuclei seem to have a mostly blue/purple
 
 B) We see above that the red channel (`image:0`) has a particular good contrast, so we could use only that channel and treat it as a greyscale image (using `0` as the Cellpose channel number).
 
-Let's define our custom segmentation function and then try both scenarios. Here, we set the second value in channels to `0` as we will only pass one image. 
+Let's define our custom segmentation function and then try both scenarios. Here, we set the second value in channels to `0` as we will only pass one image.
 
 
 ```python
@@ -192,8 +197,6 @@ crop.show("segmented_custom", cmap="jet", interpolation="none", ax=axes[1])
 _ = axes[1].set_title("Cellpose segmentation")
 ```
 
-We see that using only the red channel and treating it as a greyscale yields more cells. Let's further refine this approach by increasing the `flow_threshold=0.8`.
-
 
 ```python
 hne_channel_to_segment = 0  # corresponds to the red channel
@@ -217,7 +220,3 @@ _ = axes[0].set_title("H&E")
 crop.show("segmented_custom", cmap="jet", interpolation="none", ax=axes[1])
 _ = axes[1].set_title("Cellpose segmentation")
 ```
-
-We see that this further increased the amount of segmented cells.
-
-⚠️ However, it is important to recognise that simply optimising for the number of segmented objects is not the best way to go since at one point this could lead to oversegmentation where cells are being split into two objects or dirt particles or other things are recognised as cells. It is important to analyse the intermediate steps and try out different things.

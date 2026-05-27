@@ -1,12 +1,21 @@
+---
+title: "Predict cluster labels spots using Tensorflow"
+keywords:
+  - "squidpy"
+  - "tensorflow"
+  - "deep-learning"
+  - "resnet"
+  - "image-features"
+  - "classification"
+---
 # Predict cluster labels spots using Tensorflow
 
 In this tutorial, we show how you can use the `squidpy.im.ImageContainer` object to train a ResNet model to predict cluster labels of spots.
 
-This is a general approach that can be easily extended to a variety of supervised, self-supervised or unsupervised tasks. We aim to highlight how the flexibility provided by the image container, and it's seamless integration with AnnData, makes it easy to interface your data with modern deep learning frameworks such as Tensorflow.
 
-Furthermore, we show how you can leverage such a ResNet model to generate a new set of features that can provide useful insights on spots similarity based on image morphology. 
+Furthermore, we show how you can leverage such a ResNet model to generate a new set of features that can provide useful insights on spots similarity based on image morphology.
 
-First, we'll load some libraries. Note that Tensorflow is not a dependency of Squidpy and you'd therefore have to install it separately in your conda environment. Have a look at [the Tensorflow installation instructions](https://www.tensorflow.org/install). This of course applies to any deep learning framework of your choice.
+First, we'll load some libraries. Note that Tensorflow is not a dependency of Squidpy and you'd therefore have to install it separately in your conda environment. Have a look at the Tensorflow installation instructions. This of course applies to any deep learning framework of your choice.
 
 
 ```python
@@ -42,7 +51,7 @@ img = sq.datasets.visium_hne_image()
 ```
 
 ## Create train-test split
-We create a vector of our labels with which to train the classifier. In this case, we will train a classifier to predict cluster labels obtained from gene expression. We'll create a one-hot encoded array with the convenient function `tf.one_hot`. Furthermore, we'll split the vector indices to get a train and test set. Note that we specify the cluster labels as the `stratify` argument, to make sure that the cluster labels are balanced in each split. 
+We create a vector of our labels with which to train the classifier. In this case, we will train a classifier to predict cluster labels obtained from gene expression. We'll create a one-hot encoded array with the convenient function `tf.one_hot`. Furthermore, we'll split the vector indices to get a train and test set. Note that we specify the cluster labels as the `stratify` argument, to make sure that the cluster labels are balanced in each split.
 
 
 ```python
@@ -65,10 +74,10 @@ print(
 
 ## Create datasets and train the model
 Next, we'll create a Tensorflow dataset which will be used as data loader for model training. A key aspect of this step is how the Image Container makes it easy to relate spots information to the underlying image.
-In particular, we will make use of `img.generate_spot_crops`, a method that creates a generator to crop the tissue image corresponding to each spot. 
-In just one line of code you can create this generator as well as specifying the size of the crops . You might want to increase the size to include some neighborhood morphology information. 
+In particular, we will make use of `img.generate_spot_crops`, a method that creates a generator to crop the tissue image corresponding to each spot.
+In just one line of code you can create this generator as well as specifying the size of the crops . You might want to increase the size to include some neighborhood morphology information.
 
-We won't get too much in details of the additional arguments and steps related to the Tensorflow Dataset objects, you can familiarize yourself with Tensorflow datasets [here](https://www.tensorflow.org/api_docs/python/tf/data/Dataset).
+We won't get too much in details of the additional arguments and steps related to the Tensorflow Dataset objects, you can familiarize yourself with Tensorflow datasets here.
 
 
 ```python
@@ -131,7 +140,7 @@ train_ds = create_dataset(adata, img, train_idx, "cluster", augment=True, shuffl
 test_ds = create_dataset(adata, img, test_idx, "cluster", augment=True, shuffle=True)
 ```
 
-Here, we are actually instantiating the model. We'll use a pre-trained ResNet on ImageNet, and a dense layer for output. 
+Here, we are actually instantiating the model. We'll use a pre-trained ResNet on ImageNet, and a dense layer for output.
 
 
 ```python
@@ -179,10 +188,8 @@ sns.lineplot(x=np.arange(50), y="loss", data=history.history)
 sns.lineplot(x=np.arange(50), y="val_loss", data=history.history)
 ```
 
-Calculate embedding and visualize results
------------------------------------------
+## Calculate embedding and visualize results
 
-What we are actually interested in is the ResNet embedding values of the data after training. We expect that such an embedding contains relevant features of the image that can be used for downstream analysis such as clustering or integration with gene expression.
 
 For generating this embedding, we first create a new dataset, that contains the full list of spots, in the correct order and without augmentation.
 
@@ -222,8 +229,6 @@ sc.tl.leiden(adata_resnet, key_added="resnet_embedding_cluster")
 sc.tl.umap(adata_resnet)
 ```
 
-Interestingly, it seems that despite the poor performance on the test set, the model has encoded some information relevant to separate spots from each other. The clustering annotation also resembles the original annotation based on gene expression similarity.
-
 
 ```python
 sc.set_figure_params(facecolor="white", figsize=(8, 8))
@@ -243,7 +248,3 @@ sq.pl.spatial_scatter(
     wspace=0.5,
 )
 ```
-
-An additional analysis could be to integrate information of both gene expression and the features learned by the ResNet classifier, in order to get a joint representation of both gene expression and image information. Such integration could be done for instance by concatenating the resulting PCA from the gene expression `adata` and the ResNet embedding `adata_resnet`. After concatenating the principal components, you could follow the usual steps of building a KNN graph and clustering with the leiden algorithm. 
-
-With this tutorial we have shown how to interface the Squidpy workflow with modern deep learning frameworks, and have inspired you with additional analysis that leverage several data modalities and powerful DL-based representations.

@@ -61,6 +61,8 @@ dependencies = [
     "mygene==3.2.2",
     "harmonypy==0.0.10",
     "tiledbsoma==1.17.1",
+    "docker>=7.0.0",
+    "websocket-client>=1.7.0",
 ]
 
 [tool.ruff]

@@ -38,7 +38,9 @@ MAX_REPLANS = 2
 
 
 def create_tissueagent_graph(
-    state_queue: Queue, model_proc_fn: Callable[..., BaseChatModel]
+    state_queue: Queue,
+    model_proc_fn: Callable[..., BaseChatModel],
+    kernel_client=None,
 ) -> StateGraph:
     """Build the full TissueAgent state graph (uncompiled).
 
@@ -51,6 +53,8 @@ def create_tissueagent_graph(
             placed so the UI can render them.
         model_proc_fn: Callable applied to every bound model (typically
             adds retry logic for rate-limit errors).
+        kernel_client: Optional :class:`KernelClient` for the coding agent's
+            Docker sandbox.  Passed to the coding agent's constructor.
 
     Returns:
         An uncompiled :class:`~langgraph.graph.StateGraph` ready to be
@@ -114,7 +118,10 @@ def create_tissueagent_graph(
             )
 
         elif isinstance(agent, CustomAgent):
-            agent_invocation_tool = agent.ctor(state_queue)
+            if agent.id == "coding" and kernel_client is not None:
+                agent_invocation_tool = agent.ctor(state_queue, kernel_client)
+            else:
+                agent_invocation_tool = agent.ctor(state_queue)
             agent_invocation_tools.append(agent_invocation_tool)
 
             logging.info(

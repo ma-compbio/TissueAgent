@@ -10,18 +10,18 @@ inputs:
   - "optional context (organism, tissue, condition)"
 
 outputs:
-  - data/gene_agent/<request_id>/Outputs/GeneAgent/Cascade/MsigDB_Final_Response_GeneAgent.txt
-  - data/gene_agent/<request_id>/Verification Reports/Cascade/Claims_and_Verification_for_MsigDB.txt
-  - data/gene_agent/<request_id>/Outputs/GPT-4/MsigDB_Response_GPT4.txt
+  - workspace/gene_agent/<request_id>/Outputs/GeneAgent/Cascade/MsigDB_Final_Response_GeneAgent.txt
+  - workspace/gene_agent/<request_id>/Verification Reports/Cascade/Claims_and_Verification_for_MsigDB.txt
+  - workspace/gene_agent/<request_id>/Outputs/GPT-4/MsigDB_Response_GPT4.txt
 
 step_sketch: >
   normalize gene list input -> run GeneAgent process interpretation + self-verification
   -> summarize top process call with evidence and artifact links
 
 eval:
-  - "file_exists(data/gene_agent/<request_id>/Outputs/GeneAgent/Cascade/MsigDB_Final_Response_GeneAgent.txt)"
-  - "file_exists(data/gene_agent/<request_id>/Verification Reports/Cascade/Claims_and_Verification_for_MsigDB.txt)"
-  - "GeneAgent run artifacts saved under data/gene_agent/<request_id>/"
+  - "file_exists(workspace/gene_agent/<request_id>/Outputs/GeneAgent/Cascade/MsigDB_Final_Response_GeneAgent.txt)"
+  - "file_exists(workspace/gene_agent/<request_id>/Verification Reports/Cascade/Claims_and_Verification_for_MsigDB.txt)"
+  - "GeneAgent run artifacts saved under workspace/gene_agent/<request_id>/"
 
 defaults:
   require_evidence_bullets: true
@@ -31,4 +31,4 @@ checklist:
   - "Prepare gene list (trim, deduplicate, preserve canonical symbols where possible)"
   - "Run GeneAgent interpretation cascade for process naming + verification"
   - "Write concise process summary with key evidence and limitations"
-  - "Report absolute artifact paths from data/gene_agent/<request_id>/"
+  - "Report absolute artifact paths from workspace/gene_agent/<request_id>/"

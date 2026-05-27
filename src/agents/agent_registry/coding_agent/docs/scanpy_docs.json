@@ -1,6 +1,17 @@
 [
   {
     "method": "scanpy.plotting.paga_compare",
+    "keywords": [
+      "compare",
+      "gene expression",
+      "graph",
+      "paga",
+      "paga_compare",
+      "plotting",
+      "scanpy",
+      "scatter",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.paga_compare(adata, basis=None, *, edges=False, color=None, alpha=None, groups=None, components=None, projection='2d', legend_loc='on data', legend_fontsize=None, legend_fontweight='bold', legend_fontoutline=None, color_map=None, palette=None, frameon=False, size=None, title=None, right_margin=None, left_margin=0.05, show=None, save=None, title_graph=None, groups_graph=None, pos=None, **paga_graph_params)",
     "description": "Scatter and PAGA graph side-by-side.\n\nConsists in a scatter plot and the abstracted graph.",
     "params": [
@@ -29,6 +40,16 @@
   },
   {
     "method": "scanpy.plotting.correlation_matrix",
+    "keywords": [
+      "anndata",
+      "correlation",
+      "correlation_matrix",
+      "dendrogram",
+      "matrix",
+      "plotting",
+      "scanpy",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.correlation_matrix(adata, groupby, *, show_correlation_numbers=False, dendrogram=None, figsize=None, show=None, save=None, ax=None, vmin=None, vmax=None, vcenter=None, norm=None, **kwds)",
     "description": "Plot the correlation matrix computed as part of `sc.tl.dendrogram`.",
     "params": [
@@ -107,6 +128,15 @@
   },
   {
     "method": "scanpy.neighbors.neighbors",
+    "keywords": [
+      "connectivity",
+      "graph",
+      "neighborhood",
+      "neighbors",
+      "observations",
+      "scanpy",
+      "umap"
+    ],
     "signature": "scanpy.neighbors.neighbors(adata, n_neighbors=15, n_pcs=None, *, use_rep=None, knn=True, method='umap', transformer=None, metric='euclidean', metric_kwds=mappingproxy({}), random_state=0, key_added=None, copy=False)",
     "description": "Compute the nearest neighbors distance matrix and a neighborhood graph of observations. The neighbor search efficiency of this heavily relies on UMAP, which also provides a method for estimating connectivities of data points - the connectivity of the manifold (method=='umap'). If method=='gauss', connectivities are computed according to Coifman et al., in the adaption of Haghverdi et al.",
     "params": [
@@ -128,7 +158,7 @@
       {
         "name": "use_rep",
         "type": "str",
-        "desc": "Use the indicated representation. 'X' or any key for .obsm is valid. If None, the representation is chosen automatically: For .n_vars < N_PCS (default: 50), .X is used, otherwise ‘X_pca’ is used. If ‘X_pca’ is not present, it’s computed with default parameters or n_pcs if present."
+        "desc": "Use the indicated representation. 'X' or any key for .obsm is valid. If None, the representation is chosen automatically: For .n_vars < N_PCS (default: 50), .X is used, otherwise \u2018X_pca\u2019 is used. If \u2018X_pca\u2019 is not present, it\u2019s computed with default parameters or n_pcs if present."
       },
       {
         "name": "knn",
@@ -138,7 +168,7 @@
       {
         "name": "method",
         "type": "str",
-        "desc": "Use ‘umap’ or ‘gauss’ for computing connectivities. ‘umap’ relies on UMAP and ‘gauss’ uses the Gauss kernel according to Coifman et al."
+        "desc": "Use \u2018umap\u2019 or \u2018gauss\u2019 for computing connectivities. \u2018umap\u2019 relies on UMAP and \u2018gauss\u2019 uses the Gauss kernel according to Coifman et al."
       },
       {
         "name": "transformer",
@@ -148,7 +178,7 @@
       {
         "name": "metric",
         "type": "str or callable",
-        "desc": "A known metric’s name or a callable that returns a distance."
+        "desc": "A known metric\u2019s name or a callable that returns a distance."
       },
       {
         "name": "metric_kwds",
@@ -180,6 +210,16 @@
   },
   {
     "method": "scanpy.readwrite.read_10x_mtx",
+    "keywords": [
+      "10x",
+      "10x genomics",
+      "file format",
+      "mtx",
+      "read",
+      "read_10x_mtx",
+      "readwrite",
+      "scanpy"
+    ],
     "signature": "scanpy.readwrite.read_10x_mtx(path, *, var_names='gene_symbols', make_unique=True, cache=False, cache_compression=_empty, gex_only=True, prefix=None)",
     "description": "Read 10x-Genomics-formatted mtx directory.",
     "params": [
@@ -228,18 +268,30 @@
   },
   {
     "method": "scanpy.preprocessing.scrublet_simulate_doublets",
+    "keywords": [
+      "scanpy",
+      "counts",
+      "doublet detection",
+      "image processing",
+      "observations",
+      "scoring",
+      "doublets",
+      "preprocessing",
+      "scrublet",
+      "scrublet_simulate_doublets"
+    ],
     "signature": "scanpy.preprocessing.scrublet_simulate_doublets(adata, *, layer=None, sim_doublet_ratio=2.0, synthetic_doublet_umi_subsampling=1.0, random_seed=0)",
     "description": "Simulate doublets by adding the counts of random observed transcriptome pairs.",
     "params": [
       {
         "name": "adata",
         "type": "AnnData",
-        "desc": "The annotated data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes. Genes should have been filtered for expression and variability, and the object should contain raw expression of the same dimensions."
+        "desc": "The annotated data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes. Genes should have been filtered for expression and variability, and the object should contain raw expression of the same dimensions."
       },
       {
         "name": "layer",
         "type": "str",
-        "desc": "Layer of adata where raw values are stored, or ‘X’ if values are in .X."
+        "desc": "Layer of adata where raw values are stored, or \u2018X\u2019 if values are in .X."
       },
       {
         "name": "sim_doublet_ratio",
@@ -256,13 +308,25 @@
   },
   {
     "method": "scanpy.preprocessing.normalize_per_cell",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "counts",
+      "filtering",
+      "normalization",
+      "observations",
+      "cell",
+      "normalize",
+      "normalize_per_cell",
+      "per"
+    ],
     "signature": "scanpy.preprocessing.normalize_per_cell(data, *, counts_per_cell_after=None, counts_per_cell=None, key_n_counts='n_counts', copy=False, layers=(), use_rep=None, min_counts=1)",
     "description": "Normalize total counts per cell.",
     "params": [
       {
         "name": "data",
         "type": "Data matrix",
-        "desc": "The (annotated) data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "The (annotated) data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "counts_per_cell_after",
@@ -295,10 +359,17 @@
         "desc": "Returns `None` if `copy=False`, else returns an updated `AnnData` object. Sets the following fields: `adata.X` : Normalized count data matrix."
       }
     ],
-    "misc": "### Deprecated\nRemoved since version 1.3.7. Use `normalize_total()` instead.\nThe new function is equivalent to the present function, except that\n\n- The new function doesn’t filter cells based on `min_counts`, use `filter_cells()` if filtering is needed.\n- Some arguments were renamed\n- `copy` is replaced by `inplace`\n\n### References\n- **Seurat**: Satija *et al.*, 2015\n- **Cell Ranger**: Zheng *et al.*, 2017\n- **SPRING**: Weinreb *et al.*, 2017\n\n### Examples\n\n```pycon\n>>> import scanpy as sc\n>>> adata = AnnData(np.array([[1, 0], [3, 0], [5, 6]], dtype=np.float32))\n>>> print(adata.X.sum(axis=1))\n[ 1.  3. 11.]\n>>> sc.pp.normalize_per_cell(adata)\n>>> print(adata.obs)\n   n_counts\n0       1.0\n1       3.0\n2      11.0\n>>> print(adata.X.sum(axis=1))\n[3. 3. 3.]\n>>> sc.pp.normalize_per_cell(\n...     adata,\n...     counts_per_cell_after=1,\n...     key_n_counts=\"n_counts2\",\n... )\n>>> print(adata.obs)\n   n_counts  n_counts2\n0       1.0        3.0\n1       3.0        3.0\n2      11.0        3.0\n>>> print(adata.X.sum(axis=1))\n[1. 1. 1.]\n```"
+    "misc": "### Deprecated\nRemoved since version 1.3.7. Use `normalize_total()` instead.\nThe new function is equivalent to the present function, except that\n\n- The new function doesn\u2019t filter cells based on `min_counts`, use `filter_cells()` if filtering is needed.\n- Some arguments were renamed\n- `copy` is replaced by `inplace`\n\n### References\n- **Seurat**: Satija *et al.*, 2015\n- **Cell Ranger**: Zheng *et al.*, 2017\n- **SPRING**: Weinreb *et al.*, 2017\n\n### Examples\n\n```pycon\n>>> import scanpy as sc\n>>> adata = AnnData(np.array([[1, 0], [3, 0], [5, 6]], dtype=np.float32))\n>>> print(adata.X.sum(axis=1))\n[ 1.  3. 11.]\n>>> sc.pp.normalize_per_cell(adata)\n>>> print(adata.obs)\n   n_counts\n0       1.0\n1       3.0\n2      11.0\n>>> print(adata.X.sum(axis=1))\n[3. 3. 3.]\n>>> sc.pp.normalize_per_cell(\n...     adata,\n...     counts_per_cell_after=1,\n...     key_n_counts=\"n_counts2\",\n... )\n>>> print(adata.obs)\n   n_counts  n_counts2\n0       1.0        3.0\n1       3.0        3.0\n2      11.0        3.0\n>>> print(adata.X.sum(axis=1))\n[1. 1. 1.]\n```"
   },
   {
     "method": "scanpy.tools.tsne",
+    "keywords": [
+      "embedding",
+      "neighborhood",
+      "scanpy",
+      "tsne",
+      "t-distributed"
+    ],
     "signature": "scanpy.tools.tsne(adata, n_pcs=None, *, use_rep=None, perplexity=30, metric='euclidean', early_exaggeration=12, learning_rate=1000, random_state=0, use_fast_tsne=False, n_jobs=None, key_added=None, copy=False)",
     "description": "t-distributed stochastic neighborhood embedding (tSNE) for visualizing single-cell data. By default, implements scikit-learn's version. Offers speedup and better convergence if Multicore-tSNE is installed.",
     "params": [
@@ -372,6 +443,18 @@
   },
   {
     "method": "scanpy.get.get.rank_genes_groups_df",
+    "keywords": [
+      "scanpy",
+      "differential expression",
+      "gene expression",
+      "louvain",
+      "ranking",
+      "raw counts",
+      "genes",
+      "get",
+      "groups",
+      "rank"
+    ],
     "signature": "scanpy.get.get.rank_genes_groups_df(adata, group, *, key='rank_genes_groups', pval_cutoff=None, log2fc_min=None, log2fc_max=None, gene_symbols=None)",
     "description": "Get `scanpy.tl.rank_genes_groups()` results in the form of a DataFrame.",
     "params": [
@@ -383,7 +466,7 @@
       {
         "name": "group",
         "type": "str or list of str",
-        "desc": "Which group (as in `scanpy.tl.rank_genes_groups()`’s `groupby` argument) to return results from. Can be a list. All groups are returned if groups is `None`."
+        "desc": "Which group (as in `scanpy.tl.rank_genes_groups()`\u2019s `groupby` argument) to return results from. Can be a list. All groups are returned if groups is `None`."
       },
       {
         "name": "key",
@@ -420,6 +503,13 @@
   },
   {
     "method": "scanpy.read_h5ad",
+    "keywords": [
+      "file format",
+      "h5ad",
+      "read",
+      "read_h5ad",
+      "scanpy"
+    ],
     "signature": "scanpy.read_h5ad(filename, backed=None, *, as_sparse=(), as_sparse_fmt=<class 'scipy.sparse._csr.csr_matrix'>, chunk_size=6000)",
     "description": "Read `.h5ad`-formatted hdf5 file.",
     "params": [
@@ -458,18 +548,29 @@
   },
   {
     "method": "scanpy.preprocessing.filter_genes_dispersion",
+    "keywords": [
+      "dispersion",
+      "feature selection",
+      "filter",
+      "filter_genes_dispersion",
+      "gene expression",
+      "genes",
+      "preprocessing",
+      "scanpy",
+      "variables"
+    ],
     "signature": "scanpy.preprocessing.filter_genes_dispersion(data, *, flavor='seurat', min_disp=None, max_disp=None, min_mean=None, max_mean=None, n_bins=20, n_top_genes=None, log=True, subset=True, copy=False)",
     "description": "Extract highly variable genes.",
     "params": [
       {
         "name": "data",
         "type": "annotated data matrix",
-        "desc": "The (annotated) data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "The (annotated) data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "flavor",
         "type": "string",
-        "desc": "Choose the flavor for computing normalized dispersion. If choosing ‘seurat’, this expects non-logarithmized data – the logarithm of mean and dispersion is taken internally when `log` is at its default value `True`. For ‘cell_ranger’, this is usually called for logarithmized data – in this case you should set `log` to `False`. In their default workflows, Seurat passes the cutoffs whereas Cell Ranger passes `n_top_genes`."
+        "desc": "Choose the flavor for computing normalized dispersion. If choosing \u2018seurat\u2019, this expects non-logarithmized data \u2013 the logarithm of mean and dispersion is taken internally when `log` is at its default value `True`. For \u2018cell_ranger\u2019, this is usually called for logarithmized data \u2013 in this case you should set `log` to `False`. In their default workflows, Seurat passes the cutoffs whereas Cell Ranger passes `n_top_genes`."
       },
       {
         "name": "min_mean",
@@ -526,6 +627,13 @@
   },
   {
     "method": "scanpy.plotting.sim",
+    "keywords": [
+      "plotting",
+      "scanpy",
+      "sim",
+      "visualization",
+      "plot"
+    ],
     "signature": "scanpy.plotting.sim(adata, *, tmax_realization=None, as_heatmap=False, shuffle=False, show=None, save=None, marker='.')",
     "description": "Plot results of simulation.",
     "params": [
@@ -574,6 +682,13 @@
   },
   {
     "method": "scanpy.readwrite.is_valid_filename",
+    "keywords": [
+      "filename",
+      "is_valid_filename",
+      "readwrite",
+      "scanpy",
+      "valid"
+    ],
     "signature": "scanpy.readwrite.is_valid_filename(filename, *, return_ext=False)",
     "description": "Check whether the argument is a filename.",
     "params": [
@@ -597,6 +712,18 @@
   },
   {
     "method": "scanpy.plotting.scrublet_score_distribution",
+    "keywords": [
+      "scanpy",
+      "doublet detection",
+      "image processing",
+      "observations",
+      "scoring",
+      "simulation",
+      "distribution",
+      "plotting",
+      "score",
+      "scrublet"
+    ],
     "signature": "scanpy.plotting.scrublet_score_distribution(adata, *, scale_hist_obs='log', scale_hist_sim='linear', figsize=(8, 3), return_fig=False, show=True, save=None)",
     "description": "Plot histogram of doublet scores for observed transcriptomes and simulated doublets. The histogram for simulated doublets is useful for determining the correct doublet score threshold. Scrublet must have been run previously with the input object.",
     "params": [
@@ -641,12 +768,23 @@
         "desc": "If `return_fig` is True, a Figure. If `show==False` a list of Axes."
       }
     ],
-    "misc": "#### SEE ALSO\n`scrublet()`\n: Main way of running Scrublet, runs preprocessing, doublet simulation and calling.\n\n`scrublet_simulate_doublets()`\n: Run Scrublet’s doublet simulation separately for advanced usage."
+    "misc": "#### SEE ALSO\n`scrublet()`\n: Main way of running Scrublet, runs preprocessing, doublet simulation and calling.\n\n`scrublet_simulate_doublets()`\n: Run Scrublet\u2019s doublet simulation separately for advanced usage."
   },
   {
     "method": "scanpy.metrics.gearys_c",
+    "keywords": [
+      "scanpy",
+      "connectivity",
+      "correlation",
+      "graph",
+      "image processing",
+      "observations",
+      "gearys",
+      "gearys_c",
+      "metrics"
+    ],
     "signature": "scanpy.metrics.gearys_c(adata, *, vals=None, use_graph=None, layer=None, obsm=None, obsp=None, use_raw=False)",
-    "description": "Calculate Geary’s C, which is a measure of autocorrelation for some measure on a graph. Lower values indicate greater correlation. Geary’s C is specifically used by VISION.",
+    "description": "Calculate Geary\u2019s C, which is a measure of autocorrelation for some measure on a graph. Lower values indicate greater correlation. Geary\u2019s C is specifically used by VISION.",
     "params": [
       {
         "name": "adata",
@@ -656,7 +794,7 @@
       {
         "name": "vals",
         "type": "ndarray or shape (n_features, n_cells) or shape (n_cells,)",
-        "desc": "Values to calculate Geary’s C for. This can be selected from elements of the anndata object using keyword arguments `layer`, `obsm`, `obsp`, or `use_raw`."
+        "desc": "Values to calculate Geary\u2019s C for. This can be selected from elements of the anndata object using keyword arguments `layer`, `obsm`, `obsp`, or `use_raw`."
       },
       {
         "name": "use_graph",
@@ -694,10 +832,20 @@
         "desc": "Returns a 1 dimensional ndarray if vals is two dimensional, or a scalar if `vals` is 1D."
       }
     ],
-    "misc": "Examples:\n\nCalculate Geary’s C for each component of a dimensionality reduction:\n```python\nimport scanpy as sc, numpy as np\n\npbmc = sc.datasets.pbmc68k_processed()\npc_c = sc.metrics.gearys_c(pbmc, obsm=\"X_pca\")\n```\nEquivalent call directly on arrays:\n```python\nalt = sc.metrics.gearys_c(pbmc.obsp[\"connectivities\"], pbmc.obsm[\"X_pca\"].T)\nnp.testing.assert_array_equal(pc_c, alt)\n```"
+    "misc": "Examples:\n\nCalculate Geary\u2019s C for each component of a dimensionality reduction:\n```python\nimport scanpy as sc, numpy as np\n\npbmc = sc.datasets.pbmc68k_processed()\npc_c = sc.metrics.gearys_c(pbmc, obsm=\"X_pca\")\n```\nEquivalent call directly on arrays:\n```python\nalt = sc.metrics.gearys_c(pbmc.obsp[\"connectivities\"], pbmc.obsm[\"X_pca\"].T)\nnp.testing.assert_array_equal(pc_c, alt)\n```"
   },
   {
     "method": "scanpy.plotting.paga_path",
+    "keywords": [
+      "gene expression",
+      "graph",
+      "paga",
+      "paga_path",
+      "path",
+      "plotting",
+      "scanpy",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.paga_path(adata, nodes, keys, *, use_raw=True, annotations=('dpt_pseudotime',), color_map=None, color_maps_annotations=mappingproxy({'dpt_pseudotime': 'Greys'}), palette_groups=None, n_avg=1, groups_key=None, xlim=(None, None), title=None, left_margin=None, ytick_fontsize=None, title_fontsize=None, show_node_names=True, show_yticks=True, show_colorbar=True, legend_fontsize=None, legend_fontweight=None, normalize_to_zero_one=False, as_heatmap=True, return_data=False, show=None, save=None, ax=None)",
     "description": "Gene expression and annotation changes along paths in the abstracted graph.",
     "params": [
@@ -806,6 +954,13 @@
   },
   {
     "method": "scanpy.read_csv",
+    "keywords": [
+      "csv",
+      "read",
+      "read_csv",
+      "scanpy",
+      "file"
+    ],
     "signature": "scanpy.read_csv(filename, delimiter=',', first_column_names=None, dtype='float32')",
     "description": "Read `.csv` file. Same as `read_text()` but with default delimiter `','`.",
     "params": [
@@ -839,6 +994,13 @@
   },
   {
     "method": "scanpy.readwrite.read_params",
+    "keywords": [
+      "params",
+      "read",
+      "read_params",
+      "readwrite",
+      "scanpy"
+    ],
     "signature": "scanpy.readwrite.read_params(filename, *, as_header=False)",
     "description": "Read parameter dictionary from text file.",
     "params": [
@@ -858,10 +1020,19 @@
         "desc": "Dictionary that stores parameters."
       }
     ],
-    "misc": "Assumes that parameters are specified in the format:\n\n```\npar1 = value1\npar2 = value2\n```\n\nComments that start with ‘#’ are allowed."
+    "misc": "Assumes that parameters are specified in the format:\n\n```\npar1 = value1\npar2 = value2\n```\n\nComments that start with \u2018#\u2019 are allowed."
   },
   {
     "method": "scanpy.readwrite.get_used_files",
+    "keywords": [
+      "files",
+      "get",
+      "get_used_files",
+      "image processing",
+      "readwrite",
+      "scanpy",
+      "used"
+    ],
     "signature": "scanpy.readwrite.get_used_files()",
     "description": "Get a list of files that are currently being used by processes with the name 'scanpy'. This can be useful for identifying which files are currently in use by the scanpy processes.",
     "params": [],
@@ -869,6 +1040,14 @@
   },
   {
     "method": "scanpy.readwrite.read",
+    "keywords": [
+      "anndata",
+      "io",
+      "loading",
+      "read",
+      "readwrite",
+      "scanpy"
+    ],
     "signature": "scanpy.readwrite.read(filename, backed=None, *, sheet=None, ext=None, delimiter=None, first_column_names=False, backup_url=None, cache=False, cache_compression=_empty, **kwargs)",
     "description": "Read file and return an AnnData object. To speed up reading, consider passing `cache=True`, which creates an hdf5 cache file.",
     "params": [
@@ -910,7 +1089,7 @@
       {
         "name": "cache",
         "type": "bool",
-        "desc": "If `False`, read from source, if `True`, read from fast ‘h5ad’ cache."
+        "desc": "If `False`, read from source, if `True`, read from fast \u2018h5ad\u2019 cache."
       },
       {
         "name": "cache_compression",
@@ -932,6 +1111,18 @@
   },
   {
     "method": "scanpy.plotting.rank_genes_groups_dotplot",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "differential expression",
+      "dotplot",
+      "gene expression",
+      "ranking",
+      "genes",
+      "groups",
+      "plotting",
+      "rank"
+    ],
     "signature": "scanpy.plotting.rank_genes_groups_dotplot(adata, groups=None, *, n_genes=None, groupby=None, values_to_plot=None, var_names=None, gene_symbols=None, min_logfoldchange=None, key=None, show=None, save=None, return_fig=False, **kwds)",
     "description": "Plot ranking of genes using dotplot plot (see `dotplot()`).",
     "params": [
@@ -958,7 +1149,7 @@
       {
         "name": "values_to_plot",
         "type": "List[str], optional",
-        "desc": "Plot values computed by `sc.rank_genes_groups`. Options: [‘scores’, ‘logfoldchanges’, ‘pvals’, ‘pvals_adj’, ‘log10_pvals’, ‘log10_pvals_adj’]. Use a divergent colormap for logfoldchanges."
+        "desc": "Plot values computed by `sc.rank_genes_groups`. Options: [\u2018scores\u2019, \u2018logfoldchanges\u2019, \u2018pvals\u2019, \u2018pvals_adj\u2019, \u2018log10_pvals\u2019, \u2018log10_pvals_adj\u2019]. Use a divergent colormap for logfoldchanges."
       },
       {
         "name": "var_names",
@@ -1010,6 +1201,13 @@
   },
   {
     "method": "scanpy.read",
+    "keywords": [
+      "anndata",
+      "io",
+      "loading",
+      "read",
+      "scanpy"
+    ],
     "signature": "scanpy.read(filename, backed=None, *, sheet=None, ext=None, delimiter=None, first_column_names=False, backup_url=None, cache=False, cache_compression=_empty, **kwargs)",
     "description": "Read file and return AnnData object. To speed up reading, consider passing `cache=True`, which creates an hdf5 cache file.",
     "params": [
@@ -1051,7 +1249,7 @@
       {
         "name": "cache",
         "type": "bool, optional",
-        "desc": "If `False`, read from source, if `True`, read from fast ‘h5ad’ cache."
+        "desc": "If `False`, read from source, if `True`, read from fast \u2018h5ad\u2019 cache."
       },
       {
         "name": "cache_compression",
@@ -1073,6 +1271,17 @@
   },
   {
     "method": "scanpy.plotting.filter_genes_dispersion",
+    "keywords": [
+      "dispersion",
+      "filter",
+      "filter_genes_dispersion",
+      "gene expression",
+      "genes",
+      "plotting",
+      "scanpy",
+      "variables",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.filter_genes_dispersion(result, *, log=False, show=None, save=None)",
     "description": "Plot dispersions versus means for genes. Produces Supp. Fig. 5c of Zheng et al. (2017) and MeanVarPlot() of Seurat.",
     "params": [
@@ -1106,6 +1315,13 @@
   },
   {
     "method": "scanpy.readwrite.convert_string",
+    "keywords": [
+      "convert",
+      "convert_string",
+      "readwrite",
+      "scanpy",
+      "string"
+    ],
     "signature": "scanpy.readwrite.convert_string(string)",
     "description": "Convert string to int, float or bool.",
     "params": [
@@ -1124,13 +1340,23 @@
   },
   {
     "method": "scanpy.queries.enrich",
+    "keywords": [
+      "anndata",
+      "differential expression",
+      "enrich",
+      "enrichment",
+      "gene expression",
+      "queries",
+      "ranking",
+      "scanpy"
+    ],
     "signature": "scanpy.queries.enrich(container, *, org='hsapiens', gprofiler_kwargs=mappingproxy({}))",
     "description": "Get enrichment for DE results. This is a thin convenience wrapper around the very useful gprofiler.",
     "params": [
       {
         "name": "container",
         "type": "varied",
-        "desc": "Contains list of genes you’d like to search. If container is a `dict` all enrichment queries are made at once."
+        "desc": "Contains list of genes you\u2019d like to search. If container is a `dict` all enrichment queries are made at once."
       },
       {
         "name": "adata",
@@ -1150,7 +1376,7 @@
       {
         "name": "org",
         "type": "str",
-        "desc": "Organism to query. Must be an organism in ensembl biomart. “hsapiens”, “mmusculus”, “drerio”, etc."
+        "desc": "Organism to query. Must be an organism in ensembl biomart. \u201chsapiens\u201d, \u201cmmusculus\u201d, \u201cdrerio\u201d, etc."
       },
       {
         "name": "gprofiler_kwargs",
@@ -1172,6 +1398,17 @@
   },
   {
     "method": "scanpy.readwrite.read_visium",
+    "keywords": [
+      "scanpy",
+      "10x genomics",
+      "factorization",
+      "image",
+      "scaling",
+      "spatial",
+      "read",
+      "read_visium",
+      "readwrite"
+    ],
     "signature": "scanpy.readwrite.read_visium(path, genome=None, *, count_file='filtered_feature_bc_matrix.h5', library_id=None, load_images=True, source_image_path=None)",
     "description": "Read 10x-Genomics-formatted visum dataset.",
     "params": [
@@ -1188,7 +1425,7 @@
       {
         "name": "count_file",
         "type": "str",
-        "desc": "Which file in the passed directory to use as the count file. Typically would be one of: ‘filtered_feature_bc_matrix.h5’ or ‘raw_feature_bc_matrix.h5’."
+        "desc": "Which file in the passed directory to use as the count file. Typically would be one of: \u2018filtered_feature_bc_matrix.h5\u2019 or \u2018raw_feature_bc_matrix.h5\u2019."
       },
       {
         "name": "library_id",
@@ -1215,6 +1452,16 @@
   },
   {
     "method": "scanpy.plotting.dotplot",
+    "keywords": [
+      "anndata",
+      "dendrogram",
+      "dotplot",
+      "marker genes",
+      "plotting",
+      "scanpy",
+      "variables",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.dotplot(adata, var_names, groupby, *, use_raw=None, log=False, num_categories=7, categories_order=None, expression_cutoff=0.0, mean_only_expressed=False, standard_scale=None, title=None, colorbar_title='Mean expression\\\\nin group', size_title='Fraction of cells\\\\nin group (%)', figsize=None, dendrogram=False, gene_symbols=None, var_group_positions=None, var_group_labels=None, var_group_rotation=None, layer=None, swap_axes=False, dot_color_df=None, show=None, save=None, ax=None, return_fig=False, vmin=None, vmax=None, vcenter=None, norm=None, cmap='Reds', dot_max=None, dot_min=None, smallest_dot=0.0, **kwds)",
     "description": "Make a *dot plot* of the expression values of `var_names`. For each var_name and each `groupby` category a dot is plotted. Each dot represents two values: mean expression within each category (visualized by color) and fraction of cells expressing the `var_name` in the category (visualized by the size of the dot). If `groupby` is not given, the dotplot assumes that all data belongs to a single category.",
     "params": [
@@ -1226,7 +1473,7 @@
       {
         "name": "var_names",
         "type": "str | Mapping | Sequence[str]",
-        "desc": "`var_names` should be a valid subset of `adata.var_names`. If `var_names` is a mapping, then the key is used as label to group the values (see `var_group_labels`). The mapping values should be sequences of valid `adata.var_names`. In this case either coloring or ‘brackets’ are used for the grouping of var names depending on the plot. When `var_names` is a mapping, then the `var_group_labels` and `var_group_positions` are set."
+        "desc": "`var_names` should be a valid subset of `adata.var_names`. If `var_names` is a mapping, then the key is used as label to group the values (see `var_group_labels`). The mapping values should be sequences of valid `adata.var_names`. In this case either coloring or \u2018brackets\u2019 are used for the grouping of var names depending on the plot. When `var_names` is a mapping, then the `var_group_labels` and `var_group_positions` are set."
       },
       {
         "name": "groupby",
@@ -1301,7 +1548,7 @@
       {
         "name": "var_group_positions",
         "type": "List[Tuple[int, int]] | None",
-        "desc": "Use this parameter to highlight groups of `var_names`. This will draw a ‘bracket’ or a color block between the given start and end positions. If the parameter `var_group_labels` is set, the corresponding labels are added on top/left. E.g. `var_group_positions=[(4,10)]` will add a bracket between the fourth `var_name` and the tenth `var_name`. By giving more positions, more brackets/color blocks are drawn."
+        "desc": "Use this parameter to highlight groups of `var_names`. This will draw a \u2018bracket\u2019 or a color block between the given start and end positions. If the parameter `var_group_labels` is set, the corresponding labels are added on top/left. E.g. `var_group_positions=[(4,10)]` will add a bracket between the fourth `var_name` and the tenth `var_name`. By giving more positions, more brackets/color blocks are drawn."
       },
       {
         "name": "var_group_labels",
@@ -1399,10 +1646,21 @@
         "desc": "If `return_fig` is `True`, returns a `DotPlot` object, else if `show` is false, return axes dict"
       }
     ],
-    "misc": "### Examples\n\nCreate a dot plot using the given markers and the PBMC example dataset grouped by the category ‘bulk_labels’.\n\n```python\nimport scanpy as sc\nadata = sc.datasets.pbmc68k_reduced()\nmarkers = ['C1QA', 'PSAP', 'CD79A', 'CD79B', 'CST3', 'LYZ']\nsc.pl.dotplot(adata, markers, groupby='bulk_labels', dendrogram=True)\n```\n\n\nUsing var_names as dict:\n\n```python\nmarkers = {'T-cell': 'CD3D', 'B-cell': 'CD79A', 'myeloid': 'CST3'}\nsc.pl.dotplot(adata, markers, groupby='bulk_labels', dendrogram=True)\n```\n\n\nGet DotPlot object for fine tuning\n\n```python\ndp = sc.pl.dotplot(adata, markers, 'bulk_labels', return_fig=True)\ndp.add_totals().style(dot_edge_color='black', dot_edge_lw=0.5).show()\n```\n\n\nThe axes used can be obtained using the get_axes() method\n\n```python\naxes_dict = dp.get_axes()\nprint(axes_dict)\n```"
+    "misc": "### Examples\n\nCreate a dot plot using the given markers and the PBMC example dataset grouped by the category \u2018bulk_labels\u2019.\n\n```python\nimport scanpy as sc\nadata = sc.datasets.pbmc68k_reduced()\nmarkers = ['C1QA', 'PSAP', 'CD79A', 'CD79B', 'CST3', 'LYZ']\nsc.pl.dotplot(adata, markers, groupby='bulk_labels', dendrogram=True)\n```\n\n\nUsing var_names as dict:\n\n```python\nmarkers = {'T-cell': 'CD3D', 'B-cell': 'CD79A', 'myeloid': 'CST3'}\nsc.pl.dotplot(adata, markers, groupby='bulk_labels', dendrogram=True)\n```\n\n\nGet DotPlot object for fine tuning\n\n```python\ndp = sc.pl.dotplot(adata, markers, 'bulk_labels', return_fig=True)\ndp.add_totals().style(dot_edge_color='black', dot_edge_lw=0.5).show()\n```\n\n\nThe axes used can be obtained using the get_axes() method\n\n```python\naxes_dict = dp.get_axes()\nprint(axes_dict)\n```"
   },
   {
     "method": "scanpy.read_10x_h5",
+    "keywords": [
+      "scanpy",
+      "10x genomics",
+      "anndata",
+      "feature extraction",
+      "filtering",
+      "gene expression",
+      "10x",
+      "read",
+      "read_10x_h5"
+    ],
     "signature": "scanpy.read_10x_h5(filename, *, genome=None, gex_only=True, backup_url=None)",
     "description": "Read 10x-Genomics-formatted hdf5 file.",
     "params": [
@@ -1419,7 +1677,7 @@
       {
         "name": "gex_only",
         "type": "bool",
-        "desc": "Only keep ‘Gene Expression’ data and ignore other feature types, e.g. ‘Antibody Capture’, ‘CRISPR Guide Capture’, or ‘Custom’."
+        "desc": "Only keep \u2018Gene Expression\u2019 data and ignore other feature types, e.g. \u2018Antibody Capture\u2019, \u2018CRISPR Guide Capture\u2019, or \u2018Custom\u2019."
       },
       {
         "name": "backup_url",
@@ -1436,6 +1694,16 @@
   },
   {
     "method": "scanpy.plotting.embedding_density",
+    "keywords": [
+      "anndata",
+      "density",
+      "embedding",
+      "embedding_density",
+      "plotting",
+      "scanpy",
+      "umap",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.embedding_density(adata, basis='umap', *, key=None, groupby=None, group='all', color_map='YlOrRd', bg_dotsize=80, fg_dotsize=180, vmax=1, vmin=0, vcenter=None, norm=None, ncols=4, hspace=0.25, wspace=None, title=None, show=None, save=None, ax=None, return_fig=None, **kwargs)",
     "description": "Plot the density of cells in an embedding (per condition). Plots the gaussian kernel density estimates (over condition) from the `sc.tl.embedding_density()` output. This function was written by Sophie Tritschler and implemented into Scanpy by Malte Luecken.",
     "params": [
@@ -1462,7 +1730,7 @@
       {
         "name": "group",
         "type": "str or list, optional",
-        "desc": "The category in the categorical observation annotation to be plotted. For example, ‘G1’ in the cell cycle ‘phase’ covariate."
+        "desc": "The category in the categorical observation annotation to be plotted. For example, \u2018G1\u2019 in the cell cycle \u2018phase\u2019 covariate."
       },
       {
         "name": "color_map",
@@ -1539,6 +1807,18 @@
   },
   {
     "method": "scanpy.plotting.stacked_violin",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "clustering",
+      "dendrogram",
+      "differential expression",
+      "gene expression",
+      "plotting",
+      "stacked",
+      "stacked_violin",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.stacked_violin(adata, var_names, groupby, *, log=False, use_raw=None, num_categories=7, title=None, colorbar_title='Median expression\\\\nin group', figsize=None, dendrogram=False, gene_symbols=None, var_group_positions=None, var_group_labels=None, standard_scale=None, var_group_rotation=None, layer=None, categories_order=None, swap_axes=False, show=None, save=None, return_fig=False, ax=None, vmin=None, vmax=None, vcenter=None, norm=None, cmap='Blues', stripplot=False, jitter=False, size=1, row_palette=None, density_norm=_empty, yticklabels=False, order=_empty, scale=_empty, **kwds)",
     "description": "Stacked violin plots. Makes a compact image composed of individual violin plots stacked on top of each other. Useful to visualize gene expression per cluster. Wraps seaborn.violinplot for AnnData. This function provides a convenient interface to the StackedViolin class.",
     "params": [
@@ -1600,7 +1880,7 @@
       {
         "name": "var_group_positions",
         "type": "Optional[List[Tuple[int, int]]]",
-        "desc": "Positions to highlight groups of `var_names`. This will draw a ‘bracket’ or a color block between the given start and end positions."
+        "desc": "Positions to highlight groups of `var_names`. This will draw a \u2018bracket\u2019 or a color block between the given start and end positions."
       },
       {
         "name": "var_group_labels",
@@ -1722,6 +2002,16 @@
   },
   {
     "method": "scanpy.plotting.clustermap",
+    "keywords": [
+      "anndata",
+      "clustering",
+      "clustermap",
+      "heatmap",
+      "observations",
+      "plotting",
+      "scanpy",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.clustermap(adata, obs_keys=None, *, use_raw=None, show=None, save=None, **kwds)",
     "description": "Hierarchically-clustered heatmap. Wraps `seaborn.clustermap()` for `AnnData`.",
     "params": [
@@ -1770,6 +2060,13 @@
   },
   {
     "method": "scanpy.readwrite.is_float",
+    "keywords": [
+      "is_float",
+      "readwrite",
+      "scanpy",
+      "check",
+      "whether"
+    ],
     "signature": "scanpy.readwrite.is_float(string)",
     "description": "Check whether string is float.",
     "params": [
@@ -1788,6 +2085,13 @@
   },
   {
     "method": "scanpy.preprocessing.combat",
+    "keywords": [
+      "batch correction",
+      "combat",
+      "gene expression",
+      "preprocessing",
+      "scanpy"
+    ],
     "signature": "scanpy.preprocessing.combat(adata, key='batch', *, covariates=None, inplace=True)",
     "description": "ComBat function for batch effect correction. Corrects for batch effects by fitting linear models, gains statistical power via an EB framework where information is borrowed across genes. This uses the implementation combat.py.",
     "params": [
@@ -1821,6 +2125,16 @@
   },
   {
     "method": "scanpy.plotting.dpt_groups_pseudotime",
+    "keywords": [
+      "dpt",
+      "dpt_groups_pseudotime",
+      "groups",
+      "marker genes",
+      "plotting",
+      "pseudotime",
+      "scanpy",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.dpt_groups_pseudotime(adata, *, color_map=None, palette=None, show=None, save=None, marker='.')",
     "description": "Plot groups and pseudotime.",
     "params": [
@@ -1859,6 +2173,18 @@
   },
   {
     "method": "scanpy.tools.rank_genes_groups",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "differential expression",
+      "gene expression",
+      "ranking",
+      "scoring",
+      "genes",
+      "groups",
+      "rank",
+      "rank_genes_groups"
+    ],
     "signature": "scanpy.tools.rank_genes_groups(adata, groupby, *, mask_var=None, use_raw=None, groups='all', reference='rest', n_genes=None, rankby_abs=False, pts=False, key_added=None, copy=False, method=None, corr_method='benjamini-hochberg', tie_correct=False, layer=None, **kwds)",
     "description": "Rank genes for characterizing groups. Expects logarithmized data.",
     "params": [
@@ -1952,6 +2278,17 @@
   },
   {
     "method": "scanpy.preprocessing.neighbors",
+    "keywords": [
+      "anndata",
+      "connectivity",
+      "graph",
+      "neighborhood",
+      "neighbors",
+      "observations",
+      "preprocessing",
+      "scanpy",
+      "umap"
+    ],
     "signature": "scanpy.preprocessing.neighbors(adata, n_neighbors=15, n_pcs=None, *, use_rep=None, knn=True, method='umap', transformer=None, metric='euclidean', metric_kwds=mappingproxy({}), random_state=0, key_added=None, copy=False)",
     "description": "Compute the nearest neighbors distance matrix and a neighborhood graph of observations. The neighbor search efficiency heavily relies on UMAP, which also provides a method for estimating connectivities of data points - the connectivity of the manifold (`method=='umap'`). If `method=='gauss'`, connectivities are computed according to Coifman *et al.* [2005], in the adaption of Haghverdi *et al.* [2016].",
     "params": [
@@ -1983,7 +2320,7 @@
       {
         "name": "method",
         "type": "string",
-        "desc": "Use ‘umap’ or ‘gauss’ for computing connectivities."
+        "desc": "Use \u2018umap\u2019 or \u2018gauss\u2019 for computing connectivities."
       },
       {
         "name": "transformer",
@@ -1993,7 +2330,7 @@
       {
         "name": "metric",
         "type": "string or callable",
-        "desc": "A known metric’s name or a callable that returns a distance."
+        "desc": "A known metric\u2019s name or a callable that returns a distance."
       },
       {
         "name": "metric_kwds",
@@ -2025,6 +2362,18 @@
   },
   {
     "method": "scanpy.plotting.rank_genes_groups_stacked_violin",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "differential expression",
+      "gene expression",
+      "ranking",
+      "violin",
+      "genes",
+      "groups",
+      "plotting",
+      "rank"
+    ],
     "signature": "scanpy.plotting.rank_genes_groups_stacked_violin(adata, groups=None, *, n_genes=None, groupby=None, gene_symbols=None, var_names=None, min_logfoldchange=None, key=None, show=None, save=None, return_fig=False, **kwds)",
     "description": "Plot ranking of genes using stacked_violin plot.",
     "params": [
@@ -2098,6 +2447,18 @@
   },
   {
     "method": "scanpy.plotting.rank_genes_groups",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "differential expression",
+      "gene expression",
+      "ranking",
+      "genes",
+      "groups",
+      "plotting",
+      "rank",
+      "rank_genes_groups"
+    ],
     "signature": "scanpy.plotting.rank_genes_groups(adata, groups=None, *, n_genes=20, gene_symbols=None, key='rank_genes_groups', fontsize=8, ncols=4, sharey=True, show=None, save=None, ax=None, **kwds)",
     "description": "Plot ranking of genes.",
     "params": [
@@ -2159,13 +2520,20 @@
       {
         "name": "return",
         "type": "list[matplotlib.axes.Axes] | None",
-        "desc": "List of each group’s matplotlib axis or `None` if `show=True`."
+        "desc": "List of each group\u2019s matplotlib axis or `None` if `show=True`."
       }
     ],
     "misc": "### Examples\n\n```python\nimport scanpy as sc\nadata = sc.datasets.pbmc68k_reduced()\nsc.pl.rank_genes_groups(adata)\n```\n\nPlot top 10 genes (default 20 genes)\n\n```python\nsc.pl.rank_genes_groups(adata, n_genes=10)\n```\n\n#### SEE ALSO\n`tl.rank_genes_groups`"
   },
   {
     "method": "scanpy.readwrite.convert_bool",
+    "keywords": [
+      "convert",
+      "convert_bool",
+      "readwrite",
+      "scanpy",
+      "check"
+    ],
     "signature": "scanpy.readwrite.convert_bool(string)",
     "description": "Check whether string is boolean.",
     "params": [
@@ -2184,13 +2552,23 @@
   },
   {
     "method": "scanpy.preprocessing.scrublet",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "counts",
+      "doublet detection",
+      "image processing",
+      "normalization",
+      "preprocessing",
+      "scrublet"
+    ],
     "signature": "scanpy.preprocessing.scrublet(adata, adata_sim=None, *, batch_key=None, sim_doublet_ratio=2.0, expected_doublet_rate=0.05, stdev_doublet_rate=0.02, synthetic_doublet_umi_subsampling=1.0, knn_dist_metric='euclidean', normalize_variance=True, log_transform=False, mean_center=True, n_prin_comps=30, use_approx_neighbors=None, get_doublet_neighbor_parents=False, n_neighbors=None, threshold=None, verbose=True, copy=False, random_state=0)",
     "description": "Predict doublets using Scrublet. Predict cell doublets using a nearest-neighbor classifier of observed transcriptomes and simulated doublets. Works best if the input is a raw (unnormalized) counts matrix from a single sample or a collection of similar samples from the same experiment. This function is a wrapper around functions that pre-process using Scanpy and directly call functions of Scrublet(). You may also undertake your own preprocessing, simulate doublets with `scrublet_simulate_doublets()`, and run the core scrublet function `scrublet()` with `adata_sim` set.",
     "params": [
       {
         "name": "adata",
         "type": "AnnData",
-        "desc": "The annotated data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes. Expected to be un-normalised where adata_sim is not supplied, in which case doublets will be simulated and pre-processing applied to both objects. If adata_sim is supplied, this should be the observed transcriptomes processed consistently (filtering, transform, normalization, hvg) with adata_sim."
+        "desc": "The annotated data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes. Expected to be un-normalised where adata_sim is not supplied, in which case doublets will be simulated and pre-processing applied to both objects. If adata_sim is supplied, this should be the observed transcriptomes processed consistently (filtering, transform, normalization, hvg) with adata_sim."
       },
       {
         "name": "adata_sim",
@@ -2288,12 +2666,22 @@
         "desc": "if `copy=True` it returns or else adds fields to `adata`. Those fields: `.obs['doublet_score']`: Doublet scores for each observed transcriptome `.obs['predicted_doublet']`: Boolean indicating predicted doublet status `.uns['scrublet']['doublet_scores_sim']`: Doublet scores for each simulated doublet transcriptome `.uns['scrublet']['doublet_parents']`: Pairs of `.obs_names` used to generate each simulated doublet transcriptome `.uns['scrublet']['parameters']`: Dictionary of Scrublet parameters"
       }
     ],
-    "misc": "#### SEE ALSO\n`scrublet_simulate_doublets()`\n: Run Scrublet’s doublet simulation separately for advanced usage.\n\n`scrublet_score_distribution()`\n: Plot histogram of doublet scores for observed transcriptomes and simulated doublets."
+    "misc": "#### SEE ALSO\n`scrublet_simulate_doublets()`\n: Run Scrublet\u2019s doublet simulation separately for advanced usage.\n\n`scrublet_score_distribution()`\n: Plot histogram of doublet scores for observed transcriptomes and simulated doublets."
   },
   {
     "method": "scanpy.plotting.paga",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "embedding",
+      "graph",
+      "image processing",
+      "louvain",
+      "plotting",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.paga(adata, *, threshold=None, color=None, layout=None, layout_kwds=mappingproxy({}), init_pos=None, root=0, labels=None, single_component=False, solid_edges='connectivities', dashed_edges=None, transitions=None, fontsize=None, fontweight='bold', fontoutline=None, text_kwds=mappingproxy({}), node_size_scale=1.0, node_size_power=0.5, edge_width_scale=1.0, min_edge_width=None, max_edge_width=None, arrowsize=30, title=None, left_margin=0.01, random_state=0, pos=None, normalize_to_color=False, cmap=None, cax=None, colorbar=None, cb_kwds=mappingproxy({}), frameon=None, add_pos=True, export_to_gexf=False, use_raw=True, colors=None, groups=None, plot=True, show=None, save=None, ax=None)",
-    "description": "Plot the PAGA graph through thresholding low-connectivity edges. Compute a coarse-grained layout of the data. Reuse this by passing `init_pos='paga'` to `umap()` or `draw_graph()` and obtain embeddings with more meaningful global topology. This uses ForceAtlas2 or igraph’s layout algorithms for most layouts.",
+    "description": "Plot the PAGA graph through thresholding low-connectivity edges. Compute a coarse-grained layout of the data. Reuse this by passing `init_pos='paga'` to `umap()` or `draw_graph()` and obtain embeddings with more meaningful global topology. This uses ForceAtlas2 or igraph\u2019s layout algorithms for most layouts.",
     "params": [
       {
         "name": "adata",
@@ -2408,7 +2796,7 @@
       {
         "name": "arrowsize",
         "type": "float",
-        "desc": "For directed graphs, choose the size of the arrow head head’s length and width."
+        "desc": "For directed graphs, choose the size of the arrow head head\u2019s length and width."
       },
       {
         "name": "export_to_gexf",
@@ -2471,10 +2859,21 @@
         "desc": "If `show==False`, one or more `Axes` objects. Adds `'pos'` to `adata.uns['paga']` if `add_pos` is `True`."
       }
     ],
-    "misc": "### Examples\n\n```python\nimport scanpy as sc\nadata = sc.datasets.pbmc3k_processed()\nsc.tl.paga(adata, groups='louvain')\nsc.pl.paga(adata)\n```\n\nYou can increase node and edge sizes by specifying additional arguments.\n\n```python\nsc.pl.paga(adata, node_size_scale=10, edge_width_scale=2)\n```\n\n### Notes\n\nWhen initializing the positions, note that – for some reason – igraph mirrors coordinates along the x axis… that is, you should increase the `maxiter` parameter by 1 if the layout is flipped.\n\n#### SEE ALSO\n`tl.paga`, `pl.paga_compare`, `pl.paga_path`"
+    "misc": "### Examples\n\n```python\nimport scanpy as sc\nadata = sc.datasets.pbmc3k_processed()\nsc.tl.paga(adata, groups='louvain')\nsc.pl.paga(adata)\n```\n\nYou can increase node and edge sizes by specifying additional arguments.\n\n```python\nsc.pl.paga(adata, node_size_scale=10, edge_width_scale=2)\n```\n\n### Notes\n\nWhen initializing the positions, note that \u2013 for some reason \u2013 igraph mirrors coordinates along the x axis\u2026 that is, you should increase the `maxiter` parameter by 1 if the layout is flipped.\n\n#### SEE ALSO\n`tl.paga`, `pl.paga_compare`, `pl.paga_path`"
   },
   {
     "method": "scanpy.get.aggregate",
+    "keywords": [
+      "aggregate",
+      "anndata",
+      "clustering",
+      "filtering",
+      "get",
+      "layers",
+      "observations",
+      "scanpy",
+      "variables"
+    ],
     "signature": "scanpy.get.aggregate(adata, by, func, *, axis=None, mask=None, dof=1, layer=None, obsm=None, varm=None)",
     "description": "Aggregate data matrix based on some categorical grouping.\n\nThis function is useful for pseudobulking as well as plotting.\n\nAggregation to perform is specified by `func`, which can be a single metric or a\nlist of metrics. Each metric is computed over the group and results in a new layer\nin the output `AnnData` object.\n\nIf none of `layer`, `obsm`, or `varm` are passed in, `X` will be used for aggregation data.",
     "params": [
@@ -2533,6 +2932,15 @@
   },
   {
     "method": "scanpy.tools.draw_graph",
+    "keywords": [
+      "draw",
+      "draw_graph",
+      "graph",
+      "neighbors",
+      "raw counts",
+      "scanpy",
+      "tsne"
+    ],
     "signature": "scanpy.tools.draw_graph(adata, layout='fa', *, init_pos=None, root=None, random_state=0, n_jobs=None, adjacency=None, key_added_ext=None, neighbors_key=None, obsp=None, copy=False, **kwds)",
     "description": "Force-directed graph drawing. An alternative to tSNE that often preserves the topology of the data better. This requires running `neighbors()` first.",
     "params": [
@@ -2544,7 +2952,7 @@
       {
         "name": "layout",
         "type": "str",
-        "desc": "‘fa’ (`ForceAtlas2`) or any valid igraph layout. Of particular interest are ‘fr’, ‘grid_fr’, ‘kk’, ‘lgl’, ‘drl’, and ‘rt’."
+        "desc": "\u2018fa\u2019 (`ForceAtlas2`) or any valid igraph layout. Of particular interest are \u2018fr\u2019, \u2018grid_fr\u2019, \u2018kk\u2019, \u2018lgl\u2019, \u2018drl\u2019, and \u2018rt\u2019."
       },
       {
         "name": "root",
@@ -2554,7 +2962,7 @@
       {
         "name": "random_state",
         "type": "Optional[int]",
-        "desc": "For layouts with random initialization like ‘fr’, change this to use different initial states for the optimization. If `None`, no seed is set."
+        "desc": "For layouts with random initialization like \u2018fr\u2019, change this to use different initial states for the optimization. If `None`, no seed is set."
       },
       {
         "name": "adjacency",
@@ -2569,7 +2977,7 @@
       {
         "name": "init_pos",
         "type": "str or bool",
-        "desc": "‘paga’/`True`, `None`/`False`, or any valid 2d-`.obsm` key. Use precomputed coordinates for initialization. If `False`/`None` (the default), initialize randomly."
+        "desc": "\u2018paga\u2019/`True`, `None`/`False`, or any valid 2d-`.obsm` key. Use precomputed coordinates for initialization. If `False`/`None` (the default), initialize randomly."
       },
       {
         "name": "neighbors_key",
@@ -2579,7 +2987,7 @@
       {
         "name": "obsp",
         "type": "Optional[str]",
-        "desc": "Use .obsp[obsp] as adjacency. You can’t specify both `obsp` and `neighbors_key` at the same time."
+        "desc": "Use .obsp[obsp] as adjacency. You can\u2019t specify both `obsp` and `neighbors_key` at the same time."
       },
       {
         "name": "copy",
@@ -2601,6 +3009,14 @@
   },
   {
     "method": "scanpy.tools.embedding_density",
+    "keywords": [
+      "anndata",
+      "density",
+      "embedding",
+      "embedding_density",
+      "scanpy",
+      "umap"
+    ],
     "signature": "scanpy.tools.embedding_density(adata, basis='umap', *, groupby=None, key_added=None, components=None)",
     "description": "Calculate the density of cells in an embedding (per condition).",
     "params": [
@@ -2639,6 +3055,18 @@
   },
   {
     "method": "scanpy.get.rank_genes_groups_df",
+    "keywords": [
+      "scanpy",
+      "differential expression",
+      "gene expression",
+      "louvain",
+      "ranking",
+      "raw counts",
+      "genes",
+      "get",
+      "groups",
+      "rank"
+    ],
     "signature": "scanpy.get.rank_genes_groups_df(adata, group, *, key='rank_genes_groups', pval_cutoff=None, log2fc_min=None, log2fc_max=None, gene_symbols=None)",
     "description": "Get `scanpy.tl.rank_genes_groups()` results in the form of a `DataFrame`.",
     "params": [
@@ -2650,7 +3078,7 @@
       {
         "name": "group",
         "type": "str or list",
-        "desc": "Which group (as in `scanpy.tl.rank_genes_groups()`’s `groupby` argument) to return results from. Can be a list. All groups are returned if groups is `None`."
+        "desc": "Which group (as in `scanpy.tl.rank_genes_groups()`\u2019s `groupby` argument) to return results from. Can be a list. All groups are returned if groups is `None`."
       },
       {
         "name": "key",
@@ -2687,6 +3115,18 @@
   },
   {
     "method": "scanpy.read_loom",
+    "keywords": [
+      "anndata",
+      "gene expression",
+      "loom",
+      "observations",
+      "read",
+      "read_loom",
+      "scanpy",
+      "sparse matrix",
+      "umap",
+      "variables"
+    ],
     "signature": "scanpy.read_loom(filename, *, sparse=True, cleanup=False, X_name='spliced', obs_names='CellID', obsm_names=None, var_names='Gene', varm_names=None, dtype='float32', obsm_mapping=mappingproxy({}), varm_mapping=mappingproxy({}), **kwargs)",
     "description": "Read `.loom`-formatted hdf5 file.\n\nThis reads the whole file into memory.\n\nBeware that you have to explicitly state when you want to read the file as sparse data.",
     "params": [
@@ -2745,6 +3185,15 @@
   },
   {
     "method": "scanpy.read_10x_mtx",
+    "keywords": [
+      "10x",
+      "10x genomics",
+      "file format",
+      "mtx",
+      "read",
+      "read_10x_mtx",
+      "scanpy"
+    ],
     "signature": "scanpy.read_10x_mtx(path, *, var_names='gene_symbols', make_unique=True, cache=False, cache_compression=_empty, gex_only=True, prefix=None)",
     "description": "Read 10x-Genomics-formatted mtx directory.",
     "params": [
@@ -2793,13 +3242,25 @@
   },
   {
     "method": "scanpy.preprocessing.highly_variable_genes",
+    "keywords": [
+      "feature selection",
+      "filtering",
+      "gene expression",
+      "genes",
+      "highly",
+      "highly_variable_genes",
+      "preprocessing",
+      "scanpy",
+      "variable",
+      "variables"
+    ],
     "signature": "scanpy.preprocessing.highly_variable_genes(adata, *, layer=None, n_top_genes=None, min_disp=0.5, max_disp=inf, min_mean=0.0125, max_mean=3, span=0.3, n_bins=20, flavor='seurat', subset=False, inplace=True, batch_key=None, check_values=True)",
     "description": "Annotate highly variable genes based on different methodologies including those from Seurat, Cell Ranger, and Seurat v3. Expects logarithmized data unless a specific flavor such as 'seurat_v3' is used where count data is expected.",
     "params": [
       {
         "name": "adata",
         "type": "AnnData",
-        "desc": "The annotated data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "The annotated data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "layer",
@@ -2876,6 +3337,18 @@
   },
   {
     "method": "scanpy.plotting.highly_variable_genes",
+    "keywords": [
+      "scanpy",
+      "feature extraction",
+      "feature selection",
+      "gene expression",
+      "normalization",
+      "variables",
+      "genes",
+      "highly",
+      "highly_variable_genes",
+      "plotting"
+    ],
     "signature": "scanpy.plotting.highly_variable_genes(adata_or_result, *, log=False, show=None, save=None, highly_variable_genes=True)",
     "description": "Plot dispersions or normalized variance versus means for genes. Produces Supp. Fig. 5c of Zheng et al. (2017) and MeanVarPlot() and VariableFeaturePlot() of Seurat.",
     "params": [
@@ -2904,6 +3377,18 @@
   },
   {
     "method": "scanpy.plotting.rank_genes_groups_tracksplot",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "differential expression",
+      "gene expression",
+      "heatmap",
+      "ranking",
+      "genes",
+      "groups",
+      "plotting",
+      "rank"
+    ],
     "signature": "scanpy.plotting.rank_genes_groups_tracksplot(adata, groups=None, *, n_genes=None, groupby=None, var_names=None, gene_symbols=None, min_logfoldchange=None, key=None, show=None, save=None, **kwds)",
     "description": "Plot ranking of genes using heatmap plot.",
     "params": [
@@ -2967,6 +3452,13 @@
   },
   {
     "method": "scanpy.read_text",
+    "keywords": [
+      "read",
+      "read_text",
+      "scanpy",
+      "text",
+      "file"
+    ],
     "signature": "scanpy.read_text(filename, delimiter=None, first_column_names=None, dtype='float32')",
     "description": "Read `.txt`, `.tab`, `.data` (text) file. Same as `read_csv()` but with default delimiter `None`.",
     "params": [
@@ -3000,6 +3492,18 @@
   },
   {
     "method": "scanpy.plotting.rank_genes_groups_matrixplot",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "differential expression",
+      "gene expression",
+      "matrix plot",
+      "ranking",
+      "genes",
+      "groups",
+      "matrixplot",
+      "plotting"
+    ],
     "signature": "scanpy.plotting.rank_genes_groups_matrixplot(adata, groups=None, *, n_genes=None, groupby=None, values_to_plot=None, var_names=None, gene_symbols=None, min_logfoldchange=None, key=None, show=None, save=None, return_fig=False, **kwds)",
     "description": "Plot ranking of genes using matrixplot plot (see `matrixplot()`).",
     "params": [
@@ -3083,6 +3587,16 @@
   },
   {
     "method": "scanpy.plotting.heatmap",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "clustering",
+      "differential expression",
+      "gene expression",
+      "heatmap",
+      "plotting",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.heatmap(adata, var_names, groupby, *, use_raw=None, log=False, num_categories=7, dendrogram=False, gene_symbols=None, var_group_positions=None, var_group_labels=None, var_group_rotation=None, layer=None, standard_scale=None, swap_axes=False, show_gene_labels=None, show=None, save=None, figsize=None, vmin=None, vmax=None, vcenter=None, norm=None, **kwds)",
     "description": "Heatmap of the expression values of genes.\n\nIf `groupby` is given, the heatmap is ordered by the respective group. For example, a list of marker genes can be plotted, ordered by clustering. If the `groupby` observation annotation is not categorical the observation annotation is turned into a categorical by binning the data into the number specified in `num_categories`.",
     "params": [
@@ -3094,7 +3608,7 @@
       {
         "name": "var_names",
         "type": "Valid subset of adata.var_names",
-        "desc": "`var_names` should be a valid subset of `adata.var_names`. If `var_names` is a mapping, then the key is used as label to group the values (see `var_group_labels`). The mapping values should be sequences of valid `adata.var_names`. In this case either coloring or ‘brackets’ are used for the grouping of var names depending on the plot. When `var_names` is a mapping, then the `var_group_labels` and `var_group_positions` are set."
+        "desc": "`var_names` should be a valid subset of `adata.var_names`. If `var_names` is a mapping, then the key is used as label to group the values (see `var_group_labels`). The mapping values should be sequences of valid `adata.var_names`. In this case either coloring or \u2018brackets\u2019 are used for the grouping of var names depending on the plot. When `var_names` is a mapping, then the `var_group_labels` and `var_group_positions` are set."
       },
       {
         "name": "groupby",
@@ -3139,7 +3653,7 @@
       {
         "name": "var_group_positions",
         "type": "List of tuples or None",
-        "desc": "Use this parameter to highlight groups of `var_names`. This will draw a ‘bracket’ or a color block between the given start and end positions. If the parameter `var_group_labels` is set, the corresponding labels are added on top/left. E.g. `var_group_positions=[(4,10)]` will add a bracket between the fourth `var_name` and the tenth `var_name`. By giving more positions, more brackets/color blocks are drawn."
+        "desc": "Use this parameter to highlight groups of `var_names`. This will draw a \u2018bracket\u2019 or a color block between the given start and end positions. If the parameter `var_group_labels` is set, the corresponding labels are added on top/left. E.g. `var_group_positions=[(4,10)]` will add a bracket between the fourth `var_name` and the tenth `var_name`. By giving more positions, more brackets/color blocks are drawn."
       },
       {
         "name": "var_group_labels",
@@ -3221,6 +3735,13 @@
   },
   {
     "method": "scanpy.set_figure_params",
+    "keywords": [
+      "figure",
+      "params",
+      "scanpy",
+      "set_figure_params",
+      "resolution"
+    ],
     "signature": "scanpy.set_figure_params(self, *, scanpy=True, dpi=80, dpi_save=150, frameon=True, vector_friendly=True, fontsize=14, figsize=None, color_map=None, format='pdf', facecolor=None, transparent=False, ipython_format='retina')",
     "description": "Set resolution/size, styling and format of figures.",
     "params": [
@@ -3232,7 +3753,7 @@
       {
         "name": "dpi",
         "type": "int",
-        "desc": "Resolution of rendered figures – this influences the size of figures in notebooks."
+        "desc": "Resolution of rendered figures \u2013 this influences the size of figures in notebooks."
       },
       {
         "name": "dpi_save",
@@ -3294,6 +3815,14 @@
   },
   {
     "method": "scanpy.plotting.set_rcParams_defaults",
+    "keywords": [
+      "defaults",
+      "plotting",
+      "rcparams",
+      "scanpy",
+      "set_rcparams_defaults",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.set_rcParams_defaults()",
     "description": "Reset `matplotlib.rcParams` to defaults.",
     "params": [],
@@ -3301,6 +3830,14 @@
   },
   {
     "method": "scanpy.tools.umap",
+    "keywords": [
+      "embedding",
+      "graph",
+      "neighborhood",
+      "scanpy",
+      "tsne",
+      "umap"
+    ],
     "signature": "scanpy.tools.umap(adata, *, min_dist=0.5, spread=1.0, n_components=2, maxiter=None, alpha=1.0, gamma=1.0, negative_sample_rate=5, init_pos='spectral', random_state=0, a=None, b=None, method='umap', key_added=None, neighbors_key='neighbors', copy=False)",
     "description": "Embed the neighborhood graph using UMAP. UMAP (Uniform Manifold Approximation and Projection) is a manifold learning technique suitable for visualizing high-dimensional data. Besides tending to be faster than tSNE, it optimizes the embedding such that it best reflects the topology of the data, which we represent throughout Scanpy using a neighborhood graph. tSNE, by contrast, optimizes the distribution of nearest-neighbor distances in the embedding such that these best match the distribution of distances in the high-dimensional space. We use the implementation of umap-learn.",
     "params": [
@@ -3367,7 +3904,7 @@
       {
         "name": "method",
         "type": "str",
-        "desc": "Chosen implementation. Options are 'umap' for Umap’s simplical set embedding or 'rapids' for GPU accelerated implementation."
+        "desc": "Chosen implementation. Options are 'umap' for Umap\u2019s simplical set embedding or 'rapids' for GPU accelerated implementation."
       },
       {
         "name": "key_added",
@@ -3394,6 +3931,13 @@
   },
   {
     "method": "scanpy.plotting.dendrogram",
+    "keywords": [
+      "anndata",
+      "dendrogram",
+      "plotting",
+      "scanpy",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.dendrogram(adata, groupby, *, dendrogram_key=None, orientation='top', remove_labels=False, show=None, save=None, ax=None)",
     "description": "Plot a dendrogram of the categories defined in `groupby`.",
     "params": [
@@ -3420,7 +3964,7 @@
       {
         "name": "remove_labels",
         "type": "boolean",
-        "desc": "Don’t draw labels. Used e.g. by `scanpy.pl.matrixplot()` to annotate matrix columns/rows."
+        "desc": "Don\u2019t draw labels. Used e.g. by `scanpy.pl.matrixplot()` to annotate matrix columns/rows."
       },
       {
         "name": "show",
@@ -3447,6 +3991,18 @@
   },
   {
     "method": "scanpy.plotting.rank_genes_groups_heatmap",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "dendrogram",
+      "differential expression",
+      "gene expression",
+      "heatmap",
+      "genes",
+      "groups",
+      "plotting",
+      "rank"
+    ],
     "signature": "scanpy.plotting.rank_genes_groups_heatmap(adata, groups=None, *, n_genes=None, groupby=None, gene_symbols=None, var_names=None, min_logfoldchange=None, key=None, show=None, save=None, **kwds)",
     "description": "Plot ranking of genes using heatmap plot (see `heatmap()`).",
     "params": [
@@ -3510,6 +4066,14 @@
   },
   {
     "method": "scanpy.queries.gene_coordinates",
+    "keywords": [
+      "coordinates",
+      "gene",
+      "gene expression",
+      "gene_coordinates",
+      "queries",
+      "scanpy"
+    ],
     "signature": "scanpy.queries.gene_coordinates(org, gene_name, *, gene_attr='external_gene_name', chr_exclude=(), host='www.ensembl.org', use_cache=False)",
     "description": "Retrieve gene coordinates for specific organism through BioMart.",
     "params": [
@@ -3553,6 +4117,13 @@
   },
   {
     "method": "scanpy.plotting.matrix",
+    "keywords": [
+      "matrix",
+      "plotting",
+      "scanpy",
+      "visualization",
+      "plot"
+    ],
     "signature": "scanpy.plotting.matrix(matrix, *, xlabel=None, ylabel=None, xticks=None, yticks=None, title=None, colorbar_shrink=0.5, color_map=None, show=None, save=None, ax=None)",
     "description": "Plot a matrix.",
     "params": [
@@ -3621,6 +4192,17 @@
   },
   {
     "method": "scanpy.plotting.matrixplot",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "dendrogram",
+      "differential expression",
+      "gene expression",
+      "heatmap",
+      "matrixplot",
+      "plotting",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.matrixplot(adata, var_names, groupby, *, use_raw=None, log=False, num_categories=7, categories_order=None, figsize=None, dendrogram=False, title=None, cmap='viridis', colorbar_title='Mean expression\\\\nin group', gene_symbols=None, var_group_positions=None, var_group_labels=None, var_group_rotation=None, layer=None, standard_scale=None, values_df=None, swap_axes=False, show=None, save=None, ax=None, return_fig=False, vmin=None, vmax=None, vcenter=None, norm=None, **kwds)",
     "description": "Create a heatmap of the mean expression values per group of each var_names.\n\nThis function provides a convenient interface to the `MatrixPlot` class. If you need more flexibility, you should use `MatrixPlot` directly.",
     "params": [
@@ -3774,6 +4356,18 @@
   },
   {
     "method": "scanpy.tools.marker_gene_overlap",
+    "keywords": [
+      "clustering",
+      "counts",
+      "gene",
+      "gene expression",
+      "marker",
+      "marker genes",
+      "marker_gene_overlap",
+      "overlap",
+      "scanpy",
+      "scoring"
+    ],
     "signature": "scanpy.tools.marker_gene_overlap(adata, reference_markers, *, key='rank_genes_groups', method='overlap_count', normalize=None, top_n_markers=None, adj_pval_threshold=None, key_added='marker_gene_overlap', inplace=False)",
     "description": "Calculate an overlap score between data-derived marker genes and provided markers. Marker gene overlap scores can be quoted as overlap counts, overlap coefficients, or jaccard indices. The method returns a pandas dataframe which can be used to annotate clusters based on marker gene overlaps.",
     "params": [
@@ -3832,6 +4426,13 @@
   },
   {
     "method": "scanpy.readwrite.write_params",
+    "keywords": [
+      "params",
+      "readwrite",
+      "scanpy",
+      "write",
+      "write_params"
+    ],
     "signature": "scanpy.readwrite.write_params(path, *args, **maps)",
     "description": "Write parameters to file using the INI file format, making it readable by the read_params function.",
     "params": [
@@ -3855,13 +4456,23 @@
   },
   {
     "method": "scanpy.preprocessing.filter_genes",
+    "keywords": [
+      "counts",
+      "filter",
+      "filter_genes",
+      "filtering",
+      "gene expression",
+      "genes",
+      "preprocessing",
+      "scanpy"
+    ],
     "signature": "scanpy.preprocessing.filter_genes(data, *, min_counts=None, min_cells=None, max_counts=None, max_cells=None, inplace=True, copy=False)",
     "description": "Filter genes based on number of cells or counts. Keep genes that have at least `min_counts` counts or are expressed in at\nleast `min_cells` cells or have at most `max_counts` counts or are expressed\nin at most `max_cells` cells. Only provide one of the optional parameters `min_counts`, `min_cells`,\n`max_counts`, `max_cells` per call.",
     "params": [
       {
         "name": "data",
         "type": "AnnData",
-        "desc": "An annotated data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "An annotated data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "min_counts",
@@ -3903,13 +4514,20 @@
   },
   {
     "method": "scanpy.preprocessing.subsample",
+    "keywords": [
+      "observations",
+      "preprocessing",
+      "scanpy",
+      "subsample",
+      "subsampling"
+    ],
     "signature": "scanpy.preprocessing.subsample(data, fraction=None, *, n_obs=None, random_state=0, copy=False)",
     "description": "Subsample to a fraction of the number of observations.",
     "params": [
       {
         "name": "data",
         "type": "Annotated Data Matrix",
-        "desc": "The (annotated) data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "The (annotated) data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "fraction",
@@ -3941,6 +4559,15 @@
   },
   {
     "method": "scanpy.tools.paga",
+    "keywords": [
+      "clustering",
+      "diffusion pseudotime",
+      "gene expression",
+      "graph",
+      "paga",
+      "scanpy",
+      "variables"
+    ],
     "signature": "scanpy.tools.paga(adata, groups=None, *, use_rna_velocity=False, model='v1.2', neighbors_key=None, copy=False)",
     "description": "Map out the coarse-grained connectivity structures of complex manifolds. By quantifying the connectivity of partitions (groups, clusters) of the single-cell graph, partition-based graph abstraction (PAGA) generates a much simpler abstracted graph (PAGA graph) of partitions, in which edge weights represent confidence in the presence of connections. By thresholding this confidence in `paga()`, a much simpler representation of the manifold data is obtained, which is nonetheless faithful to the topology of the manifold.",
     "params": [
@@ -3984,6 +4611,18 @@
   },
   {
     "method": "scanpy.preprocessing.calculate_qc_metrics",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "counts",
+      "feature selection",
+      "observations",
+      "quality control",
+      "calculate",
+      "calculate_qc_metrics",
+      "metrics",
+      "preprocessing"
+    ],
     "signature": "scanpy.preprocessing.calculate_qc_metrics(adata, *, expr_type='counts', var_type='genes', qc_vars=(), percent_top=(50, 100, 200, 500), layer=None, use_raw=False, inplace=False, log1p=True, parallel=None)",
     "description": "Calculate quality control metrics for an AnnData object, including various observation and variable level metrics based on expression data.",
     "params": [
@@ -4025,7 +4664,7 @@
       {
         "name": "inplace",
         "type": "bool",
-        "desc": "Whether to place calculated metrics in `adata`’s `.obs` and `.var`."
+        "desc": "Whether to place calculated metrics in `adata`\u2019s `.obs` and `.var`."
       },
       {
         "name": "log1p",
@@ -4040,20 +4679,32 @@
       {
         "name": "return",
         "type": "tuple[DataFrame, DataFrame] | None",
-        "desc": "Depending on `inplace`, returns calculated metrics as DataFrames or updates `adata`’s `obs` and `var`."
+        "desc": "Depending on `inplace`, returns calculated metrics as DataFrames or updates `adata`\u2019s `obs` and `var`."
       }
     ],
     "misc": "Metrics such as total counts, percentages, and means are calculated for observation and variable levels. Annotations can be added to `adata` directly if `inplace=True`."
   },
   {
     "method": "scanpy.preprocessing.normalize_total",
+    "keywords": [
+      "anndata",
+      "counts",
+      "factorization",
+      "gene expression",
+      "normalization",
+      "normalize",
+      "normalize_total",
+      "preprocessing",
+      "scanpy",
+      "total"
+    ],
     "signature": "scanpy.preprocessing.normalize_total(adata, *, target_sum=None, exclude_highly_expressed=False, max_fraction=0.05, key_added=None, layer=None, layers=None, layer_norm=None, inplace=True, copy=False)",
     "description": "Normalize counts per cell.\n\nNormalize each cell by total counts over all genes,\nso that every cell has the same total count after normalization.\nIf choosing `target_sum=1e6`, this is CPM normalization.\n\nIf `exclude_highly_expressed=True`, very highly expressed genes are excluded\nfrom the computation of the normalization factor (size factor) for each\ncell. This is meaningful as these can strongly influence the resulting\nnormalized values for all other genes.\n\nSimilar functions are used by Seurat, Cell Ranger, or SPRING.",
     "params": [
       {
         "name": "adata",
         "type": "AnnData",
-        "desc": "The annotated data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "The annotated data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "target_sum",
@@ -4100,6 +4751,16 @@
   },
   {
     "method": "scanpy.plotting.pca_variance_ratio",
+    "keywords": [
+      "pca",
+      "pca_variance_ratio",
+      "plotting",
+      "ratio",
+      "scanpy",
+      "variables",
+      "variance",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.pca_variance_ratio(adata, n_pcs=30, *, log=False, show=None, save=None)",
     "description": "Plot the variance ratio.",
     "params": [
@@ -4133,6 +4794,18 @@
   },
   {
     "method": "scanpy.plotting.pca_overview",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "image processing",
+      "louvain",
+      "pca",
+      "ranking",
+      "overview",
+      "pca_overview",
+      "plotting",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.pca_overview(adata, **params)",
     "description": "Plot PCA results. The parameters are the ones of the scatter plot. Call pca_ranking separately if you want to change the default settings.",
     "params": [
@@ -4311,6 +4984,15 @@
   },
   {
     "method": "scanpy.preprocessing.recipe_weinreb17",
+    "keywords": [
+      "filtering",
+      "normalization",
+      "preprocessing",
+      "recipe",
+      "recipe_weinreb17",
+      "scanpy",
+      "weinreb17"
+    ],
     "signature": "scanpy.preprocessing.recipe_weinreb17(adata, *, log=True, mean_threshold=0.01, cv_threshold=2, n_pcs=50, svd_solver='randomized', random_state=0, copy=False)",
     "description": "Normalize and filter as of Weinreb et al., 2017. Expects non-logarithmized data. If using logarithmized data, pass `log=False`.",
     "params": [
@@ -4339,6 +5021,17 @@
   },
   {
     "method": "scanpy.plotting.tracksplot",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "counts",
+      "dendrogram",
+      "differential expression",
+      "gene expression",
+      "plotting",
+      "tracksplot",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.tracksplot(adata, var_names, groupby, *, use_raw=None, log=False, dendrogram=False, gene_symbols=None, var_group_positions=None, var_group_labels=None, layer=None, show=None, save=None, figsize=None, **kwds)",
     "description": "Compact plot of expression of a list of genes. In this type of plot each var_name is plotted as a filled line plot where the y values correspond to the var_name values and x is each of the cells. Best results are obtained when using raw counts that are not log. `groupby` is required to sort and order the values using the respective group and should be a categorical value.",
     "params": [
@@ -4350,7 +5043,7 @@
       {
         "name": "var_names",
         "type": "Union[list, dict]",
-        "desc": "`var_names` should be a valid subset of `adata.var_names`. If `var_names` is a mapping, then the key is used as label to group the values (see `var_group_labels`). The mapping values should be sequences of valid `adata.var_names`. In this case either coloring or ‘brackets’ are used for the grouping of var names depending on the plot. When `var_names` is a mapping, then the `var_group_labels` and `var_group_positions` are set."
+        "desc": "`var_names` should be a valid subset of `adata.var_names`. If `var_names` is a mapping, then the key is used as label to group the values (see `var_group_labels`). The mapping values should be sequences of valid `adata.var_names`. In this case either coloring or \u2018brackets\u2019 are used for the grouping of var names depending on the plot. When `var_names` is a mapping, then the `var_group_labels` and `var_group_positions` are set."
       },
       {
         "name": "groupby",
@@ -4380,7 +5073,7 @@
       {
         "name": "var_group_positions",
         "type": "list of tuple",
-        "desc": "Use this parameter to highlight groups of `var_names`. This will draw a ‘bracket’ or a color block between the given start and end positions. If the parameter `var_group_labels` is set, the corresponding labels are added on top/left. E.g. `var_group_positions=[(4,10)]` will add a bracket between the fourth `var_name` and the tenth `var_name`. By giving more positions, more brackets/color blocks are drawn."
+        "desc": "Use this parameter to highlight groups of `var_names`. This will draw a \u2018bracket\u2019 or a color block between the given start and end positions. If the parameter `var_group_labels` is set, the corresponding labels are added on top/left. E.g. `var_group_positions=[(4,10)]` will add a bracket between the fourth `var_name` and the tenth `var_name`. By giving more positions, more brackets/color blocks are drawn."
       },
       {
         "name": "var_group_labels",
@@ -4422,6 +5115,13 @@
   },
   {
     "method": "scanpy.cli.main",
+    "keywords": [
+      "cli",
+      "main",
+      "scanpy",
+      "builtin",
+      "command"
+    ],
     "signature": "scanpy.cli.main(argv=None, *, check=True, **runargs)",
     "description": "Run a builtin scanpy command or a scanpy-* subcommand. Uses `subcommand.run()` for the latter: `~run(['scanpy', *argv], **runargs)`",
     "params": [
@@ -4450,6 +5150,14 @@
   },
   {
     "method": "scanpy.preprocessing.downsample_counts",
+    "keywords": [
+      "counts",
+      "downsample",
+      "downsample_counts",
+      "downsampling",
+      "preprocessing",
+      "scanpy"
+    ],
     "signature": "scanpy.preprocessing.downsample_counts(adata, counts_per_cell=None, total_counts=None, *, random_state=0, replace=False, copy=False)",
     "description": "Downsample counts from count matrix. If `counts_per_cell` is specified, each cell will downsampled. If `total_counts` is specified, expression matrix will be downsampled to contain at most `total_counts`.",
     "params": [
@@ -4461,7 +5169,7 @@
       {
         "name": "counts_per_cell",
         "type": "int or ndarray",
-        "desc": "Target total counts per cell. If a cell has more than ‘counts_per_cell’, it will be downsampled to this number. Resulting counts can be specified on a per cell basis by passing an array. Should be an integer or integer ndarray with same length as number of obs."
+        "desc": "Target total counts per cell. If a cell has more than \u2018counts_per_cell\u2019, it will be downsampled to this number. Resulting counts can be specified on a per cell basis by passing an array. Should be an integer or integer ndarray with same length as number of obs."
       },
       {
         "name": "total_counts",
@@ -4493,6 +5201,13 @@
   },
   {
     "method": "scanpy.write",
+    "keywords": [
+      "anndata",
+      "scanpy",
+      "write",
+      "objects",
+      "file"
+    ],
     "signature": "scanpy.write(filename, adata, *, ext=None, compression='gzip', compression_opts=None)",
     "description": "Write AnnData objects to file.",
     "params": [
@@ -4526,6 +5241,18 @@
   },
   {
     "method": "scanpy.read_visium",
+    "keywords": [
+      "10x genomics",
+      "factorization",
+      "image",
+      "read",
+      "read_visium",
+      "scaling",
+      "scanpy",
+      "spatial",
+      "squidpy",
+      "visium"
+    ],
     "signature": "scanpy.read_visium(path, genome=None, *, count_file='filtered_feature_bc_matrix.h5', library_id=None, load_images=True, source_image_path=None)",
     "description": "Read 10x-Genomics-formatted visum dataset. In addition to reading regular 10x output, this looks for the `spatial` folder and loads images, coordinates and scale factors.",
     "params": [
@@ -4542,7 +5269,7 @@
       {
         "name": "count_file",
         "type": "str",
-        "desc": "Which file in the passed directory to use as the count file. Typically would be one of: ‘filtered_feature_bc_matrix.h5’ or ‘raw_feature_bc_matrix.h5’."
+        "desc": "Which file in the passed directory to use as the count file. Typically would be one of: \u2018filtered_feature_bc_matrix.h5\u2019 or \u2018raw_feature_bc_matrix.h5\u2019."
       },
       {
         "name": "library_id",
@@ -4564,6 +5291,18 @@
   },
   {
     "method": "scanpy.tools.score_genes_cell_cycle",
+    "keywords": [
+      "anndata",
+      "cell",
+      "cycle",
+      "gene expression",
+      "genes",
+      "observations",
+      "scanpy",
+      "score",
+      "score_genes_cell_cycle",
+      "scoring"
+    ],
     "signature": "scanpy.tools.score_genes_cell_cycle(adata, *, s_genes, g2m_genes, copy=False, **kwargs)",
     "description": "Given two lists of genes associated to S phase and G2M phase, calculates scores and assigns a cell cycle phase (G1, S or G2M).",
     "params": [
@@ -4590,7 +5329,7 @@
       {
         "name": "**kwargs",
         "type": "dict",
-        "desc": "Are passed to `score_genes()`. `ctrl_size` is not possible, as it’s set as `min(len(s_genes), len(g2m_genes))`."
+        "desc": "Are passed to `score_genes()`. `ctrl_size` is not possible, as it\u2019s set as `min(len(s_genes), len(g2m_genes))`."
       },
       {
         "name": "return",
@@ -4602,6 +5341,14 @@
   },
   {
     "method": "scanpy.plotting.timeseries_subplot",
+    "keywords": [
+      "plotting",
+      "scanpy",
+      "subplot",
+      "timeseries",
+      "timeseries_subplot",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.timeseries_subplot(X, *, time=None, color=None, var_names=(), highlights_x=(), xlabel='', ylabel='gene expression', yticks=None, xlim=None, legend=True, palette=None, color_map='viridis', ax=None, marker='.')",
     "description": "Plot X.",
     "params": [
@@ -4680,13 +5427,25 @@
   },
   {
     "method": "scanpy.tools.filter_rank_genes_groups",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "differential expression",
+      "dotplot",
+      "filtering",
+      "gene expression",
+      "filter",
+      "filter_rank_genes_groups",
+      "genes",
+      "groups"
+    ],
     "signature": "scanpy.tools.filter_rank_genes_groups(adata, *, key=None, groupby=None, use_raw=None, key_added='rank_genes_groups_filtered', min_in_group_fraction=0.25, min_fold_change=1, max_out_group_fraction=0.5, compare_abs=False)",
-    "description": "Filter out genes based on two criteria: log fold change and fraction of genes expressing the gene within and outside the `groupby` categories. Results are stored in `adata.uns[key_added]` (default: ‘rank_genes_groups_filtered’). To preserve the original structure of adata.uns[‘rank_genes_groups’], filtered genes are set to `NaN`.",
+    "description": "Filter out genes based on two criteria: log fold change and fraction of genes expressing the gene within and outside the `groupby` categories. Results are stored in `adata.uns[key_added]` (default: \u2018rank_genes_groups_filtered\u2019). To preserve the original structure of adata.uns[\u2018rank_genes_groups\u2019], filtered genes are set to `NaN`.",
     "params": [
       {
         "name": "adata",
         "type": "AnnData",
-        "desc": "The annotated data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "The annotated data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "key",
@@ -4738,6 +5497,15 @@
   },
   {
     "method": "scanpy.plotting.diffmap",
+    "keywords": [
+      "anndata",
+      "diffmap",
+      "diffusion",
+      "plotting",
+      "scanpy",
+      "scatter",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.diffmap(adata, *, color=None, mask_obs=None, gene_symbols=None, use_raw=None, sort_order=True, edges=False, edges_width=0.1, edges_color='grey', neighbors_key=None, arrows=False, arrows_kwds=None, groups=None, components=None, dimensions=None, layer=None, projection='2d', scale_factor=None, color_map=None, cmap=None, palette=None, na_color='lightgray', na_in_legend=True, size=None, frameon=None, legend_fontsize=None, legend_fontweight='bold', legend_loc='right margin', legend_fontoutline=None, colorbar_loc='right', vmax=None, vmin=None, vcenter=None, norm=None, add_outline=False, outline_width=(0.3, 0.05), outline_color=('black', 'white'), ncols=4, hspace=0.25, wspace=None, title=None, show=None, save=None, ax=None, return_fig=None, marker='.', **kwargs)",
     "description": "Scatter plot in Diffusion Map basis.",
     "params": [
@@ -4931,8 +5699,19 @@
   },
   {
     "method": "scanpy.metrics.morans_i",
+    "keywords": [
+      "scanpy",
+      "connectivity",
+      "correlation",
+      "graph",
+      "image processing",
+      "observations",
+      "metrics",
+      "morans",
+      "morans_i"
+    ],
     "signature": "scanpy.metrics.morans_i(adata, *, vals=None, use_graph=None, layer=None, obsm=None, obsp=None, use_raw=False)",
-    "description": "Calculate Moran’s I Global Autocorrelation Statistic. Moran’s I is a global autocorrelation statistic for some measure on a graph. It is commonly used in spatial data analysis to assess autocorrelation on a 2D grid. It is closely related to Geary’s C, but not identical.",
+    "description": "Calculate Moran\u2019s I Global Autocorrelation Statistic. Moran\u2019s I is a global autocorrelation statistic for some measure on a graph. It is commonly used in spatial data analysis to assess autocorrelation on a 2D grid. It is closely related to Geary\u2019s C, but not identical.",
     "params": [
       {
         "name": "adata",
@@ -4942,7 +5721,7 @@
       {
         "name": "vals",
         "type": "Union[np.ndarray, str, None]",
-        "desc": "Values to calculate Moran’s I for. Can be a 1D array or 2D matrix."
+        "desc": "Values to calculate Moran\u2019s I for. Can be a 1D array or 2D matrix."
       },
       {
         "name": "use_graph",
@@ -4980,10 +5759,20 @@
         "desc": "Returns a 1D ndarray if `vals` is 2D, otherwise returns a scalar if `vals` is 1D."
       }
     ],
-    "misc": "### Examples\n\nCalculate Moran’s I for each components of a dimensionality reduction:\n```python\nimport scanpy as sc, numpy as np\n\npbmc = sc.datasets.pbmc68k_processed()\npc_c = sc.metrics.morans_i(pbmc, obsm=\"X_pca\")\n```\n\nIt’s equivalent to call the function directly on the underlying arrays:\n```python\nalt = sc.metrics.morans_i(pbmc.obsp[\"connectivities\"], pbmc.obsm[\"X_pca\"].T)\nnp.testing.assert_array_equal(pc_c, alt)\n```"
+    "misc": "### Examples\n\nCalculate Moran\u2019s I for each components of a dimensionality reduction:\n```python\nimport scanpy as sc, numpy as np\n\npbmc = sc.datasets.pbmc68k_processed()\npc_c = sc.metrics.morans_i(pbmc, obsm=\"X_pca\")\n```\n\nIt\u2019s equivalent to call the function directly on the underlying arrays:\n```python\nalt = sc.metrics.morans_i(pbmc.obsp[\"connectivities\"], pbmc.obsm[\"X_pca\"].T)\nnp.testing.assert_array_equal(pc_c, alt)\n```"
   },
   {
     "method": "scanpy.plotting.umap",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "clustering",
+      "feature selection",
+      "gene expression",
+      "louvain",
+      "plotting",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.umap(adata, *, color=None, mask_obs=None, gene_symbols=None, use_raw=None, sort_order=True, edges=False, edges_width=0.1, edges_color='grey', neighbors_key=None, arrows=False, arrows_kwds=None, groups=None, components=None, dimensions=None, layer=None, projection='2d', scale_factor=None, color_map=None, cmap=None, palette=None, na_color='lightgray', na_in_legend=True, size=None, frameon=None, legend_fontsize=None, legend_fontweight='bold', legend_loc='right margin', legend_fontoutline=None, colorbar_loc='right', vmax=None, vmin=None, vcenter=None, norm=None, add_outline=False, outline_width=(0.3, 0.05), outline_color=('black', 'white'), ncols=4, hspace=0.25, wspace=None, title=None, show=None, save=None, ax=None, return_fig=None, marker='.', **kwargs)",
     "description": "Scatter plot in UMAP basis.",
     "params": [
@@ -5005,7 +5794,7 @@
       {
         "name": "use_raw",
         "type": "boolean or None",
-        "desc": "Use `.raw` attribute of `adata` for coloring with gene expression. If `None`, defaults to `True` if `layer` isn’t provided and `adata.raw` is present."
+        "desc": "Use `.raw` attribute of `adata` for coloring with gene expression. If `None`, defaults to `True` if `layer` isn\u2019t provided and `adata.raw` is present."
       },
       {
         "name": "layer",
@@ -5030,7 +5819,7 @@
       {
         "name": "neighbors_key",
         "type": "string or None",
-        "desc": "Where to look for neighbors connectivities. If not specified, this looks .obsp[‘connectivities’] for connectivities (default storage place for pp.neighbors). If specified, this looks .obsp[.uns[neighbors_key][‘connectivities_key’]] for connectivities."
+        "desc": "Where to look for neighbors connectivities. If not specified, this looks .obsp[\u2018connectivities\u2019] for connectivities (default storage place for pp.neighbors). If specified, this looks .obsp[.uns[neighbors_key][\u2018connectivities_key\u2019]] for connectivities."
       },
       {
         "name": "arrows",
@@ -5207,13 +5996,32 @@
   },
   {
     "method": "scanpy.cli.console_main",
+    "keywords": [
+      "cli",
+      "console",
+      "console_main",
+      "main",
+      "scanpy"
+    ],
     "signature": "scanpy.cli.console_main()",
-    "description": "Serve as CLI entry point and don’t show a Python traceback if a called command fails.",
+    "description": "Serve as CLI entry point and don\u2019t show a Python traceback if a called command fails.",
     "params": [],
     "misc": "Located within the scanpy.logging module that deals with logging and profiling."
   },
   {
     "method": "scanpy.plotting.pca_loadings",
+    "keywords": [
+      "anndata",
+      "gene expression",
+      "image processing",
+      "loadings",
+      "pca",
+      "pca_loadings",
+      "plotting",
+      "ranking",
+      "scanpy",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.pca_loadings(adata, components=None, *, include_lowest=True, n_points=None, show=None, save=None)",
     "description": "Rank genes according to contributions to PCs.",
     "params": [
@@ -5252,6 +6060,16 @@
   },
   {
     "method": "scanpy.plotting.pca",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "clustering",
+      "feature selection",
+      "gene expression",
+      "image processing",
+      "plotting",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.pca(adata, *, color=None, mask_obs=None, gene_symbols=None, use_raw=None, sort_order=True, edges=False, edges_width=0.1, edges_color='grey', neighbors_key=None, arrows=False, arrows_kwds=None, groups=None, components=None, dimensions=None, layer=None, projection='2d', scale_factor=None, color_map=None, cmap=None, palette=None, na_color='lightgray', na_in_legend=True, size=None, frameon=None, legend_fontsize=None, legend_fontweight='bold', legend_loc='right margin', legend_fontoutline=None, colorbar_loc='right', vmax=None, vmin=None, vcenter=None, norm=None, add_outline=False, outline_width=(0.3, 0.05), outline_color=('black', 'white'), ncols=4, hspace=0.25, wspace=None, title=None, show=None, save=None, ax=None, return_fig=None, marker='.', annotate_var_explained=False, **kwargs)",
     "description": "Scatter plot in PCA coordinates.\n\nUse the parameter `annotate_var_explained` to annotate the explained variance.",
     "params": [
@@ -5450,6 +6268,15 @@
   },
   {
     "method": "scanpy.plotting.violin",
+    "keywords": [
+      "anndata",
+      "plotting",
+      "scanpy",
+      "scatter",
+      "scoring",
+      "violin",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.violin(adata, keys, groupby=None, *, log=False, use_raw=None, stripplot=True, jitter=True, size=1, layer=None, density_norm='width', order=None, multi_panel=None, xlabel='', ylabel=None, rotation=None, show=None, save=None, ax=None, scale=_empty, **kwds)",
     "description": "Violin plot.\n\nWraps seaborn.violinplot for AnnData.",
     "params": [
@@ -5558,8 +6385,17 @@
   },
   {
     "method": "scanpy.preprocessing.regress_out",
+    "keywords": [
+      "out",
+      "preprocessing",
+      "regress",
+      "regress_out",
+      "regression",
+      "scanpy",
+      "variables"
+    ],
     "signature": "scanpy.preprocessing.regress_out(adata, keys, *, layer=None, n_jobs=None, copy=False)",
-    "description": "Regress out (mostly) unwanted sources of variation. Uses simple linear regression. This is inspired by Seurat’s `regressOut` function in R. Note that this function tends to overcorrect in certain circumstances.",
+    "description": "Regress out (mostly) unwanted sources of variation. Uses simple linear regression. This is inspired by Seurat\u2019s `regressOut` function in R. Note that this function tends to overcorrect in certain circumstances.",
     "params": [
       {
         "name": "adata",
@@ -5592,10 +6428,21 @@
         "desc": "Returns `None` if `copy=False`, else returns an updated `AnnData` object. Sets the corrected count data matrix in `adata.X` or `adata.layers[layer]`."
       }
     ],
-    "misc": "Inspired by Seurat’s `regressOut` function in R. Known to overcorrect in certain circumstances."
+    "misc": "Inspired by Seurat\u2019s `regressOut` function in R. Known to overcorrect in certain circumstances."
   },
   {
     "method": "scanpy.metrics.confusion_matrix",
+    "keywords": [
+      "confusion",
+      "confusion_matrix",
+      "file format",
+      "heatmap",
+      "louvain",
+      "matrix",
+      "metrics",
+      "observations",
+      "scanpy"
+    ],
     "signature": "scanpy.metrics.confusion_matrix(orig, new, data=None, *, normalize=True)",
     "description": "Given an original and new set of labels, create a labelled confusion matrix. Parameters `orig` and `new` can either be entries in data or categorical arrays of the same size.",
     "params": [
@@ -5629,6 +6476,13 @@
   },
   {
     "method": "scanpy.read_umi_tools",
+    "keywords": [
+      "read",
+      "read_umi_tools",
+      "scanpy",
+      "umi",
+      "gzipped"
+    ],
     "signature": "scanpy.read_umi_tools(filename, dtype=None)",
     "description": "Read a gzipped condensed count matrix from umi_tools.",
     "params": [
@@ -5652,6 +6506,15 @@
   },
   {
     "method": "scanpy.tools.louvain",
+    "keywords": [
+      "clustering",
+      "graph",
+      "louvain",
+      "neighborhood",
+      "neighbors",
+      "prior network",
+      "scanpy"
+    ],
     "signature": "scanpy.tools.louvain(adata, resolution=None, *, random_state=0, restrict_to=None, key_added='louvain', adjacency=None, flavor='vtraag', directed=True, use_weights=False, partition_type=None, partition_kwargs=mappingproxy({}), neighbors_key=None, obsp=None, copy=False)",
     "description": "Cluster cells into subgroups using the Louvain algorithm. This method is designed for single-cell analysis and requires either prior execution of `neighbors()` or explicit provision of an `adjacency` matrix.",
     "params": [
@@ -5735,6 +6598,13 @@
   },
   {
     "method": "scanpy.read_mtx",
+    "keywords": [
+      "file format",
+      "mtx",
+      "read",
+      "read_mtx",
+      "scanpy"
+    ],
     "signature": "scanpy.read_mtx(filename, dtype='float32')",
     "description": "Read `.mtx` file.",
     "params": [
@@ -5758,6 +6628,14 @@
   },
   {
     "method": "scanpy.readwrite.read_10x_h5",
+    "keywords": [
+      "10x",
+      "10x genomics",
+      "read",
+      "read_10x_h5",
+      "readwrite",
+      "scanpy"
+    ],
     "signature": "scanpy.readwrite.read_10x_h5(filename, *, genome=None, gex_only=True, backup_url=None)",
     "description": "Read 10x-Genomics-formatted hdf5 file.",
     "params": [
@@ -5774,7 +6652,7 @@
       {
         "name": "gex_only",
         "type": "bool",
-        "desc": "Only keep ‘Gene Expression’ data and ignore other feature types, e.g. ‘Antibody Capture’, ‘CRISPR Guide Capture’, or ‘Custom’"
+        "desc": "Only keep \u2018Gene Expression\u2019 data and ignore other feature types, e.g. \u2018Antibody Capture\u2019, \u2018CRISPR Guide Capture\u2019, or \u2018Custom\u2019"
       },
       {
         "name": "backup_url",
@@ -5791,6 +6669,14 @@
   },
   {
     "method": "scanpy.tools.score_genes",
+    "keywords": [
+      "gene expression",
+      "genes",
+      "scanpy",
+      "score",
+      "score_genes",
+      "scoring"
+    ],
     "signature": "scanpy.tools.score_genes(adata, gene_list, *, ctrl_as_ref=True, ctrl_size=50, gene_pool=None, n_bins=25, score_name='score', random_state=0, copy=False, use_raw=None, layer=None)",
     "description": "Score a set of genes. The score is the average expression of a set of genes after subtraction by the average expression of a reference set of genes. The reference set is randomly sampled from the `gene_pool` for each binned expression value.",
     "params": [
@@ -5859,6 +6745,18 @@
   },
   {
     "method": "scanpy.plotting.dpt_timeseries",
+    "keywords": [
+      "diffusion",
+      "diffusion pseudotime",
+      "dpt",
+      "dpt_timeseries",
+      "heatmap",
+      "plotting",
+      "pseudotime",
+      "scanpy",
+      "timeseries",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.dpt_timeseries(adata, *, color_map=None, show=None, save=None, as_heatmap=True, marker='.')",
     "description": "Heatmap of pseudotime series.",
     "params": [
@@ -5902,6 +6800,15 @@
   },
   {
     "method": "scanpy.concat",
+    "keywords": [
+      "anndata",
+      "batch correction",
+      "concat",
+      "feature selection",
+      "scanpy",
+      "sparse matrix",
+      "variables"
+    ],
     "signature": "scanpy.concat(adatas, *, axis='obs', join='inner', merge=None, uns_merge=None, label=None, keys=None, index_unique=None, fill_value=None, pairwise=False)",
     "description": "Concatenates AnnData objects along an axis.",
     "params": [
@@ -5918,7 +6825,7 @@
       {
         "name": "join",
         "type": "str",
-        "desc": "How to align values when concatenating. If “outer”, the union of the other axis is taken. If “inner”, the intersection."
+        "desc": "How to align values when concatenating. If \u201couter\u201d, the union of the other axis is taken. If \u201cinner\u201d, the intersection."
       },
       {
         "name": "merge",
@@ -5933,7 +6840,7 @@
       {
         "name": "label",
         "type": "str",
-        "desc": "Column in axis annotation (i.e. `.obs` or `.var`) to place batch information in. If it’s None, no column is added."
+        "desc": "Column in axis annotation (i.e. `.obs` or `.var`) to place batch information in. If it\u2019s None, no column is added."
       },
       {
         "name": "keys",
@@ -5943,7 +6850,7 @@
       {
         "name": "index_unique",
         "type": "str",
-        "desc": "Whether to make the index unique by using the keys. If provided, this is the delimiter between “{orig_idx}{index_unique}{key}”."
+        "desc": "Whether to make the index unique by using the keys. If provided, this is the delimiter between \u201c{orig_idx}{index_unique}{key}\u201d."
       },
       {
         "name": "fill_value",
@@ -5965,13 +6872,21 @@
   },
   {
     "method": "scanpy.preprocessing.sample",
+    "keywords": [
+      "feature selection",
+      "observations",
+      "preprocessing",
+      "sample",
+      "scanpy",
+      "variables"
+    ],
     "signature": "scanpy.preprocessing.sample(data, fraction=None, *, n=None, rng=None, copy=False, replace=False, axis='obs', p=None)",
     "description": "Sample observations or variables with or without replacement.",
     "params": [
       {
         "name": "data",
         "type": "AnnData",
-        "desc": "The (annotated) data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "The (annotated) data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "fraction",
@@ -6018,6 +6933,17 @@
   },
   {
     "method": "scanpy.plotting.StackedViolin",
+    "keywords": [
+      "scanpy",
+      "clustering",
+      "differential expression",
+      "gene expression",
+      "image",
+      "marker genes",
+      "plotting",
+      "stackedviolin",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.StackedViolin(adata, var_names, groupby, *, use_raw=None, log=False, num_categories=7, categories_order=None, title=None, figsize=None, gene_symbols=None, var_group_positions=None, var_group_labels=None, var_group_rotation=None, layer=None, standard_scale=None, ax=None, vmin=None, vmax=None, vcenter=None, norm=None, **kwds)",
     "description": "Stacked violin plots.\n\nMakes a compact image composed of individual violin plots stacked on top of each other. Useful to visualize gene expression per cluster.",
     "params": [
@@ -6029,7 +6955,7 @@
       {
         "name": "var_names",
         "type": "Union[List[str], dict]",
-        "desc": "Should be a valid subset of `adata.var_names`. If `var_names` is a mapping, then the key is used as a label to group the values (see `var_group_labels`). The mapping values should be sequences of valid `adata.var_names`. In this case either coloring or ‘brackets’ are used for the grouping of var names depending on the plot. When `var_names` is a mapping, then the `var_group_labels` and `var_group_positions` are set."
+        "desc": "Should be a valid subset of `adata.var_names`. If `var_names` is a mapping, then the key is used as a label to group the values (see `var_group_labels`). The mapping values should be sequences of valid `adata.var_names`. In this case either coloring or \u2018brackets\u2019 are used for the grouping of var names depending on the plot. When `var_names` is a mapping, then the `var_group_labels` and `var_group_positions` are set."
       },
       {
         "name": "groupby",
@@ -6069,7 +6995,7 @@
       {
         "name": "var_group_positions",
         "type": "Optional[List[Tuple[int, int]]]",
-        "desc": "Use this parameter to highlight groups of `var_names`. This will draw a ‘bracket’ or a color block between the given start and end positions. If the parameter `var_group_labels` is set, the corresponding labels are added on top/left."
+        "desc": "Use this parameter to highlight groups of `var_names`. This will draw a \u2018bracket\u2019 or a color block between the given start and end positions. If the parameter `var_group_labels` is set, the corresponding labels are added on top/left."
       },
       {
         "name": "var_group_labels",
@@ -6131,6 +7057,13 @@
   },
   {
     "method": "scanpy.plotting.ranking",
+    "keywords": [
+      "pca",
+      "plotting",
+      "ranking",
+      "scanpy",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.ranking(adata, attr, keys, *, dictionary=None, indices=None, labels=None, color='black', n_points=30, log=False, include_lowest=False, show=None)",
     "description": "Plot rankings.",
     "params": [
@@ -6199,6 +7132,14 @@
   },
   {
     "method": "scanpy.tools.dpt",
+    "keywords": [
+      "diffusion",
+      "dpt",
+      "graph",
+      "image processing",
+      "pseudotime",
+      "scanpy"
+    ],
     "signature": "scanpy.tools.dpt(adata, n_dcs=10, *, n_branchings=0, min_group_size=0.01, allow_kendall_tau_shift=True, neighbors_key=None, copy=False)",
     "description": "Infer progression of cells through geodesic distance along the graph. Reconstructs the progression of a biological process from snapshot data using Diffusion Pseudotime. It is designed to handle disconnected graphs and can run in a hierarchical mode by setting `n_branchings>1`.",
     "params": [
@@ -6247,6 +7188,13 @@
   },
   {
     "method": "scanpy.readwrite.write",
+    "keywords": [
+      "anndata",
+      "readwrite",
+      "scanpy",
+      "write",
+      "objects"
+    ],
     "signature": "scanpy.readwrite.write(filename, adata, *, ext=None, compression='gzip', compression_opts=None)",
     "description": "Write AnnData objects to file.",
     "params": [
@@ -6280,6 +7228,17 @@
   },
   {
     "method": "scanpy.plotting.highest_expr_genes",
+    "keywords": [
+      "counts",
+      "expr",
+      "gene expression",
+      "genes",
+      "highest",
+      "highest_expr_genes",
+      "plotting",
+      "scanpy",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.highest_expr_genes(adata, n_top=30, *, layer=None, gene_symbols=None, log=False, show=None, save=None, ax=None, **kwds)",
     "description": "Fraction of counts assigned to each gene over all cells.\n\nComputes, for each gene, the fraction of counts assigned to that gene within a cell. The `n_top` genes with the highest mean fraction over all cells are plotted as boxplots.\n\nThis plot is similar to the `scater` package function `plotHighestExprs(type = \"highest-expression\")`.",
     "params": [
@@ -6338,28 +7297,39 @@
   },
   {
     "method": "scanpy.tools.ingest",
+    "keywords": [
+      "anndata",
+      "embedding",
+      "ingest",
+      "integration",
+      "neighbors",
+      "observations",
+      "pca",
+      "scanpy",
+      "umap"
+    ],
     "signature": "scanpy.tools.ingest(adata, adata_ref, *, obs=None, embedding_method=('umap', 'pca'), labeling_method='knn', neighbors_key=None, inplace=True, **kwargs)",
     "description": "Map labels and embeddings from reference data to new data. Integrates embeddings and annotations of an `adata` with a reference dataset `adata_ref` through projecting on a PCA (or alternate model) that has been fitted on the reference data. The function uses a knn classifier for mapping labels and the UMAP package for mapping the embeddings.",
     "params": [
       {
         "name": "adata",
         "type": "AnnData",
-        "desc": "The annotated data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes. This is the dataset without labels and embeddings."
+        "desc": "The annotated data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes. This is the dataset without labels and embeddings."
       },
       {
         "name": "adata_ref",
         "type": "AnnData",
-        "desc": "The annotated data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes. Variables (`n_vars` and `var_names`) of `adata_ref` should be the same as in `adata`. This is the dataset with labels and embeddings which need to be mapped to `adata`."
+        "desc": "The annotated data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes. Variables (`n_vars` and `var_names`) of `adata_ref` should be the same as in `adata`. This is the dataset with labels and embeddings which need to be mapped to `adata`."
       },
       {
         "name": "obs",
         "type": "str or list of str, optional",
-        "desc": "Labels’ keys in `adata_ref.obs` which need to be mapped to `adata.obs` (inferred for observation of `adata`)."
+        "desc": "Labels\u2019 keys in `adata_ref.obs` which need to be mapped to `adata.obs` (inferred for observation of `adata`)."
       },
       {
         "name": "embedding_method",
         "type": "str or tuple of str, default=('umap', 'pca')",
-        "desc": "Embeddings in `adata_ref` which need to be mapped to `adata`. The only supported values are ‘umap’ and ‘pca’."
+        "desc": "Embeddings in `adata_ref` which need to be mapped to `adata`. The only supported values are \u2018umap\u2019 and \u2018pca\u2019."
       },
       {
         "name": "labeling_method",
@@ -6386,13 +7356,20 @@
   },
   {
     "method": "scanpy.preprocessing.log1p",
+    "keywords": [
+      "log1p",
+      "preprocessing",
+      "scanpy",
+      "logarithmize",
+      "matrix"
+    ],
     "signature": "scanpy.preprocessing.log1p(data, *, base=None, copy=False, chunked=None, chunk_size=None, layer=None, obsm=None)",
     "description": "Logarithmize the data matrix.\n\nComputes $X = \\log(X + 1)$, where $log$ denotes the natural logarithm unless a different base is given.",
     "params": [
       {
         "name": "data",
         "type": "AnnData | ndarray | csr_matrix | csc_matrix",
-        "desc": "The (annotated) data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "The (annotated) data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "base",
@@ -6434,6 +7411,14 @@
   },
   {
     "method": "scanpy.plotting.tsne",
+    "keywords": [
+      "anndata",
+      "plotting",
+      "scanpy",
+      "scatter",
+      "tsne",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.tsne(adata, *, color=None, mask_obs=None, gene_symbols=None, use_raw=None, sort_order=True, edges=False, edges_width=0.1, edges_color='grey', neighbors_key=None, arrows=False, arrows_kwds=None, groups=None, components=None, dimensions=None, layer=None, projection='2d', scale_factor=None, color_map=None, cmap=None, palette=None, na_color='lightgray', na_in_legend=True, size=None, frameon=None, legend_fontsize=None, legend_fontweight='bold', legend_loc='right margin', legend_fontoutline=None, colorbar_loc='right', vmax=None, vmin=None, vcenter=None, norm=None, add_outline=False, outline_width=(0.3, 0.05), outline_color=('black', 'white'), ncols=4, hspace=0.25, wspace=None, title=None, show=None, save=None, ax=None, return_fig=None, marker='.', **kwargs)",
     "description": "Scatter plot in tSNE basis.",
     "params": [
@@ -6455,7 +7440,7 @@
       {
         "name": "use_raw",
         "type": "bool or None",
-        "desc": "Use `.raw` attribute of `adata` for coloring with gene expression. Defaults to `True` if `layer` isn’t provided and `adata.raw` is present."
+        "desc": "Use `.raw` attribute of `adata` for coloring with gene expression. Defaults to `True` if `layer` isn\u2019t provided and `adata.raw` is present."
       },
       {
         "name": "layer",
@@ -6657,8 +7642,20 @@
   },
   {
     "method": "scanpy.preprocessing.recipe_zheng17",
+    "keywords": [
+      "scanpy",
+      "10x genomics",
+      "anndata",
+      "counts",
+      "feature selection",
+      "filtering",
+      "preprocessing",
+      "recipe",
+      "recipe_zheng17",
+      "zheng17"
+    ],
     "signature": "scanpy.preprocessing.recipe_zheng17(adata, *, n_top_genes=1000, log=True, plot=False, copy=False)",
-    "description": "Normalize and filter as of Zheng et al. [2017]. Reproduces the preprocessing of Zheng et al. [2017] – the Cell Ranger R Kit of 10x Genomics. Expects non-logarithmized data. If using logarithmized data, pass `log=False`.",
+    "description": "Normalize and filter as of Zheng et al. [2017]. Reproduces the preprocessing of Zheng et al. [2017] \u2013 the Cell Ranger R Kit of 10x Genomics. Expects non-logarithmized data. If using logarithmized data, pass `log=False`.",
     "params": [
       {
         "name": "adata",
@@ -6695,6 +7692,17 @@
   },
   {
     "method": "scanpy.plotting.draw_graph",
+    "keywords": [
+      "anndata",
+      "draw",
+      "draw_graph",
+      "graph",
+      "plotting",
+      "raw counts",
+      "scanpy",
+      "scatter",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.draw_graph(adata, *, color=None, mask_obs=None, gene_symbols=None, use_raw=None, sort_order=True, edges=False, edges_width=0.1, edges_color='grey', neighbors_key=None, arrows=False, arrows_kwds=None, groups=None, components=None, dimensions=None, layer=None, projection='2d', scale_factor=None, color_map=None, cmap=None, palette=None, na_color='lightgray', na_in_legend=True, size=None, frameon=None, legend_fontsize=None, legend_fontweight='bold', legend_loc='right margin', legend_fontoutline=None, colorbar_loc='right', vmax=None, vmin=None, vcenter=None, norm=None, add_outline=False, outline_width=(0.3, 0.05), outline_color=('black', 'white'), ncols=4, hspace=0.25, wspace=None, title=None, show=None, save=None, ax=None, return_fig=None, marker='.', layout=None, **kwargs)",
     "description": "Scatter plot in graph-drawing basis.",
     "params": [
@@ -6716,7 +7724,7 @@
       {
         "name": "use_raw",
         "type": "boolean",
-        "desc": "Use `.raw` attribute of `adata` for coloring with gene expression. If `None`, defaults to `True` if `layer` isn’t provided and `adata.raw` is present."
+        "desc": "Use `.raw` attribute of `adata` for coloring with gene expression. If `None`, defaults to `True` if `layer` isn\u2019t provided and `adata.raw` is present."
       },
       {
         "name": "layer",
@@ -6746,7 +7754,7 @@
       {
         "name": "neighbors_key",
         "type": "str",
-        "desc": "Where to look for neighbors connectivities. If not specified, this looks .obsp[‘connectivities’] for connectivities (default storage place for pp.neighbors). If specified, this looks .obsp[.uns[neighbors_key][‘connectivities_key’]] for connectivities."
+        "desc": "Where to look for neighbors connectivities. If not specified, this looks .obsp[\u2018connectivities\u2019] for connectivities (default storage place for pp.neighbors). If specified, this looks .obsp[.uns[neighbors_key][\u2018connectivities_key\u2019]] for connectivities."
       },
       {
         "name": "arrows",
@@ -6821,7 +7829,7 @@
       {
         "name": "palette",
         "type": "str, Cycler, dict or sequence",
-        "desc": "Colors to use for plotting categorical annotation groups. The palette can be a valid `ListedColormap` name (`'Set2'`, `'tab20'`, …), a `Cycler` object, a dict mapping categories to colors, or a sequence of colors. Colors must be valid to matplotlib. (see `is_color_like()`). If `None`, `mpl.rcParams[\"axes.prop_cycle\"]` is used unless the categorical variable already has colors stored in `adata.uns[\"{var}_colors\"]`. If provided, values of `adata.uns[\"{var}_colors\"]` will be set."
+        "desc": "Colors to use for plotting categorical annotation groups. The palette can be a valid `ListedColormap` name (`'Set2'`, `'tab20'`, \u2026), a `Cycler` object, a dict mapping categories to colors, or a sequence of colors. Colors must be valid to matplotlib. (see `is_color_like()`). If `None`, `mpl.rcParams[\"axes.prop_cycle\"]` is used unless the categorical variable already has colors stored in `adata.uns[\"{var}_colors\"]`. If provided, values of `adata.uns[\"{var}_colors\"]` will be set."
       },
       {
         "name": "na_color",
@@ -6846,7 +7854,7 @@
       {
         "name": "vmin",
         "type": "float, str, function or list",
-        "desc": "The value representing the lower limit of the color scale. Values smaller than vmin are plotted with the same color as vmin. vmin can be a number, a string, a function or `None`. If vmin is a string and has the format `pN`, this is interpreted as a vmin=percentile(N). For example vmin=’p1.5’ is interpreted as the 1.5 percentile. If vmin is function, then vmin is interpreted as the return value of the function over the list of values to plot. For example to set vmin tp the mean of the values to plot, `def my_vmin(values): return np.mean(values)` and then set `vmin=my_vmin`. If vmin is None (default) an automatic minimum value is used as defined by matplotlib `scatter` function. When making multiple plots, vmin can be a list of values, one for each plot. For example `vmin=[0.1, 'p1', None, my_vmin]`"
+        "desc": "The value representing the lower limit of the color scale. Values smaller than vmin are plotted with the same color as vmin. vmin can be a number, a string, a function or `None`. If vmin is a string and has the format `pN`, this is interpreted as a vmin=percentile(N). For example vmin=\u2019p1.5\u2019 is interpreted as the 1.5 percentile. If vmin is function, then vmin is interpreted as the return value of the function over the list of values to plot. For example to set vmin tp the mean of the values to plot, `def my_vmin(values): return np.mean(values)` and then set `vmin=my_vmin`. If vmin is None (default) an automatic minimum value is used as defined by matplotlib `scatter` function. When making multiple plots, vmin can be a list of values, one for each plot. For example `vmin=[0.1, 'p1', None, my_vmin]`"
       },
       {
         "name": "vmax",
@@ -6923,13 +7931,23 @@
   },
   {
     "method": "scanpy.preprocessing.scale",
+    "keywords": [
+      "feature selection",
+      "gene expression",
+      "observations",
+      "preprocessing",
+      "scale",
+      "scaling",
+      "scanpy",
+      "variables"
+    ],
     "signature": "scanpy.preprocessing.scale(data, *, zero_center=True, max_value=None, copy=False, layer=None, obsm=None, mask_obs=None)",
     "description": "Scale data to unit variance and zero mean.",
     "params": [
       {
         "name": "data",
         "type": "(annotated) data matrix",
-        "desc": "The annotated data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "The annotated data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "zero_center",
@@ -6971,6 +7989,17 @@
   },
   {
     "method": "scanpy.plotting.pca_scatter",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "clustering",
+      "feature selection",
+      "gene expression",
+      "image processing",
+      "pca_scatter",
+      "plotting",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.pca_scatter(adata, *, color=None, mask_obs=None, gene_symbols=None, use_raw=None, sort_order=True, edges=False, edges_width=0.1, edges_color='grey', neighbors_key=None, arrows=False, arrows_kwds=None, groups=None, components=None, dimensions=None, layer=None, projection='2d', scale_factor=None, color_map=None, cmap=None, palette=None, na_color='lightgray', na_in_legend=True, size=None, frameon=None, legend_fontsize=None, legend_fontweight='bold', legend_loc='right margin', legend_fontoutline=None, colorbar_loc='right', vmax=None, vmin=None, vcenter=None, norm=None, add_outline=False, outline_width=(0.3, 0.05), outline_color=('black', 'white'), ncols=4, hspace=0.25, wspace=None, title=None, show=None, save=None, ax=None, return_fig=None, marker='.', annotate_var_explained=False, **kwargs)",
     "description": "Scatter plot in PCA coordinates. Use the parameter `annotate_var_explained` to annotate the explained variance.",
     "params": [
@@ -6997,7 +8026,7 @@
       {
         "name": "use_raw",
         "type": "Optional",
-        "desc": "Use `.raw` attribute of `adata` for coloring with gene expression. If `None`, defaults to `True` if `layer` isn’t provided and `adata.raw` is present."
+        "desc": "Use `.raw` attribute of `adata` for coloring with gene expression. If `None`, defaults to `True` if `layer` isn\u2019t provided and `adata.raw` is present."
       },
       {
         "name": "sort_order",
@@ -7077,7 +8106,7 @@
       {
         "name": "palette",
         "type": "Optional",
-        "desc": "Colors to use for plotting categorical annotation groups. The palette can be a valid `ListedColormap` name (`'Set2'`, `'tab20'`, …), a `Cycler` object, a dict mapping categories to colors, or a sequence of colors. Colors must be valid to matplotlib."
+        "desc": "Colors to use for plotting categorical annotation groups. The palette can be a valid `ListedColormap` name (`'Set2'`, `'tab20'`, \u2026), a `Cycler` object, a dict mapping categories to colors, or a sequence of colors. Colors must be valid to matplotlib."
       },
       {
         "name": "na_color",
@@ -7224,6 +8253,16 @@
   },
   {
     "method": "scanpy.plotting.scatter",
+    "keywords": [
+      "feature selection",
+      "gene expression",
+      "observations",
+      "plotting",
+      "scanpy",
+      "scatter",
+      "variables",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.scatter(adata, x=None, y=None, *, color=None, use_raw=None, layers=None, sort_order=True, alpha=None, basis=None, groups=None, components=None, projection='2d', legend_loc='right margin', legend_fontsize=None, legend_fontweight=None, legend_fontoutline=None, color_map=None, palette=None, frameon=None, right_margin=None, left_margin=None, size=None, marker='.', title=None, show=None, save=None, ax=None)",
     "description": "Scatter plot along observations or variables axes. Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).",
     "params": [
@@ -7352,6 +8391,18 @@
   },
   {
     "method": "scanpy.plotting.rank_genes_groups_violin",
+    "keywords": [
+      "gene expression",
+      "genes",
+      "groups",
+      "plotting",
+      "rank",
+      "rank_genes_groups_violin",
+      "ranking",
+      "scanpy",
+      "violin",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.rank_genes_groups_violin(adata, groups=None, *, n_genes=20, gene_names=None, gene_symbols=None, use_raw=None, key=None, split=True, density_norm='width', strip=True, jitter=True, size=1, ax=None, show=None, save=None, scale=_empty)",
     "description": "Plot ranking of genes for all tested comparisons.",
     "params": [
@@ -7430,6 +8481,14 @@
   },
   {
     "method": "scanpy.logging.print_versions",
+    "keywords": [
+      "configuration",
+      "logging",
+      "print",
+      "print_versions",
+      "scanpy",
+      "versions"
+    ],
     "signature": "scanpy.logging.print_versions()",
     "description": "Alias for `print_header`.",
     "params": [
@@ -7443,13 +8502,21 @@
   },
   {
     "method": "scanpy.tools.sim",
+    "keywords": [
+      "differential expression",
+      "gene expression",
+      "network",
+      "scanpy",
+      "sim",
+      "simulation"
+    ],
     "signature": "scanpy.tools.sim(model, *, params_file=True, tmax=None, branching=None, nrRealizations=None, noiseObs=None, noiseDyn=None, step=None, seed=None, writedir=None)",
     "description": "Simulate dynamic gene expression data. Sample from a stochastic differential equation model built from literature-curated boolean gene regulatory networks, as suggested by Wittmann *et al.* (2009). The Scanpy implementation can be found in Wolf *et al.* (2018).",
     "params": [
       {
         "name": "model",
         "type": "str",
-        "desc": "Model file in ‘sim_models’ directory."
+        "desc": "Model file in \u2018sim_models\u2019 directory."
       },
       {
         "name": "params_file",
@@ -7506,13 +8573,21 @@
   },
   {
     "method": "scanpy.preprocessing.pca",
+    "keywords": [
+      "decomposition",
+      "pca",
+      "preprocessing",
+      "scanpy",
+      "sparse matrix",
+      "variables"
+    ],
     "signature": "scanpy.preprocessing.pca(data, n_comps=None, *, layer=None, zero_center=True, svd_solver=None, random_state=0, return_info=False, mask_var=_empty, use_highly_variable=None, dtype='float32', chunked=False, chunk_size=None, key_added=None, copy=False)",
     "description": "Principal component analysis (PCA) computes PCA coordinates, loadings, and variance decomposition using the implementation from scikit-learn.",
     "params": [
       {
         "name": "data",
         "type": "array-like or AnnData",
-        "desc": "The (annotated) data matrix of shape n_obs × n_vars. Rows correspond to cells and columns to genes."
+        "desc": "The (annotated) data matrix of shape n_obs \u00d7 n_vars. Rows correspond to cells and columns to genes."
       },
       {
         "name": "n_comps",
@@ -7589,13 +8664,24 @@
   },
   {
     "method": "scanpy.preprocessing.filter_cells",
+    "keywords": [
+      "cells",
+      "counts",
+      "filter",
+      "filter_cells",
+      "filtering",
+      "gene expression",
+      "observations",
+      "preprocessing",
+      "scanpy"
+    ],
     "signature": "scanpy.preprocessing.filter_cells(data, *, min_counts=None, min_genes=None, max_counts=None, max_genes=None, inplace=True, copy=False)",
     "description": "Filter cell outliers based on counts and numbers of genes expressed.",
     "params": [
       {
         "name": "data",
         "type": "AnnData",
-        "desc": "The (annotated) data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "The (annotated) data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "min_counts",
@@ -7628,10 +8714,18 @@
         "desc": "Depending on `inplace`, returns the following arrays or directly subsets and annotates the data matrix:\n- **cells_subset**: Boolean index mask that does filtering. `True` means that the cell is kept. `False` means the cell is removed.\n- **number_per_cell**: Depending on what was thresholded (`counts` or `genes`), the array stores `n_counts` or `n_cells` per gene."
       }
     ],
-    "misc": "For instance, only keep cells with at least `min_counts` counts or `min_genes` genes expressed. This is to filter measurement outliers, i.e. “unreliable” observations. Only provide one of the optional parameters `min_counts`, `min_genes`, `max_counts`, `max_genes` per call."
+    "misc": "For instance, only keep cells with at least `min_counts` counts or `min_genes` genes expressed. This is to filter measurement outliers, i.e. \u201cunreliable\u201d observations. Only provide one of the optional parameters `min_counts`, `min_genes`, `max_counts`, `max_genes` per call."
   },
   {
     "method": "scanpy.plotting.timeseries_as_heatmap",
+    "keywords": [
+      "heatmap",
+      "plotting",
+      "scanpy",
+      "timeseries",
+      "timeseries_as_heatmap",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.timeseries_as_heatmap(X, *, var_names=(), highlights_x=(), color_map=None)",
     "description": "Plot timeseries as heatmap.",
     "params": [
@@ -7660,6 +8754,14 @@
   },
   {
     "method": "scanpy.tools.leiden",
+    "keywords": [
+      "batch correction",
+      "clustering",
+      "leiden",
+      "louvain",
+      "neighbors",
+      "scanpy"
+    ],
     "signature": "scanpy.tools.leiden(adata, resolution=1, *, restrict_to=None, random_state=0, key_added='leiden', adjacency=None, directed=None, use_weights=True, n_iterations=-1, partition_type=None, neighbors_key=None, obsp=None, copy=False, flavor='leidenalg', **clustering_args)",
     "description": "Cluster cells into subgroups using the Leiden algorithm, an improved version of the Louvain algorithm. It was proposed for single-cell analysis by Levine et al. This requires having run `neighbors()` or `bbknn()` first.",
     "params": [
@@ -7671,7 +8773,7 @@
       {
         "name": "resolution",
         "type": "float or None",
-        "desc": "A parameter value controlling the coarseness of the clustering. Higher values lead to more clusters. Set to `None` if overriding `partition_type` to one that doesn’t accept a `resolution_parameter`."
+        "desc": "A parameter value controlling the coarseness of the clustering. Higher values lead to more clusters. Set to `None` if overriding `partition_type` to one that doesn\u2019t accept a `resolution_parameter`."
       },
       {
         "name": "random_state",
@@ -7721,7 +8823,7 @@
       {
         "name": "obsp",
         "type": "str or None",
-        "desc": "Use .obsp[obsp] as adjacency. You can’t specify both `obsp` and `neighbors_key` at the same time."
+        "desc": "Use .obsp[obsp] as adjacency. You can\u2019t specify both `obsp` and `neighbors_key` at the same time."
       },
       {
         "name": "copy",
@@ -7731,7 +8833,7 @@
       {
         "name": "flavor",
         "type": "str",
-        "desc": "Which package’s implementation to use."
+        "desc": "Which package\u2019s implementation to use."
       },
       {
         "name": "**clustering_args",
@@ -7741,13 +8843,20 @@
       {
         "name": "return",
         "type": "AnnData or None",
-        "desc": "Returns `None` if `copy=False`, else returns an `AnnData` object. Sets the following fields: `adata.obs['leiden' | key_added]`: Array of dim (number of samples) that stores the subgroup id (`'0'`, `'1'`, …) for each cell. `adata.uns['leiden' | key_added]['params']`: A dict with the values for the parameters `resolution`, `random_state`, and `n_iterations`."
+        "desc": "Returns `None` if `copy=False`, else returns an `AnnData` object. Sets the following fields: `adata.obs['leiden' | key_added]`: Array of dim (number of samples) that stores the subgroup id (`'0'`, `'1'`, \u2026) for each cell. `adata.uns['leiden' | key_added]['params']`: A dict with the values for the parameters `resolution`, `random_state`, and `n_iterations`."
       }
     ],
     "misc": "Cluster cells using the Leiden algorithm. Enhanced version of the Louvain algorithm focusing on single-cell analysis. Implementations available with different parameter settings for customization and optimization. Use `neighbors()` or `bbknn()` before clustering."
   },
   {
     "method": "scanpy.read_excel",
+    "keywords": [
+      "anndata",
+      "excel",
+      "read",
+      "read_excel",
+      "scanpy"
+    ],
     "signature": "scanpy.read_excel(filename, sheet, dtype='float32')",
     "description": "Read `.xlsx` (Excel) file. Assumes that the first columns stores the row names and the first row the column names.",
     "params": [
@@ -7766,6 +8875,13 @@
   },
   {
     "method": "scanpy.tools.diffmap",
+    "keywords": [
+      "anndata",
+      "diffmap",
+      "diffusion",
+      "observations",
+      "scanpy"
+    ],
     "signature": "scanpy.tools.diffmap(adata, n_comps=15, *, neighbors_key=None, random_state=0, copy=False)",
     "description": "Diffusion Maps use adapted Gaussian kernel suggested by Haghverdi with the implementation of Wolf for visualizing single-cell data.",
     "params": [
@@ -7804,6 +8920,17 @@
   },
   {
     "method": "scanpy.get.get.obs_df",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "clustering",
+      "gene expression",
+      "louvain",
+      "marker genes",
+      "get",
+      "obs",
+      "obs_df"
+    ],
     "signature": "scanpy.get.get.obs_df(adata, keys=(), obsm_keys=(), *, layer=None, gene_symbols=None, use_raw=False)",
     "description": "Return values for observations in adata.",
     "params": [
@@ -7847,6 +8974,17 @@
   },
   {
     "method": "scanpy.get.obs_df",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "clustering",
+      "gene expression",
+      "louvain",
+      "marker genes",
+      "get",
+      "obs",
+      "obs_df"
+    ],
     "signature": "scanpy.get.obs_df(adata, keys=(), obsm_keys=(), *, layer=None, gene_symbols=None, use_raw=False)",
     "description": "Return values for observations in adata.",
     "params": [
@@ -7890,6 +9028,15 @@
   },
   {
     "method": "scanpy.plotting.embedding",
+    "keywords": [
+      "embedding",
+      "pca",
+      "plotting",
+      "scanpy",
+      "scatter",
+      "umap",
+      "visualization"
+    ],
     "signature": "scanpy.plotting.embedding(adata, basis, *, color=None, mask_obs=None, gene_symbols=None, use_raw=None, sort_order=True, edges=False, edges_width=0.1, edges_color='grey', neighbors_key=None, arrows=False, arrows_kwds=None, groups=None, components=None, dimensions=None, layer=None, projection='2d', scale_factor=None, color_map=None, cmap=None, palette=None, na_color='lightgray', na_in_legend=True, size=None, frameon=None, legend_fontsize=None, legend_fontweight='bold', legend_loc='right margin', legend_fontoutline=None, colorbar_loc='right', vmax=None, vmin=None, vcenter=None, norm=None, add_outline=False, outline_width=(0.3, 0.05), outline_color=('black', 'white'), ncols=4, hspace=0.25, wspace=None, title=None, show=None, save=None, ax=None, return_fig=None, marker='.', **kwargs)",
     "description": "Scatter plot for user specified embedding basis (e.g. umap, pca, etc).",
     "params": [
@@ -7916,7 +9063,7 @@
       {
         "name": "use_raw",
         "type": "bool",
-        "desc": "Use `.raw` attribute of `adata` for coloring with gene expression. Defaults to `True` if `layer` isn’t provided and `adata.raw` is present."
+        "desc": "Use `.raw` attribute of `adata` for coloring with gene expression. Defaults to `True` if `layer` isn\u2019t provided and `adata.raw` is present."
       },
       {
         "name": "layer",
@@ -8118,23 +9265,31 @@
   },
   {
     "method": "scanpy.queries.mitochondrial_genes",
+    "keywords": [
+      "gene expression",
+      "genes",
+      "mitochondrial",
+      "mitochondrial_genes",
+      "queries",
+      "scanpy"
+    ],
     "signature": "scanpy.queries.mitochondrial_genes(org, *, attrname='external_gene_name', host='www.ensembl.org', use_cache=False, chromosome='MT')",
     "description": "Mitochondrial gene symbols for specific organism through BioMart.",
     "params": [
       {
         "name": "org",
         "type": "string",
-        "desc": "Organism to query. Must be an organism in ensembl biomart. “hsapiens”, “mmusculus”, “drerio”, etc."
+        "desc": "Organism to query. Must be an organism in ensembl biomart. \u201chsapiens\u201d, \u201cmmusculus\u201d, \u201cdrerio\u201d, etc."
       },
       {
         "name": "attrname",
         "type": "string",
-        "desc": "Biomart attribute field to return. Possible values include “external_gene_name”, “ensembl_gene_id”, “hgnc_symbol”, “mgi_symbol”, and “zfin_id_symbol”."
+        "desc": "Biomart attribute field to return. Possible values include \u201cexternal_gene_name\u201d, \u201censembl_gene_id\u201d, \u201chgnc_symbol\u201d, \u201cmgi_symbol\u201d, and \u201czfin_id_symbol\u201d."
       },
       {
         "name": "host",
         "type": "string",
-        "desc": "A valid BioMart host URL. Alternative values include archive urls (like “grch37.ensembl.org”) or regional mirrors (like “useast.ensembl.org”)."
+        "desc": "A valid BioMart host URL. Alternative values include archive urls (like \u201cgrch37.ensembl.org\u201d) or regional mirrors (like \u201cuseast.ensembl.org\u201d)."
       },
       {
         "name": "use_cache",
@@ -8156,6 +9311,14 @@
   },
   {
     "method": "scanpy.tools.dendrogram",
+    "keywords": [
+      "scanpy",
+      "anndata",
+      "clustering",
+      "correlation",
+      "dendrogram",
+      "dotplot"
+    ],
     "signature": "scanpy.tools.dendrogram(adata, groupby, *, n_pcs=None, use_rep=None, var_names=None, use_raw=None, cor_method='pearson', linkage_method='complete', optimal_ordering=False, key_added=None, inplace=True)",
     "description": "Compute a hierarchical clustering for the given `groupby` categories.\n\nBy default, the PCA representation is used unless `.X` has less than 50 variables. Alternatively, a list of `var_names` (e.g. genes) can be given. Average values of either `var_names` or components are used to compute a correlation matrix.\n\nThe hierarchical clustering can be visualized using `scanpy.pl.dendrogram()` or multiple other visualizations that can include a dendrogram: `matrixplot()`, `heatmap()`, `dotplot()`, and `stacked_violin()`.",
     "params": [
@@ -8172,7 +9335,7 @@
       {
         "name": "use_rep",
         "type": "Optional[str]",
-        "desc": "Use the indicated representation. `'X'` or any key for `.obsm` is valid. If `None`, the representation is chosen automatically: For `.n_vars` < `N_PCS` (default: 50), `.X` is used, otherwise ‘X_pca’ is used. If ‘X_pca’ is not present, it’s computed with default parameters or `n_pcs` if present."
+        "desc": "Use the indicated representation. `'X'` or any key for `.obsm` is valid. If `None`, the representation is chosen automatically: For `.n_vars` < `N_PCS` (default: 50), `.X` is used, otherwise \u2018X_pca\u2019 is used. If \u2018X_pca\u2019 is not present, it\u2019s computed with default parameters or `n_pcs` if present."
       },
       {
         "name": "var_names",
@@ -8187,7 +9350,7 @@
       {
         "name": "cor_method",
         "type": "str",
-        "desc": "Correlation method to use. Options are ‘pearson’, ‘kendall’, and ‘spearman’"
+        "desc": "Correlation method to use. Options are \u2018pearson\u2019, \u2018kendall\u2019, and \u2018spearman\u2019"
       },
       {
         "name": "linkage_method",
@@ -8219,13 +9382,20 @@
   },
   {
     "method": "scanpy.preprocessing.sqrt",
+    "keywords": [
+      "preprocessing",
+      "scanpy",
+      "sqrt",
+      "take",
+      "square"
+    ],
     "signature": "scanpy.preprocessing.sqrt(data, *, copy=False, chunked=False, chunk_size=None)",
     "description": "Take square root of the data matrix. Computes $X = \\sqrt(X)$.",
     "params": [
       {
         "name": "data",
         "type": "(AnnData | csr_matrix | csc_matrix | ndarray)",
-        "desc": "The (annotated) data matrix of shape `n_obs` × `n_vars`. Rows correspond to cells and columns to genes."
+        "desc": "The (annotated) data matrix of shape `n_obs` \u00d7 `n_vars`. Rows correspond to cells and columns to genes."
       },
       {
         "name": "copy",
@@ -8252,6 +9422,13 @@
   },
   {
     "method": "scanpy.plotting.timeseries",
+    "keywords": [
+      "plotting",
+      "scanpy",
+      "timeseries",
+      "visualization",
+      "plot"
+    ],
     "signature": "scanpy.plotting.timeseries(X, **kwargs)",
     "description": "Plot X. See timeseries_subplot.",
     "params": [
@@ -8270,6 +9447,13 @@
   },
   {
     "method": "scanpy.read_hdf",
+    "keywords": [
+      "hdf",
+      "read",
+      "read_hdf",
+      "scanpy",
+      "file"
+    ],
     "signature": "scanpy.read_hdf(filename, key)",
     "description": "Read `.h5` (hdf5) file.",
     "params": [
@@ -8293,6 +9477,16 @@
   },
   {
     "method": "scanpy.preprocessing.recipe_seurat",
+    "keywords": [
+      "filtering",
+      "image processing",
+      "normalization",
+      "preprocessing",
+      "recipe",
+      "recipe_seurat",
+      "scanpy",
+      "seurat"
+    ],
     "signature": "scanpy.preprocessing.recipe_seurat(adata, *, log=True, plot=False, copy=False)",
     "description": "Normalize and filter as of Seurat. This uses a particular preprocessing. Expects non-logarithmized data. If using logarithmized data, pass `log=False`.",
     "params": [
@@ -8326,6 +9520,14 @@
   },
   {
     "method": "scanpy.get.get.var_df",
+    "keywords": [
+      "anndata",
+      "get",
+      "observations",
+      "scanpy",
+      "var",
+      "var_df"
+    ],
     "signature": "scanpy.get.get.var_df(adata, keys=(), varm_keys=(), *, layer=None)",
     "description": "Return values for observations in adata.",
     "params": [
@@ -8359,6 +9561,16 @@
   },
   {
     "method": "scanpy.queries.biomart_annotations",
+    "keywords": [
+      "anndata",
+      "annotations",
+      "biomart",
+      "biomart_annotations",
+      "gene expression",
+      "queries",
+      "scanpy",
+      "variables"
+    ],
     "signature": "scanpy.queries.biomart_annotations(org, attrs, *, host='www.ensembl.org', use_cache=False)",
     "description": "Retrieve gene annotations from ensembl biomart.",
     "params": [
@@ -8392,6 +9604,14 @@
   },
   {
     "method": "scanpy.get.var_df",
+    "keywords": [
+      "anndata",
+      "get",
+      "observations",
+      "scanpy",
+      "var",
+      "var_df"
+    ],
     "signature": "scanpy.get.var_df(adata, keys=(), varm_keys=(), *, layer=None)",
     "description": "Return values for observations in adata.",
     "params": [
@@ -8425,6 +9645,13 @@
   },
   {
     "method": "scanpy.readwrite.is_int",
+    "keywords": [
+      "is_int",
+      "readwrite",
+      "scanpy",
+      "check",
+      "whether"
+    ],
     "signature": "scanpy.readwrite.is_int(string)",
     "description": "Check whether string is integer.",
     "params": [

@@ -1,14 +1,20 @@
+---
+title: "Building spatial neighbors graph"
+keywords:
+  - "squidpy"
+  - "spatial neighbors"
+  - "spatial graph"
+  - "connectivity"
+  - "coord_type"
+  - "delaunay"
+  - "n_rings"
+  - "n_neighs"
+  - "radius"
+---
+
 # Building spatial neighbors graph
 
-This example shows how to compute a spatial neighbors graph.
-
-Spatial graph is a graph of spatial neighbors with observations as nodes
-and neighbor-hood relations between observations as edges. We use
-spatial coordinates of spots/cells to identify neighbors among them.
-Different approach of defining a neighborhood relation among
-observations are used for different types of spatial datasets.
-
-
+This example shows how to compute spatial neighbors graphs for different spatial dataset types using `squidpy.gr.spatial_neighbors`.
 
 ```python
 import numpy as np
@@ -16,52 +22,30 @@ import numpy as np
 import squidpy as sq
 ```
 
-First, we show how to compute the spatial neighbors graph for a Visium
-dataset.
+## Visium grid datasets
 
-
+Load a Visium dataset and compute neighbors with `coord_type='grid'`. The `n_rings` parameter specifies how many hexagonal rings around each spot are considered neighbors.
 
 ```python
 adata = sq.datasets.visium_fluo_adata()
 adata
 ```
 
-We use {func}`squidpy.gr.spatial_neighbors` for this. The function expects
-`coord_type = 'visium'` by default. We set this parameter here
-explicitly for clarity. `n_rings` should be used only for Visium
-datasets. It specifies for each spot how many hexagonal rings of spots
-around will be considered neighbors.
-
-
-
 ```python
 sq.gr.spatial_neighbors(adata, n_rings=2, coord_type="grid", n_neighs=6)
 ```
 
-The function builds a spatial graph and saves its adjacency matrix to
-`adata.obsp['spatial_connectivities']` and weighted adjacency matrix to
-`adata.obsp['spatial_distances']` by default. Note that it can also
-build a a graph from a square grid, just set `n_neighs = 4`.
-
-
+Results are saved in `adata.obsp['spatial_connectivities']` and `adata.obsp['spatial_distances']`.
 
 ```python
 adata.obsp["spatial_connectivities"]
 ```
 
-The weights of the weighted adjacency matrix are ordinal numbers of
-hexagonal rings in the case of `coord_type = 'visium'`.
-
-
-
 ```python
 adata.obsp["spatial_distances"]
 ```
 
-We can visualize the neighbors of a point to better visualize what
-[n\_rings]{.title-ref} mean:
-
-
+Visualize the neighbors of a specific point.
 
 ```python
 _, idx = adata.obsp["spatial_connectivities"][420, :].nonzero()
@@ -74,23 +58,16 @@ sq.pl.spatial_scatter(
 )
 ```
 
-Next, we show how to compute the spatial neighbors graph for a non-grid
-dataset.
+## Non-grid datasets
 
-
+Use `coord_type='generic'` with `n_neighs` for fixed number of nearest neighbors, or `delaunay=True` for Delaunay triangulation.
 
 ```python
 adata = sq.datasets.imc()
 adata
 ```
 
-We use the same function for this with `coord_type = 'generic'`.
-`n_neighs` and `radius` can be used for non-Visium datasets. `n_neighs`
-specifies a fixed number of the closest spots for each spot as
-neighbors. Alternatively, `delaunay = True` can be used, for a Delaunay
-triangulation graph.
-
-
+Fixed number of nearest neighbors.
 
 ```python
 sq.gr.spatial_neighbors(adata, n_neighs=10, coord_type="generic")
@@ -105,11 +82,7 @@ sq.pl.spatial_scatter(
 )
 ```
 
-We use the same function for this with `coord_type = 'generic'` and
-`delaunay = True`. You can appreciate that the neighbor graph is
-slightly different than before.
-
-
+Delaunay triangulation graph.
 
 ```python
 sq.gr.spatial_neighbors(adata, delaunay=True, coord_type="generic")
@@ -124,11 +97,7 @@ sq.pl.spatial_scatter(
 )
 ```
 
-In order to get all spots within a specified radius (in units of the
-spatial coordinates) from each spot as neighbors, the parameter `radius`
-should be used.
-
-
+Radius-based neighbors (units of spatial coordinates).
 
 ```python
 sq.gr.spatial_neighbors(adata, radius=0.3, coord_type="generic")

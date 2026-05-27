@@ -21,6 +21,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from agents.agent_registry.coding_agent.sandbox import ContainerManager, KernelClient
 from graph.graph import create_tissueagent_graph
 from graph.graph_utils import register_ui_event_queue
 from server.routes import chat, files, sessions
@@ -38,18 +39,28 @@ def _bind_retry(model):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: reset dirs, compile graph, register queues."""
+    """Startup: reset dirs, start sandbox, compile graph, register queues."""
     reset_data_directories()
+
+    # Start the Docker sandbox (Jupyter Kernel Gateway)
+    container_mgr = ContainerManager()
+    container_mgr.ensure_running()
+    kernel_client = KernelClient()
 
     # Register the UI event queue so log_message() can push to it
     register_ui_event_queue(session.ui_event_queue)
 
     # Compile the agent graph
-    graph = create_tissueagent_graph(session.state_queue, _bind_retry)
+    graph = create_tissueagent_graph(
+        session.state_queue, _bind_retry, kernel_client=kernel_client
+    )
     session.agent = graph.compile()
 
     logging.info("TissueAgent graph compiled and ready.")
     yield
+
+    # Shutdown: stop the sandbox container
+    container_mgr.stop()
 
 
 app = FastAPI(

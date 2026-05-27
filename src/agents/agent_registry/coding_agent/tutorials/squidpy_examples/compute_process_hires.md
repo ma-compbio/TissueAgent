@@ -1,40 +1,20 @@
+---
+title: "Process a high-resolution image"
+keywords:
+  - "squidpy"
+  - "image processing"
+  - "high resolution"
+  - "tiling"
+  - "chunks"
+  - "sq.im.process"
+  - "dask"
+  - "custom processing"
+  - "border effects"
+---
+
 # Process a high-resolution image
 
-This example shows how to use `squidpy.im.process` with tiling.
-
-The function can be applied to any method (e.g., smoothing, conversion
-to grayscale) or `layer` of a high-resolution image layer of
-`squidpy.im.ImageContainer`.
-
-By default, `squidpy.im.process` processes the entire input image at
-once. In the case of high-resolution tissue slides however, the images
-might be too big to fit in memory and cannot be processed at once. In
-that case you can use the argument `chunks` to tile the image in crops
-of shape `chunks`, process each crop, and re-assemble the resulting
-image. Note that you can also use `squidpy.im.segment` in this manner.
-
-Note that depending on the processing function used, there might be
-border effects occurring at the edges of the crops. Since Squidpy is
-backed by `dask`, and internally chunking is done using
-`dask.array.map_overlap`, dealing with these border effects is easy.
-Just specify the `depth` and `boundary` arguments in the `apply_kwargs`
-upon the call to `squidpy.im.process`. For more information, please
-refer to the documentation of `dask.array.map_overlap`.
-
-For the build in processing functions, [gray]{.title-ref} and
-[smooth]{.title-ref}, the border effects are already automatically taken
-care of, so it is not necessary to specify `depth` and `boundary`. For
-`squidpy.im.segment`, the default `depth` is 30, which already takes
-care of most severe border effects.
-
-:::{seealso}
--   `examples_image_compute_smooth`.
--   `examples_image_compute_gray`.
--   `examples_image_compute_segment_fluo`.
-
-:::
-
-
+This example shows how to use `squidpy.im.process` with tiling via the `chunks` argument for images too large to fit in memory. Use `depth` and `boundary` in `apply_kwargs` to handle border effects between chunks.
 
 ```python
 import numpy as np
@@ -45,28 +25,20 @@ import matplotlib.pyplot as plt
 import squidpy as sq
 ```
 
-Built-in processing functions
-=============================
-
-
+## Built-in processing functions
 
 ```python
 # load the H&E stained tissue image
 img = sq.datasets.visium_hne_image()
 ```
 
-We will process the image by tiling it in crops of shape
-`chunks = (1000, 1000)`.
-
-
+Process by tiling with `chunks=(1000, 1000)`.
 
 ```python
 sq.im.process(img, layer="image", method="gray", chunks=1000)
 ```
 
-Now we can look at the result on a cropped part of the image.
-
-
+View the result on a cropped region.
 
 ```python
 crop = img.crop_corner(4000, 4000, size=2000)
@@ -78,18 +50,9 @@ crop.show("image_gray", cmap="gray", ax=axes[1])
 _ = axes[1].set_title("grayscale")
 ```
 
-Custom processing functions
-===========================
+## Custom processing functions
 
-Here, we use a custom processing function (here
-`scipy.ndimage.gaussian_filter`) with chunking to showcase the `depth`
-and `boundary` arguments.
-
-Lets use a simple image and choose the chunk size in such a way to
-clearly see the differences between using overlapping crops and
-non-overlapping crops.
-
-
+Use a custom function with `depth` and `boundary` to control overlap between chunks.
 
 ```python
 arr = np.zeros((20, 20))
@@ -117,10 +80,7 @@ sq.im.process(
 )
 ```
 
-Plot the difference in results. Using overlapping blocks with
-`depth = 1` removes the artifacts at the borders between chunks.
-
-
+Using overlapping blocks with `depth=1` removes artifacts at chunk borders.
 
 ```python
 fig, axes = plt.subplots(1, 3)

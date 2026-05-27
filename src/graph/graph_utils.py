@@ -123,6 +123,50 @@ def get_latest_user_image_parts() -> List[Dict[str, Any]]:
     return parts
 
 
+def _sanitize_message(message: BaseMessage) -> BaseMessage:
+    """Ensure a message's content is safe to send back to the OpenAI API.
+
+    Reasoning models (e.g. GPT-5) may return content lists or additional_kwargs
+    entries with non-standard types that the API rejects on subsequent turns.
+    This strips those to plain text.
+    """
+    if isinstance(message, AIMessage):
+        content = message.content
+        # If content is a list, reduce to plain text
+        if isinstance(content, list):
+            text_parts = []
+            for item in content:
+                if isinstance(item, dict):
+                    if item.get("type") in ("text", "output_text"):
+                        text_parts.append(item.get("text", ""))
+                elif isinstance(item, str):
+                    text_parts.append(item)
+            content = "\n".join(text_parts).strip()
+        # Rebuild AIMessage without problematic additional_kwargs
+        sanitized = AIMessage(
+            content=content,
+            id=message.id,
+            tool_calls=message.tool_calls or [],
+            name=getattr(message, "name", None),
+        )
+        return sanitized
+    if isinstance(message.content, list):
+        # For non-AI messages (Human/Tool), ensure list items have type
+        sanitized_content = []
+        for item in message.content:
+            if isinstance(item, dict):
+                if "type" in item:
+                    sanitized_content.append(item)
+                elif "text" in item:
+                    sanitized_content.append({"type": "text", "text": item["text"]})
+            elif isinstance(item, str):
+                sanitized_content.append({"type": "text", "text": item})
+            else:
+                sanitized_content.append(item)
+        message.content = sanitized_content
+    return message
+
+
 def standardize_message_format(message: AIMessage) -> AIMessage:
     """Normalize an AI message into a consistent text + tool_calls format.
 
@@ -161,9 +205,8 @@ def standardize_message_format(message: AIMessage) -> AIMessage:
             else:
                 other_parts.append(item)
 
-        if other_parts:
-            return AIMessage(message.content, id=message.id, tool_calls=tool_calls)
-        return AIMessage("\n".join(text_parts).strip(), id=message.id, tool_calls=tool_calls)
+        combined_tool_calls = tool_calls or message.tool_calls or []
+        return AIMessage("\n".join(text_parts).strip(), id=message.id, tool_calls=combined_tool_calls)
     return message
 
 
@@ -253,7 +296,7 @@ def log_message(message: BaseMessage) -> None:
 def create_agent_node(
     agent_node_id: str,
     agent_model: BaseChatModel,
-    prompt: str,
+    prompt: "str | Callable[[MessagesState], str]",
     tool_node_id: str,
     exit_node_id: Optional[str] = None,
     exit_node_id_fn: Optional[Callable[[AIMessage, MessagesState], str]] = None,
@@ -273,6 +316,8 @@ def create_agent_node(
             ``name`` attribute for UI display.
         agent_model: Bound chat model (with tools already attached).
         prompt: System prompt injected before the conversation messages.
+            May be a static string or a callable that receives the current
+            state and returns the prompt string.
         tool_node_id: Node to route to when the response contains tool
             calls.
         exit_node_id: Static node to route to when no tool calls are
@@ -289,8 +334,9 @@ def create_agent_node(
     """
 
     def agent_node(state: MessagesState) -> Command:
-        messages = state["messages"]
-        system_prompt = SystemMessage(prompt)
+        messages = [_sanitize_message(m) for m in state["messages"]]
+        prompt_text = prompt(state) if callable(prompt) else prompt
+        system_prompt = SystemMessage(prompt_text)
         response = cast(AIMessage, agent_model.invoke([system_prompt] + messages))
         response = standardize_message_format(response)
         response.name = agent_node_id

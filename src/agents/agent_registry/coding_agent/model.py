@@ -1,185 +1,238 @@
-"""CodeAct-style coding agent with a persistent Python REPL for spatial transcriptomics tasks."""
+"""Coding agent with isolated Python/R execution via Docker sandbox."""
 
 import logging
 from queue import Queue
-from typing import Optional
 
 from langchain.tools import StructuredTool
-from langgraph.types import Command
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, RemoveMessage
 from langgraph.graph import END, MessagesState, START, StateGraph
 
-from agents.agent_utils import extract_block
-from langchain_experimental.utilities import PythonREPL
+from agents.agent_registry.coding_agent.sandbox import ExecutionResult, KernelClient
+from config import ROOT
 from agents.agent_registry.coding_agent.tools_impl.documentation_index import (
     DocumentationIndex,
 )
 from agents.agent_registry.coding_agent.tools_impl.tutorial_index import TutorialIndex
-
-# from agents.agent_registry.coding_agent.tools_impl.tutorial_rag import TutorialRAG
 from agents.agent_registry.coding_agent.params import (
-    model_ctor,
+    retrieval_agent_model_ctor,
+    execution_agent_model_ctor,
     doc_filepaths,
     tutorial_directories,
 )
-from agents.agent_registry.coding_agent.prompt import CodingAgentBasePrompt
-from graph.graph_utils import get_latest_user_image_parts, log_message, subagent_invocation
-
-from config import DATA_DIR, NOTEBOOK_DIR
-
-
-class CodeActState(MessagesState):
-    """Extended message state carrying the current code/response block and a persistent REPL."""
-
-    status_block: str  # content of <execute> or <response> block
-    repl: Optional[PythonREPL]
+from agents.agent_registry.coding_agent.prompt import RetrievalAgentPrompt, ExecutionAgentPrompt
+from graph.graph_utils import (
+    create_agent_node,
+    create_tool_node,
+    get_latest_user_image_parts,
+    log_message,
+    subagent_invocation,
+)
 
 
-def create_coding_agent(state_queue: Queue):
+class CodingAgentState(MessagesState):
+    """Extended state that carries the retrieval plan between subagents."""
+    retrieval_plan: str
+
+
+def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
     """Build and return the coding agent as a StructuredTool.
 
     Args:
         state_queue: Queue to which finished agent states are posted for UI consumption.
+        kernel_client: Client for executing code on the Docker sandbox kernels.
 
     Returns:
         A StructuredTool that invokes the coding agent graph with a text prompt.
     """
-    graph = StateGraph(CodeActState)
+    graph = StateGraph(CodingAgentState)
     id = "coding_agent"
 
-    ### Tools
+    ### Documentation / tutorial tools
 
     documentation_index = DocumentationIndex(doc_filepaths)
-    documentation_index_tool = StructuredTool.from_function(
-        func=documentation_index.search,
-        name="documentation_index_tool",
-        description=(
-            "Semantic search tool for specialized methods for spatial transcriptomics."
-            " Use library parameter to search specific libraries like 'scanpy' or 'squidpy'."
-        ),
-    )
-
     tutorial_index = TutorialIndex(tutorial_directories)
-    # tutorial_index_tool = StructuredTool.from_function(
-    #     func = tutorial_index.search,
-    #     name = "tutorial_index_tool",
-    #     description = ("Search tool for tutorial files that returns entire file content."
-    #         " Use library parameter to search specific libraries like 'liana' or 'squidpy'.")
-    # )
 
-    tutorial_list_names_tool = StructuredTool.from_function(
-        func=tutorial_index.list_tutorial_names,
-        name="tutorial_list_names_tool",
-        description="List available tutorial titles. Optionally filter by library like 'liana' or 'squidpy'.",
-    )
+    def search_documentation(
+        name: str | None = None,
+        keyword: str | None = None,
+        library: str | None = None,
+    ) -> str:
+        """Search API documentation for spatial transcriptomics libraries.
 
-    tutorial_get_by_name_tool = StructuredTool.from_function(
-        func=tutorial_index.get_tutorial_by_name,
-        name="tutorial_get_by_name_tool",
+        Provide exactly one of `name` or `keyword`:
+        - name: Look up a specific method by name (supports fuzzy matching).
+        - keyword: Find methods related to a topic.
+        - library: Optional filter ('scanpy', 'squidpy', or 'liana').
+        """
+        if name and keyword:
+            return "Error: provide either 'name' or 'keyword', not both."
+        if name:
+            results = documentation_index.lookup_by_name(name, library=library)
+            return documentation_index.format_results(results, verbose=True)
+        if keyword:
+            results = documentation_index.search_by_keyword(keyword, library=library)
+            return documentation_index.format_results(results, verbose=False)
+        return "Error: provide either 'name' or 'keyword'."
+
+    def search_tutorials(
+        name: str | None = None,
+        keyword: str | None = None,
+        library: str | None = None,
+    ) -> str:
+        """Search tutorials for spatial transcriptomics workflows.
+
+        Provide exactly one of `name` or `keyword`:
+        - name: Retrieve a specific tutorial by title (supports fuzzy matching).
+        - keyword: Find tutorials related to a topic.
+        - library: Optional filter ('liana' or 'squidpy').
+        """
+        if name and keyword:
+            return "Error: provide either 'name' or 'keyword', not both."
+        if name:
+            results = tutorial_index.lookup_by_name(name, library=library)
+            return tutorial_index.format_results(results, verbose=True)
+        if keyword:
+            results = tutorial_index.search_by_keyword(keyword, library=library)
+            return tutorial_index.format_results(results, verbose=False)
+        return "Error: provide either 'name' or 'keyword'."
+
+    search_documentation_tool = StructuredTool.from_function(
+        func=search_documentation,
+        name="search_documentation",
         description=(
-            "Retrieve a tutorial by its exact title."
-            " Returns the doc content and library; optionally filter by library."
+            "Search API documentation for spatial transcriptomics libraries."
+            " Use `name` for a specific method (fuzzy matching supported),"
+            " or `keyword` to find methods by topic."
+            " Optional `library` filter: 'scanpy', 'squidpy', or 'liana'."
         ),
     )
 
-    tutorial_list_keywords_tool = StructuredTool.from_function(
-        func=tutorial_index.list_keywords,
-        name="tutorial_list_keywords_tool",
-        description="List unique tutorial keywords. Optionally filter by library like 'liana' or 'squidpy'.",
+    search_tutorials_tool = StructuredTool.from_function(
+        func=search_tutorials,
+        name="search_tutorials",
+        description=(
+            "Search tutorials for spatial transcriptomics workflows."
+            " Use `name` for a specific tutorial by title (fuzzy matching),"
+            " or `keyword` to find tutorials by topic."
+            " Optional `library` filter: 'liana' or 'squidpy'."
+        ),
     )
 
-    tutorial_get_by_keyword_tool = StructuredTool.from_function(
-        func=tutorial_index.get_tutorials_by_keyword,
-        name="tutorial_get_by_keyword_tool",
-        description="Retrieve tutorials by keyword match (case-insensitive substring). Optionally filter by library.",
+    ### Code execution tools (Docker sandbox)
+
+    def _format_execution_result(result: ExecutionResult) -> str | list:
+        """Convert an ExecutionResult into a plain string or multimodal content list."""
+        if not result.images:
+            return result.text
+        parts: list[dict] = [{"type": "text", "text": result.text}]
+        for data_uri in result.images:
+            parts.append({"type": "image_url", "image_url": {"url": data_uri}})
+        return parts
+
+    def python(code: str) -> str | list:
+        logging.info(f"python tool executing:\n{code}")
+        result = kernel_client.execute(code, language="python")
+        logging.info(f"python tool output:\n{result.text}")
+        log_message(HumanMessage("Python Output:\n" + result.text))
+        return _format_execution_result(result)
+
+    python_tool = StructuredTool.from_function(
+        func=python,
+        name="python",
+        description=(
+            "Execute Python code in a persistent Jupyter kernel and return its output."
+            " The kernel retains state (variables, imports, definitions) across calls."
+            " Use print() to surface values you need to inspect."
+        ),
     )
 
-    tools = [
-        documentation_index_tool,
-        # tutorial_index_tool,
-        tutorial_list_keywords_tool,
-        tutorial_get_by_keyword_tool,
-        tutorial_list_names_tool,
-        tutorial_get_by_name_tool,
+    def r(code: str) -> str | list:
+        logging.info(f"r tool executing:\n{code}")
+        result = kernel_client.execute(code, language="r")
+        logging.info(f"r tool output:\n{result.text}")
+        log_message(HumanMessage("R Output:\n" + result.text))
+        return _format_execution_result(result)
+
+    r_tool = StructuredTool.from_function(
+        func=r,
+        name="r",
+        description=(
+            "Execute R code in a persistent Jupyter kernel and return its output."
+            " The kernel retains state (variables, libraries, definitions) across calls."
+            " Use cat() or print() to surface values you need to inspect."
+        ),
+    )
+
+    retrieval_tools = [
+        search_documentation_tool,
+        search_tutorials_tool,
     ]
 
-    ### Implementation
+    execution_tools = [
+        python_tool,
+        r_tool,
+    ]
 
-    model = model_ctor()
+    ### Build the graph with retrieval and execution subagents
 
-    agent_node_id = "agent_node"
-    exec_node_id = "exec_node"
+    retrieval_model = retrieval_agent_model_ctor().bind_tools(retrieval_tools)
+    execution_model = execution_agent_model_ctor().bind_tools(execution_tools)
 
-    def agent_node(state: CodeActState):
-        """Invoke the LLM and route to exec, self-loop, or END based on block type."""
-        messages = state["messages"]
-        system_prompt = SystemMessage(CodingAgentBasePrompt)
+    retrieval_agent_node_id = "retrieval_agent_node"
+    retrieval_tool_node_id = "retrieval_tool_node"
+    handoff_node_id = "handoff_node"
+    execution_agent_node_id = "execution_agent_node"
+    execution_tool_node_id = "execution_tool_node"
 
-        logging.info("invoking agent_node")
-        response = model.invoke([system_prompt] + messages)
-        logging.info("finished invoking agent_node")
+    # Retrieval agent: searches docs/tutorials, produces a plan, then hands off
+    retrieval_agent_node = create_agent_node(
+        retrieval_agent_node_id, retrieval_model, RetrievalAgentPrompt,
+        retrieval_tool_node_id, handoff_node_id,
+    )
+    retrieval_tool_node = create_tool_node(retrieval_tools)
 
-        response.name = id
-        log_message(response)
+    def handoff_node(state: CodingAgentState) -> CodingAgentState:
+        """Extract the retrieval plan and reset messages for the execution agent.
 
-        response_text = str(response.content)
-        code_block = extract_block("execute", response_text)
-        scratchpad_block = extract_block("scratchpad", response_text)
-        response = [response]
-        if code_block:
-            logging.info(f"code block detected\n\n{code_block}")
-            next_node = exec_node_id
-        elif scratchpad_block:
-            logging.info("scratchpad block detected - looping back to agent\n\n" + scratchpad_block)
-            next_node = agent_node_id
-        else:
-            logging.info(
-                "no scratchpad or execute block detected - treating as direct response and exiting"
-            )
-            next_node = END
-        logging.info(f"transferring from agent_node to {next_node}")
-        return Command(goto=next_node, update={"messages": response})
+        Stores the retrieval agent's final message as the plan, then removes
+        all messages except the original user message so the execution agent
+        starts with a clean context.
+        """
+        retrieval_plan = state["messages"][-1].content
+        user_message = next(
+            m for m in state["messages"] if isinstance(m, HumanMessage)
+        )
+        # Remove all messages except the original user message
+        removals = [
+            RemoveMessage(id=m.id)
+            for m in state["messages"]
+            if m.id != user_message.id
+        ]
+        return {
+            "retrieval_plan": retrieval_plan,
+            "messages": removals,
+        }
 
-    def exec_node(state: CodeActState):
-        """Extract and run the <execute> code block in a persistent Python REPL."""
-        messages = state["messages"]
-        last_message = messages[-1]
-        code_block = extract_block("execute", str(last_message.content))
+    # Execution agent: receives plan via system prompt, executes code
+    def _execution_prompt(state: CodingAgentState) -> str:
+        return ExecutionAgentPrompt(state.get("retrieval_plan", ""))
 
-        logging.info("executing exec_node")
+    execution_agent_node = create_agent_node(
+        execution_agent_node_id, execution_model, _execution_prompt,
+        execution_tool_node_id, END,
+    )
+    execution_tool_node = create_tool_node(execution_tools)
 
-        assert code_block is not None
+    graph.add_node(retrieval_agent_node_id, retrieval_agent_node)
+    graph.add_node(retrieval_tool_node_id, retrieval_tool_node)
+    graph.add_node(handoff_node_id, handoff_node)
+    graph.add_node(execution_agent_node_id, execution_agent_node)
+    graph.add_node(execution_tool_node_id, execution_tool_node)
 
-        repl = state.get("repl")
-        if repl is None:
-            repl = PythonREPL()
-            # Keep globals/locals shared so imports & defs stay visible inside functions.
-            repl.locals = repl.globals
-            tools_context = {tool.name: tool.func for tool in tools}
-
-            g = getattr(repl, "globals", None) or {}
-            repl.globals = g
-            repl.locals = g
-
-            initial_context = {
-                **tools_context,
-                "DATA_DIR": DATA_DIR,
-                "NOTEBOOK_DIR": NOTEBOOK_DIR,
-            }
-
-            g.update(initial_context)
-
-        output = repl.run(code_block)
-
-        logging.info("finished exec_node")
-
-        log_message(HumanMessage("Python Output:\n" + output))
-        return {"messages": [HumanMessage(output)], "repl": repl}
-
-    graph.add_node(agent_node_id, agent_node)
-    graph.add_node(exec_node_id, exec_node)
-    graph.add_edge(START, agent_node_id)
-    graph.add_edge(exec_node_id, agent_node_id)
+    graph.add_edge(START, retrieval_agent_node_id)
+    graph.add_edge(retrieval_tool_node_id, retrieval_agent_node_id)
+    graph.add_edge(handoff_node_id, execution_agent_node_id)
+    graph.add_edge(execution_tool_node_id, execution_agent_node_id)
 
     agent = graph.compile()
 
@@ -195,6 +248,7 @@ def create_coding_agent(state_queue: Queue):
             message = HumanMessage(prompt)
         with subagent_invocation("Coding Agent") as invocation_id:
             final_state = agent.invoke({"messages": [message]})
+        kernel_client.shutdown_kernels()
         state_queue.put((id, final_state, invocation_id))
         return final_state["messages"][-1].content
 
@@ -204,142 +258,56 @@ def create_coding_agent(state_queue: Queue):
         description="Transfer control to {id}",
     )
 
+PRESETS: dict[int, dict] = {
+    1: {
+        "setup": "cp datasets/dataset_lohoff_et_al_seqfish.h5ad data/",
+        "prompt": (
+            "I have uploaded a spatial transcriptomics dataset in datasets/dataset_lohoff_et_al_seqfish.h5ad."
+            "Help me plot a UMAP colored by cell type."
+        ),
+    },
+}
 
-# import logging
-# from queue import Queue
-# from typing import Any, Dict, Optional
+if __name__ == "__main__":
+    import argparse
+    import shlex
+    import subprocess
+    import sys
 
-# from langchain.tools import StructuredTool
-# from langgraph.types import Command
-# from langchain_core.messages import HumanMessage, SystemMessage
-# from langgraph.graph import END, MessagesState, START, StateGraph
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
 
-# from agents.agent_utils import extract_block
-# from langchain_experimental.utilities import PythonREPL
-# from agents.agent_registry.coding_agent.tools_impl.documentation_index import DocumentationIndex
-# from agents.agent_registry.coding_agent.tools_impl.tutorial_index import TutorialIndex
-# from agents.agent_registry.coding_agent.tools_impl.tutorial_rag import TutorialRAG
-# from agents.agent_registry.coding_agent.params import model_ctor, doc_filepaths, tutorial_directories
-# from agents.agent_registry.coding_agent.prompt import CodingAgentBasePrompt, CodingAgentDescription
-# from graph.graph_utils import log_message
+    parser = argparse.ArgumentParser(description="Run the coding agent directly.")
+    parser.add_argument("--preset", type=int, default=0, help="Preset number (0 = interactive prompt)")
+    parser.add_argument("prompt", nargs="*", help="Prompt text (ignored when --preset is used)")
+    args = parser.parse_args()
 
-# from config import DATA_DIR, NOTEBOOK_DIR
-# # from agents.reporter_agent.tools_impl.jupyternb_generator_tool import jupyternb_generator_tool
+    from agents.agent_registry.coding_agent.sandbox import ContainerManager
+    from server.utils import reset_data_directories
+    reset_data_directories()
 
+    if args.preset > 0:
+        preset = PRESETS.get(args.preset)
+        if preset is None:
+            print(f"Unknown preset {args.preset}. Available: {list(PRESETS.keys())}")
+            sys.exit(1)
+        if "setup" in preset:
+            logging.info(f"Running preset setup: {preset['setup']}")
+            subprocess.run(preset["setup"], shell=True, check=True, cwd=str(ROOT))
+        prompt = preset["prompt"]
+    elif args.prompt:
+        prompt = " ".join(args.prompt)
+    else:
+        prompt = input("Prompt: ")
 
-# class CodeActState(MessagesState):
-#     status_block: str # content of <execute> or <response> block
-#     repl: Optional[PythonREPL]
+    container_mgr = ContainerManager()
+    container_mgr.ensure_running()
 
-# def create_coding_agent(state_queue: Queue):
-#     graph = StateGraph(CodeActState)
-#     id = "coding_agent"
+    client = KernelClient()
+    queue = Queue()
+    tool = create_coding_agent(queue, client)
 
-#     ### Tools
-
-#     documentation_index = DocumentationIndex(doc_filepaths)
-#     documentation_index_tool = StructuredTool.from_function(
-#         func = documentation_index.search,
-#         name = "documentation_index_tool",
-#         description = ("Semantic search tool for specialized methods for spatial"
-#             " transcriptomics. Use library parameter to search specific"
-#             " libraries like 'scanpy' or 'squidpy'.")
-#     )
-
-#     tutorial_index = TutorialIndex(tutorial_directories)
-#     tutorial_index_tool = StructuredTool.from_function(
-#         func = tutorial_index.search,
-#         name = "tutorial_index_tool",
-#         description = ("Search tool for tutorial files that returns entire file"
-#             " content. Use library parameter to search specific"
-#             " libraries like 'liana' or 'squidpy'.")
-#     )
-
-#     # tutorial_rag = TutorialRAG(tutorial_directories)
-#     # tutorial_rag_tool = StructuredTool.from_function(
-#     #     func = tutorial_rag.search,
-#     #     name = "tutorial_rag_tool",
-#     #     description = ("Semantic search tool for tutorial files that returns"
-#     #         " relevant chunks of content. Use library parameter to search"
-#     #         " specific libraries like 'liana' or 'squidpy'.")
-#     # )
-
-#     tools = [documentation_index_tool, tutorial_index_tool]
-
-#     ### Implementation
-
-#     model = model_ctor()
-
-#     agent_node_id = "agent_node"
-#     exec_node_id = "exec_node"
-
-#     def agent_node(state: CodeActState):
-#         messages = state["messages"]
-#         system_prompt = SystemMessage(CodingAgentBasePrompt)
-
-#         logging.info(f"invoking agent_node")
-#         response = model.invoke([system_prompt] + messages)
-#         logging.info(f"finished invoking agent_node")
-
-#         response.name = id
-#         log_message(response)
-
-#         response_text = str(response.content)
-#         code_block = extract_block("execute", response_text)
-#         scratchpad_block = extract_block("scratchpad", response_text)
-#         response = [response]
-#         if code_block:
-#             logging.info("code block detected")
-#             next_node = exec_node_id
-#         elif scratchpad_block:
-#             logging.info("scratchpad block detected - looping back to agent")
-#             next_node = agent_node_id
-#         else:
-#             logging.info("no scratchpad or execute block detected - treating as direct response and exiting")
-#             next_node = END
-#         logging.info(f"transferring from agent_node to {next_node}")
-#         return Command(goto=next_node, update = {"messages": response})
-
-#     def exec_node(state: CodeActState):
-#         messages = state["messages"]
-#         last_message = messages[-1]
-#         code_block = extract_block("execute", str(last_message.content))
-
-#         logging.info(f"executing exec_node")
-
-#         assert code_block is not None
-
-#         repl = state.get("repl")
-#         if repl is None:
-#             repl = PythonREPL()
-#             tools_context = {tool.name: tool.func for tool in tools}
-#             initial_context = {**tools_context, "DATA_DIR": DATA_DIR, "NOTEBOOK_DIR": NOTEBOOK_DIR}
-
-#             for key, value in initial_context.items():
-#                 repl.globals[key] = value
-
-#         output = repl.run(code_block)
-
-#         logging.info(f"finished exec_node")
-
-#         log_message(HumanMessage("Python Output:\n" + output))
-#         return {"messages": [HumanMessage(output)], "repl": repl}
-
-#     graph.add_node(agent_node_id, agent_node)
-#     graph.add_node(exec_node_id, exec_node)
-#     graph.add_edge(START, agent_node_id)
-#     graph.add_edge(exec_node_id, agent_node_id)
-
-#     agent = graph.compile()
-
-#     def agent_invocation_tool(prompt: str) -> str:
-#         logging.info(f"Invoking agent `{id}`")
-#         final_state = agent.invoke({"messages": [HumanMessage(prompt)]})
-#         state_queue.put((id, final_state))
-#         return final_state["messages"][-1].content
-
-#     return StructuredTool.from_function(
-#         func = agent_invocation_tool,
-#         name = f"coding_agent_transfer_tool",
-#         description = "Transfer control to {id}"
-#     )
+    try:
+        result = tool.invoke({"prompt": prompt})
+        print(result)
+    finally:
+        container_mgr.stop()
