@@ -13,6 +13,19 @@ TissueAgent is a role-based multi-agent framework that turns open-ended natural-
 
 ![TISSUEAGENT overview figure](docs/figures/tissueagent_overall_design.png)
 
+## Execution modes
+
+TissueAgent runs in one of two modes, controlled by a toggle in the web UI's sidebar:
+
+- **Autopilot** *(default)* — the planner, recruiter, manager, evaluator, and reporter run end-to-end without pausing. This is the only mode available outside the web UI (notebook and CLI entry points always run autopilot).
+- **Copilot** — the run pauses after the planner finishes drafting the plan, and again after the recruiter assigns agents. At each pause the plan panel surfaces four actions:
+  - **Approve** to accept and continue,
+  - **Edit** to modify the plan markdown (or change per-step agent assignments) and resume,
+  - **Send feedback** to give free-text guidance that rewinds the run back to the planner,
+  - **Cancel run** to abort and start fresh.
+
+Mode is persisted with the session and survives reloads. Switching modes mid-run is blocked — finish or cancel the current run first.
+
 ## Project Structure
 
 ```text
@@ -20,11 +33,13 @@ TissueAgent/
 ├── src/
 │   ├── agents/
 │   │   ├── planner_agent/
+│   │   │   └── plan_registry/     # YAML workflow templates the planner retrieves
 │   │   ├── recruiter_agent/
 │   │   ├── manager_agent/
 │   │   ├── evaluator_agent/
 │   │   ├── reporter_agent/
-│   │   └── agent_registry/        # domain/specialized agents and tools
+│   │   ├── agent_registry/        # domain/specialized agents and tools
+│   │   └── skill_registry/        # shared markdown playbooks (scaffold; not wired)
 │   ├── graph/                     # workflow graph/state orchestration
 │   ├── server/                    # FastAPI backend and routes
 │   └── frontend/                  # React + TypeScript frontend
@@ -51,10 +66,13 @@ TissueAgent/
    git submodule update --init --recursive
    ```
 
-2. Export your LLM credentials. At minimum `OPENAI_API_KEY` must be set for the default agents to function:
+2. Set up your LLM credentials. See [LLM credentials](#llm-credentials) below for the full list of supported providers and models. At minimum, one provider key is required — by default that's `OPENAI_API_KEY`:
    ```bash
    export OPENAI_API_KEY="sk-..."
+   export ANTHROPIC_API_KEY="sk-ant-..."     # optional, for Claude models
+   export OPENROUTER_API_KEY="sk-or-..."     # optional, for OpenRouter
    ```
+   You can also paste keys directly into the web UI (sidebar → **API keys**); UI values override env vars and stay in server memory until cleared.
 
 ### Option A1: Using conda
 
@@ -210,9 +228,11 @@ Notebook-based demos are available in `demo/` and can be run end-to-end to repro
 
 1. Complete repository setup above and activate the environment
 
-2. Export your LLM credentials:
+2. Export your LLM credentials (see [LLM credentials](#llm-credentials) for the full list):
    ```bash
    export OPENAI_API_KEY="sk-..."
+   export ANTHROPIC_API_KEY="sk-ant-..."     # optional, for Claude models
+   export OPENROUTER_API_KEY="sk-or-..."     # optional, for OpenRouter
    ```
 3. Launch Jupyter:
    ```bash
@@ -229,6 +249,63 @@ Notebook-based demos are available in `demo/` and can be run end-to-end to repro
 Outputs are written to `workspace/` and copied into `demo/outputs/{TASK}`. Execution transcripts are saved to `demo/outputs/{TASK}/transcript.log`.
 
 See `demo/README.md` for more details.
+
+## LLM credentials
+
+TissueAgent supports different providers. You only need a key for the providers whose models you intend to use. At least one provider key must be available before the agent can run.
+
+You can supply keys in two ways:
+
+- **Environment variable** (recommended for headless or notebook use). Export the variables listed below before launching the server or notebook.
+- **Through the web UI**: open the sidebar → **API keys** and paste a key per provider. UI-typed keys are held in server memory only, override the matching env var while set, and can be cleared from the same UI.
+
+| Provider | Get a key | Environment variable | Default model | Other supported models |
+|---|---|---|---|---|
+| **OpenAI** | https://platform.openai.com/api-keys | `OPENAI_API_KEY` | `gpt-5.1` *(global default)* | `gpt-5.4`, `gpt-5`, `gpt-5-mini` |
+| **Anthropic** | https://console.anthropic.com/settings/keys | `ANTHROPIC_API_KEY` | `claude-opus-4-7` | `claude-sonnet-4-6` |
+| **OpenRouter** | https://openrouter.ai/keys | `OPENROUTER_API_KEY` | `openrouter/gpt-5.1` | `openrouter/gpt-5.4`, `openrouter/gpt-5`, `openrouter/gpt-5-mini`, `openrouter/claude-opus-4-7`, `openrouter/claude-sonnet-4-6` |
+
+
+**Model selection.** The UI exposes two dropdowns in the sidebar:
+
+- **Orchestration agents** — the planner / recruiter / manager / evaluator / reporter
+- **Expert agents** — the worker sub-agents (coding, hypothesis, single-cell, etc.)
+
+Changing the orchestration model also updates the expert model by default; click **sync** next to the Expert dropdown to re-link them after you've changed it independently. Model changes take effect on your next message.
+
+## External agents
+
+TissueAgent integrates third-party research agents through a thin adapter layer. The included external agent is **GeneAgent** ([ncbi-nlp/GeneAgent](https://github.com/ncbi-nlp/GeneAgent)), which interprets a gene list and returns a verified biological-process narrative.
+
+### Installing GeneAgent
+
+GeneAgent's source is included as a git submodule pinned to a tested upstream commit. The standard `git clone --recurse-submodules ...` from the [repository set-up](#repository-set-up) section fetches it automatically. If you cloned without `--recurse-submodules`, run:
+
+```bash
+git submodule update --init --recursive
+```
+
+This populates `src/agents/agent_registry/gene_agent/upstream/` with the GeneAgent repository. No additional pip install is required — TissueAgent imports the upstream code directly through its adapter.
+
+**Verify the submodule is present:**
+
+```bash
+ls src/agents/agent_registry/gene_agent/upstream/main_cascade.py
+```
+
+If the file is missing, re-run the `git submodule update` command above.
+
+### Credentials and model
+
+GeneAgent always calls **OpenAI `gpt-5.1`** regardless of which model you've selected for TissueAgent's orchestration or expert agents. This keeps GeneAgent's behavior reproducible across sessions. You must therefore have `OPENAI_API_KEY` available (as an environment variable or pasted into the web UI's *API keys* panel) before invoking the Gene Agent.
+
+### Artifacts
+
+Each Gene Agent invocation writes to `data/gene_agent/<request_id>/` — a final summary, a claims-and-verification log, and the initial GPT response. The absolute paths are returned in the tool output so downstream agents and the user can reference them.
+
+### Adding your own external agent
+
+The full integration recipe — file structure, manifest schema, LLM-compatibility shim, common pitfalls — is documented in [`INTEGRATING.md`](INTEGRATING.md) at the repository root, with the Gene Agent integration as the worked example. A copy-paste skeleton lives at `src/agents/agent_registry/_template_external_agent/`.
 
 ## Data Availability
 

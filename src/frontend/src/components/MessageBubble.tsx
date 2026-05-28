@@ -1,6 +1,7 @@
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { SerializedMessage, SubagentTranscript } from "../types/messages";
+import AgentAvatar from "./AgentAvatar";
 
 export interface AgentRun {
   agentName: string;
@@ -117,7 +118,7 @@ function SubagentCard({
       onClick={() => onSelectTrace(toolId)}
     >
       <div className="subagent-card-header">
-        <span className="avatar">{state.avatar}</span>
+        <AgentAvatar name={state.agent_name} fallback={state.avatar} size={22} />
         <span className="subagent-card-name">{state.agent_name}</span>
         <span className="subagent-card-action">
           {isSelected ? "▼ Hide trace" : "▶ View trace"}
@@ -161,7 +162,7 @@ export function AgentRunCard({
       onClick={() => onSelectTrace(run.syntheticId)}
     >
       <div className="subagent-card-header">
-        <span className="avatar">{run.avatar}</span>
+        <AgentAvatar name={run.agentName} fallback={run.avatar} size={22} />
         <span className="subagent-card-name">{run.label}</span>
         <span className="subagent-card-action">
           {isSelected ? "▼ Hide trace" : "▶ View trace"}
@@ -222,7 +223,7 @@ export default function MessageBubble({
     return (
       <div className="message-bubble user-message">
         <div className="message-header">
-          <span className="avatar">{message.avatar}</span>
+          <AgentAvatar name={message.name} fallback={message.avatar} size={20} />
           <span className="label">You</span>
         </div>
         <div className="message-body">
@@ -282,7 +283,7 @@ export default function MessageBubble({
     return (
       <div className="message-bubble ai-message">
         <div className="message-header">
-          <span className="avatar">{message.avatar}</span>
+          <AgentAvatar name={message.name} fallback={message.avatar} size={20} />
           <span className="label">{message.label}</span>
           {message.route && (
             <span className="route-pill">{message.route}</span>

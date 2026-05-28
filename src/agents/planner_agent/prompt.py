@@ -129,6 +129,35 @@ Here is a breakdown of the complenents you need to include in each step as well 
 
 Keep each line ≤100 chars.
 
+### Persisting the plan to disk (ROUTE: PLAN only)
+
+When emitting ROUTE: PLAN, you MUST also call the `write_plan` tool in the SAME turn,
+mirroring the step list you printed above. The tool persists a structured copy of the
+plan so the recruiter, the user, and the UI can all act on it.
+
+- `user_request`: one- to two-sentence paraphrase of the user's request.
+- `steps`: ordered list. For every step, copy verbatim from your printed plan:
+  - `title`: short imperative phrase (≤8 words)
+  - `description`: the `step:` field
+  - `reasoning`: the `reason:` field
+  - `expected_artifacts`: the `expected artifacts:` field (split into one path per item)
+
+You MUST also record where the plan came from, using the `provenance_*` arguments:
+
+- If you ran `template_selector_tool` and used or adapted a template, set:
+  - `provenance_source: "template"`
+  - `provenance_template_id`: the `template_id` returned by the selector (e.g. "CELL_ANNOTATION")
+  - `provenance_version`: the template's version (look it up via `plan_registry_tool` if not given)
+  - `provenance_decision`: "USE" or "ADAPT" (verbatim from the selector)
+  - `provenance_score`: the score the selector returned (the float, not the formatted string)
+- If you wrote the plan from scratch with no template match, set:
+  - `provenance_source: "denovo"`
+  - leave the other `provenance_*` fields unset
+
+Do NOT include any `assigned_agent` field — that is the recruiter's responsibility.
+
+Skip the `write_plan` call entirely for ROUTE: DIRECT and ROUTE: CLARIFY.
+
 
 
 ## Exemplars (follow structure and compression)

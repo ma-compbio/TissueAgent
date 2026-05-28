@@ -1,6 +1,16 @@
-import type { FileInfo, SessionInfo } from "../types/messages";
+import type { FileInfo, SessionInfo, SessionMode } from "../types/messages";
+import type {
+  KeyStatusMap,
+  ModelOption,
+  ModelSelection,
+  Provider,
+} from "../hooks/useModels";
+import type { Plan } from "../hooks/usePlan";
+import type { AgentInfo } from "../hooks/useAgents";
+import type { PipelineStage, ReviewState } from "../hooks/useWebSocket";
 import FileUpload from "./FileUpload";
-import PlanViewer, { type PlanEntry } from "./PlanViewer";
+import ModelPicker from "./ModelPicker";
+import PlanPanel from "./PlanPanel";
 import SessionManager from "./SessionManager";
 
 interface Props {
@@ -12,13 +22,36 @@ interface Props {
   onUploadFiles: (files: FileList) => void;
   sessions: SessionInfo[];
   onFetchSessions: () => void;
-  onSave: () => Promise<boolean>;
+  onSave: () => Promise<true | string>;
   onLoad: (filename: string) => Promise<boolean>;
+  onClear: () => Promise<true | string>;
+  onDelete: (filename: string) => Promise<true | string>;
   onExportHtml: () => void;
+  onExportMarkdown: () => void;
   hasMessages: boolean;
-  planPrompt: string | null;
-  planEntries: PlanEntry[];
+  plan: Plan;
+  planMarkdown: string;
   isRunning: boolean;
+  mode: SessionMode;
+  onChangeMode: (mode: SessionMode) => void;
+  reviewState: ReviewState;
+  pipelineStage: PipelineStage | null;
+  agents: AgentInfo[];
+  onApprovePlan: () => void;
+  onEditPlan: (markdown: string) => void;
+  onPlanFeedback: (text: string) => void;
+  onApproveAssignments: () => void;
+  onEditAssignments: (markdown: string) => void;
+  onAssignmentsFeedback: (text: string) => void;
+  onCancelRun: () => void;
+  models: ModelOption[];
+  modelSelection: ModelSelection | null;
+  workerPinned: boolean;
+  onChangeOrchestrationModel: (id: string) => void;
+  onChangeWorkerModel: (id: string) => void;
+  onResetWorkerModel: () => void;
+  modelKeys: KeyStatusMap;
+  onSaveApiKey: (provider: Provider, key: string) => Promise<boolean>;
 }
 
 export default function Sidebar({
@@ -32,18 +65,111 @@ export default function Sidebar({
   onFetchSessions,
   onSave,
   onLoad,
+  onClear,
+  onDelete,
   onExportHtml,
+  onExportMarkdown,
   hasMessages,
-  planPrompt,
-  planEntries,
+  plan,
+  planMarkdown,
   isRunning,
+  mode,
+  onChangeMode,
+  reviewState,
+  pipelineStage,
+  agents,
+  onApprovePlan,
+  onEditPlan,
+  onPlanFeedback,
+  onApproveAssignments,
+  onEditAssignments,
+  onAssignmentsFeedback,
+  onCancelRun,
+  models,
+  modelSelection,
+  workerPinned,
+  onChangeOrchestrationModel,
+  onChangeWorkerModel,
+  onResetWorkerModel,
+  modelKeys,
+  onSaveApiKey,
 }: Props) {
   return (
     <aside className="sidebar">
+      {/* Mode toggle is pinned at the top of the sidebar, outside any
+          scrolling container, so it stays visible regardless of run
+          state or scroll position. */}
+      <div className="sidebar-mode-bar">
+        <div className="mode-toggle" role="radiogroup" aria-label="Execution mode">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === "autopilot"}
+            className={`mode-pill ${mode === "autopilot" ? "active" : ""}`}
+            onClick={() => onChangeMode("autopilot")}
+            aria-describedby="tooltip-autopilot"
+          >
+            Autopilot
+            <span className="mode-tooltip" id="tooltip-autopilot" role="tooltip">
+              <span className="mode-tooltip-heading">Autopilot</span>
+              <span className="mode-tooltip-body">
+                The agent runs end-to-end without pauses. Planner →
+                Recruiter → Manager → Evaluator → Reporter, all
+                automatic. Use when you trust the plan or just want
+                results.
+              </span>
+              {isRunning && (
+                <span className="mode-tooltip-meta">
+                  Takes effect on the next prompt.
+                </span>
+              )}
+            </span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === "copilot"}
+            className={`mode-pill ${mode === "copilot" ? "active" : ""}`}
+            onClick={() => onChangeMode("copilot")}
+            aria-describedby="tooltip-copilot"
+          >
+            Copilot
+            <span className="mode-tooltip" id="tooltip-copilot" role="tooltip">
+              <span className="mode-tooltip-heading">Copilot</span>
+              <span className="mode-tooltip-body">
+                The agent pauses twice for your review — once after the
+                planner drafts the plan, and again after the recruiter
+                assigns agents. At each pause you can approve, edit,
+                send feedback, or cancel.
+              </span>
+              {isRunning && (
+                <span className="mode-tooltip-meta">
+                  Takes effect on the next prompt.
+                </span>
+              )}
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div className="sidebar-top">
         <FileUpload
           uploadedFiles={uploadedFiles}
           onUploadFiles={onUploadFiles}
+        />
+
+        <div className="upload-divider" />
+
+        <ModelPicker
+          models={models}
+          selection={modelSelection}
+          workerPinned={workerPinned}
+          onChangeOrchestration={onChangeOrchestrationModel}
+          onChangeWorker={onChangeWorkerModel}
+          onResetWorker={onResetWorkerModel}
+          keys={modelKeys}
+          onSaveKey={onSaveApiKey}
+          disabled={isRunning}
         />
 
         <div className="upload-divider" />
@@ -69,16 +195,28 @@ export default function Sidebar({
           onFetchSessions={onFetchSessions}
           onSave={onSave}
           onLoad={onLoad}
+          onClear={onClear}
+          onDelete={onDelete}
           onExportHtml={onExportHtml}
+          onExportMarkdown={onExportMarkdown}
           hasMessages={hasMessages}
         />
       </div>
 
       <div className="sidebar-bottom">
-        <PlanViewer
-          prompt={planPrompt}
-          entries={planEntries}
-          isRunning={isRunning}
+        <PlanPanel
+          plan={plan}
+          markdown={planMarkdown}
+          reviewState={reviewState}
+          pipelineStage={pipelineStage}
+          agents={agents}
+          onApprovePlan={onApprovePlan}
+          onEditPlan={onEditPlan}
+          onPlanFeedback={onPlanFeedback}
+          onApproveAssignments={onApproveAssignments}
+          onEditAssignments={onEditAssignments}
+          onAssignmentsFeedback={onAssignmentsFeedback}
+          onCancelRun={onCancelRun}
         />
       </div>
     </aside>

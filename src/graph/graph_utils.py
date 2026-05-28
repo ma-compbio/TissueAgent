@@ -293,6 +293,115 @@ def log_message(message: BaseMessage) -> None:
             pass
 
 
+# ---------------------------------------------------------------------------
+# Manager-history compression (strategy 2F)
+# ---------------------------------------------------------------------------
+#
+# Among the five orchestration agents (planner/recruiter/manager/evaluator/
+# reporter) the manager is the only one whose context grows with the
+# number of sub-agent invocations: every transfer-tool call leaves a full
+# ToolMessage behind, and large coding/hypothesis outputs accumulate
+# linearly. For Tier-1 API users this can blow the TPM ceiling or the
+# context window long before the recursion limit fires.
+#
+# We compress on the *transient* message list we pass to the model — we
+# never write the compressed view back into the graph state. That way the
+# UI trace panel keeps every full message, exports stay faithful, and
+# only what the manager re-reads on each hop shrinks.
+
+# Keep at most this many of the most recent sub-agent ToolMessages in full.
+_MANAGER_KEEP_RECENT_SUBAGENT_RESULTS = 1
+
+# When truncating older sub-agent ToolMessages, keep this many chars from
+# the head and tail and replace the middle with an explicit marker.
+_TRUNCATE_HEAD_CHARS = 800
+_TRUNCATE_TAIL_CHARS = 400
+_TRUNCATE_MIN_CHARS = _TRUNCATE_HEAD_CHARS + _TRUNCATE_TAIL_CHARS + 80
+
+
+def _content_to_text(content: Any) -> str:
+    """Best-effort flatten of LangChain message content to a string."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: List[str] = []
+        for chunk in content:
+            if isinstance(chunk, str):
+                parts.append(chunk)
+            elif isinstance(chunk, dict):
+                # multimodal content parts: {"type": "text", "text": "..."}
+                text = chunk.get("text")
+                if isinstance(text, str):
+                    parts.append(text)
+        return "\n".join(parts)
+    return str(content)
+
+
+def _truncate_middle(text: str, name: str) -> str:
+    """Replace the middle of *text* with a marker if it is long enough to compress."""
+    if len(text) <= _TRUNCATE_MIN_CHARS:
+        return text
+    head = text[:_TRUNCATE_HEAD_CHARS]
+    tail = text[-_TRUNCATE_TAIL_CHARS:]
+    omitted = len(text) - _TRUNCATE_HEAD_CHARS - _TRUNCATE_TAIL_CHARS
+    return (
+        f"{head}\n"
+        f"...\n"
+        f"[{name} output truncated: {omitted} characters omitted "
+        f"to stay under the context limit; full output remains visible "
+        f"in the trace panel]\n"
+        f"...\n"
+        f"{tail}"
+    )
+
+
+def compress_for_manager(messages: List[BaseMessage]) -> List[BaseMessage]:
+    """Return a copy of *messages* with old sub-agent ToolMessages truncated.
+
+    The most recent ``_MANAGER_KEEP_RECENT_SUBAGENT_RESULTS`` sub-agent
+    transfer ToolMessages are preserved verbatim; earlier ones are
+    head-plus-tail truncated. Non-tool messages and main-pipeline tool
+    messages (planner/recruiter/manager/evaluator/reporter own tools) are
+    passed through unchanged.
+    """
+    # Identify which ToolMessages correspond to sub-agent transfers.
+    # Convention used elsewhere in the codebase:
+    #   sub-agent transfer tools are named "<agent_id>_transfer_tool".
+    indices: List[int] = []
+    for i, msg in enumerate(messages):
+        if not isinstance(msg, ToolMessage):
+            continue
+        if str(msg.name or "").endswith("_transfer_tool"):
+            indices.append(i)
+
+    if len(indices) <= _MANAGER_KEEP_RECENT_SUBAGENT_RESULTS:
+        return messages
+
+    to_truncate = set(indices[: -_MANAGER_KEEP_RECENT_SUBAGENT_RESULTS])
+
+    compressed: List[BaseMessage] = []
+    for i, msg in enumerate(messages):
+        if i not in to_truncate:
+            compressed.append(msg)
+            continue
+        original_text = _content_to_text(msg.content)
+        new_text = _truncate_middle(original_text, str(msg.name or "sub-agent"))
+        if new_text is original_text or new_text == original_text:
+            compressed.append(msg)
+            continue
+        # Re-emit the ToolMessage with shortened content; keep all metadata.
+        compressed.append(
+            ToolMessage(
+                content=new_text,
+                tool_call_id=msg.tool_call_id,
+                name=msg.name,
+                id=msg.id,
+                status=getattr(msg, "status", None) or "success",
+            )
+        )
+    return compressed
+
+
 def create_agent_node(
     agent_node_id: str,
     agent_model: BaseChatModel,
@@ -337,6 +446,13 @@ def create_agent_node(
         messages = [_sanitize_message(m) for m in state["messages"]]
         prompt_text = prompt(state) if callable(prompt) else prompt
         system_prompt = SystemMessage(prompt_text)
+        # Strategy 2F: the manager is the only orchestration agent whose
+        # context grows monotonically with sub-agent invocations. Compress
+        # older sub-agent ToolMessages on the fly before the model call.
+        # The graph state itself is left untouched so the UI / export
+        # retain the full transcript.
+        if agent_node_id == "manager_agent":
+            messages = compress_for_manager(messages)
         response = cast(AIMessage, agent_model.invoke([system_prompt] + messages))
         response = standardize_message_format(response)
         response.name = agent_node_id

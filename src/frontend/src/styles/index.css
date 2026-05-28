@@ -1,25 +1,142 @@
 /* ====================================================================
-   TissueAgent – Chat UI Styles
+   TissueAgent — UI Styles
+   Designed as a lab instrument: calm, precise, scientific.
    ==================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,300..800&family=Geist+Mono:wght@400;500;600&display=swap");
 
 :root {
   --sidebar-width: 300px;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-sidebar: #f3f4f6;
-  --border-color: #e5e7eb;
-  --text-primary: #1f2937;
-  --text-secondary: #6b7280;
-  --accent: #3b82f6;
-  --accent-light: #eff6ff;
-  --user-bg: #f0f4ff;
-  --ai-bg: #f4fff0;
-  --tool-bg: #fffaf0;
-  --error-bg: #fef2f2;
-  --error-text: #dc2626;
-  --success: #22c55e;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+
+  /* --------- Spacing scale (4pt; named semantically, not numerically) --- */
+  --space-2xs: 0.25rem;   /*  4px  */
+  --space-xs:  0.5rem;    /*  8px  */
+  --space-sm:  0.75rem;   /* 12px  */
+  --space-md:  1rem;      /* 16px  */
+  --space-lg:  1.5rem;    /* 24px  */
+  --space-xl:  2rem;      /* 32px  */
+  --space-2xl: 3rem;      /* 48px  */
+
+  /* --------- Type scale (fixed rem for product UI; 1.25 ratio) ---------- */
+  --text-2xs:  0.6875rem; /* 11 — micro labels, mono captions */
+  --text-xs:   0.75rem;   /* 12 — captions */
+  --text-sm:   0.8125rem; /* 13 — secondary UI */
+  --text-base: 0.9375rem; /* 15 — body */
+  --text-md:   1.125rem;  /* 18 — section heads */
+  --text-lg:   1.4375rem; /* 23 — page titles */
+
+  /* --------- Type families ---------------------------------------------- */
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", system-ui, sans-serif;
+  --font-sans:    "Bricolage Grotesque", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono:    "Geist Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+  /* --------- Surfaces (OKLCH, neutrals tinted toward instrument-cyan) --- */
+  --bg-primary:   oklch(0.99   0.003 200);  /* near-white, hint of cyan */
+  --bg-secondary: oklch(0.975  0.005 200);
+  --bg-sidebar:   oklch(0.965  0.006 200);
+  --bg-card:      oklch(1      0     0);     /* pure white for true contrast lift */
+
+  --border-color:  oklch(0.91  0.006 200);
+  --border-strong: oklch(0.82  0.010 200);
+
+  --text-primary:   oklch(0.20 0.020 220);   /* near-black with deep slate */
+  --text-secondary: oklch(0.48 0.012 215);
+  --text-tertiary:  oklch(0.62 0.010 215);
+
+  /* --------- Accent — instrument cyan (the everyday "structural" accent) */
+  --accent:       oklch(0.55 0.10 200);
+  --accent-hover: oklch(0.48 0.11 200);
+  --accent-light: oklch(0.95 0.025 200);
+  --accent-ink:   oklch(0.99 0.005 200);     /* foreground on accent fills */
+
+  /* --------- Live state — amber (the rare, attention-demanding accent) -- */
+  --live-accent:        oklch(0.72 0.16 70);
+  --live-accent-strong: oklch(0.62 0.18 60);
+  --live-accent-bg:     oklch(0.97 0.04 75);
+  --live-accent-ink:    oklch(0.20 0.04 60);
+
+  /* --------- Semantic colors ------------------------------------------- */
+  --success:    oklch(0.62 0.15 150);
+  --error-text: oklch(0.52 0.20 28);
+  --error-bg:   oklch(0.97 0.03 28);
+
+  /* --------- Existing pinned tokens (kept for legacy callers) ---------- */
+  --user-bg:   var(--bg-secondary);
+  --ai-bg:     var(--bg-card);
+  --tool-bg:   oklch(0.985 0.012 80);
+  --route-pill-bg:   var(--accent-light);
+  --route-pill-text: oklch(0.30 0.07 215);
+  --tool-pill-bg:    oklch(0.96 0.015 290);
+  --tool-pill-text:  oklch(0.42 0.13 290);
+  --tag-response-bg:        oklch(0.97 0.03 150);
+  --tag-response-border:    var(--success);
+  --tag-scratchpad-bg:      oklch(0.97 0.04 95);
+  --tag-scratchpad-border:  oklch(0.75 0.13 95);
+  --tag-plan-bg:            var(--accent-light);
+  --tag-plan-border:        var(--accent);
+  --code-bg:    var(--bg-secondary);
+  --output-bg:  oklch(0.18 0.012 220);
+  --output-text: oklch(0.88 0.005 200);
+  --manager-accent:    oklch(0.55 0.11 280);
+  --manager-accent-bg: oklch(0.96 0.025 280);
+
+  /* Layer effects: a sharp 1px border + a soft instrument-shadow */
+  --shadow-card: 0 1px 0 oklch(0.91 0.006 200), 0 8px 24px -16px oklch(0.30 0.02 220 / 0.18);
+  --shadow-banner: 0 1px 0 oklch(0.82 0.010 200), 0 14px 32px -20px oklch(0.30 0.02 220 / 0.30);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg-primary:   oklch(0.18 0.012 220);
+  --bg-secondary: oklch(0.22 0.012 220);
+  --bg-sidebar:   oklch(0.20 0.012 220);
+  --bg-card:      oklch(0.24 0.012 220);
+
+  --border-color:  oklch(0.30 0.015 220);
+  --border-strong: oklch(0.42 0.018 215);
+
+  --text-primary:   oklch(0.94 0.008 200);
+  --text-secondary: oklch(0.72 0.012 215);
+  --text-tertiary:  oklch(0.58 0.012 215);
+
+  --accent:       oklch(0.78 0.10 200);
+  --accent-hover: oklch(0.85 0.11 200);
+  --accent-light: oklch(0.32 0.04 200);
+  --accent-ink:   oklch(0.15 0.02 220);
+
+  --live-accent:        oklch(0.80 0.14 75);
+  --live-accent-strong: oklch(0.86 0.16 70);
+  --live-accent-bg:     oklch(0.30 0.05 65);
+  --live-accent-ink:    oklch(0.15 0.04 60);
+
+  --success:    oklch(0.78 0.14 150);
+  --error-text: oklch(0.78 0.16 28);
+  --error-bg:   oklch(0.30 0.06 28);
+
+  --user-bg:   var(--bg-secondary);
+  --ai-bg:     var(--bg-card);
+  --tool-bg:   oklch(0.28 0.025 80);
+  --route-pill-bg:   var(--accent-light);
+  --route-pill-text: oklch(0.88 0.04 215);
+  --tool-pill-bg:    oklch(0.30 0.05 290);
+  --tool-pill-text:  oklch(0.85 0.10 290);
+  --tag-response-bg:        oklch(0.28 0.05 150);
+  --tag-response-border:    var(--success);
+  --tag-scratchpad-bg:      oklch(0.28 0.06 95);
+  --tag-scratchpad-border:  oklch(0.80 0.13 95);
+  --tag-plan-bg:            var(--accent-light);
+  --tag-plan-border:        var(--accent);
+  --code-bg:    var(--bg-secondary);
+  --output-bg:  oklch(0.12 0.012 220);
+  --output-text: oklch(0.85 0.005 200);
+  --manager-accent:    oklch(0.78 0.11 280);
+  --manager-accent-bg: oklch(0.30 0.06 280);
+
+  --shadow-card: 0 1px 0 oklch(0.30 0.015 220), 0 8px 24px -16px oklch(0 0 0 / 0.6);
+  --shadow-banner: 0 1px 0 oklch(0.42 0.018 215), 0 14px 32px -20px oklch(0 0 0 / 0.7);
+
+  color-scheme: dark;
 }
 
 * {
@@ -32,7 +149,17 @@ body {
   font-family: var(--font-sans);
   color: var(--text-primary);
   background: var(--bg-primary);
+  font-size: var(--text-base);
   line-height: 1.5;
+  font-feature-settings: "ss01", "cv11";  /* alt 'a' + tabular numerals where supported */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Numeric values, paths, parameters — always tabular for alignment */
+code, pre, .num {
+  font-feature-settings: "tnum", "zero";
+  font-variant-ligatures: none;
 }
 
 /* ---- Layout ---- */
@@ -54,8 +181,8 @@ body {
 }
 
 .sidebar-top {
-  flex: 0 1 auto;
-  max-height: 50%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: 1rem;
   display: flex;
@@ -64,8 +191,8 @@ body {
 }
 
 .sidebar-bottom {
-  flex: 1 1 0;
-  min-height: 0;
+  flex: 0 0 auto;
+  max-height: 50vh;
   overflow-y: auto;
   border-top: 1px solid var(--border-color);
 }
@@ -86,6 +213,25 @@ body {
   background: var(--bg-primary);
 }
 
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.app-logo {
+  width: 32px;
+  height: 32px;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .app-logo {
+  /* TissueAgent icon is dark line art on transparent. Invert to read on a dark UI. */
+  filter: invert(0.92) hue-rotate(180deg);
+}
+
 .app-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -104,6 +250,8 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  background: var(--text-tertiary);
+  flex-shrink: 0;
 }
 
 .status-dot.connected {
@@ -112,6 +260,1027 @@ body {
 
 .status-dot.disconnected {
   background: var(--error-text);
+}
+
+/* Connecting: amber dot that breathes calmly — same vocabulary as the
+   pause indicator on the review banner. Reads as "in progress" not
+   "broken". */
+.status-dot.connecting {
+  background: var(--live-accent-strong);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--live-accent-strong), transparent 75%);
+  animation: indicator-breath 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Connecting label color matches — slightly muted so it reads as a
+   transient state, not an error. */
+.connection-status.status-connecting {
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot.connecting { animation: none; }
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* ---- Top-bar navigation ------------------------------------------------ */
+
+.top-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-left: var(--space-xl);
+}
+
+.top-nav-item {
+  position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-xs) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  transition: color 180ms ease-out;
+}
+
+.top-nav-item:hover {
+  color: var(--text-secondary);
+}
+
+.top-nav-item.active {
+  color: var(--text-primary);
+}
+
+/* Underline mark for the active page. Sits flush with the bottom of the
+   top-bar so it reads as a tab indicator, not a button border. */
+.top-nav-item.active::after {
+  content: "";
+  position: absolute;
+  left: var(--space-md);
+  right: var(--space-md);
+  bottom: calc(-1 * var(--space-sm) - 1px);
+  height: 2px;
+  background: var(--accent);
+}
+
+@media (max-width: 760px) {
+  .top-nav {
+    margin-left: var(--space-md);
+  }
+  .top-nav-item {
+    padding: var(--space-xs) var(--space-sm);
+  }
+}
+
+/* ---- Documentation pages (Tutorial, Contact) --------------------------- */
+
+.app-layout-doc {
+  background: var(--bg-primary);
+}
+
+/* Scroll container for doc pages. Block layout (not flex) so the article
+   can grow to its natural height — a flex container with align-items
+   stretching would clip the article to the parent's viewport-minus-padding
+   height and silently swallow the bottom of the page. */
+.content-area-doc {
+  flex: 1 1 auto;
+  min-height: 0;             /* allow flex parent to shrink below content */
+  overflow-y: auto;
+  padding: var(--space-2xl) clamp(var(--space-lg), 6vw, var(--space-2xl));
+}
+
+/* Two-column doc layout for the Tutorial page: sticky TOC sidebar on
+   the left, content article on the right. Collapses to single column
+   on narrower viewports (the TOC moves above the content). */
+.doc-layout {
+  display: grid;
+  grid-template-columns: minmax(14rem, 16rem) minmax(0, 1fr);
+  gap: clamp(var(--space-xl), 4vw, var(--space-2xl));
+  max-width: 78rem;
+  width: 100%;
+  margin: 0 auto;
+  padding-bottom: var(--space-lg);
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .doc-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+}
+
+.doc-page {
+  max-width: 56rem;
+  width: 100%;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  line-height: 1.65;
+  min-width: 0;
+  /* Make sure the very last section can actually be scrolled to. Some
+     browsers (Safari especially) treat the bottom of a scrollable area
+     as the parent's content edge; explicit padding here is the parent's
+     ``var(--space-2xl)`` and ensures the final ``<section>`` isn't
+     visually flush with the bottom edge. */
+  padding-bottom: var(--space-lg);
+}
+
+/* Center the article inside the right column when the layout has
+   collapsed to a single column. */
+.doc-layout > .doc-page {
+  margin: 0;
+}
+
+/* ====================================================================
+   Tutorial / doc pages — lab-notebook layout
+   ==================================================================== */
+
+.doc-header {
+  margin-bottom: var(--space-2xl);
+}
+
+.doc-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 var(--space-md);
+  position: relative;
+  padding-left: calc(var(--space-md) + 1px);
+}
+
+/* A small horizontal tick before the eyebrow that ties the page header
+   to the bigger lab-instrument vocabulary used elsewhere in the app. */
+.doc-eyebrow::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: var(--space-sm);
+  height: 1px;
+  background: var(--accent);
+}
+
+.doc-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 1rem + 4vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ---- Method figure — thumbnail; click expands to lightbox ---- */
+
+.doc-figure {
+  margin: 0 0 var(--space-2xl);
+  padding: 0;
+  display: grid;
+  gap: var(--space-md);
+}
+
+/* Float modifier — the figure sits to the right of the section's body
+   text. Capped at ~22rem so there's enough room for the paragraph to
+   actually wrap. Display has to switch to ``block`` because ``grid`` on
+   a floated element collapses to one column-width. */
+.doc-figure-float {
+  float: right;
+  display: block;
+  width: clamp(18rem, 38%, 22rem);
+  max-width: 100%;
+  margin: 0 0 var(--space-md) var(--space-lg);
+  shape-outside: margin-box;
+}
+
+.doc-figure-float .doc-figure-thumb {
+  max-width: none;
+  margin-bottom: var(--space-sm);
+}
+
+.doc-figure-float figcaption {
+  max-width: none;
+}
+
+/* Restore single-column flow on narrow viewports — wrapping a 22rem
+   figure into a 28rem column leaves no room for the prose. */
+@media (max-width: 720px) {
+  .doc-figure-float {
+    float: none;
+    width: 100%;
+    margin: 0 0 var(--space-lg);
+  }
+}
+
+/* Inside the Overview section, the expert-agents block (subhead + dl)
+   must clear the float so it starts on its own row below the figure.
+   The numbered pipeline list does NOT clear — it's allowed to wrap
+   alongside the figure, which closes the gap that would otherwise sit
+   between the lede paragraph and the list. */
+.doc-section .doc-agents,
+.doc-section .doc-subhead {
+  clear: both;
+}
+
+/* Thumbnail wrapper. The image is capped at ~28rem (~448px) so it reads
+   as a small figure rather than a hero, and a "Click to enlarge" affordance
+   appears in the bottom-right corner on hover. */
+.doc-figure-thumb {
+  display: block;
+  position: relative;
+  padding: 0;
+  margin: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  cursor: zoom-in;
+  max-width: 28rem;
+  width: 100%;
+  overflow: hidden;
+  transition: border-color 180ms ease-out, transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.doc-figure-thumb:hover,
+.doc-figure-thumb:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.doc-figure-thumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--bg-card);
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.doc-figure-thumb:hover img,
+.doc-figure-thumb:focus-visible img {
+  transform: scale(1.02);
+}
+
+/* "Click to enlarge" tag in the bottom-right corner. */
+.doc-figure-zoom {
+  position: absolute;
+  right: var(--space-xs);
+  bottom: var(--space-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs) var(--space-xs);
+  background: oklch(0.18 0.020 220 / 0.9);
+  color: oklch(0.96 0.005 200);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 180ms ease-out, transform 180ms ease-out;
+  pointer-events: none;
+}
+
+.doc-figure-thumb:hover .doc-figure-zoom,
+.doc-figure-thumb:focus-visible .doc-figure-zoom {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-figure-thumb,
+  .doc-figure-thumb img,
+  .doc-figure-zoom { transition: none; }
+}
+
+.doc-figure figcaption {
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-color);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 28rem;
+}
+
+.doc-figure figcaption strong {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ---- Lightbox ---- */
+
+.doc-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: oklch(0.10 0.012 220 / 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  gap: var(--space-md);
+  animation: doc-lightbox-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: zoom-out;
+}
+
+.doc-lightbox-img {
+  display: block;
+  max-width: min(96vw, 1400px);
+  max-height: 86vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  background: oklch(1 0 0);
+  border-radius: 2px;
+  box-shadow: 0 24px 64px -16px oklch(0 0 0 / 0.6);
+  cursor: default;
+}
+
+.doc-lightbox-close {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: oklch(0.20 0.020 220);
+  border: 1px solid oklch(0.45 0.025 220);
+  border-radius: 2px;
+  color: oklch(0.92 0.008 200);
+  cursor: pointer;
+  transition: background 180ms ease-out, border-color 180ms ease-out;
+}
+
+.doc-lightbox-close:hover,
+.doc-lightbox-close:focus-visible {
+  background: oklch(0.26 0.018 220);
+  border-color: oklch(0.62 0.025 220);
+  outline: none;
+}
+
+.doc-lightbox-hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: oklch(0.70 0.012 215);
+  margin: 0;
+}
+
+@keyframes doc-lightbox-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-lightbox { animation: none; }
+}
+
+/* ---- Table of contents — chapter listing ---- */
+
+/* TOC aside — sticky on the left, scrolls with the content but pins
+   itself to the top of the viewport when it has more vertical space
+   than the content above it. */
+.doc-contents-aside {
+  position: sticky;
+  top: var(--space-md);
+  align-self: start;
+  padding: 0;
+  margin: 0;
+  /* Constrain height so the TOC scrolls internally rather than pushing
+     the viewport when many chapters exist. */
+  max-height: calc(100vh - var(--space-2xl) * 2);
+  overflow-y: auto;
+}
+
+.doc-contents-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 0 0 var(--space-sm);
+}
+
+.doc-contents-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0;
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.doc-contents-list li {
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.doc-contents-list a {
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  align-items: baseline;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-2xs);
+  text-decoration: none;
+  color: var(--text-secondary);
+  transition: background 180ms ease-out, color 180ms ease-out;
+}
+
+.doc-contents-list a:hover,
+.doc-contents-list a:focus-visible {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.doc-contents-num {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.doc-contents-title {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: inherit;
+  line-height: 1.35;
+}
+
+.doc-contents-list a:hover .doc-contents-title,
+.doc-contents-list a:focus-visible .doc-contents-title {
+  font-weight: 600;
+}
+
+/* On narrow viewports the layout collapses to a single column; let the
+   TOC release its sticky anchor and read as a normal block above the
+   content. */
+@media (max-width: 860px) {
+  .doc-contents-aside {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border-color);
+  }
+}
+
+/* ---- Section ---- */
+
+.doc-section {
+  margin-bottom: var(--space-2xl);
+  scroll-margin-top: var(--space-lg);
+}
+
+.doc-section + .doc-section {
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--border-color);
+}
+
+.doc-section-head {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 0.85rem + 1.8vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0 0 var(--space-lg);
+  color: var(--text-primary);
+}
+
+.doc-section-anchor {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: var(--space-md);
+  text-decoration: none;
+  color: inherit;
+}
+
+.doc-section-num {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+  transition: color 180ms ease-out;
+}
+
+.doc-section-anchor:hover .doc-section-num {
+  color: var(--accent);
+}
+
+.doc-section-title {
+  color: var(--text-primary);
+}
+
+.doc-subhead {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: var(--space-lg) 0 var(--space-sm);
+  color: var(--text-primary);
+}
+
+.doc-section p {
+  margin: 0 0 var(--space-md);
+  max-width: 70ch;
+  font-size: var(--text-base);
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+
+.doc-section p + p {
+  margin-top: var(--space-md);
+}
+
+.doc-section ul,
+.doc-section ol {
+  margin: 0 0 var(--space-md);
+  padding: 0;
+  max-width: 70ch;
+}
+
+.doc-section ul {
+  list-style: none;
+  padding-left: var(--space-md);
+}
+
+.doc-section ul li {
+  position: relative;
+  padding-left: var(--space-md);
+  margin-bottom: var(--space-xs);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+
+.doc-section ul li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.doc-section code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--bg-secondary);
+  padding: 0.08em 0.4em;
+  border-radius: 2px;
+  color: var(--accent-hover);
+}
+
+.doc-section em {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ---- Pipeline list (Overview > Five agents) ---- */
+
+.doc-pipeline {
+  list-style: none !important;
+  margin: 0 0 var(--space-lg) !important;
+  padding: 0 !important;
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.doc-pipeline li {
+  position: relative;
+  padding: var(--space-md) var(--space-md) var(--space-md) calc(3rem + var(--space-md));
+  border-bottom: 1px solid var(--border-color);
+  counter-increment: pipeline;
+  margin: 0 !important;
+}
+
+.doc-pipeline {
+  counter-reset: pipeline;
+}
+
+.doc-pipeline li::before {
+  content: counter(pipeline, decimal-leading-zero);
+  position: absolute;
+  top: var(--space-md);
+  left: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  line-height: 1.4;
+  width: 3rem;
+  letter-spacing: 0.02em;
+}
+
+.doc-pipeline-name {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-base);
+  margin-bottom: var(--space-2xs);
+  color: var(--text-primary);
+  letter-spacing: -0.005em;
+}
+
+.doc-pipeline-desc {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 64ch;
+}
+
+/* ---- Expert agents dl (Overview > Expert agents) ---- */
+
+.doc-agents {
+  display: grid;
+  grid-template-columns: minmax(10rem, auto) 1fr;
+  gap: 0 var(--space-lg);
+  margin: 0 0 var(--space-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.doc-agents dt,
+.doc-agents dd {
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.doc-agents dt code {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  background: transparent;
+  padding: 0;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.doc-agents dd {
+  color: var(--text-secondary);
+}
+
+/* ---- Mode comparison table ---- */
+
+/* Comparison table — Autopilot vs. Copilot.
+   Uses ``table-layout: fixed`` plus a <colgroup> so column widths are
+   predictable: the row-label column is fixed, the two data columns
+   split the remaining space equally. */
+.doc-compare {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin: var(--space-md) 0 var(--space-lg);
+  font-size: var(--text-sm);
+  border-top: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.doc-compare-col-label {
+  width: 9rem;
+}
+
+.doc-compare th,
+.doc-compare td {
+  text-align: left;
+  vertical-align: top;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+/* Last row drops its bottom border — the table's outer bottom border
+   provides the closing rule. Avoids the doubled hairline that
+   border-collapse can show when the inner cell border and the table
+   border don't agree on width. */
+.doc-compare tbody tr:last-child th,
+.doc-compare tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Vertical column separator after the row-label column. Quieter than
+   a full grid — keeps the table from feeling boxed-in. */
+.doc-compare th + th,
+.doc-compare th + td,
+.doc-compare td + td {
+  border-left: 1px solid var(--border-color);
+}
+
+.doc-compare thead th {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-strong);
+  padding-top: var(--space-md);
+  padding-bottom: var(--space-md);
+  line-height: 1.2;
+}
+
+/* The empty top-left cell — present for grid alignment, visually blank. */
+.doc-compare thead th[aria-hidden="true"] {
+  background: transparent;
+}
+
+.doc-compare tbody th {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.doc-compare tbody td {
+  color: var(--text-primary);
+}
+
+@media (max-width: 540px) {
+  .doc-compare-col-label {
+    width: 6.5rem;
+  }
+  .doc-compare th,
+  .doc-compare td {
+    padding: var(--space-xs) var(--space-sm);
+  }
+}
+
+/* On narrow viewports keep the table grid intact — it&apos;s only three
+   columns and the row-label column is already compact. Just shrink the
+   horizontal padding (handled in the main rule above via the 540px
+   breakpoint) so the table stays scannable without restructuring. */
+
+/* ---- First-run steps (numbered, grid layout) ---- */
+
+.doc-steps {
+  list-style: none !important;
+  counter-reset: step;
+  display: grid;
+  gap: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-top: 1px solid var(--border-color);
+}
+
+.doc-steps li {
+  display: grid;
+  grid-template-columns: minmax(3.5rem, auto) 1fr;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--border-color);
+  counter-increment: step;
+  margin: 0 !important;
+}
+
+.doc-steps li::before {
+  content: counter(step, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  line-height: 1.2;
+}
+
+.doc-step-body h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  margin: 0 0 var(--space-2xs);
+  color: var(--text-primary);
+}
+
+.doc-step-body p {
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-xs);
+}
+
+.doc-examples {
+  list-style: none !important;
+  margin: var(--space-xs) 0 0 !important;
+  padding: var(--space-sm) var(--space-md) !important;
+  background: var(--bg-secondary);
+  border-radius: 2px;
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.doc-examples li {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-style: italic;
+  margin: 0 !important;
+  padding-left: 0 !important;
+}
+
+.doc-examples li::before {
+  content: none;
+}
+
+/* ---- Field listings (plan anatomy, exports) ---- */
+
+.doc-fields {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(8rem, 12rem) 1fr;
+  gap: 0 var(--space-lg);
+  border-top: 1px solid var(--border-color);
+}
+
+.doc-fields dt {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.doc-fields dd {
+  margin: 0;
+  padding: var(--space-sm) 0;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  line-height: 1.6;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Contact-page maintainer list */
+.doc-people-list {
+  list-style: none !important;
+  margin-left: 0 !important;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--border-color);
+  margin-top: var(--space-md);
+}
+
+.doc-people-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.doc-person-name {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.005em;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.doc-person-site {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  text-decoration: none;
+  font-weight: 400;
+  transition: color 180ms ease-out;
+}
+
+.doc-person-site:hover {
+  color: var(--accent);
+}
+
+/* Person name styled as a link — same display weight as a plain name,
+   with a subtle underline so the affordance is clear without shouting. */
+.doc-person-link {
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1px;
+  transition: color 180ms ease-out, border-color 180ms ease-out;
+}
+
+.doc-person-link:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.doc-person-email {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: color 180ms ease-out;
+}
+
+.doc-person-email:hover {
+  color: var(--accent);
+}
+
+@media (max-width: 520px) {
+  .doc-people-list li {
+    grid-template-columns: 1fr;
+    gap: var(--space-2xs);
+  }
+}
+
+/* Contact-page link buttons + citation block */
+.doc-actions {
+  margin: var(--space-sm) 0 var(--space-lg);
+}
+
+.doc-link-btn {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  text-decoration: none;
+  transition: background 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out;
+}
+
+.doc-link-btn:hover {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+.doc-citation {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  background: var(--output-bg);
+  color: var(--output-text);
+  padding: var(--space-md);
+  border-radius: 2px;
+  white-space: pre;
+  overflow-x: auto;
+  max-width: 70ch;
+}
+
+.theme-toggle {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0.4rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0;
+}
+
+.theme-toggle:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .error-banner {
@@ -246,7 +1415,7 @@ body {
 }
 
 .send-button:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--accent-hover);
 }
 
 /* ---- Message Groups ---- */
@@ -293,6 +1462,28 @@ body {
   font-size: 1.2rem;
 }
 
+.agent-avatar {
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.agent-avatar-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Dark line-art icons (no significant brand color) need lightening on
+   dark backgrounds. Colored icons (planner/manager/reporter) read fine
+   as-is so we leave them alone. */
+[data-theme="dark"] .agent-avatar-img[src*="tissueagent-icon"],
+[data-theme="dark"] .agent-avatar-img[src*="recruiter_icon"],
+[data-theme="dark"] .agent-avatar-img[src*="evaluator_icon"] {
+  filter: invert(0.92) hue-rotate(180deg);
+}
+
 .label {
   font-weight: 600;
   font-size: 0.9rem;
@@ -302,8 +1493,8 @@ body {
   display: inline-block;
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
-  background: #e0e7ff;
-  color: #1f2a44;
+  background: var(--route-pill-bg);
+  color: var(--route-pill-text);
   font-size: 0.8rem;
   margin-left: 0.5rem;
 }
@@ -342,10 +1533,10 @@ body {
 .tool-call-pill {
   display: inline-block;
   padding: 0.15rem 0.5rem;
-  background: #f3e8ff;
+  background: var(--tool-pill-bg);
   border-radius: 0.3rem;
   font-size: 0.8rem;
-  color: #7c3aed;
+  color: var(--tool-pill-text);
 }
 
 /* ---- Tool Messages ---- */
@@ -385,7 +1576,7 @@ body {
 /* ---- Subagent Card (left column) ---- */
 
 .subagent-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-left: 3px solid var(--accent);
   padding: 0.75rem 1rem;
@@ -440,44 +1631,44 @@ body {
 /* ---- Manager Subagent Card (child agents like Coding Agent) ---- */
 
 .manager-subagent-wrapper .subagent-card {
-  border-left: 3px solid #8b5cf6;
+  border-left: 3px solid var(--manager-accent);
 }
 
 .manager-subagent-wrapper .subagent-card:hover {
-  background: #f5f3ff;
-  border-color: #8b5cf6;
+  background: var(--manager-accent-bg);
+  border-color: var(--manager-accent);
 }
 
 .manager-subagent-wrapper .subagent-card-selected {
-  background: #f5f3ff;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 1px #8b5cf6;
+  background: var(--manager-accent-bg);
+  border-color: var(--manager-accent);
+  box-shadow: 0 0 0 1px var(--manager-accent);
 }
 
 .manager-subagent-wrapper .subagent-card-action {
-  color: #8b5cf6;
+  color: var(--manager-accent);
 }
 
 /* ---- Live Sub-agent Card (currently running) ---- */
 
 .subagent-card-live {
-  border-left-color: #f59e0b !important;
+  border-left-color: var(--live-accent) !important;
   animation: live-pulse 2s ease-in-out infinite;
 }
 
 .subagent-card-live:hover {
-  background: #fffbeb;
-  border-color: #f59e0b;
+  background: var(--live-accent-bg);
+  border-color: var(--live-accent);
 }
 
 .subagent-card-live.subagent-card-selected {
-  background: #fffbeb;
-  border-color: #f59e0b;
-  box-shadow: 0 0 0 1px #f59e0b;
+  background: var(--live-accent-bg);
+  border-color: var(--live-accent);
+  box-shadow: 0 0 0 1px var(--live-accent);
 }
 
 .subagent-card-live .subagent-card-action {
-  color: #d97706;
+  color: var(--live-accent-strong);
 }
 
 @keyframes live-pulse {
@@ -490,7 +1681,7 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #f59e0b;
+  background: var(--live-accent);
   margin-right: 0.3rem;
   animation: live-dot-pulse 1.2s ease-in-out infinite;
 }
@@ -583,18 +1774,18 @@ body {
 }
 
 .trace-tag-response {
-  background: #f0fdf4;
-  border-left: 3px solid #22c55e;
+  background: var(--tag-response-bg);
+  border-left: 3px solid var(--tag-response-border);
 }
 
 .trace-tag-scratchpad {
-  background: #fefce8;
-  border-left: 3px solid #eab308;
+  background: var(--tag-scratchpad-bg);
+  border-left: 3px solid var(--tag-scratchpad-border);
 }
 
 .trace-tag-plan {
-  background: #eff6ff;
-  border-left: 3px solid #3b82f6;
+  background: var(--tag-plan-bg);
+  border-left: 3px solid var(--tag-plan-border);
 }
 
 .trace-code-block {
@@ -602,7 +1793,7 @@ body {
 }
 
 .trace-code {
-  background: #f8f9fa;
+  background: var(--code-bg);
   border: 1px solid var(--border-color);
   border-radius: 0.4rem;
   padding: 0.5rem 0.75rem;
@@ -619,8 +1810,8 @@ body {
 }
 
 .trace-output {
-  background: #1e1e1e;
-  color: #d4d4d4;
+  background: var(--output-bg);
+  color: var(--output-text);
   border-radius: 0.4rem;
   padding: 0.5rem 0.75rem;
   font-family: var(--font-mono);
@@ -799,6 +1990,398 @@ body {
   margin: 0.5rem 0;
 }
 
+/* Pinned mode bar — always visible at the very top of the sidebar.
+   Sits OUTSIDE the scrollable .sidebar-top container so it can never
+   be scrolled out of view or pushed below the fold when content grows. */
+.sidebar-mode-bar {
+  flex: 0 0 auto;
+  padding: var(--space-sm) var(--space-md) var(--space-xs);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-sidebar);
+}
+
+/* Mode toggle — instrument switch, not a rounded pill */
+.mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  /* No overflow:hidden — the per-pill hover tooltip needs to escape. */
+}
+
+.mode-pill {
+  position: relative;
+  padding: var(--space-xs) var(--space-sm);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  transition: background 180ms ease-out, color 180ms ease-out;
+}
+
+.mode-pill + .mode-pill {
+  border-left: 1px solid var(--border-strong);
+}
+
+.mode-pill:hover:not(:disabled):not(.active) {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.mode-pill.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-weight: 600;
+}
+
+.mode-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- Mode tooltip — explains what each mode does on hover/focus -------- */
+
+.mode-tooltip {
+  position: absolute;
+  top: calc(100% + var(--space-sm));
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  width: max-content;
+  max-width: 18rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: oklch(0.18 0.020 220);              /* match the review banner */
+  color: oklch(0.94 0.008 200);
+  border-radius: 2px;
+  box-shadow: var(--shadow-banner);
+  text-align: left;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 160ms;
+}
+
+[data-theme="dark"] .mode-tooltip {
+  background: oklch(0.12 0.012 220);
+}
+
+/* Small arrow pointing up at the originating pill */
+.mode-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 1px;
+}
+
+.mode-pill:hover .mode-tooltip,
+.mode-pill:focus-visible .mode-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  visibility: visible;
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0s;
+  transition-delay: 200ms, 200ms, 0s;  /* small dwell before showing */
+}
+
+.mode-tooltip-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: oklch(0.96 0.005 200);
+}
+
+.mode-tooltip-body {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  line-height: 1.5;
+  color: oklch(0.82 0.012 215);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.mode-tooltip-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--live-accent);
+  padding-top: var(--space-2xs);
+  border-top: 1px solid oklch(0.30 0.020 220);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-tooltip {
+    transition-duration: 0s;
+  }
+}
+
+/* ---- Model Picker ---- */
+
+.model-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.model-picker-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.model-picker-loading {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.model-picker-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+}
+
+.model-picker-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-secondary);
+}
+
+.model-picker-select {
+  padding: 0.35rem 0.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.model-picker-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.model-picker-reset {
+  background: none;
+  border: none;
+  color: var(--accent-color, #6366f1);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  text-decoration: underline;
+}
+
+.model-picker-hint {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ---- API Keys ---- */
+
+.api-keys-section {
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.5rem;
+}
+
+.api-keys-summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0;
+  user-select: none;
+}
+
+.api-keys-summary::-webkit-details-marker {
+  display: none;
+}
+
+.api-keys-summary::before {
+  content: "▶";
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  transition: transform 0.15s ease;
+}
+
+.api-keys-section[open] .api-keys-summary::before {
+  transform: rotate(90deg);
+}
+
+.api-keys-summary:hover {
+  color: var(--text-primary);
+}
+
+.api-keys-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.api-key-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.api-key-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.api-key-row-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.api-key-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.api-key-dot.ok {
+  background: var(--success);
+}
+
+.api-key-dot.missing {
+  background: var(--border-color);
+}
+
+.api-key-link {
+  font-size: 0.72rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.api-key-link:hover {
+  text-decoration: underline;
+}
+
+.api-key-row-input {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.api-key-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.3rem 0.45rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.api-key-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.api-key-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.api-key-save {
+  padding: 0.3rem 0.55rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.api-key-save:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.api-key-save:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.api-key-row-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  min-height: 1.1rem;
+}
+
+.api-key-clear {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.api-key-clear:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.api-key-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.api-key-saved {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.api-keys-note {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  padding-top: 0.25rem;
+}
+
 /* ---- File Upload ---- */
 
 .upload-zone {
@@ -897,6 +2480,28 @@ body {
 .save-status {
   font-size: 0.8rem;
   color: var(--success);
+}
+
+.session-row-actions,
+.session-export-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.session-row-actions .sidebar-btn,
+.session-export-actions .sidebar-btn {
+  flex: 1 1 0;
+  text-align: center;
+}
+
+.session-btn-danger {
+  border-color: var(--error-text, #b91c1c);
+  color: var(--error-text, #b91c1c);
+}
+
+.session-btn-danger:hover:not(:disabled) {
+  background: var(--error-text, #b91c1c);
+  color: var(--bg-primary, #fff);
 }
 
 /* ---- File Browser ---- */
@@ -1038,6 +2643,328 @@ body {
 .modal-close-btn:hover {
   background: var(--border-color);
   color: var(--text-primary);
+}
+
+/* ---- Plan Panel (phase 1) ---- */
+
+/* ====================================================================
+   Plan panel — lab notebook entries, not a chat card
+   ==================================================================== */
+
+.plan-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: var(--text-sm);
+}
+
+.plan-panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md) var(--space-xs);
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.plan-panel-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-md);
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+
+/* Status — mono indicator with a leading bullet, not a pill */
+.plan-panel-status {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.plan-panel-status::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  background: var(--text-tertiary);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.plan-status-empty           { color: var(--text-tertiary); }
+.plan-status-empty::before   { background: var(--text-tertiary); }
+.plan-status-draft           { color: var(--accent); }
+.plan-status-draft::before   { background: var(--accent); }
+.plan-status-recruited       { color: var(--accent); }
+.plan-status-recruited::before { background: var(--accent); }
+.plan-status-approved        { color: var(--success); }
+.plan-status-approved::before { background: var(--success); }
+.plan-status-running         { color: var(--live-accent-strong); }
+.plan-status-running::before {
+  background: var(--live-accent-strong);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--live-accent-strong), transparent 75%);
+  animation: indicator-breath 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.plan-status-paused          { color: var(--text-secondary); }
+.plan-status-paused::before  { background: var(--text-secondary); }
+.plan-status-done            { color: var(--success); }
+.plan-status-done::before    { background: var(--success); }
+.plan-status-failed          { color: var(--error-text); }
+.plan-status-failed::before  { background: var(--error-text); }
+.plan-status-pending         { color: var(--text-tertiary); }
+.plan-status-pending::before { background: var(--text-tertiary); }
+.plan-status-skipped         { color: var(--text-tertiary); }
+.plan-status-skipped::before { background: var(--text-tertiary); }
+.plan-status-awaiting_plan_review,
+.plan-status-awaiting_assignment_review {
+  color: var(--live-accent-strong);
+}
+.plan-status-awaiting_plan_review::before,
+.plan-status-awaiting_assignment_review::before {
+  background: var(--live-accent-strong);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--live-accent-strong), transparent 70%);
+  animation: indicator-breath 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-panel-status::before { animation: none !important; }
+}
+
+.plan-panel-empty {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  padding: var(--space-md) var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.plan-panel-prompt {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+.plan-panel-prompt-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2xs);
+}
+
+.plan-panel-prompt-body {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-primary);
+  max-width: 70ch;
+}
+
+/* ---- Step list ---------------------------------------------------------- */
+
+.plan-step-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: step;
+}
+
+.plan-step {
+  position: relative;
+  padding: var(--space-md) var(--space-md) var(--space-md) calc(var(--space-md) + 2.5rem);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  counter-increment: step;
+}
+
+/* Large mono step number anchored to the left margin */
+.plan-step::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: var(--space-md);
+  top: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  width: 2rem;
+}
+
+.plan-step-status-running {
+  background: linear-gradient(
+    to right,
+    var(--live-accent-bg),
+    color-mix(in oklch, var(--live-accent-bg), var(--bg-primary) 60%)
+  );
+}
+.plan-step-status-running::before { color: var(--live-accent-strong); }
+
+.plan-step-status-done    { opacity: 0.78; }
+.plan-step-status-failed::before { color: var(--error-text); }
+
+.plan-step-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
+/* The .plan-step-num inside head is now redundant with the leading number;
+   keep it visually present but de-emphasised so existing markup still
+   works without a JSX change. */
+.plan-step-num {
+  display: none;
+}
+
+.plan-step-title {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-base);
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+  color: var(--text-primary);
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.plan-step-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.plan-step-badge::before {
+  content: "";
+  width: 0.35rem;
+  height: 0.35rem;
+  background: currentColor;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Step badge uses the same color rules as the plan-panel status above, so
+   no duplicate state CSS needed — the existing .plan-status-* classes apply. */
+
+.plan-step-field {
+  margin-top: var(--space-xs);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-primary);
+  max-width: 68ch;
+}
+
+.plan-step-field-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2xs);
+}
+
+.plan-step-artifacts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.plan-step-artifacts li {
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+}
+
+.plan-step-artifacts li::before {
+  content: "→";
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.plan-step-artifacts code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--bg-secondary);
+  padding: 0.08rem 0.4rem;
+  border-radius: 3px;
+  color: var(--text-primary);
+}
+
+.plan-step-assignment .plan-step-agent {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--accent);
+}
+
+.plan-step-assignment .plan-step-rationale {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-style: normal;
+}
+
+.plan-panel-footer {
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-sidebar);
+}
+
+.plan-panel-source-toggle {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.plan-panel-source-toggle:hover {
+  text-decoration: underline;
+}
+
+.plan-panel-source {
+  margin: 0;
+  padding: 0.7rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  background: var(--code-bg);
+  border-top: 1px solid var(--border-color);
+  white-space: pre-wrap;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 /* ---- Plan Viewer ---- */
@@ -1193,4 +3120,457 @@ body {
   object-fit: contain;
   margin: 1rem auto;
   display: block;
+}
+
+/* ---- Copilot review controls ---- */
+
+.plan-edit-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--space-2xs);
+  padding: 0 var(--space-xs);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  vertical-align: middle;
+  font-weight: 500;
+}
+
+.plan-provenance {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  padding: 0 var(--space-md) var(--space-xs);
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-color);
+  margin: 0;
+  font-style: normal;
+}
+
+.plan-step-params {
+  margin-top: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+}
+.plan-step-params summary {
+  cursor: pointer;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  user-select: none;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.plan-step-params summary::-webkit-details-marker { display: none; }
+.plan-step-params summary::before {
+  content: "▸";
+  display: inline-block;
+  transition: transform 180ms ease-out;
+  color: var(--text-tertiary);
+}
+.plan-step-params[open] summary::before {
+  transform: rotate(90deg);
+}
+.plan-step-params summary:hover {
+  color: var(--text-secondary);
+}
+.plan-step-params pre {
+  background: var(--output-bg);
+  color: var(--output-text);
+  padding: var(--space-sm);
+  border-radius: 2px;
+  margin: var(--space-xs) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* ---- Pipeline stepper ---- */
+
+/* ---- Pipeline stepper — the protagonist ---------------------------------
+   Reads as a row of instrument panel indicators: an index number in mono,
+   a label, and a thin connector that fills in as stages complete. Active
+   stage gets a calm breathing animation; nothing flashes. */
+
+.pipeline-stepper {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: stretch;
+  gap: 0;
+  margin: var(--space-sm) 0 var(--space-md);
+  padding: 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-card);
+  counter-reset: stage;
+}
+
+.pipeline-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-xs) var(--space-xs);
+  min-width: 0;
+  counter-increment: stage;
+  font-family: var(--font-mono);
+}
+
+/* Connector line — runs along the top edge, fills as stages complete */
+.pipeline-step::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border-color);
+  transition: background 0.4s ease-out;
+}
+
+.pipeline-step-done::before,
+.pipeline-step-active::before {
+  background: var(--accent);
+}
+
+/* Stage index — "01", "02"… in tabular mono */
+.pipeline-step::after {
+  content: "0" counter(stage);
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The dot is now a small filled square — instrument indicator, not chat bubble */
+.pipeline-step-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--border-strong);
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: background 0.25s ease-out, box-shadow 0.25s ease-out;
+}
+
+.pipeline-step-label {
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- States --- */
+
+.pipeline-step-done .pipeline-step-dot {
+  background: var(--accent);
+}
+.pipeline-step-done .pipeline-step-label {
+  color: var(--text-primary);
+}
+
+.pipeline-step-active .pipeline-step-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-light);
+  animation: pipeline-pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.pipeline-step-active .pipeline-step-label {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.pipeline-step-active::after {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.pipeline-step-pending .pipeline-step-dot {
+  background: var(--border-color);
+}
+.pipeline-step-pending .pipeline-step-label {
+  color: var(--text-tertiary);
+}
+
+@keyframes pipeline-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--accent-light); }
+  50%      { box-shadow: 0 0 0 7px color-mix(in oklch, var(--accent-light), transparent 40%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipeline-step-active .pipeline-step-dot { animation: none; }
+}
+
+/* ---- Review banner — the ceremonial pause moment ------------------------
+   Reads as a lab-instrument's "waiting for operator" signal. Dark surface,
+   sharp amber indicator dot (breathes calmly), mono eyebrow + display
+   headline, and a primary action that's unmistakable. */
+
+.plan-review-banner {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-md);
+  margin: calc(-1 * var(--space-xs)) calc(-1 * var(--space-xs)) var(--space-md);
+  padding: var(--space-md) var(--space-md);
+  background: oklch(0.18 0.020 220);              /* deep instrument-slate */
+  color: var(--bg-primary);
+  border-radius: 0;
+  box-shadow: var(--shadow-banner);
+  animation: review-banner-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="dark"] .plan-review-banner {
+  background: oklch(0.12 0.012 220);
+}
+
+/* Amber indicator on the left — the "you, operator" signal */
+.plan-review-indicator {
+  width: 0.625rem;
+  height: 0.625rem;
+  background: var(--live-accent-strong);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px color-mix(in oklch, var(--live-accent-strong), transparent 70%),
+    0 0 12px var(--live-accent-strong);
+  animation: indicator-breath 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-review-indicator { animation: none; }
+  .plan-review-banner    { animation: none; }
+}
+
+.plan-review-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.plan-review-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.12em;
+  color: var(--live-accent);
+  font-weight: 500;
+}
+
+.plan-review-banner-text strong {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: oklch(0.96 0.005 200);
+  line-height: 1.2;
+}
+
+.plan-review-subline {
+  font-size: var(--text-xs);
+  color: oklch(0.78 0.012 215);
+  line-height: 1.4;
+  max-width: 56ch;
+}
+
+.plan-review-banner-actions {
+  display: flex;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.plan-review-banner .plan-action-btn {
+  background: transparent;
+  color: oklch(0.92 0.008 200);
+  border: 1px solid oklch(0.45 0.025 220);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.plan-review-banner .plan-action-btn.primary {
+  background: var(--live-accent-strong);
+  color: var(--live-accent-ink);
+  border-color: var(--live-accent-strong);
+  font-weight: 700;
+}
+
+.plan-review-banner .plan-action-btn:hover:not(:disabled) {
+  background: oklch(0.26 0.018 220);
+  border-color: oklch(0.55 0.025 220);
+  color: oklch(0.96 0.005 200);
+}
+
+.plan-review-banner .plan-action-btn.primary:hover:not(:disabled) {
+  background: var(--live-accent);
+  border-color: var(--live-accent);
+  color: var(--live-accent-ink);
+}
+
+@keyframes review-banner-in {
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes indicator-breath {
+  0%, 100% {
+    box-shadow:
+      0 0 0 4px color-mix(in oklch, var(--live-accent-strong), transparent 70%),
+      0 0 10px var(--live-accent-strong);
+  }
+  50% {
+    box-shadow:
+      0 0 0 7px color-mix(in oklch, var(--live-accent-strong), transparent 50%),
+      0 0 18px var(--live-accent-strong);
+  }
+}
+
+/* Review action bar (under the step list, secondary to the banner) */
+.plan-review-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.plan-review-buttons {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.plan-action-btn {
+  padding: var(--space-xs) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 180ms ease-out, border-color 180ms ease-out, color 180ms ease-out;
+}
+
+.plan-action-btn:hover:not(:disabled) {
+  background: var(--bg-secondary);
+  border-color: var(--text-secondary);
+}
+
+.plan-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.plan-action-btn.primary {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+  font-weight: 700;
+}
+
+.plan-action-btn.primary:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.plan-action-btn.danger {
+  border-color: var(--error-text);
+  color: var(--error-text);
+}
+
+.plan-action-btn.danger:hover:not(:disabled) {
+  background: var(--error-text);
+  color: var(--bg-primary);
+}
+
+.plan-review-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.plan-review-feedback-input {
+  width: 100%;
+  padding: 0.4rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.35rem;
+  background: var(--bg-primary);
+  color: var(--text-primary, inherit);
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+.plan-edit-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.plan-edit-help {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.plan-edit-help code {
+  background: var(--bg-secondary, var(--accent-light));
+  padding: 0 0.25rem;
+  border-radius: 0.2rem;
+  font-size: 0.7rem;
+}
+
+.plan-edit-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  border: 1px solid var(--border-color);
+  border-radius: 0.35rem;
+  background: var(--bg-primary);
+  color: var(--text-primary, inherit);
+  resize: vertical;
+}
+
+.plan-edit-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.plan-step-agent-select {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.3rem;
+  background: var(--bg-primary);
+  color: var(--text-primary, inherit);
+  max-width: 100%;
 }

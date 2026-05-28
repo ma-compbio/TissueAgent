@@ -239,6 +239,7 @@ def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
     def agent_invocation_tool(prompt: str) -> str:
         """Run the coding agent graph on a prompt and return the final message."""
         logging.info(f"Invoking agent `{id}`")
+
         image_parts = get_latest_user_image_parts()
         if image_parts:
             logging.info("Forwarding latest user image attachments to coding agent.")

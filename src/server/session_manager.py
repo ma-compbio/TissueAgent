@@ -6,13 +6,22 @@ thread-safe queues used for real-time UI streaming.
 """
 
 import threading
+import uuid
 from collections import deque
 from queue import Queue
-from typing import Any, Deque, Dict, List, Optional, Set, Tuple
+from typing import Any, Deque, Dict, List, Literal, Optional, Set, Tuple
 
 from langgraph.graph.state import CompiledStateGraph
 
 from server.utils import message_identity, should_hide_message
+
+
+SessionMode = Literal["autopilot", "copilot"]
+
+
+def _new_thread_id() -> str:
+    """Generate a fresh LangGraph thread_id for a single user turn."""
+    return uuid.uuid4().hex
 
 
 class SessionState:
@@ -21,8 +30,32 @@ class SessionState:
     def __init__(self) -> None:
         self._lock = threading.Lock()
 
-        # Agent graph (set once at startup)
+        # Agent graph (compiled at startup, recompiled when model selection changes)
         self.agent: Optional[CompiledStateGraph] = None
+        self.model_revision: Optional[int] = None
+
+        # Execution mode. autopilot = no pauses; copilot = pause for human
+        # review after planner and after recruiter. Default autopilot so
+        # non-app entry points (notebook, CLI) never pause.
+        self.mode: SessionMode = "autopilot"
+
+        # LangGraph thread_id for the *current* user turn. Refreshed at
+        # the start of each new query so checkpointer state from earlier
+        # interrupts can't be confused with a fresh run. The checkpointer
+        # itself is attached to ``self.agent`` at compile time.
+        self.thread_id: str = _new_thread_id()
+
+        # Set when a copilot run pauses at an interrupt; cleared on
+        # resume or new turn. None ⇒ no pause is active.
+        self.paused_at: Optional[str] = None
+
+        # LangGraph's ``interrupt_before`` is sticky — once a node is in
+        # the list, the graph pauses *every* time it's about to enter
+        # that node, including inner-loop returns (e.g. manager_tools →
+        # manager_agent). We want each gate to fire **at most once** per
+        # turn. Track which gates have already fired so we can drop them
+        # from ``interrupt_before`` on subsequent resumes.
+        self.gates_fired: Set[str] = set()
 
         # Core conversation state
         self.agent_state: Dict[str, Any] = {
@@ -69,6 +102,9 @@ class SessionState:
             self.ui_event_queue = Queue()
             self.state_queue = Queue()
             self.is_running = False
+            self.thread_id = _new_thread_id()
+            self.paused_at = None
+            self.gates_fired = set()
 
     def ensure_display_state(self) -> None:
         """Synchronise display_messages with the canonical agent message list."""

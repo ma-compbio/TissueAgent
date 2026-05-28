@@ -1,11 +1,11 @@
 """Model and parameter configuration for the coding agent."""
-from functools import partial
 from pathlib import Path
-from langchain_openai import ChatOpenAI
 
-# reasoning_effort: "low", "medium", "high"
-retrieval_agent_model_ctor = partial(ChatOpenAI, model="gpt-5", reasoning_effort = "low")
-execution_agent_model_ctor = partial(ChatOpenAI, model="gpt-5")
+from models import model_ctor_for_role
+
+# Coding agent uses the worker model; separate constructors for each phase.
+retrieval_agent_model_ctor = model_ctor_for_role("worker")
+execution_agent_model_ctor = model_ctor_for_role("worker")
 
 doc_filepaths = {
     "scanpy": Path(__file__).resolve().parent / "docs/scanpy_docs.json",

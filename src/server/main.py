@@ -15,26 +15,67 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-import anthropic
-import openai
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from langgraph.checkpoint.memory import MemorySaver
 
 from agents.agent_registry.coding_agent.sandbox import ContainerManager, KernelClient
+import models as model_registry
 from graph.graph import create_tissueagent_graph
 from graph.graph_utils import register_ui_event_queue
-from server.routes import chat, files, sessions
+from server.rate_limit import with_header_retry
+from server.routes import (
+    agents as agents_route,
+    chat,
+    files,
+    models as models_route,
+    plan,
+    sessions,
+)
 from server.session_manager import session
 from server.utils import reset_data_directories
 
 
 def _bind_retry(model):
-    """Wrap a model with retry logic for rate-limit errors."""
-    return model.with_retry(
-        retry_if_exception_type=(openai.RateLimitError, anthropic.RateLimitError),
-        stop_after_attempt=6,
+    """Wrap a model with header-driven rate-limit retry (strategy 1A).
+
+    Honors provider Retry-After / retry-after-ms headers on 429s so the
+    wait time tracks the actual rate-limit window instead of guessing
+    via exponential backoff.
+    """
+    return with_header_retry(model, max_attempts=6)
+
+
+_kernel_client: KernelClient | None = None
+
+
+def _compile_graph(kernel_client: KernelClient) -> None:
+    """(Re)compile the agent graph using the currently-selected models.
+
+    Compiles with an in-memory checkpointer so copilot mode can pause via
+    ``interrupt_before`` and resume by invoking with ``input=None`` against
+    the same ``thread_id``. Autopilot ignores both — it never passes
+    ``interrupt_before`` and never resumes — so the checkpointer is
+    effectively no-op overhead for autopilot runs.
+    """
+    graph = create_tissueagent_graph(
+        session.state_queue, _bind_retry, kernel_client=kernel_client
     )
+    session.agent = graph.compile(checkpointer=MemorySaver())
+    session.model_revision = model_registry.get_revision()
+    logging.info(
+        "TissueAgent graph compiled with selection=%s (rev %d).",
+        model_registry.get_selection(),
+        session.model_revision,
+    )
+
+
+def ensure_graph_current() -> None:
+    """Rebuild the graph if the model selection changed since the last compile."""
+    if getattr(session, "model_revision", None) != model_registry.get_revision():
+        assert _kernel_client is not None, "kernel_client not initialized"
+        _compile_graph(_kernel_client)
 
 
 @asynccontextmanager
@@ -51,10 +92,9 @@ async def lifespan(app: FastAPI):
     register_ui_event_queue(session.ui_event_queue)
 
     # Compile the agent graph
-    graph = create_tissueagent_graph(
-        session.state_queue, _bind_retry, kernel_client=kernel_client
-    )
-    session.agent = graph.compile()
+    global _kernel_client
+    _kernel_client = kernel_client
+    _compile_graph(kernel_client)
 
     logging.info("TissueAgent graph compiled and ready.")
     yield
@@ -79,8 +119,11 @@ app.add_middleware(
 )
 
 # Mount API routes
+app.include_router(agents_route.router)
 app.include_router(chat.router)
 app.include_router(files.router)
+app.include_router(models_route.router)
+app.include_router(plan.router)
 app.include_router(sessions.router)
 
 # Serve React build in production (if dist/ exists)

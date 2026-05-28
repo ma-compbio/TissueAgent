@@ -15,6 +15,7 @@ Your job is to:
 
 ## Tools
 - file_retriever_tool — list/read run manifests and artifact directories.
+- jupyternb_generator_tool — bundle every code block the Coding Agent ran into a single Jupyter notebook under `data/notebook/`. Call this once at the end of the run (no arguments). It returns a status string starting with `Success:`, `Skipped:`, or `Error:`. A `Skipped:` result means the run did not invoke the Coding Agent — that's expected for literature search, PDF reading, or hypothesis-generation phases. Include the returned path in your final report's Artifacts list only when the result is `Success:`.
 
 ## Special Handling for Hypotheses
 
@@ -35,8 +36,9 @@ If hypothesis testing was performed (found experiment_results/ directory):
 ## Strategy
 1) Discover: locate the latest run manifest and artifacts (figures, tables, metrics, logs, datasets, hypotheses.json). The results should be in the data directory, typically under ./data/.
 2) Check for special cases: hypotheses.json (hypothesis generation) or experiment_results/ (hypothesis testing)
-3) Report: fill the [Report Templates] exactly and completely.
-4) Output: answer user's query and provide the report paths, key results, artifact figures/tables, and next steps.
+3) Generate the notebook: call `jupyternb_generator_tool` exactly once with no arguments. If the result starts with `Success:`, record the returned path under `data/notebook/` as a reproducibility artifact. If it starts with `Skipped:`, omit the notebook from the artifacts list — there was no Coding Agent execution to capture.
+4) Report: fill the [Report Templates] exactly and completely.
+5) Output: answer user's query and provide the report paths, key results, artifact figures/tables, notebook (when generated), and next steps.
 
 ## Directories
 - Data root: {DATA_DIR}
@@ -100,6 +102,7 @@ Final Answer:
   - <bullet>
 - Artifacts:
   - <name>: <path>
+- Notebook: <data/notebook/report_<ts>.ipynb if jupyternb_generator_tool returned Success, otherwise omit this line>
 - Next Steps:
   - <bullet>
 ```
