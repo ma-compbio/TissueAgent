@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { BrowseEntry } from "../types/messages";
 
 const API = import.meta.env.DEV ? "http://localhost:8000" : "";
@@ -96,6 +96,9 @@ function FileNode({
 export default function FileBrowser() {
   const [tree, setTree] = useState<BrowseEntry[]>([]);
   const [previewPath, setPreviewPath] = useState<string | null>(null);
+  const [paneWidth, setPaneWidth] = useState(320);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
 
   const fetchTree = useCallback(async () => {
     const res = await fetch(`${API}/api/files/browse`);
@@ -106,58 +109,108 @@ export default function FileBrowser() {
     fetchTree();
   }, [fetchTree]);
 
-  if (previewPath) {
-    const fileName = previewPath.split("/").pop() ?? previewPath;
-    return (
-      <div className="image-preview">
-        <div className="image-preview-header">
-          <button
-            className="image-preview-back"
-            onClick={() => setPreviewPath(null)}
-          >
-            ← Back
-          </button>
-          <span className="image-preview-name">{fileName}</span>
-          <button
-            className="file-action"
-            onClick={() =>
-              window.open(`${API}/api/files/download/${previewPath}`, "_blank")
-            }
-            title="Download"
-          >
-            ⬇ Download
-          </button>
-        </div>
-        <img
-          src={`${API}/api/files/download/${previewPath}`}
-          alt={fileName}
-          className="image-preview-img"
-        />
-      </div>
-    );
-  }
+  // Initialize pane width to ~25% of the container on first render.
+  useLayoutEffect(() => {
+    if (containerRef.current) {
+      setPaneWidth(Math.round(containerRef.current.offsetWidth * 0.25));
+    }
+  }, []);
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!isDragging.current || !containerRef.current) return;
+      const left = containerRef.current.getBoundingClientRect().left;
+      const total = containerRef.current.offsetWidth;
+      const next = Math.max(160, Math.min(total * 0.65, ev.clientX - left));
+      setPaneWidth(Math.round(next));
+    };
+
+    const onMouseUp = () => {
+      isDragging.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+
+  const previewFileName = previewPath ? (previewPath.split("/").pop() ?? previewPath) : null;
 
   return (
-    <div className="file-browser">
-      <div className="file-browser-header">
-        <button className="refresh-btn" onClick={fetchTree}>
-          ↻ Refresh
-        </button>
+    <div className="file-browser-split" ref={containerRef}>
+      <div className="file-browser-pane" style={{ width: paneWidth }}>
+        <div className="file-browser-pane-header">
+          <span className="file-browser-pane-title">Output Files</span>
+          <button
+            className="file-browser-refresh-btn"
+            onClick={fetchTree}
+            title="Refresh"
+            aria-label="Refresh file list"
+          >
+            ↻
+          </button>
+        </div>
+        <div className="file-tree">
+          {tree.length === 0 ? (
+            <div className="empty-tree">No files yet.</div>
+          ) : (
+            tree.map((entry) => (
+              <FileNode
+                key={entry.path}
+                entry={entry}
+                onDelete={fetchTree}
+                onPreviewImage={setPreviewPath}
+              />
+            ))
+          )}
+        </div>
       </div>
-      <div className="file-tree">
-        {tree.length === 0 ? (
-          <div className="empty-tree">No files yet.</div>
-        ) : (
-          tree.map((entry) => (
-            <FileNode
-              key={entry.path}
-              entry={entry}
-              onDelete={fetchTree}
-              onPreviewImage={setPreviewPath}
+
+      <div
+        className="file-browser-resize-handle"
+        onMouseDown={handleResizeMouseDown}
+        aria-hidden="true"
+      />
+
+      {previewPath && previewFileName && (
+        <div className="file-preview-pane">
+          <div className="file-preview-pane-header">
+            <span className="image-preview-name">{previewFileName}</span>
+            <button
+              className="file-action"
+              onClick={() =>
+                window.open(`${API}/api/files/download/${previewPath}`, "_blank")
+              }
+              title="Download"
+            >
+              ⬇
+            </button>
+            <button
+              className="file-preview-close-btn"
+              onClick={() => setPreviewPath(null)}
+              title="Close preview"
+              aria-label="Close preview"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="file-preview-pane-body">
+            <img
+              src={`${API}/api/files/download/${previewPath}`}
+              alt={previewFileName}
+              className="image-preview-img"
             />
-          ))
-        )}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

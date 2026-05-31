@@ -15,11 +15,11 @@ import { useTheme } from "./hooks/useTheme";
 import { useWebSocket } from "./hooks/useWebSocket";
 import "./styles/index.css";
 
-/** Three top-level views. The chat page keeps the sidebar; tutorial
- *  and contact are single-column reference pages. */
-export type Page = "chat" | "tutorial" | "contact";
+/** Four top-level views. The chat and files pages keep the sidebar;
+ *  tutorial and contact are single-column reference pages. */
+export type Page = "chat" | "files" | "tutorial" | "contact";
 
-const PAGES: readonly Page[] = ["chat", "tutorial", "contact"] as const;
+const PAGES: readonly Page[] = ["chat", "files", "tutorial", "contact"] as const;
 
 function _readPageFromUrl(): Page {
   if (typeof window === "undefined") return "chat";
@@ -35,8 +35,6 @@ export default function App() {
   const agentsHook = useAgents();
   const { theme, toggleTheme } = useTheme();
 
-  const [enableDebug, setEnableDebug] = useState(false);
-  const [showFileBrowser, setShowFileBrowser] = useState(false);
   const [page, setPage] = useState<Page>(_readPageFromUrl);
 
   // Sync ?page=... in the URL so reloads + bookmarks land on the right view.
@@ -126,10 +124,6 @@ export default function App() {
   return (
     <div className="app-layout">
       <Sidebar
-        enableDebug={enableDebug}
-        onToggleDebug={() => setEnableDebug((v) => !v)}
-        showFileBrowser={showFileBrowser}
-        onToggleFileBrowser={() => setShowFileBrowser((v) => !v)}
         uploadedFiles={session.uploadedFiles}
         onUploadFiles={session.uploadFiles}
         sessions={session.sessions}
@@ -205,36 +199,23 @@ export default function App() {
         )}
 
         <div className="content-area">
-          <div className="chat-panel">
-            <ChatView
-              messages={ws.messages}
-              subagentStates={ws.subagentStates}
-              liveTraces={ws.liveTraces}
-              isRunning={ws.isRunning}
-              elapsed={ws.elapsed}
-              enableDebug={enableDebug}
-              onSendMessage={ws.sendMessage}
-            />
-          </div>
+          {page === "files" ? (
+            <FileBrowser />
+          ) : (
+            <div className="chat-panel">
+              <ChatView
+                messages={ws.messages}
+                subagentStates={ws.subagentStates}
+                liveTraces={ws.liveTraces}
+                isRunning={ws.isRunning}
+                elapsed={ws.elapsed}
+                enableDebug={true}
+                onSendMessage={ws.sendMessage}
+              />
+            </div>
+          )}
         </div>
       </main>
-
-      {showFileBrowser && (
-        <div className="modal-overlay" onClick={() => setShowFileBrowser(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>File Browser</h3>
-              <button
-                className="modal-close-btn"
-                onClick={() => setShowFileBrowser(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <FileBrowser />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

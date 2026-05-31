@@ -14,10 +14,6 @@ import PlanPanel from "./PlanPanel";
 import SessionManager from "./SessionManager";
 
 interface Props {
-  enableDebug: boolean;
-  onToggleDebug: () => void;
-  showFileBrowser: boolean;
-  onToggleFileBrowser: () => void;
   uploadedFiles: FileInfo[];
   onUploadFiles: (files: FileList) => void;
   sessions: SessionInfo[];
@@ -55,10 +51,6 @@ interface Props {
 }
 
 export default function Sidebar({
-  enableDebug,
-  onToggleDebug,
-  showFileBrowser,
-  onToggleFileBrowser,
   uploadedFiles,
   onUploadFiles,
   sessions,
@@ -171,22 +163,6 @@ export default function Sidebar({
           onSaveKey={onSaveApiKey}
           disabled={isRunning}
         />
-
-        <div className="upload-divider" />
-
-        <div className="sidebar-controls">
-          <button className="sidebar-btn" onClick={onToggleFileBrowser}>
-            {showFileBrowser ? "Close" : "Open"} File Browser
-          </button>
-          <label className="debug-toggle">
-            <input
-              type="checkbox"
-              checked={enableDebug}
-              onChange={onToggleDebug}
-            />
-            Enable Trace
-          </label>
-        </div>
 
         <div className="upload-divider" />
 
