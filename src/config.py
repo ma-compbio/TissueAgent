@@ -48,3 +48,5 @@ DOCKER_IMAGE_NAME = "tissueagent-sandbox"
 DOCKER_CONTAINER_NAME = "tissueagent-sandbox"
 CONTAINER_DATA_DIR = "/workspace"
 CONTAINER_NOTEBOOK_DIR = "/workspace/notebook"
+
+MAX_OUTPUT_CHARS = 3000

@@ -1,12 +1,12 @@
 """Tools available to the Recruiter agent."""
 
-from agents.agent_utils import file_retriever_tool
+from agents.agent_utils import file_read_tools
 
 # from agents.planner_agent.tools_impl.jupyternb_generator_tool import create_generate_jupyternb
 from api_keys import APIKeys
 
 ### computed at load time for render_conversation_history in app_utils
-PlannerToolNames = ["file_retriever_tool"]
+PlannerToolNames = ["glob", "grep", "read"]
 
 
 def create_recruiter_tools(api_keys: APIKeys):
@@ -18,6 +18,4 @@ def create_recruiter_tools(api_keys: APIKeys):
     Returns:
         List of LangChain tools for the recruiter.
     """
-    return [
-        file_retriever_tool,
-    ]
+    return list(file_read_tools)

@@ -61,9 +61,9 @@ When the Evaluator Agent sends "ROUTE: REPLAN" with feedback on a failed plan:
 5. **Preserve Working Steps**: If some steps succeeded, you may keep them but adjust downstream steps based on feedback
 
 ## Tools:
-- file_retriever_tool — list/read run manifests and artifact directories.
-=======
-- file_retriever_tool — list/read run manifests and artifact directories
+- glob(pattern) — list workspace files/directories matching a glob pattern (relative to DATA_DIR).
+- grep(pattern, include="**/*") — search file contents by regex; binary files are skipped automatically.
+- read(file_path, offset=1, limit=None) — read a workspace file; images are returned inline.
 - plan_registry_tool — list available plan templates
 - template_selector_tool — find best template match for user query
 

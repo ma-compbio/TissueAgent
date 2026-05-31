@@ -2,7 +2,7 @@
 from pathlib import Path
 from typing import List
 from langchain.tools import StructuredTool
-from agents.agent_utils import file_retriever_tool
+from agents.agent_utils import file_read_tools
 from config import DATA_DIR
 
 
@@ -32,6 +32,6 @@ write_file_structured_tool = StructuredTool.from_function(
 )
 
 HypothesisTools: List[StructuredTool] = [
-    file_retriever_tool,
+    *file_read_tools,
     write_file_structured_tool,
 ]

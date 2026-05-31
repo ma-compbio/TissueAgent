@@ -23,11 +23,12 @@ from config import (
     KERNEL_GATEWAY_HOST,
     KERNEL_GATEWAY_PORT,
     KERNEL_GATEWAY_URL,
+    MAX_OUTPUT_CHARS,
     ROOT,
 )
+from agents.agent_utils import truncate_output
 
 EXECUTION_TIMEOUT = 300  # 5 minutes
-MAX_OUTPUT_CHARS = 3000
 
 IMAGE_MIME_TYPES = {"image/png", "image/jpeg"}
 
@@ -230,15 +231,7 @@ class KernelClient:
         finally:
             ws.close()
 
-        text = "".join(output_parts)
-        if len(text) > MAX_OUTPUT_CHARS:
-            half = MAX_OUTPUT_CHARS // 2
-            removed = len(text) - MAX_OUTPUT_CHARS
-            text = (
-                f"{text[:half]}\n\n"
-                f"... [{removed} characters truncated] ...\n\n"
-                f"{text[-half:]}"
-            )
+        text = truncate_output("".join(output_parts), MAX_OUTPUT_CHARS)
         return ExecutionResult(text=text, images=images)
 
     def _get_or_start_kernel(self, language: str) -> str:

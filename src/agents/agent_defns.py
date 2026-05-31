@@ -12,7 +12,7 @@ from typing import Callable, List, Union
 from langchain.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
 
-from agents.agent_utils import file_retriever_tool
+from agents.agent_utils import file_read_tools
 from agents.planner_agent.prompt import PlannerPrompt
 from agents.planner_agent.tools import PlannerTools
 from agents.recruiter_agent.prompt import RecruiterPrompt
@@ -128,7 +128,7 @@ RecruiterAgent = ReActAgent(
     name="Recruiter Agent",
     description="",
     prompt=RecruiterPrompt,
-    tools=[file_retriever_tool, assign_agents_tool],
+    tools=[*file_read_tools, assign_agents_tool],
     model_ctor=DefaultModelCtor,
 )
 

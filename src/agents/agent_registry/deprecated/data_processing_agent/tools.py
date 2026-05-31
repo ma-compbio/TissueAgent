@@ -1,7 +1,7 @@
 from langchain.tools import StructuredTool
 from pydantic import BaseModel, Field
 
-from agents.agent_utils import file_retriever_tool
+from agents.agent_utils import file_read_tools
 
 # ╔═══════════════════════╗
 # ║ 🤐 Unzip Tool         ║
@@ -171,7 +171,7 @@ xenium_reader_tool = StructuredTool.from_function(
 )
 
 DataProcessingTools = [
-    file_retriever_tool,
+    *file_read_tools,
     extract_tool,
     cosmx_reader_tool,
     merscope_reader_tool,

@@ -271,7 +271,9 @@ Use `write_file_tool` to save to `reports/post_execution_criticism.json`:
 ## Tools Available
 
 - **write_file_tool**: Save criticism to files (paths relative to DATA_DIR)
-- **file_retriever_tool**: List files in DATA_DIR to find analysis outputs
+- **glob(pattern)**: List workspace files/directories matching a glob pattern (relative to DATA_DIR).
+- **grep(pattern, include="**/*")**: Search file contents by regex; binary files are skipped.
+- **read(file_path, offset=1, limit=None)**: Read a workspace file; images are returned inline.
 
 ## Workspace Paths
 
