@@ -13,6 +13,7 @@ interface Props {
 const ITEMS: Array<{ key: Page; label: string }> = [
   { key: "chat", label: "Chat" },
   { key: "files", label: "Files" },
+  { key: "settings", label: "Settings" },
   { key: "tutorial", label: "Tutorial" },
   { key: "contact", label: "Contact" },
 ];

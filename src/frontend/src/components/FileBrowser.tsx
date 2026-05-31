@@ -93,7 +93,7 @@ function FileNode({
   );
 }
 
-export default function FileBrowser() {
+export default function FileBrowser({ refreshKey }: { refreshKey?: number }) {
   const [tree, setTree] = useState<BrowseEntry[]>([]);
   const [previewPath, setPreviewPath] = useState<string | null>(null);
   const [paneWidth, setPaneWidth] = useState(320);
@@ -107,7 +107,7 @@ export default function FileBrowser() {
 
   useEffect(() => {
     fetchTree();
-  }, [fetchTree]);
+  }, [fetchTree, refreshKey]);
 
   // Initialize pane width to ~25% of the container on first render.
   useLayoutEffect(() => {

@@ -12,9 +12,18 @@ def _read(filename: str) -> str:
 RetrievalAgentPrompt = _read("retrieval_agent_prompt.txt")
 
 
-def ExecutionAgentPrompt(retrieval_plan: str) -> str:
-    """Build the execution agent system prompt with the retrieval plan injected."""
-    template = _read("execution_agent_prompt.txt")
+def ExecutionAgentPrompt(retrieval_plan: str, sandbox_enabled: bool = True) -> str:
+    """Build the execution agent system prompt with the retrieval plan injected.
+
+    When ``sandbox_enabled`` is False the no-sandbox variant is used, which
+    adds an explicit file-access policy restricting the agent to /workspace.
+    """
+    template_file = (
+        "execution_agent_prompt.txt"
+        if sandbox_enabled
+        else "execution_agent_prompt_no_sandbox.txt"
+    )
+    template = _read(template_file)
     return template.replace("{retrieval_plan}", retrieval_plan)
 
 

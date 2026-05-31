@@ -5,6 +5,7 @@ import FileBrowser from "./components/FileBrowser";
 import Sidebar from "./components/Sidebar";
 import ThemeToggle from "./components/ThemeToggle";
 import TopNav from "./components/TopNav";
+import SettingsPage from "./components/SettingsPage";
 import TutorialPage from "./components/TutorialPage";
 import { useAgents } from "./hooks/useAgents";
 import { useModels } from "./hooks/useModels";
@@ -15,11 +16,11 @@ import { useTheme } from "./hooks/useTheme";
 import { useWebSocket } from "./hooks/useWebSocket";
 import "./styles/index.css";
 
-/** Four top-level views. The chat and files pages keep the sidebar;
- *  tutorial and contact are single-column reference pages. */
-export type Page = "chat" | "files" | "tutorial" | "contact";
+/** Five top-level views. The chat and files pages keep the sidebar;
+ *  settings, tutorial and contact are single-column reference pages. */
+export type Page = "chat" | "files" | "settings" | "tutorial" | "contact";
 
-const PAGES: readonly Page[] = ["chat", "files", "tutorial", "contact"] as const;
+const PAGES: readonly Page[] = ["chat", "files", "settings", "tutorial", "contact"] as const;
 
 function _readPageFromUrl(): Page {
   if (typeof window === "undefined") return "chat";
@@ -36,6 +37,15 @@ export default function App() {
   const { theme, toggleTheme } = useTheme();
 
   const [page, setPage] = useState<Page>(_readPageFromUrl);
+  const [fileBrowserRefreshKey, setFileBrowserRefreshKey] = useState(0);
+
+  const handleUploadFiles = useCallback(
+    async (files: FileList) => {
+      await session.uploadFiles(files);
+      setFileBrowserRefreshKey((k) => k + 1);
+    },
+    [session],
+  );
 
   // Sync ?page=... in the URL so reloads + bookmarks land on the right view.
   useEffect(() => {
@@ -93,8 +103,8 @@ export default function App() {
     return true;
   }, [session, ws, planHook]);
 
-  // Tutorial and Contact: single-column doc layout, no sidebar.
-  if (page === "tutorial" || page === "contact") {
+  // Settings, Tutorial and Contact: single-column doc layout, no sidebar.
+  if (page === "settings" || page === "tutorial" || page === "contact") {
     return (
       <div className="app-layout app-layout-doc">
         <main className="main-area">
@@ -114,7 +124,13 @@ export default function App() {
             </div>
           </div>
           <div className="content-area-doc">
-            {page === "tutorial" ? <TutorialPage /> : <ContactPage />}
+            {page === "settings" ? (
+              <SettingsPage />
+            ) : page === "tutorial" ? (
+              <TutorialPage />
+            ) : (
+              <ContactPage />
+            )}
           </div>
         </main>
       </div>
@@ -125,7 +141,7 @@ export default function App() {
     <div className="app-layout">
       <Sidebar
         uploadedFiles={session.uploadedFiles}
-        onUploadFiles={session.uploadFiles}
+        onUploadFiles={handleUploadFiles}
         sessions={session.sessions}
         onFetchSessions={session.fetchSessions}
         onSave={session.saveSession}
@@ -200,7 +216,7 @@ export default function App() {
 
         <div className="content-area">
           {page === "files" ? (
-            <FileBrowser />
+            <FileBrowser refreshKey={fileBrowserRefreshKey} />
           ) : (
             <div className="chat-panel">
               <ChatView

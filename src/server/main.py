@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from langgraph.checkpoint.memory import MemorySaver
 
+import agent_settings
 from agents.agent_registry.coding_agent.sandbox import ContainerManager, KernelClient
 import models as model_registry
 from graph.graph import create_tissueagent_graph
@@ -32,6 +33,7 @@ from server.routes import (
     models as models_route,
     plan,
     sessions,
+    settings as settings_route,
 )
 from server.session_manager import session
 from server.utils import reset_data_directories
@@ -48,6 +50,7 @@ def _bind_retry(model):
 
 
 _kernel_client: KernelClient | None = None
+_settings_revision: int | None = None
 
 
 def _compile_graph(kernel_client: KernelClient) -> None:
@@ -64,28 +67,41 @@ def _compile_graph(kernel_client: KernelClient) -> None:
     )
     session.agent = graph.compile(checkpointer=MemorySaver())
     session.model_revision = model_registry.get_revision()
+    global _settings_revision
+    _settings_revision = agent_settings.get_revision()
     logging.info(
-        "TissueAgent graph compiled with selection=%s (rev %d).",
+        "TissueAgent graph compiled with selection=%s (rev %d), settings=%s.",
         model_registry.get_selection(),
         session.model_revision,
+        agent_settings.get_settings(),
     )
 
 
 def ensure_graph_current() -> None:
-    """Rebuild the graph if the model selection changed since the last compile."""
-    if getattr(session, "model_revision", None) != model_registry.get_revision():
+    """Rebuild the graph if the model selection or agent settings changed."""
+    if (getattr(session, "model_revision", None) != model_registry.get_revision()
+            or _settings_revision != agent_settings.get_revision()):
         assert _kernel_client is not None, "kernel_client not initialized"
         _compile_graph(_kernel_client)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: reset dirs, start sandbox, compile graph, register queues."""
+    """Startup: reset dirs, optionally start sandbox, compile graph, register queues."""
     reset_data_directories()
 
-    # Start the Docker sandbox (Jupyter Kernel Gateway)
-    container_mgr = ContainerManager()
-    container_mgr.ensure_running()
+    # Start the Docker sandbox only when sandbox_enabled is set at startup.
+    container_mgr: ContainerManager | None = None
+    if agent_settings.get_sandbox_enabled():
+        container_mgr = ContainerManager()
+        container_mgr.ensure_running()
+        logging.info("Docker sandbox started.")
+    else:
+        logging.info(
+            "Docker sandbox disabled at startup — expecting a local Jupyter "
+            "Kernel Gateway at %s.", "KERNEL_GATEWAY_URL"
+        )
+
     kernel_client = KernelClient()
 
     # Register the UI event queue so log_message() can push to it
@@ -99,8 +115,9 @@ async def lifespan(app: FastAPI):
     logging.info("TissueAgent graph compiled and ready.")
     yield
 
-    # Shutdown: stop the sandbox container
-    container_mgr.stop()
+    # Shutdown: stop the sandbox container if it was started
+    if container_mgr is not None:
+        container_mgr.stop()
 
 
 app = FastAPI(
@@ -125,6 +142,7 @@ app.include_router(files.router)
 app.include_router(models_route.router)
 app.include_router(plan.router)
 app.include_router(sessions.router)
+app.include_router(settings_route.router)
 
 # Serve React build in production (if dist/ exists)
 _frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"

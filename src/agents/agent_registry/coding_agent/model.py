@@ -19,7 +19,9 @@ from agents.agent_registry.coding_agent.params import (
     doc_filepaths,
     tutorial_directories,
 )
+import agent_settings
 from agents.agent_registry.coding_agent.prompt import RetrievalAgentPrompt, ExecutionAgentPrompt
+from config import DATA_DIR
 from graph.graph_utils import (
     create_agent_node,
     create_tool_node,
@@ -32,6 +34,7 @@ from graph.graph_utils import (
 class CodingAgentState(MessagesState):
     """Extended state that carries the retrieval plan between subagents."""
     retrieval_plan: str
+    skip_retrieval: bool
 
 
 def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
@@ -213,9 +216,14 @@ def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
             "messages": removals,
         }
 
-    # Execution agent: receives plan via system prompt, executes code
+    # Execution agent: receives plan via system prompt, executes code.
+    # sandbox_enabled is read at invocation time so runtime setting changes
+    # are honoured without requiring a graph rebuild.
     def _execution_prompt(state: CodingAgentState) -> str:
-        return ExecutionAgentPrompt(state.get("retrieval_plan", ""))
+        return ExecutionAgentPrompt(
+            state.get("retrieval_plan", ""),
+            sandbox_enabled=agent_settings.get_sandbox_enabled(),
+        )
 
     execution_agent_node = create_agent_node(
         execution_agent_node_id, execution_model, _execution_prompt,
@@ -229,7 +237,10 @@ def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
     graph.add_node(execution_agent_node_id, execution_agent_node)
     graph.add_node(execution_tool_node_id, execution_tool_node)
 
-    graph.add_edge(START, retrieval_agent_node_id)
+    graph.add_conditional_edges(
+        START,
+        lambda state: execution_agent_node_id if state.get("skip_retrieval") else retrieval_agent_node_id,
+    )
     graph.add_edge(retrieval_tool_node_id, retrieval_agent_node_id)
     graph.add_edge(handoff_node_id, execution_agent_node_id)
     graph.add_edge(execution_tool_node_id, execution_agent_node_id)
@@ -253,18 +264,20 @@ def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
         state_queue.put((id, final_state, invocation_id))
         return final_state["messages"][-1].content
 
-    return StructuredTool.from_function(
+    tool = StructuredTool.from_function(
         func=agent_invocation_tool,
         name="coding_agent_transfer_tool",
         description="Transfer control to {id}",
     )
+    tool._agent = agent  # type: ignore[attr-defined]
+    return tool
 
 PRESETS: dict[int, dict] = {
     1: {
-        "setup": "cp datasets/dataset_lohoff_et_al_seqfish.h5ad data/",
+        "setup": f"cp datasets/dataset_lohoff_et_al_seqfish.h5ad {DATA_DIR}/datasets",
         "prompt": (
             "I have uploaded a spatial transcriptomics dataset in datasets/dataset_lohoff_et_al_seqfish.h5ad."
-            "Help me plot a UMAP colored by cell type."
+            "Help me plot a spatial scatterplot colored by cell type, saved to figures/spatial_scatter.png."
         ),
     },
 }
@@ -279,6 +292,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run the coding agent directly.")
     parser.add_argument("--preset", type=int, default=0, help="Preset number (0 = interactive prompt)")
+    parser.add_argument("--disable-docker", action="store_true", help="Skip Docker sandbox startup; connect to a local Jupyter Kernel Gateway instead")
+    parser.add_argument("--skip-retrieval", action="store_true", help="Skip the retrieval agent and run the execution agent directly on the prompt")
     parser.add_argument("prompt", nargs="*", help="Prompt text (ignored when --preset is used)")
     args = parser.parse_args()
 
@@ -300,15 +315,26 @@ if __name__ == "__main__":
     else:
         prompt = input("Prompt: ")
 
-    container_mgr = ContainerManager()
-    container_mgr.ensure_running()
+    if args.disable_docker:
+        agent_settings.set_sandbox_enabled(False)
+        logging.info("Docker sandbox disabled — expecting a local Jupyter Kernel Gateway.")
+        container_mgr = None
+    else:
+        container_mgr = ContainerManager()
+        container_mgr.ensure_running()
 
     client = KernelClient()
     queue = Queue()
     tool = create_coding_agent(queue, client)
 
     try:
-        result = tool.invoke({"prompt": prompt})
-        print(result)
+        if args.skip_retrieval:
+            logging.info("Skipping retrieval agent — running execution agent directly.")
+            final_state = tool._agent.invoke({"messages": [HumanMessage(prompt)], "skip_retrieval": True})
+            print(final_state["messages"][-1].content)
+        else:
+            result = tool.invoke({"prompt": prompt})
+            print(result)
     finally:
-        container_mgr.stop()
+        if container_mgr is not None:
+            container_mgr.stop()
