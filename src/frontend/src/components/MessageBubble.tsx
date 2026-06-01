@@ -1,5 +1,7 @@
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { SerializedMessage, SubagentTranscript } from "../types/messages";
 import AgentAvatar from "./AgentAvatar";
 
@@ -126,9 +128,9 @@ function SubagentCard({
       </div>
       {finalOutput && (
         <div className="subagent-card-output">
-          {finalOutput.length > 300
-            ? finalOutput.slice(0, 300) + "..."
-            : finalOutput}
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {finalOutput}
+          </ReactMarkdown>
         </div>
       )}
     </div>
@@ -170,7 +172,9 @@ export function AgentRunCard({
       </div>
       {summary && (
         <div className="subagent-card-output">
-          {summary.length > 300 ? summary.slice(0, 300) + "..." : summary}
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {summary}
+          </ReactMarkdown>
         </div>
       )}
     </div>
