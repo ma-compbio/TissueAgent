@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import ChatView from "./components/ChatView";
 import ContactPage from "./components/ContactPage";
 import FileBrowser from "./components/FileBrowser";
+import ResizeDivider from "./components/ResizeDivider";
 import Sidebar from "./components/Sidebar";
 import ThemeToggle from "./components/ThemeToggle";
 import TopNav from "./components/TopNav";
@@ -38,6 +39,7 @@ export default function App() {
 
   const [page, setPage] = useState<Page>(_readPageFromUrl);
   const [fileBrowserRefreshKey, setFileBrowserRefreshKey] = useState(0);
+  const [sidebarWidth, setSidebarWidth] = useState(300);
 
   const handleUploadFiles = useCallback(
     async (files: FileList) => {
@@ -137,9 +139,14 @@ export default function App() {
     );
   }
 
+  const handleSidebarResize = useCallback((delta: number) => {
+    setSidebarWidth((w) => Math.min(600, Math.max(180, w + delta)));
+  }, []);
+
   return (
     <div className="app-layout">
       <Sidebar
+        style={{ width: sidebarWidth, minWidth: sidebarWidth }}
         uploadedFiles={session.uploadedFiles}
         onUploadFiles={handleUploadFiles}
         sessions={session.sessions}
@@ -175,6 +182,7 @@ export default function App() {
         modelKeys={modelHook.keys}
         onSaveApiKey={modelHook.setApiKey}
       />
+      <ResizeDivider onResize={handleSidebarResize} />
 
       <main className="main-area">
         <div className="top-bar">

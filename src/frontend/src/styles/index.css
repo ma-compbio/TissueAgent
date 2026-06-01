@@ -171,13 +171,31 @@ code, pre, .num {
 }
 
 .sidebar {
-  width: var(--sidebar-width);
-  min-width: var(--sidebar-width);
   background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+.resize-divider {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: var(--border-color);
+  transition: background 0.15s;
+  position: relative;
+}
+
+.resize-divider::after {
+  content: "";
+  position: absolute;
+  inset: 0 -3px;  /* expand hit area without changing visual size */
+}
+
+.resize-divider:hover,
+.resize-divider:active {
+  background: var(--accent);
 }
 
 .sidebar-top {
@@ -1346,9 +1364,7 @@ code, pre, .num {
 }
 
 .chat-column-right {
-  width: 520px;
-  min-width: 420px;
-  border-left: 1px solid var(--border-color);
+  flex-shrink: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;

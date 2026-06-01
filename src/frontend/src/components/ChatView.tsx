@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SerializedMessage, SubagentTranscript } from "../types/messages";
 import AgentAvatar from "./AgentAvatar";
 import MessageBubble, { AgentRunCard, FinalAnswerBox, extractFinalResponse, type AgentRun } from "./MessageBubble";
+import ResizeDivider from "./ResizeDivider";
 import TracePanel from "./TracePanel";
 
 interface Props {
@@ -201,8 +202,13 @@ export default function ChatView({
 }: Props) {
   const [input, setInput] = useState("");
   const [selectedTrace, setSelectedTrace] = useState<string | null>(null);
+  const [traceWidth, setTraceWidth] = useState(520);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleTraceResize = useCallback((delta: number) => {
+    setTraceWidth((w) => Math.min(900, Math.max(280, w - delta)));
+  }, []);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -402,12 +408,15 @@ export default function ChatView({
       </div>
 
       {activeTrace && (
-        <div className="chat-column-right">
-          <TracePanel
-            state={activeTrace}
-            onClose={() => setSelectedTrace(null)}
-          />
-        </div>
+        <>
+          <ResizeDivider onResize={handleTraceResize} />
+          <div className="chat-column-right" style={{ width: traceWidth, minWidth: 280 }}>
+            <TracePanel
+              state={activeTrace}
+              onClose={() => setSelectedTrace(null)}
+            />
+          </div>
+        </>
       )}
     </div>
   );

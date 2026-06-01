@@ -1,3 +1,4 @@
+import type React from "react";
 import type { FileInfo, SessionInfo, SessionMode } from "../types/messages";
 import type {
   KeyStatusMap,
@@ -48,6 +49,7 @@ interface Props {
   onResetWorkerModel: () => void;
   modelKeys: KeyStatusMap;
   onSaveApiKey: (provider: Provider, key: string) => Promise<boolean>;
+  style?: React.CSSProperties;
 }
 
 export default function Sidebar({
@@ -85,9 +87,10 @@ export default function Sidebar({
   onResetWorkerModel,
   modelKeys,
   onSaveApiKey,
+  style,
 }: Props) {
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" style={style}>
       {/* Mode toggle is pinned at the top of the sidebar, outside any
           scrolling container, so it stays visible regardless of run
           state or scroll position. */}
