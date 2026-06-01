@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SerializedMessage, SubagentTranscript } from "../types/messages";
 import AgentAvatar from "./AgentAvatar";
-import MessageBubble, { AgentRunCard, type AgentRun } from "./MessageBubble";
+import MessageBubble, { AgentRunCard, FinalAnswerBox, extractFinalResponse, type AgentRun } from "./MessageBubble";
 import TracePanel from "./TracePanel";
 
 interface Props {
@@ -260,13 +260,17 @@ export default function ChatView({
               }
 
               if (item.kind === "agent_run") {
+                const isReporter = item.run.agentName === "reporter_agent";
+                const finalResponse = isReporter ? extractFinalResponse(item.run.messages) : null;
                 return (
-                  <AgentRunCard
-                    key={item.run.syntheticId}
-                    run={item.run}
-                    onSelectTrace={handleSelectTrace}
-                    isSelected={selectedTrace === item.run.syntheticId}
-                  />
+                  <div key={item.run.syntheticId}>
+                    <AgentRunCard
+                      run={item.run}
+                      onSelectTrace={handleSelectTrace}
+                      isSelected={selectedTrace === item.run.syntheticId}
+                    />
+                    {finalResponse && <FinalAnswerBox content={finalResponse} />}
+                  </div>
                 );
               }
 

@@ -1698,6 +1698,46 @@ code, pre, .num {
   color: var(--live-accent-strong);
 }
 
+/* Final answer box — shown below reporter agent run card */
+.final-answer-box {
+  margin-top: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+  background: var(--ai-bg);
+}
+
+.final-answer-body {
+  font-size: 0.93rem;
+  word-break: break-word;
+}
+
+.final-answer-body > * { margin-top: 0; }
+.final-answer-body p { margin: 0 0 0.6em; }
+.final-answer-body p:last-child { margin-bottom: 0; }
+.final-answer-body ul,
+.final-answer-body ol { padding-left: 1.4em; margin: 0 0 0.6em; }
+.final-answer-body li { margin-bottom: 0.2em; }
+.final-answer-body h1,
+.final-answer-body h2,
+.final-answer-body h3,
+.final-answer-body h4 { font-weight: 600; margin: 0.8em 0 0.3em; }
+.final-answer-body code {
+  background: var(--code-bg, rgba(0,0,0,0.06));
+  padding: 0.1em 0.35em;
+  border-radius: 0.3em;
+  font-size: 0.88em;
+}
+.final-answer-body pre {
+  background: var(--code-bg, rgba(0,0,0,0.06));
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.4rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  margin: 0 0 0.6em;
+}
+.final-answer-body pre code { background: none; padding: 0; }
+
 @keyframes live-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.85; }
