@@ -172,6 +172,25 @@ class KernelClient:
         )
         self._kernels: dict[str, str] = {}  # language -> kernel_id
         self._seeded: set[str] = set()
+        # Working directory the next kernel will chdir into when seeded.
+        # ``set_workspace()`` updates this; lazy chdir keeps a missing
+        # workspace from breaking startup.
+        self._workspace: Path | None = None
+
+    def set_workspace(self, path: Path) -> None:
+        """Point future kernel executions at *path* as their working dir.
+
+        Implementation note: any kernels already alive are shut down so
+        the next ``execute()`` starts fresh kernels that chdir into the
+        new workspace as part of seeding. This is cheap (a few hundred
+        ms) and avoids the alternative of injecting chdir into every
+        execute call, which would silently fail if the user pasted a
+        ``cd`` of their own.
+        """
+        previous = self._workspace
+        self._workspace = Path(path)
+        if previous != self._workspace and self._kernels:
+            self.shutdown_kernels()
 
     def execute(self, code: str, language: str = "python") -> ExecutionResult:
         """Execute code on a kernel and return text output and any images."""
@@ -257,10 +276,40 @@ class KernelClient:
         return kernel_id
 
     def _seed_kernel(self, language: str) -> None:
-        """Inject DATA_DIR / NOTEBOOK_DIR globals into a freshly started kernel."""
+        """Chdir a freshly-started kernel into the active project workspace.
+
+        Idempotent per (kernel) — once a kernel has been seeded, we
+        leave it alone. ``set_workspace`` triggers a kernel shutdown
+        when the workspace path actually changes, so the next call
+        through here picks up the new directory.
+        """
         if language in self._seeded:
             return
         self._seeded.add(language)
+
+        workspace = self._workspace
+        if workspace is None:
+            return
+
+        workspace_str = str(workspace.resolve()).replace("\\", "/")
+        if language == "python":
+            seed = (
+                "import os\n"
+                f"os.makedirs({workspace_str!r}, exist_ok=True)\n"
+                f"os.chdir({workspace_str!r})\n"
+            )
+        elif language == "r":
+            seed = (
+                f'dir.create("{workspace_str}", recursive = TRUE, showWarnings = FALSE)\n'
+                f'setwd("{workspace_str}")\n'
+            )
+        else:
+            return
+
+        try:
+            self.execute(seed, language=language)
+        except Exception as e:
+            logging.warning(f"Failed to seed {language} kernel cwd: {e}")
 
     def shutdown_kernels(self) -> None:
         """Delete all active kernels (for cleanup between agent runs)."""

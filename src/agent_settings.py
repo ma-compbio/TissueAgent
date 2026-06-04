@@ -14,9 +14,11 @@ from dataclasses import dataclass
 @dataclass
 class _AgentSettings:
     # Run code execution inside the Docker sandbox (Jupyter Kernel Gateway).
-    # When False, code runs locally via whatever Jupyter instance is reachable
-    # at KERNEL_GATEWAY_URL; Docker is not started.
-    sandbox_enabled: bool = True
+    # When False (the default), code runs locally via whatever Jupyter
+    # instance is reachable at KERNEL_GATEWAY_URL and Docker is not started
+    # — so the server can boot without the Docker daemon running. Flip to
+    # True from the Settings page when sandboxing is needed.
+    sandbox_enabled: bool = False
 
 
 _settings = _AgentSettings()

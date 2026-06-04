@@ -8,6 +8,7 @@ thread-safe queues used for real-time UI streaming.
 import threading
 import uuid
 from collections import deque
+from datetime import datetime
 from queue import Queue
 from typing import Any, Deque, Dict, List, Literal, Optional, Set, Tuple
 
@@ -22,6 +23,15 @@ SessionMode = Literal["autopilot", "copilot"]
 def _new_thread_id() -> str:
     """Generate a fresh LangGraph thread_id for a single user turn."""
     return uuid.uuid4().hex
+
+
+def _new_thread_id_for_project() -> str:
+    """Mint a stable, human-readable id for a freshly-started project.
+
+    Doubles as the on-disk folder name under ``projects/``. Timestamp
+    is enough since this is a local single-user app.
+    """
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
 class SessionState:
@@ -57,6 +67,14 @@ class SessionState:
         # from ``interrupt_before`` on subsequent resumes.
         self.gates_fired: Set[str] = set()
 
+        # Persistent project identifier for the current conversation.
+        # Assigned on the first user prompt (or first upload) and reused
+        # on subsequent messages so the project file is updated in place
+        # rather than re-created. ``None`` ⇒ no project is active (fresh
+        # session or post-clear).
+        self.project_id: Optional[str] = None
+        self.project_title: str = ""
+
         # Core conversation state
         self.agent_state: Dict[str, Any] = {
             "messages": [],
@@ -84,8 +102,29 @@ class SessionState:
         # Prevents concurrent agent invocations
         self.is_running: bool = False
 
+    def ensure_project_id(self) -> str:
+        """Mint a project id if none is active, then return it.
+
+        This lives on the session rather than in any one route handler
+        because chat *and* file-upload both need to be able to bind the
+        current conversation to an on-disk project folder. Whichever
+        happens first wins; both paths read the same id afterwards.
+        """
+        if not self.project_id:
+            self.project_id = _new_thread_id_for_project()
+        return self.project_id
+
     def reset(self) -> None:
-        """Reset the session to a clean state (preserves agent graph)."""
+        """Reset the session to a clean state (preserves agent graph).
+
+        IMPORTANT: ``ui_event_queue`` and ``state_queue`` are *drained in
+        place*, not replaced. The compiled graph and ``graph_utils``
+        captured references to the original queue objects at startup; if
+        we swapped them out for fresh ``Queue()`` instances, agent
+        output would land in the orphaned originals and never reach the
+        WebSocket, leaving the user staring at silence after every
+        "new project" click.
+        """
         with self._lock:
             self.agent_state = {
                 "messages": [],
@@ -99,12 +138,22 @@ class SessionState:
             self.pending_images = []
             self.uploaded_pdfs = []
             self.processed_files = set()
-            self.ui_event_queue = Queue()
-            self.state_queue = Queue()
+            while not self.ui_event_queue.empty():
+                try:
+                    self.ui_event_queue.get_nowait()
+                except Exception:
+                    break
+            while not self.state_queue.empty():
+                try:
+                    self.state_queue.get_nowait()
+                except Exception:
+                    break
             self.is_running = False
             self.thread_id = _new_thread_id()
             self.paused_at = None
             self.gates_fired = set()
+            self.project_id = None
+            self.project_title = ""
 
     def ensure_display_state(self) -> None:
         """Synchronise display_messages with the canonical agent message list."""

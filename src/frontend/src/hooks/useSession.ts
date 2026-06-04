@@ -6,10 +6,19 @@ const API = import.meta.env.DEV ? "http://localhost:8000" : "";
 export function useSession() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
+  const [currentProjectId, setCurrentProjectId] = useState<string>("");
 
   const fetchSessions = useCallback(async () => {
     const res = await fetch(`${API}/api/sessions/list`);
     if (res.ok) setSessions(await res.json());
+  }, []);
+
+  const fetchCurrentProject = useCallback(async () => {
+    const res = await fetch(`${API}/api/sessions/current`);
+    if (res.ok) {
+      const data = await res.json();
+      setCurrentProjectId(data.project_id || "");
+    }
   }, []);
 
   const saveSession = useCallback(async (): Promise<true | string> => {
@@ -70,6 +79,7 @@ export function useSession() {
       // Clear the locally-tracked file list too; uploaded files
       // metadata is gone server-side now.
       setUploadedFiles([]);
+      setCurrentProjectId("");
       return true;
     }
     try {
@@ -100,23 +110,32 @@ export function useSession() {
     [fetchSessions],
   );
 
-  const uploadFiles = useCallback(async (files: FileList) => {
-    const form = new FormData();
-    for (const f of files) form.append("files", f);
-    const res = await fetch(`${API}/api/files/upload`, {
-      method: "POST",
-      body: form,
-    });
-    if (res.ok) {
+  const uploadFiles = useCallback(
+    async (files: FileList, target: "project" | "library" = "project") => {
+      const form = new FormData();
+      for (const f of files) form.append("files", f);
+      const res = await fetch(
+        `${API}/api/files/upload?target=${target}`,
+        { method: "POST", body: form },
+      );
+      if (!res.ok) return;
       const data = await res.json();
-      setUploadedFiles((prev) => [...prev, ...data.files]);
-    }
-  }, []);
+      // Only project uploads bind to the current conversation; library
+      // uploads are persistent references not tied to any chat turn.
+      if (target === "project") {
+        setUploadedFiles((prev) => [...prev, ...data.files]);
+      }
+    },
+    [],
+  );
 
   return {
     sessions,
     uploadedFiles,
+    currentProjectId,
+    setCurrentProjectId,
     fetchSessions,
+    fetchCurrentProject,
     saveSession,
     loadSession,
     clearSession,

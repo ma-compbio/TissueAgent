@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ChatView from "./components/ChatView";
 import ContactPage from "./components/ContactPage";
 import FileBrowser from "./components/FileBrowser";
+import PlanColumn from "./components/PlanColumn";
 import Sidebar from "./components/Sidebar";
+import Splitter from "./components/Splitter";
 import ThemeToggle from "./components/ThemeToggle";
-import TopNav from "./components/TopNav";
+import TopNav, { SettingsButton } from "./components/TopNav";
 import SettingsPage from "./components/SettingsPage";
 import TutorialPage from "./components/TutorialPage";
 import { useAgents } from "./hooks/useAgents";
 import { useModels } from "./hooks/useModels";
+import { usePersistedSize } from "./hooks/usePersistedSize";
 import { usePlan } from "./hooks/usePlan";
 import type { PlanPayload } from "./hooks/usePlan";
 import { useSession } from "./hooks/useSession";
@@ -16,8 +19,22 @@ import { useTheme } from "./hooks/useTheme";
 import { useWebSocket } from "./hooks/useWebSocket";
 import "./styles/index.css";
 
-/** Five top-level views. The chat and files pages keep the sidebar;
- *  settings, tutorial and contact are single-column reference pages. */
+// Sidebar width — below ~240 the Projects + Files stack gets cramped;
+// above ~600 the chat area shrinks too much on smaller laptops.
+const SIDEBAR_WIDTH_KEY = "tissueagent:sidebar-width";
+const SIDEBAR_WIDTH_DEFAULT = 320;
+const SIDEBAR_WIDTH_MIN = 240;
+const SIDEBAR_WIDTH_MAX = 600;
+
+// Plan column on the right of the chat. The plan needs enough room to
+// render markdown comfortably; below ~260 it wraps awkwardly.
+const PLAN_COL_WIDTH_KEY = "tissueagent:plan-col-width";
+const PLAN_COL_WIDTH_DEFAULT = 360;
+const PLAN_COL_WIDTH_MIN = 260;
+const PLAN_COL_WIDTH_MAX = 720;
+
+/** Five top-level views. Chat + Files keep the sidebar; settings,
+ *  tutorial and contact are single-column reference pages. */
 export type Page = "chat" | "files" | "settings" | "tutorial" | "contact";
 
 const PAGES: readonly Page[] = ["chat", "files", "settings", "tutorial", "contact"] as const;
@@ -37,11 +54,33 @@ export default function App() {
   const { theme, toggleTheme } = useTheme();
 
   const [page, setPage] = useState<Page>(_readPageFromUrl);
+  const [sidebarWidth, resizeSidebar] = usePersistedSize(
+    SIDEBAR_WIDTH_KEY,
+    SIDEBAR_WIDTH_DEFAULT,
+    SIDEBAR_WIDTH_MIN,
+    SIDEBAR_WIDTH_MAX,
+  );
+  const [planColWidth, resizePlanCol] = usePersistedSize(
+    PLAN_COL_WIDTH_KEY,
+    PLAN_COL_WIDTH_DEFAULT,
+    PLAN_COL_WIDTH_MIN,
+    PLAN_COL_WIDTH_MAX,
+  );
   const [fileBrowserRefreshKey, setFileBrowserRefreshKey] = useState(0);
 
-  const handleUploadFiles = useCallback(
+  const handleUploadToLibrary = useCallback(
     async (files: FileList) => {
-      await session.uploadFiles(files);
+      await session.uploadFiles(files, "library");
+      setFileBrowserRefreshKey((k) => k + 1);
+    },
+    [session],
+  );
+
+  // ChatGPT-style "+" button next to the chat input. Same target as
+  // the standalone sidebar uploads used to be: per-project ``uploads/``.
+  const handleUploadToProject = useCallback(
+    async (files: FileList) => {
+      await session.uploadFiles(files, "project");
       setFileBrowserRefreshKey((k) => k + 1);
     },
     [session],
@@ -77,6 +116,26 @@ export default function App() {
     }
   }, [ws.planEvent, planHook]);
 
+  // Auto-save fires server-side on every prompt / pause / completion.
+  // The frontend uses each project_saved event as a cue to refetch the
+  // project list and re-bind the active project id.
+  useEffect(() => {
+    if (!ws.projectSavedEvent) return;
+    session.setCurrentProjectId(ws.projectSavedEvent.project_id);
+    session.fetchSessions();
+    // Project-side files (uploads/, outputs/, attachments/) may have
+    // changed too — bump the refresh key so the sidebar Files panel
+    // re-fetches without the user having to click refresh.
+    setFileBrowserRefreshKey((k) => k + 1);
+  }, [ws.projectSavedEvent, session]);
+
+  // On first connect, recover the active project id from the server so
+  // a refresh keeps the right row highlighted in the sidebar.
+  useEffect(() => {
+    session.fetchCurrentProject();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Composite load: hit the load endpoint, then refresh the frontend in
   // place — reconnect the WS so the server re-sends history + mode, and
   // refetch the plan from REST. Replaces the old ``window.location.reload``
@@ -87,21 +146,32 @@ export default function App() {
       if (!ok) return false;
       ws.reconnect();
       await planHook.refresh();
+      await session.fetchCurrentProject();
+      setFileBrowserRefreshKey((k) => k + 1);
       return true;
     },
     [session, ws, planHook],
   );
 
-  // Composite clear: wipe server state, then refresh the frontend in
-  // place — WS reconnects to pick up empty history, plan refetches as
-  // empty. Mirrors handleLoadSession's pattern.
+  // Composite clear (used by the projects-panel "+" button): wipe
+  // server state, then refresh in place.
   const handleClearSession = useCallback(async () => {
     const result = await session.clearSession();
     if (result !== true) return result;
     ws.reconnect();
     await planHook.refresh();
+    setFileBrowserRefreshKey((k) => k + 1);
     return true;
   }, [session, ws, planHook]);
+
+  const currentProjectTitle = useMemo(() => {
+    if (!session.currentProjectId) return "";
+    return (
+      session.sessions.find(
+        (s) => (s.project_id ?? s.filename) === session.currentProjectId,
+      )?.title ?? ""
+    );
+  }, [session.currentProjectId, session.sessions]);
 
   // Settings, Tutorial and Contact: single-column doc layout, no sidebar.
   if (page === "settings" || page === "tutorial" || page === "contact") {
@@ -120,12 +190,28 @@ export default function App() {
             </div>
             <TopNav current={page} onNavigate={setPage} />
             <div className="top-bar-right">
+              <SettingsButton
+                active={page === "settings"}
+                onClick={() => setPage("settings")}
+              />
               <ThemeToggle theme={theme} onToggle={toggleTheme} />
             </div>
           </div>
           <div className="content-area-doc">
             {page === "settings" ? (
-              <SettingsPage />
+              <SettingsPage
+                mode={ws.mode}
+                onChangeMode={ws.setMode}
+                isRunning={ws.isRunning}
+                models={modelHook.models}
+                modelSelection={modelHook.selection}
+                workerPinned={modelHook.workerPinned}
+                onChangeOrchestrationModel={modelHook.setOrchestration}
+                onChangeWorkerModel={modelHook.setWorker}
+                onResetWorkerModel={modelHook.unpinWorker}
+                modelKeys={modelHook.keys}
+                onSaveApiKey={modelHook.setApiKey}
+              />
             ) : page === "tutorial" ? (
               <TutorialPage />
             ) : (
@@ -137,43 +223,31 @@ export default function App() {
     );
   }
 
+  // ─── Three-column layout ─────────────────────────────────────────
+  // [ Sidebar (Projects + Files) | Chat / Files page | Plan ]
+  //
+  // The Files top-nav page is kept for now (single-column FileBrowser
+  // in the middle); chat is the default and shows ChatView there.
   return (
     <div className="app-layout">
       <Sidebar
-        uploadedFiles={session.uploadedFiles}
-        onUploadFiles={handleUploadFiles}
+        width={sidebarWidth}
         sessions={session.sessions}
+        currentProjectId={session.currentProjectId}
+        currentProjectTitle={currentProjectTitle}
         onFetchSessions={session.fetchSessions}
-        onSave={session.saveSession}
+        onNewProject={handleClearSession}
         onLoad={handleLoadSession}
-        onClear={handleClearSession}
         onDelete={session.deleteSession}
-        onExportHtml={session.exportHtml}
-        onExportMarkdown={session.exportMarkdown}
         hasMessages={ws.messages.length > 0}
-        plan={planHook.plan}
-        planMarkdown={planHook.markdown}
-        isRunning={ws.isRunning}
-        mode={ws.mode}
-        onChangeMode={ws.setMode}
-        reviewState={ws.reviewState}
-        pipelineStage={ws.pipelineStage}
-        agents={agentsHook.agents}
-        onApprovePlan={ws.approvePlan}
-        onEditPlan={ws.editPlan}
-        onPlanFeedback={ws.sendPlanFeedback}
-        onApproveAssignments={ws.approveAssignments}
-        onEditAssignments={ws.editAssignments}
-        onAssignmentsFeedback={ws.sendAssignmentsFeedback}
-        onCancelRun={ws.cancelRun}
-        models={modelHook.models}
-        modelSelection={modelHook.selection}
-        workerPinned={modelHook.workerPinned}
-        onChangeOrchestrationModel={modelHook.setOrchestration}
-        onChangeWorkerModel={modelHook.setWorker}
-        onResetWorkerModel={modelHook.unpinWorker}
-        modelKeys={modelHook.keys}
-        onSaveApiKey={modelHook.setApiKey}
+        fileBrowserRefreshKey={fileBrowserRefreshKey}
+        onUploadToLibrary={handleUploadToLibrary}
+      />
+
+      <Splitter
+        orientation="vertical"
+        onResize={resizeSidebar}
+        ariaLabel="Resize sidebar"
       />
 
       <main className="main-area">
@@ -201,6 +275,10 @@ export default function App() {
                   ? "Connecting…"
                   : "Disconnected"}
             </div>
+            <SettingsButton
+              active={false}
+              onClick={() => setPage("settings")}
+            />
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
         </div>
@@ -216,7 +294,12 @@ export default function App() {
 
         <div className="content-area">
           {page === "files" ? (
-            <FileBrowser refreshKey={fileBrowserRefreshKey} />
+            <FileBrowser
+              refreshKey={fileBrowserRefreshKey}
+              currentProjectId={session.currentProjectId}
+              currentProjectTitle={currentProjectTitle}
+              onUploadToLibrary={handleUploadToLibrary}
+            />
           ) : (
             <div className="chat-panel">
               <ChatView
@@ -227,11 +310,34 @@ export default function App() {
                 elapsed={ws.elapsed}
                 enableDebug={true}
                 onSendMessage={ws.sendMessage}
+                onUploadFiles={handleUploadToProject}
               />
             </div>
           )}
         </div>
       </main>
+
+      <Splitter
+        orientation="vertical"
+        onResize={(delta) => resizePlanCol(-delta)}
+        ariaLabel="Resize plan column"
+      />
+
+      <PlanColumn
+        width={planColWidth}
+        plan={planHook.plan}
+        planMarkdown={planHook.markdown}
+        reviewState={ws.reviewState}
+        pipelineStage={ws.pipelineStage}
+        agents={agentsHook.agents}
+        onApprovePlan={ws.approvePlan}
+        onEditPlan={ws.editPlan}
+        onPlanFeedback={ws.sendPlanFeedback}
+        onApproveAssignments={ws.approveAssignments}
+        onEditAssignments={ws.editAssignments}
+        onAssignmentsFeedback={ws.sendAssignmentsFeedback}
+        onCancelRun={ws.cancelRun}
+      />
     </div>
   );
 }

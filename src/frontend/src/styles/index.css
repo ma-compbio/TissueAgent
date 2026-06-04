@@ -197,6 +197,112 @@ code, pre, .num {
   border-top: 1px solid var(--border-color);
 }
 
+/* New sidebar inner stack: Projects (resizable height) + Files. The
+   ``height`` on .sidebar-projects is driven by inline style from the
+   Sidebar component; .sidebar-files takes the remaining space. */
+.sidebar-projects {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.sidebar-files {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Right column hosting the plan panel. Mirrors the sidebar shell so
+   the visual weight on each side is balanced. */
+.plan-column {
+  background: var(--bg-sidebar);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---- Resizable splitter handles ---- */
+/* A thin (1px) visible line in the center of a wider (8px) invisible
+   hit area. Easy to grab without being visually loud. The line
+   strengthens its color on hover/drag to signal interactivity. */
+
+.splitter {
+  flex: 0 0 auto;
+  position: relative;
+  background: transparent;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease-out;
+}
+
+.splitter:hover,
+.splitter:focus-visible {
+  background: color-mix(in oklch, var(--accent), transparent 88%);
+  outline: none;
+}
+
+.splitter:active {
+  background: color-mix(in oklch, var(--accent), transparent 75%);
+}
+
+.splitter-line {
+  background: var(--border-color);
+  transition: background 120ms ease-out, transform 120ms ease-out;
+}
+
+.splitter:hover .splitter-line,
+.splitter:focus-visible .splitter-line,
+.splitter:active .splitter-line {
+  background: var(--accent);
+}
+
+/* Vertical handle — resizes width. Sits between two columns. */
+.splitter-vertical {
+  cursor: col-resize;
+  width: 8px;
+  margin-left: -4px;
+  margin-right: -4px;
+  align-self: stretch;
+}
+.splitter-vertical .splitter-line {
+  width: 1px;
+  height: 100%;
+}
+.splitter-vertical:hover .splitter-line,
+.splitter-vertical:focus-visible .splitter-line,
+.splitter-vertical:active .splitter-line {
+  /* Thicken the visible line slightly on interaction. */
+  width: 2px;
+}
+
+/* Horizontal handle — resizes height. Sits between two stacked panels. */
+.splitter-horizontal {
+  cursor: row-resize;
+  height: 8px;
+  margin-top: -4px;
+  margin-bottom: -4px;
+  width: 100%;
+}
+.splitter-horizontal .splitter-line {
+  height: 1px;
+  width: 100%;
+}
+.splitter-horizontal:hover .splitter-line,
+.splitter-horizontal:focus-visible .splitter-line,
+.splitter-horizontal:active .splitter-line {
+  height: 2px;
+}
+
 .main-area {
   flex: 1;
   display: flex;
@@ -1358,6 +1464,10 @@ code, pre, .num {
 /* ---- Chat View ---- */
 
 .chat-view {
+  /* Positioning context for the floating chat-input-shell. The shell
+     is absolutely positioned at the bottom; the scrollable messages
+     fill the full height behind it. */
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1366,56 +1476,253 @@ code, pre, .num {
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem 1.5rem;
+  /* Bottom padding reserves room for the floating chat bubble so the
+     last message never hides underneath it. Tuned for the bubble's
+     default size plus its shell padding. */
+  padding: 1rem 1.5rem 8rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
+/* Floats above the messages at the bottom of the chat panel. A soft
+   gradient fades the messages out behind the bubble so text scrolling
+   underneath doesn't look harsh. */
+.chat-input-shell {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklch, var(--bg-primary) 0%, transparent),
+    var(--bg-primary) 40%
+  );
+  pointer-events: none;  /* gradient itself doesn't capture clicks */
+}
+
+.chat-input-shell > * {
+  pointer-events: auto;  /* but the bubble inside does */
+}
+
+/* The chat input bar is one self-contained "bubble" — rounded card
+   floating inside .chat-input-shell. The textarea fills it; the +
+   and send icons sit absolutely in the bottom corners. The bubble
+   auto-grows with content (textarea controls its own height), so no
+   fixed height here. */
 .chat-input-bar {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-primary);
+  position: relative;
+  width: 100%;
+  padding: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+  transition:
+    border-color 180ms ease-out,
+    box-shadow 180ms ease-out;
+}
+
+.chat-input-bar:focus-within {
+  border-color: color-mix(in oklch, var(--accent) 60%, var(--border-color));
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
 }
 
 .chat-input {
-  flex: 1;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
+  display: block;
+  width: 100%;
+  /* Leave room at the bottom for the corner buttons. ~44px (button +
+     comfortable margin) lets the cursor line never collide with them. */
+  padding: 0.85rem 1.25rem 2.75rem 1.25rem;
+  border: none;
+  border-radius: 14px;   /* match the bubble so focus-state has no inner edge */
+  background: transparent;
   font-family: var(--font-sans);
   font-size: 0.95rem;
   resize: none;
   outline: none;
-  min-height: 2.5rem;
-  max-height: 8rem;
+  /* Auto-grown by the component (useLayoutEffect setting height in JS).
+     overflow-y: auto kicks in once we hit the JS-side cap. */
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.chat-input::placeholder {
+  color: var(--text-tertiary);
 }
 
 .chat-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-light);
+  outline: none;
+  box-shadow: none;
 }
 
-.send-button {
-  padding: 0.6rem 1.2rem;
-  background: var(--accent);
-  color: white;
+/* Both icon buttons share the same chrome: borderless, ghost
+   background, only the icon is visible. The send button gets the
+   filled accent treatment when ready to fire. */
+.chat-attach-button,
+.chat-send-button {
+  position: absolute;
+  bottom: 8px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   border: none;
-  border-radius: 0.5rem;
-  font-size: 0.95rem;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
   cursor: pointer;
-  font-weight: 500;
+  transition:
+    background 160ms ease-out,
+    color 160ms ease-out,
+    opacity 160ms ease-out;
 }
 
-.send-button:disabled {
-  opacity: 0.5;
+.chat-attach-button {
+  left: 10px;
+}
+
+.chat-send-button {
+  right: 10px;
+}
+
+.chat-attach-button:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: color-mix(in oklch, var(--text-primary) 8%, transparent);
+}
+
+.chat-attach-button:focus-visible,
+.chat-send-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.chat-attach-button:disabled,
+.chat-send-button:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
-.send-button:hover:not(:disabled) {
+/* Send "ready" state: filled accent circle with white arrow. Disabled
+   state falls back to the same quiet ghost as the attach button so it
+   doesn't shout when there's nothing to send. */
+.chat-send-button:not(:disabled) {
+  background: var(--accent);
+  color: white;
+}
+
+.chat-send-button:hover:not(:disabled) {
   background: var(--accent-hover);
+}
+
+/* Tooltip that appears above the chat icon buttons on hover/focus.
+   Shares the dark-slab idiom used by .mode-tooltip and the file
+   browser info popover so the visual language stays consistent. */
+.chat-button-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: max-content;
+  max-width: 16rem;
+  z-index: 50;
+  padding: 5px 10px;
+  background: oklch(0.18 0.020 220);
+  color: oklch(0.94 0.008 200);
+  border-radius: 2px;
+  box-shadow: var(--shadow-banner);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 160ms;
+}
+
+[data-theme="dark"] .chat-button-tooltip {
+  background: oklch(0.12 0.012 220);
+}
+
+/* Small arrow pointing down at the originating button. */
+.chat-button-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: inherit;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 1px;
+}
+
+/* The send button sits in the right corner — pin its tooltip to the
+   right edge so it doesn't overflow the chat area. */
+.chat-button-tooltip-right {
+  left: auto;
+  right: 0;
+  transform: translateY(4px);
+}
+
+.chat-button-tooltip-right::after {
+  left: auto;
+  right: 11px;
+  transform: rotate(45deg);
+}
+
+/* The attach button sits in the left corner. By default a centered
+   tooltip on a button next to the left edge of an overflow:hidden
+   column gets clipped by the sidebar's right border. Pin to the
+   left so the tooltip grows rightward instead. */
+.chat-button-tooltip-left {
+  left: 0;
+  right: auto;
+  transform: translateY(4px);
+}
+
+.chat-button-tooltip-left::after {
+  left: 11px;
+  right: auto;
+  transform: rotate(45deg);
+}
+
+.chat-attach-button:hover .chat-button-tooltip,
+.chat-attach-button:focus-visible .chat-button-tooltip,
+.chat-send-button:hover .chat-button-tooltip,
+.chat-send-button:focus-visible .chat-button-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0s;
+}
+
+/* Override the X-axis transform for the right-anchored variant. */
+.chat-send-button:hover .chat-button-tooltip-right,
+.chat-send-button:focus-visible .chat-button-tooltip-right {
+  transform: translateY(0);
+}
+
+/* Same override for the left-anchored variant on the attach button. */
+.chat-attach-button:hover .chat-button-tooltip-left,
+.chat-attach-button:focus-visible .chat-button-tooltip-left {
+  transform: translateY(0);
 }
 
 /* ---- Message Groups ---- */
@@ -2455,7 +2762,273 @@ code, pre, .num {
   border-radius: 0.25rem;
 }
 
-/* ---- Session Manager ---- */
+/* ---- Projects Panel ----
+   Persistent list of saved chat sessions in the sidebar. Replaces the
+   older SessionManager. Each row is one project: title + last-modified
+   timestamp + delete affordance on hover. The active project is marked
+   with a subtle background tint and a left-edge accent line. */
+
+.projects-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.projects-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-xs);
+}
+
+.projects-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.projects-new-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 160ms ease-out,
+    color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+.projects-new-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated, var(--bg-secondary));
+  border-color: var(--accent);
+}
+
+.projects-new-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.projects-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.projects-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-md) var(--space-xs);
+  color: var(--text-tertiary);
+}
+
+.projects-empty-title {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.projects-empty-body {
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.project-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition:
+    background 160ms ease-out,
+    border-color 160ms ease-out;
+  position: relative;
+}
+
+.project-row:hover {
+  background: var(--bg-elevated, var(--bg-secondary));
+  border-color: var(--border-color);
+}
+
+.project-row.active {
+  background: color-mix(in oklch, var(--accent) 8%, transparent);
+  border-color: color-mix(in oklch, var(--accent) 25%, var(--border-color));
+}
+
+.project-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.project-row-title {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-row-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.project-row-time {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+
+.project-row-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  color: var(--text-tertiary);
+  opacity: 0;
+  transition:
+    opacity 160ms ease-out,
+    color 160ms ease-out,
+    background 160ms ease-out;
+  cursor: pointer;
+}
+
+.project-row:hover .project-row-delete,
+.project-row:focus-within .project-row-delete {
+  opacity: 1;
+}
+
+.project-row-delete:hover {
+  color: var(--error-text, #b91c1c);
+  background: color-mix(in oklch, var(--error-text, #b91c1c) 10%, transparent);
+}
+
+/* ---- Settings: top-bar gear icon ----
+   Icon-only counterpart to ``.top-nav-item``. Used for Settings in the
+   top-right area so the main nav row stays text-based. */
+
+.top-bar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    color 180ms ease-out,
+    background 180ms ease-out,
+    border-color 180ms ease-out;
+}
+
+.top-bar-icon-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated, var(--bg-secondary));
+}
+
+.top-bar-icon-btn.active {
+  color: var(--text-primary);
+  border-color: var(--border-color);
+  background: var(--bg-elevated, var(--bg-secondary));
+}
+
+.top-bar-icon-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- Settings page: mode radio cards ----
+   Two side-by-side picker cards inside the Mode section. Each card
+   shows the title + an explanation of when to use that mode. The
+   active card gets the accent treatment. */
+
+.settings-mode-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+.settings-mode-choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease-out,
+    background 180ms ease-out;
+  background: transparent;
+}
+
+.settings-mode-choice:hover {
+  background: var(--bg-elevated, var(--bg-secondary));
+}
+
+.settings-mode-choice.active {
+  border-color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 6%, transparent);
+}
+
+.settings-mode-choice input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.settings-mode-choice-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-mode-choice-body {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.settings-models-host {
+  /* The ModelPicker is designed for the narrow sidebar; on the wider
+     Settings page we relax some of its defaults so it fills the column. */
+  display: block;
+}
+
+/* ---- Session Manager (legacy, retained for fallback rendering) ---- */
 
 .session-manager {
   display: flex;
@@ -2504,13 +3077,242 @@ code, pre, .num {
   color: var(--bg-primary, #fff);
 }
 
-/* ---- File Browser ---- */
+/* ---- File Browser ----
+   The Files page renders two stacked sections: Library (persistent
+   shared input) and Project files (active project's outputs). Each
+   section is its own BrowserPane with a header + split tree/preview. */
+
+.file-browser-stack {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-md) 0;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Compact (sidebar-embedded) variant: no outer padding, tighter gap,
+   each section is a quieter slab that flexes to fill the column. */
+.file-browser-stack.compact {
+  gap: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.file-browser-section {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  /* Each section gets a reasonable working height — enough to scroll
+     inside the tree without dwarfing its neighbour. */
+  min-height: 320px;
+  max-height: 60vh;
+  flex-shrink: 0;
+}
+
+.file-browser-section.compact {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 0;
+  /* In the sidebar the two sections (Library + Project files) share
+     the available height. Each gets its own scroll container. */
+}
+
+.file-browser-section.compact + .file-browser-section.compact {
+  border-top: 1px solid var(--border-color);
+}
+
+.file-browser-section.compact .file-browser-section-header {
+  padding: var(--space-sm) var(--space-md);
+}
+
+.file-browser-section.compact .file-browser-section-title {
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.file-browser-section.compact .file-browser-upload-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.file-browser-section.compact .file-tree.compact-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--space-sm) var(--space-sm);
+}
+
+.file-browser-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-elevated, var(--bg-secondary));
+  flex-shrink: 0;
+}
+
+.file-browser-section-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.file-browser-section-title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.file-browser-section-desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 70ch;
+}
+
+.file-browser-section-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+/* Info icon next to a section title. The popover follows the same
+   visual language as the mode-tooltip: dark slab, small arrow, fades
+   in on hover/focus of the icon. */
+.file-browser-section-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.file-browser-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+  cursor: help;
+  border-radius: 50%;
+  transition: color 160ms ease-out;
+}
+
+.file-browser-info:hover,
+.file-browser-info:focus-visible {
+  color: var(--text-primary);
+  outline: none;
+}
+
+.file-browser-info-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: max-content;
+  max-width: 22rem;
+  z-index: 50;
+  padding: var(--space-sm) var(--space-md);
+  background: oklch(0.18 0.020 220);
+  color: oklch(0.94 0.008 200);
+  border-radius: 2px;
+  box-shadow: var(--shadow-banner);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 160ms;
+}
+
+[data-theme="dark"] .file-browser-info-popover {
+  background: oklch(0.12 0.012 220);
+}
+
+.file-browser-info-popover::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 8px;
+  width: 8px;
+  height: 8px;
+  background: inherit;
+  transform: rotate(45deg);
+  border-radius: 1px;
+}
+
+.file-browser-info:hover .file-browser-info-popover,
+.file-browser-info:focus-visible .file-browser-info-popover {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0s;
+}
+
+.file-browser-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    background 160ms ease-out,
+    border-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.file-browser-upload-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 8%, transparent);
+}
+
+.file-browser-upload-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 
 /* Two-panel layout: narrow tree on the left, preview fills the rest */
 .file-browser-split {
   display: flex;
   flex: 1;
-  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 

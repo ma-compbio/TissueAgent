@@ -1,6 +1,17 @@
-"""REST endpoints for session save/load/list/export."""
+"""REST endpoints for project save/load/list/export.
+
+A "project" is one folder under ``projects/<id>/`` containing
+``chat.json`` (the saved conversation) and ``outputs/`` (the agent's
+per-project working directory). The endpoints here all key off the
+project id, which doubles as the on-disk folder name.
+
+The route is still mounted at ``/api/sessions`` because the frontend
+historical contract talks about "sessions"; the disk layout underneath
+is the new projects layout.
+"""
 
 import logging
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import List, Literal
@@ -9,7 +20,11 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
 
-from config import SESSIONS_DIR
+from config import (
+    PROJECT_CHAT_FILENAME,
+    PROJECT_OUTPUTS_DIRNAME,
+    PROJECTS_DIR,
+)
 from server.session_manager import session
 from server.utils import (
     SESSION_FILENAME_PREFIX,
@@ -17,7 +32,9 @@ from server.utils import (
     build_session_html,
     build_session_markdown,
     derive_session_title,
+    list_project_chat_files,
     load_session,
+    project_dir_for,
     read_session_title,
     save_session,
     session_option_label,
@@ -51,12 +68,19 @@ async def set_mode(payload: ModeInfo) -> ModeInfo:
 
 
 class SessionInfo(BaseModel):
-    """Metadata for a saved session."""
+    """Metadata for a saved project.
+
+    ``filename`` is the project_id (also the on-disk folder name); kept
+    under the legacy field name so the frontend type contract didn't
+    have to change in lockstep.
+    """
 
     filename: str
     label: str
     path: str
     title: str = ""
+    project_id: str = ""
+    saved_at: str = ""
 
 
 class SaveResult(BaseModel):
@@ -68,6 +92,44 @@ class SaveResult(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _normalize_project_id(raw: str) -> str:
+    """Accept legacy ``session_<id>.json`` filenames as well as bare ids."""
+    if not raw:
+        return ""
+    if raw.endswith(SESSION_FILENAME_SUFFIX):
+        raw = raw[: -len(SESSION_FILENAME_SUFFIX)]
+    if raw.startswith(SESSION_FILENAME_PREFIX):
+        raw = raw[len(SESSION_FILENAME_PREFIX):]
+    return raw
+
+
+def _project_dir_safe(project_id: str) -> Path:
+    """Return the project's on-disk folder, guarding against traversal."""
+    project_id = _normalize_project_id(project_id)
+    if not project_id or "/" in project_id or "\\" in project_id:
+        raise HTTPException(status_code=400, detail="Invalid project id.")
+    candidate = project_dir_for(project_id)
+    try:
+        if not candidate.resolve().is_relative_to(PROJECTS_DIR.resolve()):
+            raise HTTPException(status_code=403, detail="Access denied.")
+    except (ValueError, OSError):
+        raise HTTPException(status_code=400, detail="Invalid project id.")
+    return candidate
+
+
+def _saved_at_str(path: Path) -> str:
+    """File-mtime formatted for the projects list."""
+    try:
+        return datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+    except OSError:
+        return ""
+
+
+# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
@@ -76,11 +138,11 @@ class SaveResult(BaseModel):
 async def clear_current_session():
     """Wipe the current in-memory session.
 
-    Clears the message history, sub-agent traces, file metadata, the
-    on-disk plan, and the LangGraph thread state. Refuses while the
-    agent is running — the caller should cancel an in-flight run first.
-    Returns the cleared mode so the client can update its toggle if it
-    cares (mode itself is preserved, since it's a user preference).
+    Clears chat history, sub-agent traces, file metadata, the on-disk
+    plan, and the LangGraph thread state. The on-disk project file (if
+    any) is left alone — this is "start a new project", not "delete the
+    current one". Refuses while the agent is running; the caller should
+    cancel an in-flight run first.
     """
     if session.is_running:
         raise HTTPException(
@@ -91,11 +153,8 @@ async def clear_current_session():
             ),
         )
 
-    # Reset in-memory session state. ``reset()`` preserves the compiled
-    # agent graph and the user's mode preference; everything else goes.
     session.reset()
 
-    # The plan store is a separate on-disk file; wipe it too.
     from server.plan_store import plan_store
     plan_store.reset()
 
@@ -104,7 +163,7 @@ async def clear_current_session():
 
 @router.post("/save", response_model=SaveResult)
 async def save_current_session():
-    """Save the current chat session to disk."""
+    """Save the current chat session to its project folder on disk."""
     if session.is_running:
         raise HTTPException(
             status_code=409,
@@ -133,36 +192,53 @@ async def save_current_session():
             mode=session.mode,
             plan_markdown=plan_markdown,
             prompts_snapshot=prompts_snapshot,
+            project_id=session.project_id,
         )
     except Exception as e:
         logging.error("Failed to save session", exc_info=e)
         raise HTTPException(status_code=500, detail="Failed to save session.")
 
     title = read_session_title(path)
+    # ``filename`` here is the project_id (also the parent folder name).
+    project_id = path.parent.name
     return SaveResult(
-        filename=path.name,
+        filename=project_id,
         label=session_option_label(path, title),
         title=title,
     )
 
 
+class CurrentProject(BaseModel):
+    """The project currently bound to the in-memory session, if any."""
+
+    project_id: str = ""
+    title: str = ""
+
+
+@router.get("/current", response_model=CurrentProject)
+async def current_project() -> CurrentProject:
+    """Return the active project id so the sidebar can highlight it on load."""
+    return CurrentProject(
+        project_id=session.project_id or "",
+        title=session.project_title or "",
+    )
+
+
 @router.get("/list", response_model=List[SessionInfo])
 async def list_sessions():
-    """List all saved sessions sorted by timestamp (newest first)."""
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-    files = sorted(
-        SESSIONS_DIR.glob(f"{SESSION_FILENAME_PREFIX}*{SESSION_FILENAME_SUFFIX}"),
-        reverse=True,
-    )
+    """List all saved projects, most recently modified first."""
     result: List[SessionInfo] = []
-    for f in files:
-        title = read_session_title(f)
+    for chat_path in list_project_chat_files():
+        project_id = chat_path.parent.name
+        title = read_session_title(chat_path)
         result.append(
             SessionInfo(
-                filename=f.name,
-                label=session_option_label(f, title),
-                path=str(f),
+                filename=project_id,  # legacy field name, see SessionInfo doc
+                label=session_option_label(chat_path, title),
+                path=str(chat_path),
                 title=title,
+                project_id=project_id,
+                saved_at=_saved_at_str(chat_path),
             )
         )
     return result
@@ -170,20 +246,18 @@ async def list_sessions():
 
 @router.post("/load")
 async def load_selected_session(filename: str):
-    """Load a saved session by filename, restoring conversation state."""
-    path = SESSIONS_DIR / filename
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="Session file not found.")
-    if not path.resolve().is_relative_to(SESSIONS_DIR.resolve()):
-        raise HTTPException(status_code=403, detail="Access denied.")
+    """Load a saved project by id. ``filename`` is the project_id."""
+    project_dir = _project_dir_safe(filename)
+    chat_path = project_dir / PROJECT_CHAT_FILENAME
+    if not chat_path.exists():
+        raise HTTPException(status_code=404, detail="Project not found.")
 
     try:
-        data = load_session(path)
+        data = load_session(chat_path)
     except Exception as e:
         logging.error("Failed to load session", exc_info=e)
-        raise HTTPException(status_code=500, detail="Failed to load session file.")
+        raise HTTPException(status_code=500, detail="Failed to load project file.")
 
-    # Restore state
     session.agent_state["messages"] = data["messages"]
     session.agent_state["replan_count"] = data["replan_count"]
     session.agent_state["replan_history"] = data["replan_history"]
@@ -194,10 +268,19 @@ async def load_selected_session(filename: str):
     session.mode = data["mode"]  # type: ignore[assignment]
     session.ensure_display_state()
 
-    # Restore the plan markdown so the panel and HTML exports stay in
-    # sync with what the saved conversation produced. ``write_markdown``
-    # bypasses the normalising round-trip so the user's saved content is
-    # written verbatim.
+    session.project_id = project_dir.name
+    session.project_title = data.get("title", "") or ""
+
+    # Make sure the outputs folder exists so the active project always
+    # has somewhere for the agent to write to, then point the kernel at it.
+    outputs_dir = project_dir / PROJECT_OUTPUTS_DIRNAME
+    outputs_dir.mkdir(exist_ok=True)
+    try:
+        from server.main import set_kernel_workspace
+        set_kernel_workspace(outputs_dir)
+    except Exception as e:
+        logging.warning(f"Failed to bind kernel workspace on load: {e}")
+
     from server.plan_store import plan_store
     plan_markdown = data.get("plan_markdown", "") or ""
     if plan_markdown.strip():
@@ -205,47 +288,40 @@ async def load_selected_session(filename: str):
     else:
         plan_store.reset()
 
-    return {"status": "loaded", "filename": filename, "mode": session.mode}
+    return {
+        "status": "loaded",
+        "filename": project_dir.name,
+        "mode": session.mode,
+    }
 
 
 @router.delete("/{filename}")
 async def delete_session(filename: str):
-    """Delete a saved session file. Refuses while a run is in progress."""
+    """Delete a project folder (chat + outputs). Refuses during a run."""
     if session.is_running:
         raise HTTPException(
             status_code=409,
-            detail="Cannot delete sessions while the agent is running.",
+            detail="Cannot delete projects while the agent is running.",
         )
 
-    path = SESSIONS_DIR / filename
-    # Path traversal guard — refuse anything that escapes SESSIONS_DIR.
-    try:
-        if not path.resolve().is_relative_to(SESSIONS_DIR.resolve()):
-            raise HTTPException(status_code=403, detail="Access denied.")
-    except (ValueError, OSError):
-        raise HTTPException(status_code=400, detail="Invalid filename.")
-
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="Session file not found.")
-
-    # Sanity check: only allow deleting our own session files, not
-    # arbitrary files that may happen to live under SESSIONS_DIR.
-    if not (
-        path.name.startswith(SESSION_FILENAME_PREFIX)
-        and path.name.endswith(SESSION_FILENAME_SUFFIX)
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Refusing to delete files that don't look like session exports.",
-        )
+    project_dir = _project_dir_safe(filename)
+    if not project_dir.exists():
+        raise HTTPException(status_code=404, detail="Project not found.")
 
     try:
-        path.unlink()
+        shutil.rmtree(project_dir)
     except Exception as e:
-        logging.error("Failed to delete session", exc_info=e)
-        raise HTTPException(status_code=500, detail="Failed to delete session.")
+        logging.error("Failed to delete project", exc_info=e)
+        raise HTTPException(status_code=500, detail="Failed to delete project.")
 
-    return {"status": "deleted", "filename": filename}
+    # If the user deleted the currently-loaded project, drop the in-
+    # memory binding so the next prompt mints a fresh id rather than
+    # trying to write to a folder we just removed.
+    if session.project_id == project_dir.name:
+        session.project_id = None
+        session.project_title = ""
+
+    return {"status": "deleted", "filename": project_dir.name}
 
 
 @router.get("/export/html")

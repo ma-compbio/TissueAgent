@@ -21,6 +21,13 @@ interface PlanUpdatePayload {
   plan: unknown; // PlanPayload-shaped; consumers cast to the real type.
 }
 
+/** Auto-save fired on the server. The frontend consumes this to refresh
+ *  the Projects list and highlight the active project. */
+export interface ProjectSavedPayload {
+  project_id: string;
+  title: string;
+}
+
 /** Which copilot review gate is open. ``null`` ⇒ no review pending. */
 export type ReviewState = "plan" | "assignment" | null;
 
@@ -64,6 +71,9 @@ interface UseWebSocketReturn {
   elapsed: number | null;
   error: string | null;
   planEvent: PlanUpdatePayload | null;
+  /** Last project_saved event from the server. Bumps every save so the
+   *  consumer can use it as a refetch signal. */
+  projectSavedEvent: ProjectSavedPayload | null;
   mode: SessionMode;
   setMode: (mode: SessionMode) => void;
   sendMessage: (text: string, imageIds?: string[], pdfIds?: string[]) => void;
@@ -108,6 +118,8 @@ export function useWebSocket(): UseWebSocketReturn {
   const [elapsed, setElapsed] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [planEvent, setPlanEvent] = useState<PlanUpdatePayload | null>(null);
+  const [projectSavedEvent, setProjectSavedEvent] =
+    useState<ProjectSavedPayload | null>(null);
   const [mode, setModeState] = useState<SessionMode>("autopilot");
   const [reviewState, setReviewState] = useState<ReviewState>(null);
 
@@ -261,6 +273,9 @@ export function useWebSocket(): UseWebSocketReturn {
           setLiveTraces({});
           setReviewState(null);
           break;
+        case "project_saved":
+          setProjectSavedEvent(data.data);
+          break;
       }
     };
   }, []);
@@ -412,6 +427,7 @@ export function useWebSocket(): UseWebSocketReturn {
     elapsed,
     error,
     planEvent,
+    projectSavedEvent,
     mode,
     setMode,
     sendMessage,

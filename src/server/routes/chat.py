@@ -9,6 +9,7 @@ import json
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from typing import Optional
 
 import anthropic
@@ -23,11 +24,84 @@ from config import RECURSION_LIMIT
 from graph.graph_utils import log_message, record_user_message
 from server.message_serializer import serialize_history, serialize_message, serialize_subagent_state
 from server.session_manager import session
-from server.utils import file_to_data_url, upload_pdf_to_openai, SUBAGENT_BADGES, SUBAGENT_DEFAULT_AVATAR
+from server.utils import (
+    SUBAGENT_BADGES,
+    SUBAGENT_DEFAULT_AVATAR,
+    derive_session_title,
+    file_to_data_url,
+    project_outputs_dir,
+    save_session,
+    upload_pdf_to_openai,
+)
 
 router = APIRouter()
 
 _executor = ThreadPoolExecutor(max_workers=1)
+
+
+# ---------------------------------------------------------------------------
+# Auto-save — persist projects to disk as the run unfolds
+# ---------------------------------------------------------------------------
+
+
+def _ensure_project_id() -> str:
+    """Bind the kernel to the active project's outputs/ on first use.
+
+    ``session.ensure_project_id`` mints the id if needed (idempotent);
+    this wrapper handles the chat-specific side effects: making sure
+    the outputs directory exists and pointing the kernel client at it
+    so Python/R writes land inside the project.
+    """
+    fresh = session.project_id is None
+    project_id = session.ensure_project_id()
+    if fresh:
+        try:
+            outputs = project_outputs_dir(project_id)
+            from server.main import set_kernel_workspace
+            set_kernel_workspace(outputs)
+        except Exception as e:
+            logging.warning(f"Failed to bind kernel workspace for new project: {e}")
+    return project_id
+
+
+def _persist_project(notify_ws: Optional[WebSocket] = None) -> None:
+    """Write the current session to its project file. Best-effort."""
+    messages = session.agent_state.get("messages", [])
+    if not messages or not session.project_id:
+        return
+
+    try:
+        from server.plan_store import plan_store
+        from server.utils import collect_prompts_snapshot
+
+        save_session(
+            messages=messages,
+            subagent_states=session.subagent_states,
+            uploaded_pdfs=session.uploaded_pdfs,
+            replan_count=session.agent_state.get("replan_count", 0),
+            replan_history=session.agent_state.get("replan_history", []),
+            mode=session.mode,
+            plan_markdown=plan_store.read_markdown(),
+            prompts_snapshot=collect_prompts_snapshot(),
+            project_id=session.project_id,
+        )
+        session.project_title = derive_session_title(messages)
+    except Exception as e:
+        # Auto-save must never break the run. Log + continue.
+        logging.warning(f"Auto-save failed: {e}")
+
+
+async def _broadcast_project_saved(ws: WebSocket) -> None:
+    """Tell the frontend its project list is now stale."""
+    if not session.project_id:
+        return
+    await ws.send_json({
+        "type": "project_saved",
+        "data": {
+            "project_id": session.project_id,
+            "title": session.project_title,
+        },
+    })
 
 
 @router.websocket("/ws/chat")
@@ -103,7 +177,12 @@ async def _handle_set_mode(ws: WebSocket, data: dict):
 
 async def _handle_user_message(ws: WebSocket, data: dict):
     """Process a user message and stream the agent's response."""
+    logging.info(
+        "send_message received (is_running=%s, project_id=%s, mode=%s).",
+        session.is_running, session.project_id, session.mode,
+    )
     if session.is_running:
+        logging.warning("Rejecting send_message: another run is already in flight.")
         await ws.send_json({
             "type": "run_error",
             "error_type": "AlreadyRunning",
@@ -177,7 +256,20 @@ async def _handle_user_message(ws: WebSocket, data: dict):
     # Clear pending images after sending
     session.pending_images = []
 
+    # Auto-save: on the first user message of the conversation, mint a
+    # stable project_id and write the initial file. Subsequent calls
+    # update the same file in place so the project list shows the run
+    # progressing in real time. All best-effort: never let auto-save
+    # block or break the actual agent invocation.
+    try:
+        _ensure_project_id()
+        _persist_project()
+        await _broadcast_project_saved(ws)
+    except Exception as e:
+        logging.warning(f"Auto-save (pre-run) failed: {e}")
+
     # Rebuild the agent graph if the user changed the model since the last turn.
+    logging.info("Invoking agent graph for user message (mode=%s).", session.mode)
     from server.main import ensure_graph_current
     ensure_graph_current()
 
@@ -304,6 +396,11 @@ async def _run_graph(ws: WebSocket, graph_input):
             # ``manager_agent`` and the run would stall after each step.
             session.gates_fired.add(pause_label)
             await _emit_pause(ws, pause_label)
+            try:
+                _persist_project()
+                await _broadcast_project_saved(ws)
+            except Exception as e:
+                logging.warning(f"Auto-save (pause) failed: {e}")
             # Don't link subagent states or send run_complete; we're paused.
             return
 
@@ -327,6 +424,12 @@ async def _run_graph(ws: WebSocket, graph_input):
             "type": "run_complete",
             "elapsed_seconds": round(elapsed, 1),
         })
+
+        try:
+            _persist_project()
+            await _broadcast_project_saved(ws)
+        except Exception as e:
+            logging.warning(f"Auto-save (run_complete) failed: {e}")
 
     except GraphRecursionError as e:
         logging.error("GraphRecursionError", exc_info=e)

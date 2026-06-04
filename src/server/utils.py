@@ -39,9 +39,16 @@ from agents.manager_agent.tools import ManagerToolNames
 from config import (
     DATA_DIR,
     DATASET_DIR,
-    PDF_UPLOADS_DIR,
-    SESSIONS_DIR,
-    UPLOADS_DIR,
+    LEGACY_SESSIONS_DIR,
+    LIBRARY_DIR,
+    LIBRARY_FILES_DIR,
+    PLAN_SCRATCH_DIR,
+    PROJECT_ATTACHMENTS_DIRNAME,
+    PROJECT_CHAT_FILENAME,
+    PROJECT_OUTPUTS_DIRNAME,
+    PROJECT_UPLOADS_DIRNAME,
+    PROJECTS_DIR,
+    SESSIONS_DIR,  # alias; remove once nothing references it
 )
 
 # ---------------------------------------------------------------------------
@@ -85,19 +92,140 @@ def next_available_path(directory: Path, filename: str) -> Path:
 
 
 def reset_data_directories() -> None:
-    """Clear and recreate runtime data folders."""
+    """Ensure the workspace tree exists; wipe only the ephemeral parts.
+
+    Preserved across restarts:
+        - ``LIBRARY_DIR`` (persistent shared input)
+        - ``PROJECTS_DIR`` (one folder per project, including chat.json
+          and the per-project ``outputs/`` directory)
+        - ``LEGACY_SESSIONS_DIR`` (so the one-shot migration at startup
+          can still find old session files; gone after migration)
+
+    Reset every boot:
+        - ``PLAN_SCRATCH_DIR`` (the in-flight plan store)
+        - Anything else under ``DATA_DIR`` that isn't on the preserve list
+    """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    keep_and_clear = {DATASET_DIR, UPLOADS_DIR, PDF_UPLOADS_DIR}
+    LIBRARY_DIR.mkdir(parents=True, exist_ok=True)
+    DATASET_DIR.mkdir(parents=True, exist_ok=True)
+    LIBRARY_FILES_DIR.mkdir(parents=True, exist_ok=True)
+    PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    preserve = {LIBRARY_DIR, PROJECTS_DIR}
     for child in DATA_DIR.iterdir():
-        if not child.is_dir():
+        if not child.is_dir() or child in preserve:
             continue
-        if child in keep_and_clear:
-            shutil.rmtree(child, ignore_errors=True)
-            child.mkdir(parents=True, exist_ok=True)
-        else:
-            shutil.rmtree(child, ignore_errors=True)
-    shutil.rmtree(SESSIONS_DIR, ignore_errors=True)
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+        shutil.rmtree(child, ignore_errors=True)
+
+    # Recreate the plan scratch directory fresh.
+    PLAN_SCRATCH_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def migrate_legacy_library_layout() -> None:
+    """Reshape any older library/ folder into the current layout.
+
+    Older layouts had::
+
+        library/
+        ├── dataset/      (singular)
+        ├── uploads/      (chat-attached images, accidentally persistent)
+        └── pdfs/         (chat-attached PDFs, ditto)
+
+    The current layout is::
+
+        library/
+        ├── datasets/     (plural — curated reference data)
+        └── files/        (persistent reference uploads)
+
+    This routine:
+        1. Renames ``library/dataset/`` → ``library/datasets/``.
+        2. Moves any files from ``library/uploads/`` and
+           ``library/pdfs/`` into ``library/files/`` (best-effort; on
+           name clash the source filename is suffixed).
+        3. Removes the now-empty legacy subdirs.
+
+    Idempotent. Safe to run on a fresh install (no-op).
+    """
+    if not LIBRARY_DIR.exists():
+        return
+
+    # 1) Rename dataset → datasets
+    legacy_dataset = LIBRARY_DIR / "dataset"
+    if legacy_dataset.exists() and not DATASET_DIR.exists():
+        try:
+            legacy_dataset.rename(DATASET_DIR)
+            logging.info("Renamed library/dataset → library/datasets")
+        except Exception as e:
+            logging.warning(f"Failed to rename library/dataset: {e}")
+    elif legacy_dataset.exists():
+        # Both exist (unlikely): merge legacy into new.
+        for src in legacy_dataset.iterdir():
+            dst = next_available_path(DATASET_DIR, src.name)
+            try:
+                shutil.move(str(src), str(dst))
+            except Exception as e:
+                logging.warning(f"Failed to migrate {src}: {e}")
+        shutil.rmtree(legacy_dataset, ignore_errors=True)
+
+    # 2) Consolidate uploads/ + pdfs/ into files/
+    LIBRARY_FILES_DIR.mkdir(parents=True, exist_ok=True)
+    for legacy_name in ("uploads", "pdfs"):
+        legacy = LIBRARY_DIR / legacy_name
+        if not legacy.exists() or legacy == LIBRARY_FILES_DIR:
+            continue
+        for src in legacy.iterdir():
+            if src.is_file():
+                dst = next_available_path(LIBRARY_FILES_DIR, src.name)
+                try:
+                    shutil.move(str(src), str(dst))
+                except Exception as e:
+                    logging.warning(f"Failed to migrate {src}: {e}")
+        shutil.rmtree(legacy, ignore_errors=True)
+
+
+def migrate_legacy_sessions() -> None:
+    """One-shot move of ``sessions/session_*.json`` → ``projects/<id>/chat.json``.
+
+    Idempotent. Runs once at startup. After the move, the legacy
+    ``sessions/`` directory is left in place (now empty) so an aborted
+    migration can be retried; a follow-up boot will see an empty source
+    and no-op.
+    """
+    if not LEGACY_SESSIONS_DIR.exists():
+        return
+
+    PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    moved = 0
+    for src in LEGACY_SESSIONS_DIR.glob(
+        f"{SESSION_FILENAME_PREFIX}*{SESSION_FILENAME_SUFFIX}"
+    ):
+        stem = src.stem
+        if stem.startswith(SESSION_FILENAME_PREFIX):
+            stem = stem[len(SESSION_FILENAME_PREFIX):]
+        if not stem:
+            continue
+
+        project_dir = PROJECTS_DIR / stem
+        chat_file = project_dir / PROJECT_CHAT_FILENAME
+        if chat_file.exists():
+            continue  # Already migrated.
+
+        project_dir.mkdir(parents=True, exist_ok=True)
+        (project_dir / PROJECT_OUTPUTS_DIRNAME).mkdir(exist_ok=True)
+        try:
+            shutil.move(str(src), str(chat_file))
+            moved += 1
+        except Exception as e:
+            logging.warning(f"Failed to migrate {src}: {e}")
+
+    # ``sessions/active/`` previously held the in-flight plan — drop it
+    # if it's still around; plan_store now lives at PLAN_SCRATCH_DIR.
+    legacy_active = LEGACY_SESSIONS_DIR / "active"
+    if legacy_active.exists():
+        shutil.rmtree(legacy_active, ignore_errors=True)
+
+    if moved:
+        logging.info(f"Migrated {moved} legacy session(s) to projects/.")
 
 
 # ---------------------------------------------------------------------------
@@ -416,6 +544,7 @@ def save_session(
     mode: str = "autopilot",
     plan_markdown: str = "",
     prompts_snapshot: Optional[Dict[str, str]] = None,
+    project_id: Optional[str] = None,
 ) -> Path:
     """Save a chat session to a timestamped JSON file.
 
@@ -439,8 +568,14 @@ def save_session(
     if not messages:
         raise ValueError("No conversation history to save.")
 
+    # ``project_id`` is the stable on-disk identifier — also the folder
+    # name under ``projects/``. When omitted (manual-save path), mint a
+    # fresh timestamp-based id so the save is unique.
+    saved_at = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    stem = project_id or saved_at
+
     payload = {
-        "saved_at": datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
+        "saved_at": saved_at,
         "title": derive_session_title(messages),
         "messages": [message_to_serializable(m) for m in messages],
         "subagent_states": subagent_states,
@@ -452,14 +587,66 @@ def save_session(
         "prompts_snapshot": prompts_snapshot or {},
     }
 
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-    file_name = f"{SESSION_FILENAME_PREFIX}{payload['saved_at']}{SESSION_FILENAME_SUFFIX}"
-    target_path = SESSIONS_DIR / file_name
+    project_dir = project_dir_for(stem)
+    project_dir.mkdir(parents=True, exist_ok=True)
+    (project_dir / PROJECT_OUTPUTS_DIRNAME).mkdir(exist_ok=True)
+    target_path = project_dir / PROJECT_CHAT_FILENAME
     target_path.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2, default=str),
         encoding="utf-8",
     )
     return target_path
+
+
+def project_dir_for(project_id: str) -> Path:
+    """Return the on-disk folder for ``project_id`` (does not create it)."""
+    return PROJECTS_DIR / project_id
+
+
+def project_outputs_dir(project_id: str) -> Path:
+    """Return the per-project outputs directory; creates it if missing."""
+    out = project_dir_for(project_id) / PROJECT_OUTPUTS_DIRNAME
+    out.mkdir(parents=True, exist_ok=True)
+    return out
+
+
+def project_attachments_dir(project_id: str) -> Path:
+    """Return the per-project attachments directory; creates it if missing.
+
+    Attachments are images and PDFs the user dropped into the chat. They
+    live with the project (unlike the library, which is curated reference
+    data shared across all projects).
+    """
+    out = project_dir_for(project_id) / PROJECT_ATTACHMENTS_DIRNAME
+    out.mkdir(parents=True, exist_ok=True)
+    return out
+
+
+def project_uploads_dir(project_id: str) -> Path:
+    """Return the per-project sidebar uploads directory; creates it if missing.
+
+    Default landing place for sidebar uploads inside a project. Distinct
+    from ``attachments/`` so chat-attached images/PDFs (which need to be
+    sent as part of the next message payload) stay grouped together
+    apart from general per-project files.
+    """
+    out = project_dir_for(project_id) / PROJECT_UPLOADS_DIRNAME
+    out.mkdir(parents=True, exist_ok=True)
+    return out
+
+
+def list_project_chat_files() -> List[Path]:
+    """Return all ``projects/<id>/chat.json`` paths, newest mtime first."""
+    PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    chats: List[Path] = []
+    for child in PROJECTS_DIR.iterdir():
+        if not child.is_dir():
+            continue
+        chat = child / PROJECT_CHAT_FILENAME
+        if chat.exists():
+            chats.append(chat)
+    chats.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return chats
 
 
 def load_session(path: Path) -> Dict[str, Any]:

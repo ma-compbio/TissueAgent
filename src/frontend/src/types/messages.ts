@@ -60,7 +60,8 @@ export type ServerEvent =
   | { type: "mode_updated"; data: { mode: SessionMode } }
   | { type: "plan_review_requested"; data: { pause: PauseLabel } }
   | { type: "assignment_review_requested"; data: { pause: PauseLabel } }
-  | { type: "run_cancelled"; data: Record<string, never> };
+  | { type: "run_cancelled"; data: Record<string, never> }
+  | { type: "project_saved"; data: { project_id: string; title: string } };
 
 /** WebSocket event types from client. */
 export interface SendMessageEvent {
@@ -131,4 +132,8 @@ export interface SessionInfo {
   path: string;
   /** First user message, derived at save time. Empty for legacy sessions. */
   title?: string;
+  /** Stable on-disk filename stem; doubles as project id. */
+  project_id?: string;
+  /** Last-modified time as displayed in the projects list. */
+  saved_at?: string;
 }

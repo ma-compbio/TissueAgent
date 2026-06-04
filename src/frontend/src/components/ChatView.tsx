@@ -1,8 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { SerializedMessage, SubagentTranscript } from "../types/messages";
 import AgentAvatar from "./AgentAvatar";
 import MessageBubble, { AgentRunCard, type AgentRun } from "./MessageBubble";
 import TracePanel from "./TracePanel";
+
+// The chat input no longer has a fixed height — it auto-grows with its
+// content up to this cap (≈ 12 lines), then scrolls inside the bubble.
+// Picked so a long paste doesn't push the chat messages off-screen.
+const CHAT_INPUT_MAX_PX = 240;
 
 interface Props {
   messages: SerializedMessage[];
@@ -12,6 +17,10 @@ interface Props {
   elapsed: number | null;
   enableDebug: boolean;
   onSendMessage: (text: string) => void;
+  /** Called when the user picks files via the chat-input "+" button.
+   *  The handler routes to the active project's ``uploads/`` directory
+   *  (minting the project if none is active). */
+  onUploadFiles: (files: FileList) => Promise<void> | void;
 }
 
 /**
@@ -198,11 +207,33 @@ export default function ChatView({
   elapsed,
   enableDebug,
   onSendMessage,
+  onUploadFiles,
 }: Props) {
   const [input, setInput] = useState("");
   const [selectedTrace, setSelectedTrace] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleAttachClick = () => fileInputRef.current?.click();
+  const handleFilesChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await onUploadFiles(files);
+    // Reset so picking the same file again re-fires onChange.
+    e.target.value = "";
+  };
+
+  // Auto-grow the textarea to fit its content, up to CHAT_INPUT_MAX_PX.
+  // Above the cap it becomes scrollable so a long paste doesn't push
+  // the messages off-screen.
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, CHAT_INPUT_MAX_PX)}px`;
+  }, [input]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -376,8 +407,13 @@ export default function ChatView({
             <div ref={messagesEndRef} />
           </div>
 
-          <form className="chat-input-bar" onSubmit={handleSubmit}>
+          <div className="chat-input-shell">
+          <form
+            className="chat-input-bar"
+            onSubmit={handleSubmit}
+          >
             <textarea
+              ref={textareaRef}
               className="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -386,14 +422,65 @@ export default function ChatView({
               disabled={isRunning}
               rows={1}
             />
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              hidden
+              onChange={handleFilesChosen}
+            />
+            <button
+              type="button"
+              className="chat-attach-button"
+              onClick={handleAttachClick}
+              disabled={isRunning}
+              aria-label="Upload files to this project"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                width="18"
+                height="18"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              >
+                <path d="M8 3v10M3 8h10" />
+              </svg>
+              <span className="chat-button-tooltip chat-button-tooltip-left" role="tooltip">
+                Upload files to this project
+              </span>
+            </button>
             <button
               type="submit"
-              className="send-button"
+              className="chat-send-button"
               disabled={isRunning || !input.trim()}
+              aria-label="Send message"
             >
-              Send
+              <svg
+                viewBox="0 0 16 16"
+                width="16"
+                height="16"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M8 13V3M3.5 7.5L8 3l4.5 4.5" />
+              </svg>
+              <span className="chat-button-tooltip chat-button-tooltip-right" role="tooltip">
+                {isRunning
+                  ? "Agent is running"
+                  : input.trim()
+                    ? "Send message"
+                    : "Type a message to send"}
+              </span>
             </button>
           </form>
+          </div>
         </div>
       </div>
 

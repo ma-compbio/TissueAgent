@@ -1,198 +1,93 @@
-import type { FileInfo, SessionInfo, SessionMode } from "../types/messages";
-import type {
-  KeyStatusMap,
-  ModelOption,
-  ModelSelection,
-  Provider,
-} from "../hooks/useModels";
-import type { Plan } from "../hooks/usePlan";
-import type { AgentInfo } from "../hooks/useAgents";
-import type { PipelineStage, ReviewState } from "../hooks/useWebSocket";
-import FileUpload from "./FileUpload";
-import ModelPicker from "./ModelPicker";
-import PlanPanel from "./PlanPanel";
-import SessionManager from "./SessionManager";
+import type { SessionInfo } from "../types/messages";
+import FileBrowser from "./FileBrowser";
+import ProjectsPanel from "./ProjectsPanel";
+import Splitter from "./Splitter";
+import { usePersistedSize } from "../hooks/usePersistedSize";
+
+// Height of the Projects panel inside the sidebar (the Files panel
+// fills whatever's left). Persisted across reloads. Below ~140 the
+// Projects list gets too cramped to read; above ~900 the Files panel
+// loses too much room on shorter laptop screens.
+const PROJECTS_HEIGHT_KEY = "tissueagent:sidebar-projects-height";
+const PROJECTS_HEIGHT_DEFAULT = 280;
+const PROJECTS_HEIGHT_MIN = 140;
+const PROJECTS_HEIGHT_MAX = 900;
 
 interface Props {
-  uploadedFiles: FileInfo[];
-  onUploadFiles: (files: FileList) => void;
+  /** Outer sidebar width in pixels; driven by the splitter in App.tsx. */
+  width: number;
   sessions: SessionInfo[];
+  currentProjectId: string;
+  currentProjectTitle: string;
   onFetchSessions: () => void;
-  onSave: () => Promise<true | string>;
+  onNewProject: () => Promise<true | string>;
   onLoad: (filename: string) => Promise<boolean>;
-  onClear: () => Promise<true | string>;
   onDelete: (filename: string) => Promise<true | string>;
-  onExportHtml: () => void;
-  onExportMarkdown: () => void;
   hasMessages: boolean;
-  plan: Plan;
-  planMarkdown: string;
-  isRunning: boolean;
-  mode: SessionMode;
-  onChangeMode: (mode: SessionMode) => void;
-  reviewState: ReviewState;
-  pipelineStage: PipelineStage | null;
-  agents: AgentInfo[];
-  onApprovePlan: () => void;
-  onEditPlan: (markdown: string) => void;
-  onPlanFeedback: (text: string) => void;
-  onApproveAssignments: () => void;
-  onEditAssignments: (markdown: string) => void;
-  onAssignmentsFeedback: (text: string) => void;
-  onCancelRun: () => void;
-  models: ModelOption[];
-  modelSelection: ModelSelection | null;
-  workerPinned: boolean;
-  onChangeOrchestrationModel: (id: string) => void;
-  onChangeWorkerModel: (id: string) => void;
-  onResetWorkerModel: () => void;
-  modelKeys: KeyStatusMap;
-  onSaveApiKey: (provider: Provider, key: string) => Promise<boolean>;
+  fileBrowserRefreshKey: number;
+  onUploadToLibrary: (files: FileList) => Promise<void> | void;
 }
 
+/**
+ * Left column of the 3-column chat layout.
+ *
+ * Vertical stack: ``ProjectsPanel`` on top (resizable height), then the
+ * embedded compact ``FileBrowser`` below. The plan panel used to live
+ * here too but moved out to its own right-hand ``PlanColumn``.
+ */
 export default function Sidebar({
-  uploadedFiles,
-  onUploadFiles,
+  width,
   sessions,
+  currentProjectId,
+  currentProjectTitle,
   onFetchSessions,
-  onSave,
+  onNewProject,
   onLoad,
-  onClear,
   onDelete,
-  onExportHtml,
-  onExportMarkdown,
   hasMessages,
-  plan,
-  planMarkdown,
-  isRunning,
-  mode,
-  onChangeMode,
-  reviewState,
-  pipelineStage,
-  agents,
-  onApprovePlan,
-  onEditPlan,
-  onPlanFeedback,
-  onApproveAssignments,
-  onEditAssignments,
-  onAssignmentsFeedback,
-  onCancelRun,
-  models,
-  modelSelection,
-  workerPinned,
-  onChangeOrchestrationModel,
-  onChangeWorkerModel,
-  onResetWorkerModel,
-  modelKeys,
-  onSaveApiKey,
+  fileBrowserRefreshKey,
+  onUploadToLibrary,
 }: Props) {
+  const [projectsHeight, resizeProjects] = usePersistedSize(
+    PROJECTS_HEIGHT_KEY,
+    PROJECTS_HEIGHT_DEFAULT,
+    PROJECTS_HEIGHT_MIN,
+    PROJECTS_HEIGHT_MAX,
+  );
+
   return (
-    <aside className="sidebar">
-      {/* Mode toggle is pinned at the top of the sidebar, outside any
-          scrolling container, so it stays visible regardless of run
-          state or scroll position. */}
-      <div className="sidebar-mode-bar">
-        <div className="mode-toggle" role="radiogroup" aria-label="Execution mode">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={mode === "autopilot"}
-            className={`mode-pill ${mode === "autopilot" ? "active" : ""}`}
-            onClick={() => onChangeMode("autopilot")}
-            aria-describedby="tooltip-autopilot"
-          >
-            Autopilot
-            <span className="mode-tooltip" id="tooltip-autopilot" role="tooltip">
-              <span className="mode-tooltip-heading">Autopilot</span>
-              <span className="mode-tooltip-body">
-                The agent runs end-to-end without pauses. Planner →
-                Recruiter → Manager → Evaluator → Reporter, all
-                automatic. Use when you trust the plan or just want
-                results.
-              </span>
-              {isRunning && (
-                <span className="mode-tooltip-meta">
-                  Takes effect on the next prompt.
-                </span>
-              )}
-            </span>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={mode === "copilot"}
-            className={`mode-pill ${mode === "copilot" ? "active" : ""}`}
-            onClick={() => onChangeMode("copilot")}
-            aria-describedby="tooltip-copilot"
-          >
-            Copilot
-            <span className="mode-tooltip" id="tooltip-copilot" role="tooltip">
-              <span className="mode-tooltip-heading">Copilot</span>
-              <span className="mode-tooltip-body">
-                The agent pauses twice for your review — once after the
-                planner drafts the plan, and again after the recruiter
-                assigns agents. At each pause you can approve, edit,
-                send feedback, or cancel.
-              </span>
-              {isRunning && (
-                <span className="mode-tooltip-meta">
-                  Takes effect on the next prompt.
-                </span>
-              )}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      <div className="sidebar-top">
-        <FileUpload
-          uploadedFiles={uploadedFiles}
-          onUploadFiles={onUploadFiles}
-        />
-
-        <div className="upload-divider" />
-
-        <ModelPicker
-          models={models}
-          selection={modelSelection}
-          workerPinned={workerPinned}
-          onChangeOrchestration={onChangeOrchestrationModel}
-          onChangeWorker={onChangeWorkerModel}
-          onResetWorker={onResetWorkerModel}
-          keys={modelKeys}
-          onSaveKey={onSaveApiKey}
-          disabled={isRunning}
-        />
-
-        <div className="upload-divider" />
-
-        <SessionManager
+    <aside
+      className="sidebar"
+      style={{ width: `${width}px`, minWidth: `${width}px` }}
+    >
+      <div
+        className="sidebar-projects"
+        style={{ height: `${projectsHeight}px` }}
+      >
+        <ProjectsPanel
           sessions={sessions}
-          onFetchSessions={onFetchSessions}
-          onSave={onSave}
-          onLoad={onLoad}
-          onClear={onClear}
-          onDelete={onDelete}
-          onExportHtml={onExportHtml}
-          onExportMarkdown={onExportMarkdown}
+          currentProjectId={currentProjectId}
           hasMessages={hasMessages}
+          onFetchSessions={onFetchSessions}
+          onNewProject={onNewProject}
+          onLoad={onLoad}
+          onDelete={onDelete}
         />
       </div>
 
-      <div className="sidebar-bottom">
-        <PlanPanel
-          plan={plan}
-          markdown={planMarkdown}
-          reviewState={reviewState}
-          pipelineStage={pipelineStage}
-          agents={agents}
-          onApprovePlan={onApprovePlan}
-          onEditPlan={onEditPlan}
-          onPlanFeedback={onPlanFeedback}
-          onApproveAssignments={onApproveAssignments}
-          onEditAssignments={onEditAssignments}
-          onAssignmentsFeedback={onAssignmentsFeedback}
-          onCancelRun={onCancelRun}
+      <Splitter
+        orientation="horizontal"
+        onResize={resizeProjects}
+        ariaLabel="Resize projects panel"
+      />
+
+      <div className="sidebar-files">
+        <FileBrowser
+          refreshKey={fileBrowserRefreshKey}
+          currentProjectId={currentProjectId}
+          currentProjectTitle={currentProjectTitle}
+          onUploadToLibrary={onUploadToLibrary}
+          compact
         />
       </div>
     </aside>

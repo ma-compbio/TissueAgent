@@ -14,12 +14,59 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
+
+# Top-level workspace. Everything the user or the agent reads/writes lives
+# beneath this directory.
+#
+#   workspace/library/datasets/  — curated reference datasets. Persistent.
+#   workspace/library/files/     — persistent reference files (PDFs the
+#                                  user re-uses, screenshots they want
+#                                  to keep). Survives across projects.
+#   workspace/projects/<id>/
+#       ├── chat.json            — saved conversation
+#       ├── uploads/             — files the user dropped from the
+#                                  sidebar into *this* project. Default
+#                                  target for sidebar uploads.
+#       ├── attachments/         — images / PDFs attached to *this*
+#                                  project's chat (used for the
+#                                  multimodal turn payloads).
+#       └── outputs/             — agent's working directory for this
+#                                  project. Everything the agent writes
+#                                  lands here.
+#   workspace/notebook/          — process-wide notebook scratch.
+#   workspace/plan_scratch/      — in-flight plan store. Ephemeral.
+#
+# Legacy ``SESSIONS_DIR`` is preserved only for the one-shot migration
+# at startup; everything else writes to ``PROJECTS_DIR``.
 DATA_DIR = ROOT / "workspace"
 NOTEBOOK_DIR = DATA_DIR / "notebook"
-DATASET_DIR = DATA_DIR / "dataset"
-UPLOADS_DIR = DATA_DIR / "uploads"
-PDF_UPLOADS_DIR = DATA_DIR / "pdfs"
-SESSIONS_DIR = ROOT / "sessions"
+
+LIBRARY_DIR = DATA_DIR / "library"
+DATASET_DIR = LIBRARY_DIR / "datasets"     # curated reference data
+LIBRARY_FILES_DIR = LIBRARY_DIR / "files"  # persistent reference uploads
+
+PROJECTS_DIR = DATA_DIR / "projects"
+PROJECT_CHAT_FILENAME = "chat.json"
+PROJECT_OUTPUTS_DIRNAME = "outputs"
+PROJECT_ATTACHMENTS_DIRNAME = "attachments"
+PROJECT_UPLOADS_DIRNAME = "uploads"
+
+# Back-compat aliases. ``UPLOADS_DIR`` / ``PDF_UPLOADS_DIR`` historically
+# held *chat attachments* (images and PDFs); those now live per-project
+# under ``attachments/``. The aliases keep older import sites compiling
+# while we migrate.
+UPLOADS_DIR = LIBRARY_FILES_DIR        # legacy alias — prefer LIBRARY_FILES_DIR
+PDF_UPLOADS_DIR = LIBRARY_FILES_DIR    # legacy alias — see above
+
+# Ephemeral process-wide scratch for the currently-running plan. The
+# plan_store needs *some* stable on-disk home at import time, before any
+# project_id exists; we copy a snapshot into the project on save.
+PLAN_SCRATCH_DIR = DATA_DIR / "plan_scratch"
+
+# Legacy on-disk location for saved sessions. Used by the startup
+# migration only — do not reference for new writes.
+LEGACY_SESSIONS_DIR = ROOT / "sessions"
+SESSIONS_DIR = LEGACY_SESSIONS_DIR  # back-compat alias for plan_store etc.
 RECURSION_LIMIT = 100
 LOG_TO_TERMINAL = True
 LOG_TO_FILE = (

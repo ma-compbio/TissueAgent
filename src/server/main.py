@@ -36,7 +36,11 @@ from server.routes import (
     settings as settings_route,
 )
 from server.session_manager import session
-from server.utils import reset_data_directories
+from server.utils import (
+    migrate_legacy_library_layout,
+    migrate_legacy_sessions,
+    reset_data_directories,
+)
 
 
 def _bind_retry(model):
@@ -85,10 +89,25 @@ def ensure_graph_current() -> None:
         _compile_graph(_kernel_client)
 
 
+def set_kernel_workspace(path: Path) -> None:
+    """Point the running kernel client at *path* as the active workspace.
+
+    Called by the chat handler when a project is minted or loaded so
+    every Python/R execution lands inside ``projects/<id>/outputs/``.
+    No-op when the kernel client isn't initialized yet (e.g. very early
+    in startup), to keep the boot path simple.
+    """
+    if _kernel_client is None:
+        return
+    _kernel_client.set_workspace(path)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: reset dirs, optionally start sandbox, compile graph, register queues."""
     reset_data_directories()
+    migrate_legacy_sessions()
+    migrate_legacy_library_layout()
 
     # Start the Docker sandbox only when sandbox_enabled is set at startup.
     container_mgr: ContainerManager | None = None

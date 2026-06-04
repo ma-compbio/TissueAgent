@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 import yaml
 
-from config import SESSIONS_DIR
+from config import PLAN_SCRATCH_DIR
 
 
 class PlanEditError(ValueError):
@@ -280,9 +280,10 @@ def _parse_markdown(text: str) -> PlanDocument:
 
 # --- store -----------------------------------------------------------
 
-# For phase 1 we keep a single "active" plan. Later this becomes
-# sessions/<session_id>/plan.md once sessions gain stable IDs.
-_DEFAULT_PLAN_DIR = SESSIONS_DIR / "active"
+# The plan store is process-wide singleton living in an ephemeral
+# workspace location. Snapshots are copied into the active project's
+# folder by the chat handler's _persist_project routine.
+_DEFAULT_PLAN_DIR = PLAN_SCRATCH_DIR
 
 
 class PlanStore:
