@@ -1,37 +1,57 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { BrowseEntry } from "../types/messages";
+import FilePreviewLightbox, {
+  type PreviewItem,
+} from "./FilePreviewLightbox";
 
 const API = import.meta.env.DEV ? "http://localhost:8000" : "";
 
 const IMAGE_EXTENSIONS = new Set([
-  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg",
+  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".tif", ".tiff",
 ]);
 
-function isImageFile(name: string): boolean {
+function fileExt(name: string): string {
   const dot = name.lastIndexOf(".");
-  if (dot < 0) return false;
-  return IMAGE_EXTENSIONS.has(name.slice(dot).toLowerCase());
+  return dot < 0 ? "" : name.slice(dot).toLowerCase();
+}
+
+function isImageFile(name: string): boolean {
+  return IMAGE_EXTENSIONS.has(fileExt(name));
 }
 
 /** Which on-disk root the browser is talking to. */
 export type FileScope = "library" | "project";
+
+/** Flatten a BrowseEntry tree into a list of leaf files, in render order.
+ *  Used by FilePreviewLightbox so prev/next can walk siblings naturally. */
+function collectLeafFiles(entries: BrowseEntry[]): BrowseEntry[] {
+  const out: BrowseEntry[] = [];
+  const walk = (es: BrowseEntry[]) => {
+    for (const e of es) {
+      if (e.is_dir) walk(e.children ?? []);
+      else out.push(e);
+    }
+  };
+  walk(entries);
+  return out;
+}
 
 function FileNode({
   entry,
   scope,
   projectId,
   onDelete,
-  onPreviewImage,
+  onPreviewFile,
   depth = 0,
 }: {
   entry: BrowseEntry;
   scope: FileScope;
   projectId?: string;
   onDelete: () => void;
-  onPreviewImage: (path: string) => void;
+  onPreviewFile: (path: string) => void;
   depth?: number;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const qs = new URLSearchParams({ scope });
   if (projectId) qs.set("project_id", projectId);
@@ -75,7 +95,7 @@ function FileNode({
               scope={scope}
               projectId={projectId}
               onDelete={onDelete}
-              onPreviewImage={onPreviewImage}
+              onPreviewFile={onPreviewFile}
               depth={depth + 1}
             />
           ))}
@@ -88,8 +108,9 @@ function FileNode({
   return (
     <div className="file-node" style={{ paddingLeft: `${depth * 1.2}rem` }}>
       <div
-        className={`file-row ${isImage ? "file-row-clickable" : ""}`}
-        onClick={isImage ? () => onPreviewImage(entry.path) : undefined}
+        className="file-row file-row-clickable"
+        onClick={() => onPreviewFile(entry.path)}
+        title="Open preview"
       >
         <span className="file-icon">{isImage ? "🖼" : "📄"}</span>
         <span className="file-name">{entry.name}</span>
@@ -117,12 +138,16 @@ interface BrowserPaneProps {
   /** Required when ``uploadable``. Called with the chosen files. */
   onUpload?: (files: FileList) => Promise<void> | void;
   /** Tighter layout for narrow containers (sidebar embedding): the
-   *  description and the preview-pane split are dropped so the tree
-   *  fills the available width. */
+   *  description block is hidden, the upload-button label is collapsed
+   *  to "+", and the tree fills the column. */
   compact?: boolean;
   /** One-liner explanation surfaced via an info icon next to the title.
    *  Useful in compact mode where the longer description is hidden. */
   infoText?: string;
+  /** Open the parent-owned lightbox preview. The pane converts its
+   *  current tree's leaf files into PreviewItem[] and tells the parent
+   *  which one to focus. */
+  onOpenPreview: (items: PreviewItem[], index: number) => void;
 }
 
 function BrowserPane({
@@ -136,13 +161,10 @@ function BrowserPane({
   onUpload,
   compact = false,
   infoText,
+  onOpenPreview,
 }: BrowserPaneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tree, setTree] = useState<BrowseEntry[]>([]);
-  const [previewPath, setPreviewPath] = useState<string | null>(null);
-  const [paneWidth, setPaneWidth] = useState(320);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
 
   const fetchTree = useCallback(async () => {
     const qs = new URLSearchParams({ scope });
@@ -150,54 +172,26 @@ function BrowserPane({
     const res = await fetch(`${API}/api/files/browse?${qs}`);
     if (res.ok) setTree(await res.json());
     else setTree([]);
-    setPreviewPath(null);
   }, [scope, projectId]);
 
   useEffect(() => {
     fetchTree();
   }, [fetchTree, refreshKey]);
 
-  useLayoutEffect(() => {
-    if (containerRef.current) {
-      setPaneWidth(Math.round(containerRef.current.offsetWidth * 0.25));
-    }
-  }, []);
-
-  const handleResizeMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    isDragging.current = true;
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-
-    const onMouseMove = (ev: MouseEvent) => {
-      if (!isDragging.current || !containerRef.current) return;
-      const left = containerRef.current.getBoundingClientRect().left;
-      const total = containerRef.current.offsetWidth;
-      const next = Math.max(160, Math.min(total * 0.65, ev.clientX - left));
-      setPaneWidth(Math.round(next));
-    };
-
-    const onMouseUp = () => {
-      isDragging.current = false;
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  };
-
-  const previewFileName = previewPath
-    ? previewPath.split("/").pop() ?? previewPath
-    : null;
-
-  const previewQs = new URLSearchParams({ scope });
-  if (projectId) previewQs.set("project_id", projectId);
-  const previewUrl = previewPath
-    ? `${API}/api/files/download/${previewPath}?${previewQs}`
-    : null;
+  const handleOpenPreview = useCallback(
+    (path: string) => {
+      const leaves = collectLeafFiles(tree);
+      const items: PreviewItem[] = leaves.map((leaf) => ({
+        path: leaf.path,
+        name: leaf.name,
+        scope,
+        projectId,
+      }));
+      const idx = items.findIndex((it) => it.path === path);
+      if (idx >= 0) onOpenPreview(items, idx);
+    },
+    [tree, scope, projectId, onOpenPreview],
+  );
 
   const handleUploadClick = () => fileInputRef.current?.click();
   const handleFilesChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -277,84 +271,22 @@ function BrowserPane({
         </div>
       </header>
 
-      {compact ? (
-        // Sidebar embedding: single-column tree, no preview, no split.
-        // The user can still open files via the row's download button;
-        // image previews would be too cramped in a narrow column.
-        <div className="file-tree compact-tree">
-          {tree.length === 0 ? (
-            <div className="empty-tree">{emptyMessage ?? "No files yet."}</div>
-          ) : (
-            tree.map((entry) => (
-              <FileNode
-                key={entry.path}
-                entry={entry}
-                scope={scope}
-                projectId={projectId}
-                onDelete={fetchTree}
-                onPreviewImage={setPreviewPath}
-              />
-            ))
-          )}
-        </div>
-      ) : (
-        <div className="file-browser-split" ref={containerRef}>
-          <div className="file-browser-pane" style={{ width: paneWidth }}>
-            <div className="file-tree">
-              {tree.length === 0 ? (
-                <div className="empty-tree">{emptyMessage ?? "No files yet."}</div>
-              ) : (
-                tree.map((entry) => (
-                  <FileNode
-                    key={entry.path}
-                    entry={entry}
-                    scope={scope}
-                    projectId={projectId}
-                    onDelete={fetchTree}
-                    onPreviewImage={setPreviewPath}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-
-          <div
-            className="file-browser-resize-handle"
-            onMouseDown={handleResizeMouseDown}
-            aria-hidden="true"
-          />
-
-          {previewUrl && previewFileName && (
-            <div className="file-preview-pane">
-              <div className="file-preview-pane-header">
-                <span className="image-preview-name">{previewFileName}</span>
-                <button
-                  className="file-action"
-                  onClick={() => window.open(previewUrl, "_blank")}
-                  title="Download"
-                >
-                  ⬇
-                </button>
-                <button
-                  className="file-preview-close-btn"
-                  onClick={() => setPreviewPath(null)}
-                  title="Close preview"
-                  aria-label="Close preview"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="file-preview-pane-body">
-                <img
-                  src={previewUrl}
-                  alt={previewFileName}
-                  className="image-preview-img"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <div className={`file-tree ${compact ? "compact-tree" : ""}`}>
+        {tree.length === 0 ? (
+          <div className="empty-tree">{emptyMessage ?? "No files yet."}</div>
+        ) : (
+          tree.map((entry) => (
+            <FileNode
+              key={entry.path}
+              entry={entry}
+              scope={scope}
+              projectId={projectId}
+              onDelete={fetchTree}
+              onPreviewFile={handleOpenPreview}
+            />
+          ))
+        )}
+      </div>
     </section>
   );
 }
@@ -386,6 +318,22 @@ export default function FileBrowser({
       : `Project files — ${currentProjectTitle}`
     : "Project files";
 
+  // Lightbox state lives at the root so a single open preview is shared
+  // across both panes — and so the lightbox unmounts cleanly when the
+  // user closes it, regardless of which pane the file came from.
+  const [previewItems, setPreviewItems] = useState<PreviewItem[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const openPreview = useCallback((items: PreviewItem[], index: number) => {
+    if (items.length === 0 || index < 0 || index >= items.length) return;
+    setPreviewItems(items);
+    setPreviewIndex(index);
+    setPreviewOpen(true);
+  }, []);
+
+  const closePreview = useCallback(() => setPreviewOpen(false), []);
+
   return (
     <div className={`file-browser-stack ${compact ? "compact" : ""}`}>
       <BrowserPane
@@ -398,6 +346,7 @@ export default function FileBrowser({
         uploadable
         onUpload={onUploadToLibrary}
         compact={compact}
+        onOpenPreview={openPreview}
       />
 
       <BrowserPane
@@ -417,7 +366,17 @@ export default function FileBrowser({
             : "No active project."
         }
         compact={compact}
+        onOpenPreview={openPreview}
       />
+
+      {previewOpen && (
+        <FilePreviewLightbox
+          items={previewItems}
+          index={previewIndex}
+          onClose={closePreview}
+          onIndexChange={setPreviewIndex}
+        />
+      )}
     </div>
   );
 }

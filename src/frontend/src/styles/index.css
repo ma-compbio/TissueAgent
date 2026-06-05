@@ -4671,3 +4671,241 @@ code, pre, .num {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
 }
+
+/* ===== File preview lightbox ===========================================
+   Full-viewport modal that opens when the user clicks a file in any
+   FileBrowser. Backdrop dims the page; the card centers a large
+   preview area with a filename + actions header on top and prev/next
+   arrows on the sides. */
+
+.lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: color-mix(in oklch, var(--bg-primary) 0%, rgba(0, 0, 0, 0.55));
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(var(--space-md), 4vw, var(--space-xl));
+  /* Fade in for a touch of polish. */
+  animation: lightbox-fade-in 140ms ease-out;
+}
+
+@keyframes lightbox-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.lightbox-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(96vw, 1200px);
+  height: min(94vh, 900px);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  outline: none;  /* the card itself is focused; we don't want the ring */
+}
+
+.lightbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-elevated, var(--bg-secondary));
+  flex-shrink: 0;
+}
+
+.lightbox-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;  /* enable text-overflow ellipsis on the filename */
+}
+
+.lightbox-filename {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lightbox-scope {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lightbox-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.lightbox-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background 160ms ease-out,
+    color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+.lightbox-action-btn:hover {
+  color: var(--text-primary);
+  background: color-mix(in oklch, var(--text-primary) 8%, transparent);
+}
+
+.lightbox-action-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lightbox-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.lightbox-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  /* The checkerboard-ish faint outline helps thin SVGs read clearly
+     against the panel without competing with the artifact. */
+  border-radius: 4px;
+}
+
+.lightbox-text {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: var(--space-md);
+  overflow: auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  white-space: pre;
+  tab-size: 4;
+}
+
+.lightbox-text-truncated {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.lightbox-no-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.lightbox-download-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  transition: background 160ms ease-out, border-color 160ms ease-out;
+}
+
+.lightbox-download-link:hover {
+  border-color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 8%, transparent);
+}
+
+/* Prev/next arrows floated over the card edges. The hit areas are
+   generous (44×44) but the chrome is restrained so they don't overpower
+   the artifact in the middle. */
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--bg-secondary) 85%, transparent);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 160ms ease-out,
+    color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+.lightbox-nav:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-color: var(--accent);
+}
+
+.lightbox-nav:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lightbox-nav-prev { left: 8px; }
+.lightbox-nav-next { right: 8px; }
+
+.lightbox-counter {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  background: color-mix(in oklch, var(--bg-secondary) 90%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
