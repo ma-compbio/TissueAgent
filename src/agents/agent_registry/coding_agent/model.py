@@ -4,24 +4,20 @@ import logging
 from queue import Queue
 
 from langchain.tools import StructuredTool
-from langchain_core.messages import HumanMessage, RemoveMessage
+from langchain_core.messages import HumanMessage
 from langgraph.graph import END, MessagesState, START, StateGraph
 
 from agents.agent_registry.coding_agent.sandbox import ExecutionResult, KernelClient
-from config import ROOT
 from agents.agent_registry.coding_agent.tools_impl.documentation_index import (
     DocumentationIndex,
 )
-from agents.agent_registry.coding_agent.tools_impl.tutorial_index import TutorialIndex
 from agents.agent_registry.coding_agent.params import (
-    retrieval_agent_model_ctor,
-    execution_agent_model_ctor,
+    coding_agent_model_ctor,
     doc_filepaths,
-    tutorial_directories,
 )
 import agent_settings
-from agents.agent_registry.coding_agent.prompt import RetrievalAgentPrompt, ExecutionAgentPrompt
-from config import DATA_DIR
+from agents.agent_registry.coding_agent.prompt import CodingAgentPrompt
+from config import DATA_DIR, ROOT
 from graph.graph_utils import (
     create_agent_node,
     create_tool_node,
@@ -29,12 +25,6 @@ from graph.graph_utils import (
     log_message,
     subagent_invocation,
 )
-
-
-class CodingAgentState(MessagesState):
-    """Extended state that carries the retrieval plan between subagents."""
-    retrieval_plan: str
-    skip_retrieval: bool
 
 
 def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
@@ -47,13 +37,12 @@ def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
     Returns:
         A StructuredTool that invokes the coding agent graph with a text prompt.
     """
-    graph = StateGraph(CodingAgentState)
+    graph = StateGraph(MessagesState)
     id = "coding_agent"
 
-    ### Documentation / tutorial tools
+    ### Documentation tool
 
     documentation_index = DocumentationIndex(doc_filepaths)
-    tutorial_index = TutorialIndex(tutorial_directories)
 
     def search_documentation(
         name: str | None = None,
@@ -77,28 +66,6 @@ def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
             return documentation_index.format_results(results, verbose=False)
         return "Error: provide either 'name' or 'keyword'."
 
-    def search_tutorials(
-        name: str | None = None,
-        keyword: str | None = None,
-        library: str | None = None,
-    ) -> str:
-        """Search tutorials for spatial transcriptomics workflows.
-
-        Provide exactly one of `name` or `keyword`:
-        - name: Retrieve a specific tutorial by title (supports fuzzy matching).
-        - keyword: Find tutorials related to a topic.
-        - library: Optional filter ('liana' or 'squidpy').
-        """
-        if name and keyword:
-            return "Error: provide either 'name' or 'keyword', not both."
-        if name:
-            results = tutorial_index.lookup_by_name(name, library=library)
-            return tutorial_index.format_results(results, verbose=True)
-        if keyword:
-            results = tutorial_index.search_by_keyword(keyword, library=library)
-            return tutorial_index.format_results(results, verbose=False)
-        return "Error: provide either 'name' or 'keyword'."
-
     search_documentation_tool = StructuredTool.from_function(
         func=search_documentation,
         name="search_documentation",
@@ -107,17 +74,6 @@ def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
             " Use `name` for a specific method (fuzzy matching supported),"
             " or `keyword` to find methods by topic."
             " Optional `library` filter: 'scanpy', 'squidpy', or 'liana'."
-        ),
-    )
-
-    search_tutorials_tool = StructuredTool.from_function(
-        func=search_tutorials,
-        name="search_tutorials",
-        description=(
-            "Search tutorials for spatial transcriptomics workflows."
-            " Use `name` for a specific tutorial by title (fuzzy matching),"
-            " or `keyword` to find tutorials by topic."
-            " Optional `library` filter: 'liana' or 'squidpy'."
         ),
     )
 
@@ -166,84 +122,35 @@ def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
         ),
     )
 
-    retrieval_tools = [
-        search_documentation_tool,
-        search_tutorials_tool,
-    ]
-
-    execution_tools = [
+    tools = [
         python_tool,
         r_tool,
+        search_documentation_tool,
     ]
 
-    ### Build the graph with retrieval and execution subagents
+    ### Build the graph
 
-    retrieval_model = retrieval_agent_model_ctor().bind_tools(retrieval_tools)
-    execution_model = execution_agent_model_ctor().bind_tools(execution_tools)
+    model = coding_agent_model_ctor().bind_tools(tools)
 
-    retrieval_agent_node_id = "retrieval_agent_node"
-    retrieval_tool_node_id = "retrieval_tool_node"
-    handoff_node_id = "handoff_node"
-    execution_agent_node_id = "execution_agent_node"
-    execution_tool_node_id = "execution_tool_node"
+    agent_node_id = "coding_agent_node"
+    tool_node_id = "tool_node"
 
-    # Retrieval agent: searches docs/tutorials, produces a plan, then hands off
-    retrieval_agent_node = create_agent_node(
-        retrieval_agent_node_id, retrieval_model, RetrievalAgentPrompt,
-        retrieval_tool_node_id, handoff_node_id,
-    )
-    retrieval_tool_node = create_tool_node(retrieval_tools)
-
-    def handoff_node(state: CodingAgentState) -> CodingAgentState:
-        """Extract the retrieval plan and reset messages for the execution agent.
-
-        Stores the retrieval agent's final message as the plan, then removes
-        all messages except the original user message so the execution agent
-        starts with a clean context.
-        """
-        retrieval_plan = state["messages"][-1].content
-        user_message = next(
-            m for m in state["messages"] if isinstance(m, HumanMessage)
-        )
-        # Remove all messages except the original user message
-        removals = [
-            RemoveMessage(id=m.id)
-            for m in state["messages"]
-            if m.id != user_message.id
-        ]
-        return {
-            "retrieval_plan": retrieval_plan,
-            "messages": removals,
-        }
-
-    # Execution agent: receives plan via system prompt, executes code.
-    # sandbox_enabled is read at invocation time so runtime setting changes
-    # are honoured without requiring a graph rebuild.
-    def _execution_prompt(state: CodingAgentState) -> str:
-        return ExecutionAgentPrompt(
-            state.get("retrieval_plan", ""),
+    def _prompt(state: MessagesState) -> str:
+        return CodingAgentPrompt(
             sandbox_enabled=agent_settings.get_sandbox_enabled(),
         )
 
-    execution_agent_node = create_agent_node(
-        execution_agent_node_id, execution_model, _execution_prompt,
-        execution_tool_node_id, END,
+    agent_node = create_agent_node(
+        agent_node_id, model, _prompt,
+        tool_node_id, END,
     )
-    execution_tool_node = create_tool_node(execution_tools)
+    tool_node = create_tool_node(tools)
 
-    graph.add_node(retrieval_agent_node_id, retrieval_agent_node)
-    graph.add_node(retrieval_tool_node_id, retrieval_tool_node)
-    graph.add_node(handoff_node_id, handoff_node)
-    graph.add_node(execution_agent_node_id, execution_agent_node)
-    graph.add_node(execution_tool_node_id, execution_tool_node)
+    graph.add_node(agent_node_id, agent_node)
+    graph.add_node(tool_node_id, tool_node)
 
-    graph.add_conditional_edges(
-        START,
-        lambda state: execution_agent_node_id if state.get("skip_retrieval") else retrieval_agent_node_id,
-    )
-    graph.add_edge(retrieval_tool_node_id, retrieval_agent_node_id)
-    graph.add_edge(handoff_node_id, execution_agent_node_id)
-    graph.add_edge(execution_tool_node_id, execution_agent_node_id)
+    graph.add_edge(START, agent_node_id)
+    graph.add_edge(tool_node_id, agent_node_id)
 
     agent = graph.compile()
 
@@ -284,7 +191,6 @@ PRESETS: dict[int, dict] = {
 
 if __name__ == "__main__":
     import argparse
-    import shlex
     import subprocess
     import sys
 
@@ -293,7 +199,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the coding agent directly.")
     parser.add_argument("--preset", type=int, default=0, help="Preset number (0 = interactive prompt)")
     parser.add_argument("--disable-docker", action="store_true", help="Skip Docker sandbox startup; connect to a local Jupyter Kernel Gateway instead")
-    parser.add_argument("--skip-retrieval", action="store_true", help="Skip the retrieval agent and run the execution agent directly on the prompt")
     parser.add_argument("prompt", nargs="*", help="Prompt text (ignored when --preset is used)")
     args = parser.parse_args()
 
@@ -328,13 +233,8 @@ if __name__ == "__main__":
     tool = create_coding_agent(queue, client)
 
     try:
-        if args.skip_retrieval:
-            logging.info("Skipping retrieval agent — running execution agent directly.")
-            final_state = tool._agent.invoke({"messages": [HumanMessage(prompt)], "skip_retrieval": True})
-            print(final_state["messages"][-1].content)
-        else:
-            result = tool.invoke({"prompt": prompt})
-            print(result)
+        result = tool.invoke({"prompt": prompt})
+        print(result)
     finally:
         if container_mgr is not None:
             container_mgr.stop()
