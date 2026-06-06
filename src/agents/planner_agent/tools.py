@@ -8,7 +8,6 @@ from agents.planner_agent.tools_impl.plan_registry_tool import plan_registry_too
 from agents.planner_agent.tools_impl.template_selector_tool import (
     template_selector_tool,
 )
-from agents.planner_agent.tools_impl.write_plan_tool import write_plan_tool
 
 
 PlannerToolNames: List[str] = [
@@ -17,12 +16,10 @@ PlannerToolNames: List[str] = [
     "read",
     "plan_registry_tool",
     "template_selector_tool",
-    "write_plan",
 ]
 
 PlannerTools: List[StructuredTool] = [
     *file_read_tools,
     plan_registry_tool,
     template_selector_tool,
-    write_plan_tool,
 ]

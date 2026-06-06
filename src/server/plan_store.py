@@ -3,9 +3,9 @@
 The "evolving plan" is the single artifact that describes what TissueAgent
 is about to do or is currently doing. It is authored cooperatively:
 
-* The **planner** writes the skeleton via the ``write_plan`` tool. Each
+* The **planner** writes the skeleton via structured JSON output. Each
   step carries a title, description, reasoning, and expected artifacts.
-* The **recruiter** annotates each step via the ``assign_agents`` tool,
+* The **recruiter** annotates each step via structured JSON output,
   adding an ``assigned_agent`` and an ``assignment_rationale``.
 * The **manager** (phase 2) updates each step's ``status`` and records
   the ``actual_outputs`` as work completes.

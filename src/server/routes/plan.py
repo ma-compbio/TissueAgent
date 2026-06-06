@@ -2,7 +2,7 @@
 
 Phase 1: read-only. The UI fetches the current plan on connect; subsequent
 updates arrive via WebSocket as ``plan_updated`` events emitted by the
-``write_plan`` and ``assign_agents`` tools.
+planner and recruiter agents' structured JSON output handlers.
 """
 
 from dataclasses import asdict

@@ -33,6 +33,7 @@ from graph.graph_utils import (
     create_tool_node,
     create_agent_invocation_tool,
 )
+from graph.plan_output import planner_state_update, recruiter_state_update
 
 MAX_REPLANS = 2
 
@@ -242,6 +243,7 @@ def create_tissueagent_graph(
         PlannerAgent.prompt,
         planner_tool_node_id,
         exit_node_id_fn=planner_router,
+        state_update_fn=planner_state_update,
     )
 
     ### Recruiter Node
@@ -254,6 +256,7 @@ def create_tissueagent_graph(
         recruiter_prompt,
         recruiter_tool_node_id,
         manager_node_id,
+        state_update_fn=recruiter_state_update,
     )
 
     ### Manager Node

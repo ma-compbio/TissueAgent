@@ -260,7 +260,7 @@ async def _run_graph(ws: WebSocket, graph_input):
     # On a resume (graph_input is None), the plan's on-disk status may
     # still read ``awaiting_*`` from the pause. Flip it to ``running`` so
     # the UI doesn't keep telling the user "your review is needed".
-    # Downstream agents (recruiter's assign_agents_tool, etc.) may
+    # Downstream agents (recruiter's state_update_fn, etc.) may
     # overwrite this with a more specific status as they run.
     if graph_input is None:
         from server.plan_store import plan_store as _plan_store
@@ -573,9 +573,9 @@ async def _drain_queues(ws: WebSocket):
             event_type, payload = event
 
             if event_type == "message":
-                # plan_updated markers are emitted by write_plan / assign_agents
-                # tools via log_message(); route them to the plan channel
-                # instead of the chat transcript.
+                # plan_updated markers are emitted by the planner/recruiter
+                # state_update_fn via log_message(); route them to the plan
+                # channel instead of the chat transcript.
                 if getattr(payload, "name", None) == "plan_updated":
                     plan_payload = (
                         getattr(payload, "additional_kwargs", {}) or {}
