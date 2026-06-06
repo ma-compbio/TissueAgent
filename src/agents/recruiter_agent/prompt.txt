@@ -24,7 +24,7 @@ After any reasoning text, you MUST emit a single fenced JSON block containing th
   "assignments": [
     {
       "step_id": 1,
-      "assigned_agent": "<agent registry id, e.g. 'coding', 'gene_agent', 'single_cell', 'hypothesis', 'pdf_reader', 'searcher', 'critic', 'cell_annotater', 'spot'>",
+      "assigned_agent": "<agent registry id, e.g. 'coding_agent', 'gene_agent', 'single_cell_agent', etc.>",
       "skills": [],
       "assignment_rationale": "<one- or two-sentence explanation of why this agent is the right pick>"
     }

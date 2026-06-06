@@ -174,7 +174,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         model_ctor=WorkerModelCtor,
     ),
     ReActAgent(
-        id="searcher",
+        id="searcher_agent",
         name="Searcher Agent",
         description=SearcherDescription,
         prompt=SearcherPrompt,
@@ -190,7 +190,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         model_ctor=WorkerModelCtor,
     ),
     ReActAgent(
-        id="critic",
+        id="critic_agent",
         name="Critic Agent",
         description=CriticAgentDescription,
         prompt=CriticAgentPrompt,
@@ -207,7 +207,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
     ),
 
     ReActAgent(
-        id          = "cell_annotater",
+        id          = "cell_annotater_agent",
         name        = "Cell Annotater Agent",
         description = CellTissueAnnotationDescription,
         prompt      = CellTissueAnnotationPrompt,
@@ -215,7 +215,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         model_ctor  = WorkerModelCtor,
     ),
     ReActAgent(
-        id="spot",
+        id="spot_agent",
         name="Spot Agent",
         description=SpotDescription,
         prompt=SpotPrompt,
@@ -223,7 +223,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         model_ctor=WorkerModelCtor,
     ),
     CustomAgent(
-        id="hypothesis",
+        id="hypothesis_agent",
         name="Hypothesis Agent",
         description=HypothesisAgentDescription,
         ctor=lambda state_queue: HypothesisAgent.create_hypothesis_agent(state_queue),
