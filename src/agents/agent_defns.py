@@ -226,6 +226,8 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         id="hypothesis_agent",
         name="Hypothesis Agent",
         description=HypothesisAgentDescription,
-        ctor=lambda state_queue: HypothesisAgent.create_hypothesis_agent(state_queue),
+        ctor=lambda state_queue, context_resolver=None: HypothesisAgent.create_hypothesis_agent(
+            state_queue, context_resolver
+        ),
     ),
 ]

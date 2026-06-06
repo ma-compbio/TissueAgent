@@ -10,6 +10,7 @@ import threading
 import uuid
 from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import dataclass
 from queue import Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 
@@ -25,6 +26,12 @@ from langchain_core.messages import (
 from langgraph.graph import MessagesState
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
+
+
+class AgentState(MessagesState):
+    """Extended message state with optional skill prompt injection."""
+
+    skill_prompt: str
 
 from logger import logger
 
@@ -514,6 +521,121 @@ def create_tool_node(
     return tool_node
 
 
+@dataclass
+class StepContext:
+    """Pre-invocation context for a plan step, resolved by the step context resolver."""
+
+    step_id: int
+    skills: List[str]
+    expected_artifacts: List[str]
+
+
+def create_step_context_resolver() -> Callable[[str], Optional["StepContext"]]:
+    """Create a resolver that maps agent invocations to plan step context.
+
+    Returns a callable: resolve(agent_node_id) -> StepContext or None.
+    Uses a shared set to track dispatched steps across all transfer tools,
+    ensuring each step's context is only returned once (for sequential execution).
+    """
+    dispatched: set[int] = set()
+
+    def resolve(agent_node_id: str) -> Optional[StepContext]:
+        from server.plan_store import plan_store
+
+        doc = plan_store.read()
+        for step in doc.steps:
+            if step.id in dispatched:
+                continue
+            if (
+                step.assigned_agent
+                and f"{step.assigned_agent}_agent" == agent_node_id
+            ):
+                dispatched.add(step.id)
+                return StepContext(
+                    step_id=step.id,
+                    skills=list(step.skills),
+                    expected_artifacts=list(step.expected_artifacts),
+                )
+        return None
+
+    return resolve
+
+
+def _validate_step_artifacts(
+    expected_artifacts: List[str],
+) -> Tuple[List[str], List[str]]:
+    """Check which expected artifacts exist in DATA_DIR.
+
+    Returns (found, missing) where each is a list of relative path strings.
+    Paths are matched exactly first; if not found, they are tried as glob
+    patterns to allow for minor naming variations.
+    """
+    from config import DATA_DIR
+
+    found: List[str] = []
+    missing: List[str] = []
+    for artifact_path in expected_artifacts:
+        full_path = DATA_DIR / artifact_path
+        if full_path.exists():
+            found.append(artifact_path)
+        else:
+            matches = sorted(DATA_DIR.glob(artifact_path))
+            if matches:
+                found.extend(str(m.relative_to(DATA_DIR)) for m in matches)
+            else:
+                missing.append(artifact_path)
+    return found, missing
+
+
+def _update_step_status(
+    step_id: int,
+    found: List[str],
+    missing: List[str],
+) -> None:
+    """Update a plan step's status and actual_outputs after artifact validation.
+
+    Emits a ``plan_updated`` UI event so the frontend reflects the change.
+    """
+    from server.plan_store import plan_store, serialize_plan
+
+    doc = plan_store.read()
+    for step in doc.steps:
+        if step.id == step_id:
+            step.actual_outputs = list(found)
+            step.status = "done" if not missing else "failed"
+            break
+
+    plan_store.write(doc)
+
+    # Emit plan_updated event for the UI.
+    payload = serialize_plan(doc)
+    message = AIMessage(
+        content="plan_updated",
+        additional_kwargs={"plan_payload": payload},
+        name="plan_updated",
+    )
+    try:
+        log_message(message)
+    except Exception:
+        pass
+
+
+def _format_validation_summary(
+    step_id: int,
+    found: List[str],
+    missing: List[str],
+) -> str:
+    """Format a human-readable validation summary appended to the tool result."""
+    lines = [f"\n\n--- Artifact Validation (Step {step_id}) ---"]
+    if found:
+        lines.append(f"Found: {', '.join(found)}")
+    if missing:
+        lines.append(f"Missing: {', '.join(missing)}")
+    status = "PASSED" if not missing else "FAILED"
+    lines.append(f"Status: {status}")
+    return "\n".join(lines)
+
+
 def create_agent_invocation_tool(
     agent_node_id: str,
     agent_name: str,
@@ -521,6 +643,7 @@ def create_agent_invocation_tool(
     state_queue: Queue,
     supports_pdf: bool = False,
     forward_user_images: bool = False,
+    context_resolver: Optional[Callable[[str], Optional["StepContext"]]] = None,
 ) -> StructuredTool:
     """Create a LangChain tool that delegates a prompt to a compiled sub-agent.
 
@@ -528,6 +651,11 @@ def create_agent_invocation_tool(
     prompt (and optional PDF file IDs when *supports_pdf* is ``True``),
     invokes the sub-agent graph, pushes the final state onto
     *state_queue* for UI rendering, and returns the last message's content.
+
+    After invocation, if a *context_resolver* is provided, the tool
+    automatically validates expected artifacts and updates the plan step
+    status in the plan store — removing the need for the manager LLM to
+    perform artifact checking.
 
     Args:
         agent_node_id: Node ID of the sub-agent (used in the tool name).
@@ -539,6 +667,9 @@ def create_agent_invocation_tool(
             additional ``pdf_file_ids`` parameter.
         forward_user_images: When ``True``, the latest user-attached
             images are included in the prompt sent to the sub-agent.
+        context_resolver: Callable that returns a :class:`StepContext`
+            for the current step (skills + expected artifacts), or
+            ``None`` when no matching step is found.
 
     Returns:
         A :class:`~langchain.tools.StructuredTool` named
@@ -563,6 +694,31 @@ def create_agent_invocation_tool(
             return HumanMessage(content=parts)
         return HumanMessage(prompt)
 
+    def _resolve_step_context() -> Tuple[str, Optional[StepContext]]:
+        """Resolve context for the current step: skill prompt + step metadata."""
+        if not context_resolver:
+            return "", None
+        ctx = context_resolver(agent_node_id)
+        if ctx is None:
+            return "", None
+        if not ctx.skills:
+            return "", ctx
+        from agents.agent_utils import format_skill_prompt
+
+        return format_skill_prompt(ctx.skills), ctx
+
+    def _post_invocation_validate(
+        result: str, step_ctx: Optional[StepContext],
+    ) -> str:
+        """Validate artifacts and update the plan store. Returns result with summary appended."""
+        if step_ctx is None or not step_ctx.expected_artifacts:
+            return result
+        found, missing = _validate_step_artifacts(step_ctx.expected_artifacts)
+        _update_step_status(step_ctx.step_id, found, missing)
+        summary = _format_validation_summary(step_ctx.step_id, found, missing)
+        logging.info(summary)
+        return result + summary
+
     if supports_pdf:
 
         def _pdf_agent_invocation_tool(prompt: str, pdf_file_ids: str = "") -> str:
@@ -573,7 +729,7 @@ def create_agent_invocation_tool(
                 pdf_file_ids: Comma-separated list of OpenAI file IDs (e.g. "file-abc123,file-def456")
 
             Returns:
-                Agent's response
+                Agent's response with artifact validation summary appended
             """
             logging.info(f"Invoking PDF-capable agent `{agent_node_id}`")
 
@@ -587,11 +743,15 @@ def create_agent_invocation_tool(
                     content.append({"type": "file", "file": {"file_id": file_id}})
 
             message = _build_multimodal_message(prompt, extra_parts=content)
+            skill_prompt_text, step_ctx = _resolve_step_context()
             with subagent_invocation(agent_name) as invocation_id:
-                final_state = agent.invoke({"messages": [message]})
+                final_state = agent.invoke(
+                    {"messages": [message], "skill_prompt": skill_prompt_text}
+                )
             state_queue.put((agent_name, final_state, invocation_id))
             logging.info(f"Finished invoking PDF-capable agent `{agent_node_id}`")
-            return final_state["messages"][-1].content
+            result = final_state["messages"][-1].content
+            return _post_invocation_validate(result, step_ctx)
 
         agent_invocation_tool = _pdf_agent_invocation_tool
     else:
@@ -600,11 +760,15 @@ def create_agent_invocation_tool(
             """Invoke the sub-agent with a text prompt and return its response."""
             logging.info(f"Invoking agent `{agent_node_id}`")
             message = _build_multimodal_message(prompt)
+            skill_prompt_text, step_ctx = _resolve_step_context()
             with subagent_invocation(agent_name) as invocation_id:
-                final_state = agent.invoke({"messages": [message]})
+                final_state = agent.invoke(
+                    {"messages": [message], "skill_prompt": skill_prompt_text}
+                )
             state_queue.put((agent_name, final_state, invocation_id))
             logging.info(f"Finished invoking agent `{agent_node_id}`")
-            return final_state["messages"][-1].content
+            result = final_state["messages"][-1].content
+            return _post_invocation_validate(result, step_ctx)
 
         agent_invocation_tool = _basic_agent_invocation_tool
 

@@ -72,6 +72,8 @@ Use ReAct INTERNALLY and STOP once the dataset(s) are identified, downloaded, or
 - **Deconvolution**: summarize success and list key output artifacts (output directory, abundance tables, fitted AnnData paths).
 - Keep concise. If blocked, state the missing field(s) you need.
 
+{{skill_prompt}}
+
 # Output Format (enforced)
 <scratchpad>
 Thought: <next step in ≤2 short sentences>

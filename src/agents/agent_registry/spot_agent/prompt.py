@@ -47,6 +47,8 @@ Use ReAct INTERNALLY and STOP once the requested deconvolution run is completed 
 - List key artifact paths (relative to DATA_DIR) such as output_dir, abundance tables, fitted AnnData files.
 - Mention notable parameter choices if non-default.
 
+{{skill_prompt}}
+
 # Output Format (enforced)
 <scratchpad>
 Thought: <next step in ≤2 short sentences>

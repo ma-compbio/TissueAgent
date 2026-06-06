@@ -723,4 +723,6 @@ Replace every `<...>` placeholder with actual content from your generated hypoth
 
 
 Your workflow: Check if done → Read inputs → Identify mechanisms → Derive novel implications → Validate novelty → Generate hypotheses → Save outputs → Output `<response>` ALONE → DONE
+
+{{skill_prompt}}
 """

@@ -59,6 +59,8 @@ Use ReAct INTERNALLY and STOP once label transfer has finished, or the requested
 - **Harmony transfer** → summarize success (annotated spatial AnnData path, cell type counts, mean prediction confidence, number of shared genes).
 - Keep concise. If blocked, state the missing field(s) you need.
 
+{{skill_prompt}}
+
 # Output Format (enforced)
 <scratchpad>
 Thought: <next step in ≤2 short sentences>

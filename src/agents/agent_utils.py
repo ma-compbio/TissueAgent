@@ -6,6 +6,7 @@ operate within the DATA_DIR workspace.
 """
 
 import base64
+import logging
 import mimetypes
 import re
 from langchain.tools import StructuredTool
@@ -13,6 +14,47 @@ from pathlib import Path
 from typing import Dict, List, Literal, Optional
 
 from config import DATA_DIR, MAX_OUTPUT_CHARS
+
+
+def format_skill_prompt(skill_names: List[str]) -> str:
+    """Build the skill injection block for a sub-agent system prompt.
+
+    Loads skill content from the skill registry, strips YAML frontmatter,
+    and wraps each skill in a formatted section with universal boilerplate.
+
+    Returns empty string if no valid skills are found.
+    """
+    if not skill_names:
+        return ""
+    from agents.recruiter_agent.prompt import get_skill_metadata
+
+    skills = get_skill_metadata()
+    sections = []
+    for name in skill_names:
+        meta = skills.get(name)
+        if meta is None:
+            logging.warning(f"Skill '{name}' not found in registry, skipping.")
+            continue
+        text = meta.path.read_text()
+        # Strip YAML frontmatter
+        if text.startswith("---"):
+            try:
+                end = text.index("---", 3)
+                body = text[end + 3 :].strip()
+            except ValueError:
+                body = text
+        else:
+            body = text
+        sections.append(f"### Skill: {name}\n\n{body}")
+    if not sections:
+        return ""
+    header = (
+        "## Skills\n\n"
+        "The following skill templates have been assigned to guide your approach "
+        "for this task. You may adopt parts of a skill's approach without following "
+        "it exactly, adapting it to fit the specific requirements of the current task."
+    )
+    return header + "\n\n" + "\n\n---\n\n".join(sections)
 
 
 def format_agent_id_descriptions(agent_id_descriptions: Dict[str, str]) -> str:

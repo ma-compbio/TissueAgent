@@ -2,7 +2,7 @@
 
 import logging
 from queue import Queue
-from typing import Optional
+from typing import Callable, List, Optional
 
 from langchain.tools import StructuredTool
 from langgraph.types import Command
@@ -34,9 +34,13 @@ class HypothesisState(MessagesState):
     """
 
     status_block: str  # content of <execute> or <response> block
+    skill_prompt: str  # injected skill content for system prompt
 
 
-def create_hypothesis_agent(state_queue: Queue):
+def create_hypothesis_agent(
+    state_queue: Queue,
+    context_resolver=None,
+):
     """Build and return the hypothesis agent as a StructuredTool.
 
     Args:
@@ -64,7 +68,9 @@ def create_hypothesis_agent(state_queue: Queue):
     def agent_node(state: HypothesisState):
         """Invoke the LLM and route to exec or END based on block type."""
         messages = state["messages"]
-        system_prompt = SystemMessage(HypothesisAgentPrompt)
+        skill_text = state.get("skill_prompt", "")
+        full_prompt = HypothesisAgentPrompt.replace("{{skill_prompt}}", skill_text)
+        system_prompt = SystemMessage(full_prompt)
 
         # Strategy 2H: collapse older REPL iterations before re-sending.
         compressed = compress_repl_history(messages)
@@ -172,13 +178,41 @@ def create_hypothesis_agent(state_queue: Queue):
     def agent_invocation_tool(prompt: str) -> str:
         """Run the hypothesis agent graph on a prompt and return the final message."""
         logging.info(f"Invoking agent `{id}`")
+
+        skill_prompt_text = ""
+        step_ctx = None
+        if context_resolver:
+            from graph.graph_utils import StepContext
+            step_ctx = context_resolver("hypothesis_agent")
+            if step_ctx and step_ctx.skills:
+                from agents.agent_utils import format_skill_prompt
+
+                skill_prompt_text = format_skill_prompt(step_ctx.skills)
+
         # REPL persistence across invocations is handled by ``repl_holder``
         # in the closure above — no state-threading needed.
         with subagent_invocation("Hypothesis Agent") as invocation_id:
-            final_state = agent.invoke({"messages": [HumanMessage(prompt)]})
+            final_state = agent.invoke(
+                {"messages": [HumanMessage(prompt)], "skill_prompt": skill_prompt_text}
+            )
 
         state_queue.put((id, final_state, invocation_id))
-        return final_state["messages"][-1].content
+        result = final_state["messages"][-1].content
+
+        if step_ctx and step_ctx.expected_artifacts:
+            from graph.graph_utils import (
+                _validate_step_artifacts,
+                _update_step_status,
+                _format_validation_summary,
+            )
+
+            found, missing = _validate_step_artifacts(step_ctx.expected_artifacts)
+            _update_step_status(step_ctx.step_id, found, missing)
+            summary = _format_validation_summary(step_ctx.step_id, found, missing)
+            logging.info(summary)
+            result += summary
+
+        return result
 
     return StructuredTool.from_function(
         func=agent_invocation_tool,

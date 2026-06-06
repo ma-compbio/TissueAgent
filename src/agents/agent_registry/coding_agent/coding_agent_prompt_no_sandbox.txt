@@ -57,6 +57,8 @@ Error Handling
   - Success: All planned steps completed and required artifacts produced and validated.
   - Failure: Emit a final summary beginning with "Constraint violation:" and list the specific issues.
 
+{{skill_prompt}}
+
 Output Schema (final plain-text; no code)
 - Summary of findings: include the key task-specific selections/results.
 - Decisions & assumptions: bullet list of important choices, defaults, inferred columns, thresholds, and brief rationale.

@@ -281,4 +281,6 @@ Use `write_file_tool` to save to `reports/post_execution_criticism.json`:
 - Read hypotheses from: `{{DATA_DIR}}/hypotheses/hypotheses.json`
 - Read results from: `{{DATA_DIR}}/experiment_results/`, `{{DATA_DIR}}/reports/`
 - Save criticism to: `{{DATA_DIR}}/reports/criticism.json`
+
+{{skill_prompt}}
 """

@@ -29,9 +29,11 @@ from agents.agent_defns import (
     ReporterAgent,
 )
 from graph.graph_utils import (
+    AgentState,
     create_agent_node,
     create_tool_node,
     create_agent_invocation_tool,
+    create_step_context_resolver,
 )
 from graph.plan_output import planner_state_update, create_recruiter_state_update
 
@@ -77,19 +79,34 @@ def create_tissueagent_graph(
 
     ## Build Subagents
 
+    context_resolver = create_step_context_resolver()
     agent_invocation_tools = []
     for agent in AgentDefns:
         if isinstance(agent, ReActAgent):
-            agent_subgraph = StateGraph(MessagesState)
+            agent_subgraph = StateGraph(AgentState)
             agent_model = model_proc_fn(agent.model_ctor().bind_tools(agent.tools))
 
             agent_node_id = assign_agent_node_id(agent.id)
             tool_node_id = assign_tool_node_id(agent.id)
             tool_node = create_tool_node(agent.tools)
 
-            assert isinstance(agent.prompt, str)
+            # Wrap static prompt strings in a callable that injects skill_prompt.
+            base_prompt = agent.prompt
+            if isinstance(base_prompt, str):
+
+                def _make_prompt_fn(p):
+                    def prompt_fn(state):
+                        skill_text = state.get("skill_prompt", "")
+                        return p.replace("{{skill_prompt}}", skill_text)
+
+                    return prompt_fn
+
+                prompt_fn = _make_prompt_fn(base_prompt)
+            else:
+                prompt_fn = base_prompt
+
             agent_node = create_agent_node(
-                agent_node_id, agent_model, agent.prompt, tool_node_id, END
+                agent_node_id, agent_model, prompt_fn, tool_node_id, END
             )
 
             agent_subgraph.add_node(agent_node_id, agent_node)
@@ -109,6 +126,7 @@ def create_tissueagent_graph(
                 state_queue,
                 supports_pdf=supports_pdf,
                 forward_user_images=forward_user_images,
+                context_resolver=context_resolver,
             )
             agent_invocation_tools.append(agent_invocation_tool)
 
@@ -119,7 +137,7 @@ def create_tissueagent_graph(
                         f"ID:          {agent.id}",
                         f"Name:        {agent.name}",
                         f"Description: {agent.description}",
-                        f"Prompt:      {agent.prompt}",
+                        f"Prompt:      {agent.prompt[:200] if isinstance(agent.prompt, str) else '<callable>'}",
                         f"Tools:       {[tool.name for tool in agent.tools]}",
                     ]
                 )
@@ -127,9 +145,9 @@ def create_tissueagent_graph(
 
         elif isinstance(agent, CustomAgent):
             if agent.id == "coding" and kernel_client is not None:
-                agent_invocation_tool = agent.ctor(state_queue, kernel_client)
+                agent_invocation_tool = agent.ctor(state_queue, kernel_client, context_resolver)
             else:
-                agent_invocation_tool = agent.ctor(state_queue)
+                agent_invocation_tool = agent.ctor(state_queue, context_resolver)
             agent_invocation_tools.append(agent_invocation_tool)
 
             logging.info(

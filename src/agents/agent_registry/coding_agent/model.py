@@ -3,9 +3,11 @@
 import logging
 from queue import Queue
 
+from typing import Callable, List, Optional
+
 from langchain.tools import StructuredTool
 from langchain_core.messages import HumanMessage
-from langgraph.graph import END, MessagesState, START, StateGraph
+from langgraph.graph import END, START, StateGraph
 
 from agents.agent_registry.coding_agent.sandbox import ExecutionResult, KernelClient
 from agents.agent_registry.coding_agent.tools_impl.documentation_index import (
@@ -19,6 +21,7 @@ import agent_settings
 from agents.agent_registry.coding_agent.prompt import CodingAgentPrompt
 from config import DATA_DIR, ROOT
 from graph.graph_utils import (
+    AgentState,
     create_agent_node,
     create_tool_node,
     get_latest_user_image_parts,
@@ -27,7 +30,11 @@ from graph.graph_utils import (
 )
 
 
-def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
+def create_coding_agent(
+    state_queue: Queue,
+    kernel_client: KernelClient,
+    context_resolver=None,
+):
     """Build and return the coding agent as a StructuredTool.
 
     Args:
@@ -37,7 +44,7 @@ def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
     Returns:
         A StructuredTool that invokes the coding agent graph with a text prompt.
     """
-    graph = StateGraph(MessagesState)
+    graph = StateGraph(AgentState)
     id = "coding_agent"
 
     ### Documentation tool
@@ -135,10 +142,12 @@ def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
     agent_node_id = "coding_agent_node"
     tool_node_id = "tool_node"
 
-    def _prompt(state: MessagesState) -> str:
-        return CodingAgentPrompt(
+    def _prompt(state) -> str:
+        base = CodingAgentPrompt(
             sandbox_enabled=agent_settings.get_sandbox_enabled(),
         )
+        skill_text = state.get("skill_prompt", "")
+        return base.replace("{{skill_prompt}}", skill_text)
 
     agent_node = create_agent_node(
         agent_node_id, model, _prompt,
@@ -165,11 +174,39 @@ def create_coding_agent(state_queue: Queue, kernel_client: KernelClient):
             message = HumanMessage(content=content)
         else:
             message = HumanMessage(prompt)
+
+        skill_prompt_text = ""
+        step_ctx = None
+        if context_resolver:
+            from graph.graph_utils import StepContext
+            step_ctx = context_resolver("coding_agent")
+            if step_ctx and step_ctx.skills:
+                from agents.agent_utils import format_skill_prompt
+
+                skill_prompt_text = format_skill_prompt(step_ctx.skills)
+
         with subagent_invocation("Coding Agent") as invocation_id:
-            final_state = agent.invoke({"messages": [message]})
+            final_state = agent.invoke(
+                {"messages": [message], "skill_prompt": skill_prompt_text}
+            )
         kernel_client.shutdown_kernels()
         state_queue.put((id, final_state, invocation_id))
-        return final_state["messages"][-1].content
+        result = final_state["messages"][-1].content
+
+        if step_ctx and step_ctx.expected_artifacts:
+            from graph.graph_utils import (
+                _validate_step_artifacts,
+                _update_step_status,
+                _format_validation_summary,
+            )
+
+            found, missing = _validate_step_artifacts(step_ctx.expected_artifacts)
+            _update_step_status(step_ctx.step_id, found, missing)
+            summary = _format_validation_summary(step_ctx.step_id, found, missing)
+            logging.info(summary)
+            result += summary
+
+        return result
 
     tool = StructuredTool.from_function(
         func=agent_invocation_tool,

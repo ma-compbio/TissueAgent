@@ -52,4 +52,6 @@ Artifacts:
 
 If the cascade could not complete, begin with "Constraint violation:" plus
 remediation instructions instead.
+
+{{skill_prompt}}
 """.strip()
