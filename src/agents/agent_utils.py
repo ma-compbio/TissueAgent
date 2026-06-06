@@ -176,7 +176,7 @@ def _resolve_artifact_path(relative_path: str) -> Path:
     try:
         target.relative_to(DATA_DIR)
     except ValueError as exc:
-        raise ValueError(f"Artifact path '{target}' must be inside DATA_DIR '{DATA_DIR}'.") from exc
+        raise ValueError(f"Artifact path '{target}' must be inside '{DATA_DIR}'.") from exc
 
     target.parent.mkdir(parents=True, exist_ok=True)
     return target
