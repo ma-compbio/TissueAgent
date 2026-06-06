@@ -157,6 +157,7 @@ async def _handle_user_message(ws: WebSocket, data: dict):
     session.agent_state["messages"].append(user_message)
     session.agent_state.setdefault("replan_count", 0)
     session.agent_state.setdefault("replan_history", [])
+    session.agent_state.setdefault("recruiter_retry_count", 0)
 
     # New user turn → fresh checkpointer thread, clear any stale plan + pause.
     from server.plan_store import plan_store as _plan_store

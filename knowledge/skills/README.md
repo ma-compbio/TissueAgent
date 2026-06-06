@@ -38,6 +38,7 @@ name: clean-anndata
 description: Steps to validate and clean an AnnData object before downstream analysis. Use when receiving a fresh .h5ad and the task depends on its integrity.
 applies_to: [cell_annotater, spot, single_cell, coding]
 tags: [anndata, h5ad, quality_control, preprocessing]
+status: enable
 ---
 ```
 
@@ -45,6 +46,7 @@ tags: [anndata, h5ad, quality_control, preprocessing]
 - **`description`** *(required)* — one sentence that explains **when to use the skill**. This is the retrieval surface — write it like an Anthropic skill description, not like a title.
 - **`applies_to`** *(required)* — list of agent IDs from `agent_registry/` that may load this skill. Use the agent's `id` field as it appears in [`../agent_defns.py`](../agent_defns.py) (e.g. `coding`, `cell_annotater`, `spot`, `single_cell`, `gene_agent`, `hypothesis`, `searcher`, `critic`, `pdf_reader`).
 - **`tags`** *(optional)* — lowercase keywords to assist future retrieval.
+- **`status`** *(optional, default `"enable"`)* — `"enable"` or `"disable"`. Disabled skills are excluded from the recruiter prompt index, the `read_skill` tool, and assignment validation.
 
 ### Body
 

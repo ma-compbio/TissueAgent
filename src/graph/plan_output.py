@@ -18,8 +18,9 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
+from agents.recruiter_agent.prompt import get_skill_metadata
 from graph.graph_utils import log_message
 from server.plan_store import (
     PlanDocument,
@@ -213,6 +214,7 @@ def _apply_assignments_from_json(data: dict) -> Optional[PlanDocument]:
             continue
         step.assigned_agent = (a.get("assigned_agent") or "").strip()
         step.assignment_rationale = (a.get("assignment_rationale") or "").strip()
+        step.skills = list(a.get("skills") or [])
 
     if missing:
         logging.warning("recruiter: missing assignments for step ids %s", missing)
@@ -221,26 +223,91 @@ def _apply_assignments_from_json(data: dict) -> Optional[PlanDocument]:
     return doc
 
 
-def recruiter_state_update(response: AIMessage, state) -> Dict[str, Any]:
-    """``state_update_fn`` for the recruiter agent node.
+def _validate_assignments(
+    doc: PlanDocument, valid_agent_ids: set,
+) -> List[str]:
+    """Validate recruiter assignments. Returns list of error strings (empty = valid)."""
+    skill_meta = get_skill_metadata()
+    valid_skill_names = set(skill_meta.keys())
+    errors: List[str] = []
+    for step in doc.steps:
+        if step.assigned_agent and step.assigned_agent not in valid_agent_ids:
+            errors.append(
+                f"Step {step.id}: assigned_agent '{step.assigned_agent}' is not a valid "
+                f"agent ID. Valid IDs: {sorted(valid_agent_ids)}"
+            )
+        for skill_name in step.skills:
+            if skill_name not in valid_skill_names:
+                errors.append(
+                    f"Step {step.id}: skill '{skill_name}' not found. "
+                    f"Valid skills: {sorted(valid_skill_names)}"
+                )
+            elif step.assigned_agent and step.assigned_agent not in skill_meta[skill_name].applies_to:
+                errors.append(
+                    f"Step {step.id}: skill '{skill_name}' does not apply to agent "
+                    f"'{step.assigned_agent}'. applies_to: {skill_meta[skill_name].applies_to}"
+                )
+    return errors
 
-    If the response contains a fenced JSON assignments block, annotates
-    the on-disk plan and emits a ``plan_updated`` event.
+
+def create_recruiter_state_update(
+    valid_agent_ids: set, max_retries: int = 2,
+):
+    """Factory that returns a ``state_update_fn`` for the recruiter node.
+
+    The returned callback parses the recruiter's JSON output, validates
+    agent IDs and skill assignments, and either persists the plan or
+    signals a retry by returning validation errors in the state.
     """
-    text = (response.content or "") if isinstance(response.content, str) else ""
-    data = _extract_json(text)
-    if data is None:
-        return {}
 
-    doc = _apply_assignments_from_json(data)
-    if doc is None:
-        logging.warning("recruiter_state_update: JSON found but could not apply assignments")
-        return {}
+    def recruiter_state_update(response: AIMessage, state) -> Dict[str, Any]:
+        text = (response.content or "") if isinstance(response.content, str) else ""
+        data = _extract_json(text)
+        if data is None:
+            return {}
 
-    plan_store.write(doc)
-    _emit_plan_updated(doc)
-    logging.info(
-        "recruiter_state_update: annotated %d step(s), status=recruited",
-        len(doc.steps),
-    )
-    return {}
+        doc = _apply_assignments_from_json(data)
+        if doc is None:
+            logging.warning(
+                "recruiter_state_update: JSON found but could not apply assignments"
+            )
+            return {}
+
+        errors = _validate_assignments(doc, valid_agent_ids)
+        prior = int(state.get("recruiter_retry_count", 0) or 0)
+
+        if errors:
+            error_msg = "Validation errors in your assignments:\n" + "\n".join(
+                f"- {e}" for e in errors
+            )
+            logging.warning("recruiter_state_update: %s", error_msg)
+
+            if prior >= max_retries:
+                # Exhausted retries — persist what we have and proceed.
+                logging.warning(
+                    "recruiter_state_update: retry limit reached (%d), "
+                    "proceeding with potentially invalid assignments",
+                    max_retries,
+                )
+                plan_store.write(doc)
+                _emit_plan_updated(doc)
+                return {"recruiter_validation_errors": None}
+
+            # Signal retry: include the original response + feedback message.
+            feedback = HumanMessage(content=error_msg)
+            return {
+                "messages": [response, feedback],
+                "recruiter_validation_errors": error_msg,
+                "recruiter_retry_count": prior + 1,
+            }
+
+        # Valid — persist and clear any prior errors.
+        plan_store.write(doc)
+        _emit_plan_updated(doc)
+        logging.info(
+            "recruiter_state_update: annotated %d step(s), status=recruited",
+            len(doc.steps),
+        )
+        return {"recruiter_validation_errors": None}
+
+    return recruiter_state_update

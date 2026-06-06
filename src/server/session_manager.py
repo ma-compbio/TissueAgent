@@ -62,6 +62,7 @@ class SessionState:
             "messages": [],
             "replan_count": 0,
             "replan_history": [],
+            "recruiter_retry_count": 0,
         }
 
         # Sub-agent tracking: {tool_id: (agent_name, state, invocation_id)}
@@ -91,6 +92,7 @@ class SessionState:
                 "messages": [],
                 "replan_count": 0,
                 "replan_history": [],
+                "recruiter_retry_count": 0,
             }
             self.subagent_states = {}
             self.pending_subagent_states = deque()

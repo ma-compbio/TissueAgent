@@ -130,6 +130,7 @@ async def save_current_session():
             uploaded_pdfs=session.uploaded_pdfs,
             replan_count=session.agent_state.get("replan_count", 0),
             replan_history=session.agent_state.get("replan_history", []),
+            recruiter_retry_count=session.agent_state.get("recruiter_retry_count", 0),
             mode=session.mode,
             plan_markdown=plan_markdown,
             prompts_snapshot=prompts_snapshot,
@@ -187,6 +188,7 @@ async def load_selected_session(filename: str):
     session.agent_state["messages"] = data["messages"]
     session.agent_state["replan_count"] = data["replan_count"]
     session.agent_state["replan_history"] = data["replan_history"]
+    session.agent_state["recruiter_retry_count"] = data.get("recruiter_retry_count", 0)
     session.subagent_states = data["subagent_states"]
     session.pending_subagent_states.clear()
     session.uploaded_pdfs = data["uploaded_pdfs"]

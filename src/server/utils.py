@@ -413,6 +413,7 @@ def save_session(
     uploaded_pdfs: List[Dict],
     replan_count: int,
     replan_history: List,
+    recruiter_retry_count: int = 0,
     mode: str = "autopilot",
     plan_markdown: str = "",
     prompts_snapshot: Optional[Dict[str, str]] = None,
@@ -425,6 +426,7 @@ def save_session(
         uploaded_pdfs: List of uploaded PDF metadata dicts.
         replan_count: Current replan count.
         replan_history: List of replan timestamps.
+        recruiter_retry_count: Current recruiter validation retry count.
         mode: Execution mode at save time ("autopilot" or "copilot").
         plan_markdown: The current evolving plan as on-disk markdown.
             Saved verbatim so it can be restored on load and rendered in
@@ -447,6 +449,7 @@ def save_session(
         "uploaded_pdfs": uploaded_pdfs,
         "replan_count": replan_count,
         "replan_history": replan_history,
+        "recruiter_retry_count": recruiter_retry_count,
         "mode": mode,
         "plan_markdown": plan_markdown,
         "prompts_snapshot": prompts_snapshot or {},
@@ -486,6 +489,7 @@ def load_session(path: Path) -> Dict[str, Any]:
         "uploaded_pdfs": payload.get("uploaded_pdfs", []),
         "replan_count": payload.get("replan_count", 0),
         "replan_history": payload.get("replan_history", []),
+        "recruiter_retry_count": payload.get("recruiter_retry_count", 0),
         "mode": mode,
         "plan_markdown": payload.get("plan_markdown", "") or "",
         "title": payload.get("title", "") or "",

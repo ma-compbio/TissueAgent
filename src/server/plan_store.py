@@ -81,6 +81,7 @@ class PlanStep:
     expected_artifacts: List[str] = field(default_factory=list)
     assigned_agent: Optional[str] = None
     assignment_rationale: Optional[str] = None
+    skills: List[str] = field(default_factory=list)
     status: StepStatus = "pending"
     actual_outputs: List[str] = field(default_factory=list)
     # Args the manager passed to the specialist tool when this step ran.
@@ -135,6 +136,7 @@ class PlanDocument:
                 "status": step.status,
                 "assigned_agent": step.assigned_agent,
                 "assigned_rationale": step.assignment_rationale,
+                "skills": list(step.skills),
                 "expected_artifacts": list(step.expected_artifacts),
                 "actual_outputs": list(step.actual_outputs),
             }
@@ -225,6 +227,7 @@ def _parse_markdown(text: str) -> PlanDocument:
             step.status = data.get("status", "pending")  # type: ignore[assignment]
             step.assigned_agent = data.get("assigned_agent")
             step.assignment_rationale = data.get("assigned_rationale")
+            step.skills = list(data.get("skills") or [])
             step.expected_artifacts = list(data.get("expected_artifacts") or [])
             step.actual_outputs = list(data.get("actual_outputs") or [])
 

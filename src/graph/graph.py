@@ -33,9 +33,10 @@ from graph.graph_utils import (
     create_tool_node,
     create_agent_invocation_tool,
 )
-from graph.plan_output import planner_state_update, recruiter_state_update
+from graph.plan_output import planner_state_update, create_recruiter_state_update
 
 MAX_REPLANS = 2
+MAX_RECRUITER_RETRIES = 2
 
 
 def create_tissueagent_graph(
@@ -250,13 +251,28 @@ def create_tissueagent_graph(
 
     recruiter_tool_node = create_tool_node(RecruiterAgent.tools)
 
+    valid_agent_ids = {a.id for a in AgentDefns}
+    recruiter_state_update_fn = create_recruiter_state_update(
+        valid_agent_ids, max_retries=MAX_RECRUITER_RETRIES,
+    )
+
+    def recruiter_router(response, state) -> str:
+        """Route recruiter output: retry on validation errors, else proceed."""
+        errors = state.get("recruiter_validation_errors")
+        if errors:
+            prior = int(state.get("recruiter_retry_count", 0) or 0)
+            if prior >= MAX_RECRUITER_RETRIES:
+                return manager_node_id
+            return recruiter_node_id
+        return manager_node_id
+
     recruiter_node = create_agent_node(
         recruiter_node_id,
         recruiter_model,
         recruiter_prompt,
         recruiter_tool_node_id,
-        manager_node_id,
-        state_update_fn=recruiter_state_update,
+        exit_node_id_fn=recruiter_router,
+        state_update_fn=recruiter_state_update_fn,
     )
 
     ### Manager Node
