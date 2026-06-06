@@ -13,5 +13,5 @@ Takes the global plan and match each step to the most suitable expert agent from
 """.strip()
 
 RecruiterPrompt = lambda agent_id_descriptions: _TEMPLATE.replace(
-    "{agent_registry}", format_agent_id_descriptions(agent_id_descriptions)
+    "{{agent_registry}}", format_agent_id_descriptions(agent_id_descriptions)
 )
