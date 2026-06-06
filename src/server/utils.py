@@ -657,25 +657,11 @@ def _render_plan_html(plan_markdown: str, plan_doc=None) -> str:
         + "</div>"
     )
     if doc.provenance is not None:
-        if doc.provenance.source == "template":
-            prov_text = (
-                f"From template: <code>{escape(doc.provenance.template_id or '?')}</code>"
-                + (
-                    f" v{escape(doc.provenance.version)}"
-                    if doc.provenance.version
-                    else ""
-                )
-                + (
-                    f" ({escape(doc.provenance.decision)})"
-                    if doc.provenance.decision
-                    else ""
-                )
-                + (
-                    f", score {doc.provenance.score:.2f}"
-                    if doc.provenance.score is not None
-                    else ""
-                )
-            )
+        if doc.provenance.template_names:
+            names = ", ".join(f"<code>{escape(n)}</code>" for n in doc.provenance.template_names)
+            prov_text = f"From template{'s' if len(doc.provenance.template_names) > 1 else ''}: {names}"
+            if doc.provenance.decision:
+                prov_text += f" ({escape(doc.provenance.decision)})"
         else:
             prov_text = "De novo plan (no template used)"
         rows.append(f'<div class="plan-provenance-line">{prov_text}</div>')
@@ -787,17 +773,13 @@ def build_session_markdown(
         try:
             _doc = _pp(plan_markdown)
             if _doc.provenance is not None:
-                if _doc.provenance.source == "template":
-                    parts = [
-                        f"`{_doc.provenance.template_id or '?'}`"
-                    ]
-                    if _doc.provenance.version:
-                        parts.append(f"v{_doc.provenance.version}")
+                if _doc.provenance.template_names:
+                    names = ", ".join(f"`{n}`" for n in _doc.provenance.template_names)
+                    parts = [names]
                     if _doc.provenance.decision:
                         parts.append(f"({_doc.provenance.decision})")
-                    if _doc.provenance.score is not None:
-                        parts.append(f"score {_doc.provenance.score:.2f}")
-                    lines.append(f"_From template: {' '.join(parts)}_")
+                    label = "template" if len(_doc.provenance.template_names) == 1 else "templates"
+                    lines.append(f"_From {label}: {' '.join(parts)}_")
                 else:
                     lines.append("_De novo plan (no template used)_")
                 lines.append("")

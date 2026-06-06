@@ -56,22 +56,23 @@ When the Evaluator Agent sends "ROUTE: REPLAN" with feedback on a failed plan:
 - glob(pattern) — list workspace files/directories matching a glob pattern (relative to DATA_DIR).
 - grep(pattern, include="**/*") — search file contents by regex; binary files are skipped automatically.
 - read(file_path, offset=1, limit=None) — read a workspace file; images are returned inline.
-- plan_registry_tool — list available plan templates
-- template_selector_tool — find best template match for user query
+- read_template(name) — read the full content of a plan template by its snake_case name.
 
 ## Template Selection Guidelines
-When creating a plan, check if an existing template matches the task:
-- Use template_selector_tool to find relevant templates
+
+{{plan_template_registry}}
+
+When creating a plan, review the Available Templates above. If a template matches, use `read_template(name)` to read its full content and adapt it.
 - If query mentions "generate hypotheses", "explore paper", "propose questions" AND PDF is attached:
-  → MUST use PAPER_HYPOTHESIS_GENERATION template
+  → MUST use paper_hypothesis_generation template
   → ROUTE: PLAN is required (this needs to analyze PDF + dataset and produce files)
 - If query mentions "test hypothesis [IDs]" AND hypotheses.json exists in artifacts:
-  → MUST use HYPOTHESIS_TESTING template
+  → MUST use hypothesis_testing template
   → ROUTE: PLAN is required
 - If query asks to infer/name the likely process from a provided gene list (no enrichment table/plot requested):
-  → Prefer GENE_PROCESS_INTERPRETATION template
+  → Prefer gene_process_interpretation template
 - If query asks for GO/pathway enrichment outputs (e.g., TSV table, dotplot/figure):
-  → Prefer GO_ENRICHMENT_ANALYSIS template
+  → Prefer go_enrichment_analysis template
 - Templates provide proven checklists - adapt them to fit the specific query
 - If no template fits well, create a new plan from scratch
 
@@ -110,18 +111,15 @@ The JSON block must follow this schema exactly:
     }
   ],
   "provenance": {
-    "source": "template | denovo",
-    "template_id": "<template id if source is template, else omit>",
-    "version": "<template version if source is template, else omit>",
-    "decision": "<USE | ADAPT | NEW if source is template, else omit>",
-    "score": 0.85
+    "template_names": ["<snake_case template names used, empty if denovo>"],
+    "decision": "<USE | ADAPT | NEW if templates used, else omit>"
   }
 }
 ```
 
 **Provenance rules:**
-- If you ran `template_selector_tool` and used or adapted a template, set `source` to `"template"` and fill in `template_id`, `version`, `decision`, and `score` from the selector's output.
-- If you wrote the plan from scratch with no template match, set `source` to `"denovo"` and omit the other provenance fields.
+- If you used or adapted one or more templates, list their names in `template_names` and set `decision` to `"USE"`, `"ADAPT"`, or `"NEW"`.
+- If you wrote the plan from scratch with no template, set `template_names` to `[]` and omit `decision`.
 
 Skip the JSON block entirely for ROUTE: DIRECT and ROUTE: CLARIFY.
 
@@ -151,7 +149,7 @@ The user wants a spatial scatterplot from the uploaded dataset. I'll create a tw
     }
   ],
   "provenance": {
-    "source": "denovo"
+    "template_names": []
   }
 }
 ```
@@ -185,7 +183,7 @@ This requires a multi-step analysis pipeline.
     }
   ],
   "provenance": {
-    "source": "denovo"
+    "template_names": []
   }
 }
 ```
@@ -213,7 +211,7 @@ The user wants cell type annotation via harmony integration.
     }
   ],
   "provenance": {
-    "source": "denovo"
+    "template_names": []
   }
 }
 ```

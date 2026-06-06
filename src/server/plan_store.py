@@ -57,24 +57,17 @@ StepStatus = Literal[
 EditedBy = Literal["planner", "recruiter", "manager", "user"]
 
 
-ProvenanceSource = Literal["template", "denovo"]
-
-
 @dataclass
 class PlanProvenance:
     """Records how the plan was produced.
 
-    - ``source == "template"``: the planner adapted a registry template.
-      ``template_id`` and ``decision`` come from ``template_selector_tool``.
-    - ``source == "denovo"``: the planner wrote the plan from scratch.
-      Other fields are ignored.
+    - ``template_names`` lists the templates the plan was adapted from.
+      An empty list means the plan was written from scratch (denovo).
+    - ``decision`` is "USE", "ADAPT", or "NEW" when templates are involved.
     """
 
-    source: ProvenanceSource = "denovo"
-    template_id: Optional[str] = None
-    version: Optional[str] = None
-    decision: Optional[str] = None  # "USE" | "ADAPT" | "NEW" — verbatim from selector
-    score: Optional[float] = None
+    template_names: List[str] = field(default_factory=list)
+    decision: Optional[str] = None  # "USE" | "ADAPT" | "NEW"
 
 
 @dataclass
@@ -122,16 +115,13 @@ class PlanDocument:
         if self.last_edited_at is not None:
             header["last_edited_at"] = self.last_edited_at
         if self.provenance is not None:
-            prov: Dict[str, Any] = {"source": self.provenance.source}
-            if self.provenance.template_id is not None:
-                prov["template_id"] = self.provenance.template_id
-            if self.provenance.version is not None:
-                prov["version"] = self.provenance.version
+            prov: Dict[str, Any] = {}
+            if self.provenance.template_names:
+                prov["template_names"] = list(self.provenance.template_names)
             if self.provenance.decision is not None:
                 prov["decision"] = self.provenance.decision
-            if self.provenance.score is not None:
-                prov["score"] = self.provenance.score
-            header["provenance"] = prov
+            if prov:
+                header["provenance"] = prov
         out.append("```yaml")
         out.append(yaml.safe_dump(
             header, sort_keys=False, allow_unicode=True
@@ -206,32 +196,13 @@ def _parse_markdown(text: str) -> PlanDocument:
                 doc.last_edited_at = str(edited_at)
             prov_raw = header.get("provenance")
             if isinstance(prov_raw, dict):
-                source = prov_raw.get("source")
-                if source in ("template", "denovo"):
-                    score_raw = prov_raw.get("score")
-                    try:
-                        score = float(score_raw) if score_raw is not None else None
-                    except (TypeError, ValueError):
-                        score = None
-                    doc.provenance = PlanProvenance(
-                        source=source,  # type: ignore[arg-type]
-                        template_id=(
-                            str(prov_raw.get("template_id"))
-                            if prov_raw.get("template_id") is not None
-                            else None
-                        ),
-                        version=(
-                            str(prov_raw.get("version"))
-                            if prov_raw.get("version") is not None
-                            else None
-                        ),
-                        decision=(
-                            str(prov_raw.get("decision"))
-                            if prov_raw.get("decision") is not None
-                            else None
-                        ),
-                        score=score,
-                    )
+                template_names = prov_raw.get("template_names", [])
+                if isinstance(template_names, str):
+                    template_names = [template_names]
+                doc.provenance = PlanProvenance(
+                    template_names=list(template_names) if template_names else [],
+                    decision=prov_raw.get("decision"),
+                )
         except yaml.YAMLError:
             pass
 

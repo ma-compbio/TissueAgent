@@ -4,22 +4,17 @@ from typing import List
 from langchain.tools import StructuredTool
 
 from agents.agent_utils import file_read_tools
-from agents.planner_agent.tools_impl.plan_registry_tool import plan_registry_tool
-from agents.planner_agent.tools_impl.template_selector_tool import (
-    template_selector_tool,
-)
+from agents.planner_agent.tools_impl.read_template_tool import read_template_tool
 
 
 PlannerToolNames: List[str] = [
     "glob",
     "grep",
     "read",
-    "plan_registry_tool",
-    "template_selector_tool",
+    "read_template",
 ]
 
 PlannerTools: List[StructuredTool] = [
     *file_read_tools,
-    plan_registry_tool,
-    template_selector_tool,
+    read_template_tool,
 ]

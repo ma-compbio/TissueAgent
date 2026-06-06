@@ -93,11 +93,8 @@ def _build_plan_from_json(data: dict) -> Optional[PlanDocument]:
             }
           ],
           "provenance": {                 // optional
-            "source": "template"|"denovo",
-            "template_id": "...",
-            "version": "...",
-            "decision": "USE"|"ADAPT"|"NEW",
-            "score": 0.85
+            "template_names": ["..."],
+            "decision": "USE"|"ADAPT"|"NEW"
           }
         }
     """
@@ -127,21 +124,15 @@ def _build_plan_from_json(data: dict) -> Optional[PlanDocument]:
     provenance: Optional[PlanProvenance] = None
     prov_raw = data.get("provenance")
     if isinstance(prov_raw, dict):
-        source = prov_raw.get("source", "denovo")
-        score_raw = prov_raw.get("score")
-        try:
-            score = float(score_raw) if score_raw is not None else None
-        except (TypeError, ValueError):
-            score = None
+        template_names = prov_raw.get("template_names", [])
+        if isinstance(template_names, str):
+            template_names = [template_names]
         provenance = PlanProvenance(
-            source=source if source in ("template", "denovo") else "denovo",
-            template_id=prov_raw.get("template_id"),
-            version=str(prov_raw["version"]) if prov_raw.get("version") is not None else None,
+            template_names=list(template_names) if template_names else [],
             decision=prov_raw.get("decision"),
-            score=score,
         )
     else:
-        provenance = PlanProvenance(source="denovo")
+        provenance = PlanProvenance()
 
     return PlanDocument(
         status="draft",

@@ -2,11 +2,36 @@
 
 from pathlib import Path
 
+import yaml
+
 _DIR = Path(__file__).parent
+_REGISTRY = _DIR / "plan_registry"
 
 
 def _read(filename: str) -> str:
     return (_DIR / filename).read_text()
+
+
+def _build_template_index() -> str:
+    """Build a compact template listing from YAML frontmatter in .md files."""
+    lines: list[str] = []
+    for p in sorted(_REGISTRY.glob("*.md")):
+        text = p.read_text()
+        if not text.startswith("---"):
+            continue
+        end = text.index("---", 3)
+        frontmatter = yaml.safe_load(text[3:end])
+        if frontmatter.get("status") != "enabled":
+            continue
+        name = frontmatter.get("name", p.stem)
+        desc = frontmatter.get("description", "").strip()
+        lines.append(f"- **{name}**: {desc}")
+    return "\n".join(lines)
+
+
+def _build_planner_prompt() -> str:
+    base = _read("prompt.txt")
+    return base.replace("{{plan_template_registry}}", _build_template_index())
 
 
 PlannerDescription = """
@@ -14,4 +39,4 @@ Turn a user query into a minimal, quality-gated multi-step plan by retrieving/ad
 Return ONLY a human-readable Planning Checklist. Do NOT assign agents or tools.
 """.strip()
 
-PlannerPrompt = _read("prompt.txt")
+PlannerPrompt = _build_planner_prompt()
