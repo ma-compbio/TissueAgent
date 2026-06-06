@@ -1,5 +1,6 @@
 """Tool definitions for the single cell agent."""
-from typing import List
+
+from __future__ import annotations
 
 from langchain.tools import StructuredTool
 
@@ -13,7 +14,7 @@ from agents.agent_registry.single_cell_agent.tools_impl.cell2location_visium_dec
     run_cell2location_visium_deconvolution,
 )
 
-SingleCellTools: List[StructuredTool] = [
+SingleCellTools: list[StructuredTool] = [
     StructuredTool.from_function(
         func=run_query_cellxgene_census_live,
         name="query_cellxgene_census_live_tool",

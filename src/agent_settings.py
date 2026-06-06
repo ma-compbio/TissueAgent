@@ -40,6 +40,7 @@ def set_sandbox_enabled(enabled: bool) -> dict:
 
 
 def get_sandbox_enabled() -> bool:
+    """Return whether the Docker sandbox is currently enabled."""
     with _lock:
         return _settings.sandbox_enabled
 

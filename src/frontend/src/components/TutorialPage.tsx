@@ -168,7 +168,7 @@ export default function TutorialPage() {
         <dl className="doc-agents">
           <dt><code>coding</code></dt>
           <dd>General-purpose Python execution</dd>
-          <dt><code>cell_annotater</code></dt>
+          <dt><code>cell_annotator</code></dt>
           <dd>Harmony-based label transfer</dd>
           <dt><code>spot</code></dt>
           <dd>cell2location for Visium deconvolution</dd>

@@ -4,14 +4,14 @@ Replace the placeholder name and import path. Tool names must be globally
 unique within TissueAgent.
 """
 
-from typing import List
+from __future__ import annotations
 
 from langchain.tools import StructuredTool
 
 # from agents.agent_registry.my_agent.runner import run_my_agent
 
 
-MyAgentTools: List[StructuredTool] = [
+MyAgentTools: list[StructuredTool] = [
     # StructuredTool.from_function(
     #     func=run_my_agent,
     #     name="my_agent_run_tool",

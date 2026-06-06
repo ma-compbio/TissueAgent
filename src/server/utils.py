@@ -10,15 +10,12 @@ import logging
 import mimetypes
 import re
 import shutil
-from collections import deque
 from copy import deepcopy
 from datetime import datetime
 from html import escape
 from pathlib import Path
-from queue import Queue
 from typing import (
     Any,
-    Deque,
     Dict,
     Iterable,
     List,
@@ -26,7 +23,6 @@ from typing import (
     MutableMapping,
     Optional,
     Sequence,
-    Set,
     Tuple,
 )
 
@@ -35,7 +31,6 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMe
 from langchain_core.messages.utils import messages_from_dict
 from langgraph.graph import MessagesState
 
-from agents.manager_agent.tools import ManagerToolNames
 from config import (
     DATA_DIR,
     DATASET_DIR,
@@ -431,6 +426,8 @@ def save_session(
         plan_markdown: The current evolving plan as on-disk markdown.
             Saved verbatim so it can be restored on load and rendered in
             HTML exports.
+        prompts_snapshot: Optional mapping of agent name to system prompt text,
+            captured at save time for inclusion in session exports.
 
     Returns:
         Path to the saved session file.
@@ -654,7 +651,7 @@ def _render_plan_html(plan_markdown: str, plan_doc=None) -> str:
         f'<span class="plan-status-pill plan-status-{escape(doc.status)}">'
         f"{escape(doc.status)}</span>"
         + (
-            f' <span class="plan-edited">edited by you</span>'
+            ' <span class="plan-edited">edited by you</span>'
             if doc.last_edited_by == "user"
             else ""
         )
@@ -756,6 +753,10 @@ def build_session_markdown(
         plan_markdown: The evolving plan as on-disk markdown. Inlined
             verbatim at the top of the document when non-empty.
         title: Optional session title shown in the heading.
+        prompts_snapshot: Optional mapping of agent name to system prompt text,
+            appended as a prompts section when non-empty.
+        plan_doc: Optional pre-parsed PlanDocument; used to render plan
+            provenance without re-parsing plan_markdown.
 
     Returns:
         A complete markdown string.
@@ -934,6 +935,10 @@ def build_session_html(
         subagent_states: Mapping of tool message IDs to (agent_name, final_state) tuples.
         plan_markdown: The evolving plan as on-disk markdown. Rendered
             as the first block in the export when non-empty.
+        prompts_snapshot: Optional mapping of agent name to system prompt text,
+            rendered as a collapsible prompts section at the end.
+        plan_doc: Optional pre-parsed PlanDocument; used to render plan
+            provenance without re-parsing plan_markdown.
 
     Returns:
         A complete HTML string.
@@ -948,7 +953,8 @@ def build_session_html(
             '<meta charset="utf-8" />',
             "<title>TissueAgent Session Export</title>",
             "<style>",
-            "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 2rem; max-width: 1100px; }",
+            "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
+            " margin: 2rem; max-width: 1100px; }",
             "h1 { font-size: 1.5rem; }",
             "h2 { margin-top: 2rem; }",
             ".message { margin-bottom: 1.5rem; padding: 1rem; border-radius: 0.75rem; border: 1px solid #e0e0e0; }",

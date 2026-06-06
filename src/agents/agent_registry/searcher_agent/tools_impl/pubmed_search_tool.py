@@ -1,8 +1,9 @@
 """PubMed search engine backed by the pymed library."""
 
+from __future__ import annotations
+
 from pymed import PubMed
 from pymed.article import PubMedArticle
-from typing import Optional
 
 
 class PubMedAPIEngine:
@@ -10,7 +11,7 @@ class PubMedAPIEngine:
 
     def __init__(
         self,
-        email: Optional[str] = None,
+        email: str | None = None,
         top_k_results: int = 20,
     ):
         """Initialize with PubMed API credentials.

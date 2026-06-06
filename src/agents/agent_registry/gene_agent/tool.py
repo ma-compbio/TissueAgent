@@ -1,13 +1,13 @@
 """StructuredTool exposed to the manager for gene_agent."""
 
-from typing import List
+from __future__ import annotations
 
 from langchain.tools import StructuredTool
 
 from agents.agent_registry.gene_agent.runner import run_geneagent_cascade
 
 
-GeneAgentTools: List[StructuredTool] = [
+GeneAgentTools: list[StructuredTool] = [
     StructuredTool.from_function(
         func=run_geneagent_cascade,
         name="geneagent_analyze_gene_set_tool",

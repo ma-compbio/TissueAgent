@@ -1,7 +1,9 @@
 """Name + keyword retrieval index over tutorial markdown files."""
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from agents.agent_registry.coding_agent.tools_impl.retrieval_index import RetrievalIndex
 
@@ -9,15 +11,15 @@ from agents.agent_registry.coding_agent.tools_impl.retrieval_index import Retrie
 class TutorialIndex(RetrievalIndex):
     """Retrieval over tutorial markdown files by title or keyword."""
 
-    def __init__(self, tutorial_directories: Dict[str, Path]):
+    def __init__(self, tutorial_directories: dict[str, Path]):
         """Load markdown tutorials and build the entry list.
 
         Args:
             tutorial_directories: Mapping of library names to directories
                 containing markdown tutorial files with YAML frontmatter.
         """
-        self._entries: List[Dict[str, Any]] = []
-        self._library_mapping: Dict[int, str] = {}
+        self._entries: list[dict[str, Any]] = []
+        self._library_mapping: dict[int, str] = {}
         idx = 0
         for library_name, tutorial_dir in tutorial_directories.items():
             for md_file in sorted(tutorial_dir.glob("*.md")):
@@ -36,10 +38,10 @@ class TutorialIndex(RetrievalIndex):
                 self._library_mapping[idx] = library_name
                 idx += 1
 
-    def _get_name(self, entry: Dict[str, Any]) -> str:
+    def _get_name(self, entry: dict[str, Any]) -> str:
         return entry["title"]
 
-    def _get_keywords(self, entry: Dict[str, Any]) -> List[str]:
+    def _get_keywords(self, entry: dict[str, Any]) -> list[str]:
         return entry.get("keywords", [])
 
     # ------------------------------------------------------------------
@@ -56,7 +58,7 @@ class TutorialIndex(RetrievalIndex):
         return "Untitled"
 
     @staticmethod
-    def _parse_frontmatter(content: str) -> Dict[str, Any]:
+    def _parse_frontmatter(content: str) -> dict[str, Any]:
         """Parse a minimal YAML frontmatter block (``---`` delimited)."""
         lines = content.split("\n")
         if not lines or lines[0].strip() != "---":
@@ -69,7 +71,7 @@ class TutorialIndex(RetrievalIndex):
         if end_idx is None:
             return {}
         fm_lines = lines[1:end_idx]
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
         i = 0
         while i < len(fm_lines):
             line = fm_lines[i]
@@ -91,7 +93,7 @@ class TutorialIndex(RetrievalIndex):
                             result["title"] = fm_lines[j].strip().strip('"')
                             i = j
                 elif key == "keywords":
-                    kws: List[str] = []
+                    kws: list[str] = []
                     j = i + 1
                     while j < len(fm_lines):
                         item = fm_lines[j].strip()
@@ -115,12 +117,12 @@ class TutorialIndex(RetrievalIndex):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _format_entry_verbose(entry: Dict[str, Any], library: str) -> str:
+    def _format_entry_verbose(entry: dict[str, Any], library: str) -> str:
         """Full tutorial content (name lookup)."""
         return f"[{library}] {entry['title']}\n\n{entry['content']}"
 
     @staticmethod
-    def _format_entry_compact(entry: Dict[str, Any], library: str) -> str:
+    def _format_entry_compact(entry: dict[str, Any], library: str) -> str:
         """Compact summary for keyword search results."""
         kws = ", ".join(entry.get("keywords", []))
         # First ~200 chars of content after frontmatter
@@ -133,7 +135,7 @@ class TutorialIndex(RetrievalIndex):
         snippet = content[:200].replace("\n", " ").strip()
         return f"[{library}] {entry['title']}\n  Keywords: {kws}\n  {snippet}..."
 
-    def format_results(self, results: List[Dict[str, Any]], *, verbose: bool) -> str:
+    def format_results(self, results: list[dict[str, Any]], *, verbose: bool) -> str:
         """Render a list of results as a readable string."""
         if not results:
             return "No results found."

@@ -1,9 +1,10 @@
 """Coding agent with isolated Python/R execution via Docker sandbox."""
 
+from __future__ import annotations
+
 import logging
 from queue import Queue
 
-from typing import Callable, List, Optional
 
 from langchain.tools import StructuredTool
 from langchain_core.messages import HumanMessage
@@ -40,6 +41,7 @@ def create_coding_agent(
     Args:
         state_queue: Queue to which finished agent states are posted for UI consumption.
         kernel_client: Client for executing code on the Docker sandbox kernels.
+        context_resolver: Optional callable that resolves skill/artifact context for a step.
 
     Returns:
         A StructuredTool that invokes the coding agent graph with a text prompt.
@@ -178,7 +180,6 @@ def create_coding_agent(
         skill_prompt_text = ""
         step_ctx = None
         if context_resolver:
-            from graph.graph_utils import StepContext
             step_ctx = context_resolver("coding_agent")
             if step_ctx and step_ctx.skills:
                 from agents.agent_utils import format_skill_prompt
@@ -211,7 +212,7 @@ def create_coding_agent(
     tool = StructuredTool.from_function(
         func=agent_invocation_tool,
         name="coding_agent_transfer_tool",
-        description="Transfer control to {id}",
+        description=f"Transfer control to {id}",
     )
     tool._agent = agent  # type: ignore[attr-defined]
     return tool
@@ -235,7 +236,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run the coding agent directly.")
     parser.add_argument("--preset", type=int, default=0, help="Preset number (0 = interactive prompt)")
-    parser.add_argument("--disable-docker", action="store_true", help="Skip Docker sandbox startup; connect to a local Jupyter Kernel Gateway instead")
+    parser.add_argument(
+        "--disable-docker",
+        action="store_true",
+        help="Skip Docker sandbox startup; connect to a local Jupyter Kernel Gateway instead",
+    )
     parser.add_argument("prompt", nargs="*", help="Prompt text (ignored when --preset is used)")
     args = parser.parse_args()
 

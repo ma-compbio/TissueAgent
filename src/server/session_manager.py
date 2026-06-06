@@ -28,6 +28,7 @@ class SessionState:
     """Thread-safe, single-user session state container."""
 
     def __init__(self) -> None:
+        """Initialise an empty session with default values."""
         self._lock = threading.Lock()
 
         # Agent graph (compiled at startup, recompiled when model selection changes)

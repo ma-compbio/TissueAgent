@@ -6,61 +6,63 @@ agents (Planner, Recruiter, Manager, Evaluator, Reporter) plus the
 specialized sub-agents listed in :data:`AgentDefns`.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Callable, List, Union
+from typing import Callable
 
 from langchain.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
 
+import agents.agent_registry.coding_agent.model as CodingAgent
+import agents.agent_registry.hypothesis_agent.model as HypothesisAgent
+from agents.agent_registry.cell_annotater_agent.prompt import (
+    CellTissueAnnotationDescription,
+    CellTissueAnnotationPrompt,
+)
+from agents.agent_registry.cell_annotater_agent.tools import CellAnnotaterTools
+from agents.agent_registry.critic_agent.prompt import (
+    CriticAgentDescription,
+    CriticAgentPrompt,
+)
+from agents.agent_registry.critic_agent.tools import CriticTools
+from agents.agent_registry.coding_agent.prompt import CodingAgentDescription
+from agents.agent_registry.gene_agent import agent_definition as GeneAgentDef
+from agents.agent_registry.hypothesis_agent.prompt import HypothesisAgentDescription
+from agents.agent_registry.pdf_reader_agent.prompt import (
+    PDFReaderAgentDescription,
+    PDFReaderAgentPrompt,
+)
+from agents.agent_registry.pdf_reader_agent.tools import PDFReaderTools
+from agents.agent_registry.searcher_agent.prompt import (
+    SearcherDescription,
+    SearcherPrompt,
+)
+from agents.agent_registry.searcher_agent.tools import SearcherTools
+from agents.agent_registry.single_cell_agent.prompt import (
+    SingleCellDescription,
+    SingleCellPrompt,
+)
+from agents.agent_registry.single_cell_agent.tools import SingleCellTools
+from agents.agent_registry.spot_agent.prompt import (
+    SpotDescription,
+    SpotPrompt,
+)
+from agents.agent_registry.spot_agent.tools import SpotTools
+from agents.evaluator_agent.prompt import EvaluatorPrompt
+from agents.evaluator_agent.tools import EvaluatorTools
+from agents.manager_agent.prompt import ManagerPrompt
+from agents.manager_agent.tools import ManagerTools
 from agents.planner_agent.prompt import PlannerPrompt
 from agents.planner_agent.tools import PlannerTools
 from agents.recruiter_agent.prompt import RecruiterPrompt
 from agents.recruiter_agent.tools import RecruiterTools
-from agents.manager_agent.prompt import ManagerPrompt
-from agents.manager_agent.tools import ManagerTool
-from agents.evaluator_agent.prompt import EvaluatorPrompt
 from agents.reporter_agent.prompt import ReporterPrompt
 from agents.reporter_agent.tools import ReporterTools
 from config import DefaultModelCtor
 from models import model_ctor_for_role
 
 WorkerModelCtor = model_ctor_for_role("worker")
-
-import agents.agent_registry.coding_agent.model as CodingAgent
-from agents.agent_registry.coding_agent.prompt import CodingAgentDescription
-import agents.agent_registry.hypothesis_agent.model as HypothesisAgent
-from agents.agent_registry.searcher_agent.prompt import (
-    SearcherPrompt,
-    SearcherDescription,
-)
-from agents.agent_registry.searcher_agent.tools import SearcherTools
-from agents.agent_registry.single_cell_agent.prompt import (
-    SingleCellPrompt,
-    SingleCellDescription,
-)
-from agents.agent_registry.single_cell_agent.tools import SingleCellTools
-from agents.agent_registry.pdf_reader_agent.prompt import (
-    PDFReaderAgentPrompt,
-    PDFReaderAgentDescription,
-)
-from agents.agent_registry.pdf_reader_agent.tools import PDFReaderTools
-from agents.agent_registry.critic_agent.prompt import (
-    CriticAgentPrompt,
-    CriticAgentDescription,
-)
-from agents.agent_registry.critic_agent.tools import CriticTools
-from agents.agent_registry.gene_agent import agent_definition as GeneAgentDef
-from agents.agent_registry.cell_annotater_agent.prompt import (
-    CellTissueAnnotationPrompt,
-    CellTissueAnnotationDescription
-)
-from agents.agent_registry.cell_annotater_agent.tools import CellAnnotaterTools
-from agents.agent_registry.spot_agent.prompt import (
-    SpotPrompt,
-    SpotDescription,
-)
-from agents.agent_registry.spot_agent.tools import SpotTools
-from agents.agent_registry.hypothesis_agent.prompt import HypothesisAgentDescription
 
 
 
@@ -86,8 +88,8 @@ class ReActAgent:
     id: str
     name: str
     description: str
-    prompt: Union[str, Callable[..., str]]
-    tools: List[StructuredTool]
+    prompt: str | Callable[..., str]
+    tools: list[StructuredTool]
     model_ctor: Callable[..., BaseChatModel]
 
 
@@ -136,7 +138,7 @@ ManagerAgent = ReActAgent(
     name="Manager Agent",
     description="",
     prompt=ManagerPrompt,
-    tools=ManagerTool,
+    tools=ManagerTools,
     model_ctor=DefaultModelCtor,
 )
 
@@ -145,7 +147,7 @@ EvaluatorAgent = ReActAgent(
     name="Evaluator Agent",
     description="",
     prompt=EvaluatorPrompt,
-    tools=[],
+    tools=EvaluatorTools,
     model_ctor=DefaultModelCtor,
 )
 
@@ -158,7 +160,7 @@ ReporterAgent = ReActAgent(
     model_ctor=DefaultModelCtor,
 )
 
-AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
+AgentDefns: list[ReActAgent | CustomAgent] = [
     CustomAgent(
         id="coding",
         name="Coding Agent",
@@ -174,7 +176,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         model_ctor=WorkerModelCtor,
     ),
     ReActAgent(
-        id="searcher_agent",
+        id="searcher",
         name="Searcher Agent",
         description=SearcherDescription,
         prompt=SearcherPrompt,
@@ -190,7 +192,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         model_ctor=WorkerModelCtor,
     ),
     ReActAgent(
-        id="critic_agent",
+        id="critic",
         name="Critic Agent",
         description=CriticAgentDescription,
         prompt=CriticAgentPrompt,
@@ -207,15 +209,15 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
     ),
 
     ReActAgent(
-        id          = "cell_annotater_agent",
-        name        = "Cell Annotater Agent",
-        description = CellTissueAnnotationDescription,
-        prompt      = CellTissueAnnotationPrompt,
-        tools       = CellAnnotaterTools,
-        model_ctor  = WorkerModelCtor,
+        id="cell_annotator",
+        name="Cell Annotator Agent",
+        description=CellTissueAnnotationDescription,
+        prompt=CellTissueAnnotationPrompt,
+        tools=CellAnnotaterTools,
+        model_ctor=WorkerModelCtor,
     ),
     ReActAgent(
-        id="spot_agent",
+        id="spot",
         name="Spot Agent",
         description=SpotDescription,
         prompt=SpotPrompt,
@@ -223,7 +225,7 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         model_ctor=WorkerModelCtor,
     ),
     CustomAgent(
-        id="hypothesis_agent",
+        id="hypothesis",
         name="Hypothesis Agent",
         description=HypothesisAgentDescription,
         ctor=lambda state_queue, context_resolver=None: HypothesisAgent.create_hypothesis_agent(

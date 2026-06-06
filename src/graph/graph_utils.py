@@ -28,12 +28,14 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 
 
+from logger import logger
+
+
 class AgentState(MessagesState):
     """Extended message state with optional skill prompt injection."""
 
     skill_prompt: str
 
-from logger import logger
 
 _ui_event_queue: Optional[Queue] = None
 _latest_user_message_content: Optional[List[Any]] = None

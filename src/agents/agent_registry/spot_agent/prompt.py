@@ -1,3 +1,5 @@
+"""Prompt and description strings for the Spot Agent."""
+
 SpotDescription = """
 Runs spatial spot-level transcriptomics deconvolution tasks (e.g., 10x Visium) using cell2location.
 """.strip()

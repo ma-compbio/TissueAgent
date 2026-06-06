@@ -32,10 +32,10 @@ from __future__ import annotations
 
 import os
 from contextlib import contextmanager
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator
 
 
-def _resolve_openai_key() -> Optional[str]:
+def _resolve_openai_key() -> str | None:
     """Look up the OpenAI API key from TissueAgent's runtime registry.
 
     Falls back to the environment variable when the registry is not

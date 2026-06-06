@@ -1,8 +1,10 @@
 """CodeAct-style hypothesis agent with a persistent Python REPL for hypothesis synthesis."""
 
+from __future__ import annotations
+
 import logging
 from queue import Queue
-from typing import Callable, List, Optional
+
 
 from langchain.tools import StructuredTool
 from langgraph.types import Command
@@ -45,12 +47,13 @@ def create_hypothesis_agent(
 
     Args:
         state_queue: Queue to which finished agent states are posted for UI consumption.
+        context_resolver: Optional callable that resolves skill/artifact context for a step.
 
     Returns:
         A StructuredTool that invokes the hypothesis agent graph with a text prompt.
     """
     graph = StateGraph(HypothesisState)
-    id = "hypothesis_agent"
+    id = "hypothesis"
 
     ### Tools
 
@@ -182,8 +185,7 @@ def create_hypothesis_agent(
         skill_prompt_text = ""
         step_ctx = None
         if context_resolver:
-            from graph.graph_utils import StepContext
-            step_ctx = context_resolver("hypothesis_agent")
+            step_ctx = context_resolver("hypothesis")
             if step_ctx and step_ctx.skills:
                 from agents.agent_utils import format_skill_prompt
 

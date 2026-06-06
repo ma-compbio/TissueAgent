@@ -2,8 +2,7 @@
 
 from pathlib import Path
 
-import yaml
-
+from agents.agent_utils import parse_yaml_frontmatter
 from knowledge import PLANS_DIR
 
 _DIR = Path(__file__).parent
@@ -17,12 +16,8 @@ def _build_template_index() -> str:
     """Build a compact template listing from YAML frontmatter in .md files."""
     lines: list[str] = []
     for p in sorted(PLANS_DIR.glob("*.md")):
-        text = p.read_text()
-        if not text.startswith("---"):
-            continue
-        end = text.index("---", 3)
-        frontmatter = yaml.safe_load(text[3:end])
-        if frontmatter.get("status") != "enabled":
+        frontmatter = parse_yaml_frontmatter(p.read_text())
+        if frontmatter is None or frontmatter.get("status") != "enabled":
             continue
         name = frontmatter.get("name", p.stem)
         desc = frontmatter.get("description", "").strip()

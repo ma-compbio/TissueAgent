@@ -266,6 +266,7 @@ class PlanStore:
     """
 
     def __init__(self, plan_dir: Path = _DEFAULT_PLAN_DIR) -> None:
+        """Initialise the store, creating the plan directory if needed."""
         self._lock = threading.Lock()
         self._dir = plan_dir
         self._ensure_dir()
@@ -282,6 +283,7 @@ class PlanStore:
 
     @property
     def path(self) -> Path:
+        """Absolute path to the plan markdown file."""
         return self._dir / "plan.md"
 
     def read(self) -> PlanDocument:

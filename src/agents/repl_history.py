@@ -19,7 +19,6 @@ session exports retain the full history.
 
 from __future__ import annotations
 
-from typing import Any, List
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
@@ -43,7 +42,7 @@ def _content_len(msg: BaseMessage) -> int:
     return len(str(c))
 
 
-def compress_repl_history(messages: List[BaseMessage]) -> List[BaseMessage]:
+def compress_repl_history(messages: list[BaseMessage]) -> list[BaseMessage]:
     """Return *messages* with old REPL iterations collapsed.
 
     Heuristic: the loop alternates AI (with code) and Human (REPL output).
@@ -70,11 +69,11 @@ def compress_repl_history(messages: List[BaseMessage]) -> List[BaseMessage]:
     body = messages[first_ai_idx:]
 
     # Walk the body and group into (AI, optional Human) pairs.
-    pairs: List[List[BaseMessage]] = []
+    pairs: list[list[BaseMessage]] = []
     i = 0
     while i < len(body):
         if isinstance(body[i], AIMessage):
-            pair: List[BaseMessage] = [body[i]]
+            pair: list[BaseMessage] = [body[i]]
             if i + 1 < len(body) and isinstance(body[i + 1], HumanMessage):
                 pair.append(body[i + 1])
                 i += 2
@@ -104,7 +103,7 @@ def compress_repl_history(messages: List[BaseMessage]) -> List[BaseMessage]:
         )
     )
 
-    compressed: List[BaseMessage] = []
+    compressed: list[BaseMessage] = []
     compressed.extend(preamble)
     compressed.append(placeholder)
     for pair in keep_pairs:

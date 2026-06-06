@@ -1,8 +1,9 @@
+"""cell2location Visium spatial deconvolution tool implementation."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional
 
 import pandas as pd
 import numpy as np
@@ -20,8 +21,8 @@ class Cell2locationResultPaths:
     output_dir: Path
     reference_model_dir: Path
     spatial_model_dir: Path
-    cell_abundance_q05: Optional[Path]
-    cell_abundance_mean: Optional[Path]
+    cell_abundance_q05: Path | None
+    cell_abundance_mean: Path | None
     visium_h5ad: Path
     reference_h5ad: Path
 
@@ -33,7 +34,7 @@ def _resolve_path(path_like: str) -> Path:
     return path
 
 
-def _ensure_counts_layer(adata: sc.AnnData, layer_name: Optional[str]) -> Optional[str]:
+def _ensure_counts_layer(adata: sc.AnnData, layer_name: str | None) -> str | None:
     if layer_name is None:
         return None
     if layer_name not in adata.layers:
@@ -42,8 +43,7 @@ def _ensure_counts_layer(adata: sc.AnnData, layer_name: Optional[str]) -> Option
 
 
 def _standardize_gene_ids(adata: sc.AnnData, prefer_ensembl: bool = True) -> sc.AnnData:
-    """
-    Standardize gene IDs to Ensembl format (ENSG...) if available.
+    """Standardize gene IDs to Ensembl format (ENSG...) if available.
     
     Checks common .var columns for Ensembl IDs and uses them as the index.
     Falls back to existing var_names if Ensembl IDs are not found.
@@ -55,7 +55,7 @@ def _standardize_gene_ids(adata: sc.AnnData, prefer_ensembl: bool = True) -> sc.
     
     # Check if var_names already look like Ensembl IDs
     if adata.var_names.str.match(r'^ENS[A-Z]*G\d{11}').sum() > adata.n_vars * 0.5:
-        print(f"Gene IDs already appear to be Ensembl format (>50% match pattern)")
+        print("Gene IDs already appear to be Ensembl format (>50% match pattern)")
         return adata
     
     # Look for Ensembl IDs in .var columns
@@ -79,10 +79,10 @@ def _standardize_gene_ids(adata: sc.AnnData, prefer_ensembl: bool = True) -> sc.
         
         # Make unique if there are duplicates
         if not adata.var_names.is_unique:
-            print(f"Warning: Found duplicate Ensembl IDs, making unique")
+            print("Warning: Found duplicate Ensembl IDs, making unique")
             adata.var_names_make_unique()
     else:
-        print(f"No Ensembl IDs found in .var columns, using existing var_names")
+        print("No Ensembl IDs found in .var columns, using existing var_names")
         # If var_names are gene symbols, check if we have a column with Ensembl IDs to add
         if ensembl_col is not None:
             adata.var['ensembl_id'] = adata.var[ensembl_col]
@@ -96,7 +96,6 @@ def _extract_cell_state_df(
     cell_type_column: str,
 ) -> pd.DataFrame:
     """Robustly recover the inferred reference cell state signatures."""
-
     # Try the public helper first (available in recent releases)
     if hasattr(regression_model, "export_cell_state_df"):
         try:
@@ -133,11 +132,17 @@ def _extract_cell_state_df(
                 # last resort
                 factor_names = [f"factor_{i}" for i in range(data.shape[1])]
             
-            print(f"  Factor names ({len(factor_names)}): {factor_names[:5]}..." if len(factor_names) > 5 else f"  Factor names: {factor_names}")
+            if len(factor_names) > 5:
+                print(f"  Factor names ({len(factor_names)}): {factor_names[:5]}...")
+            else:
+                print(f"  Factor names: {factor_names}")
 
             # If data is a DataFrame (common), select the prefixed columns in the tutorial way
             if hasattr(data, "columns"):  # pandas DataFrame
-                print(f"  Data is DataFrame with columns: {list(data.columns)[:5]}..." if len(data.columns) > 5 else f"  Data is DataFrame with columns: {list(data.columns)}")
+                if len(data.columns) > 5:
+                    print(f"  Data is DataFrame with columns: {list(data.columns)[:5]}...")
+                else:
+                    print(f"  Data is DataFrame with columns: {list(data.columns)}")
                 
                 # Try different prefixing strategies
                 prefixed = [f"{key}_{f}" for f in factor_names]
@@ -147,39 +152,39 @@ def _extract_cell_state_df(
                     print(f"  Warning: {len(missing)} prefixed columns not found in DataFrame")
                     # Try without the key prefix (sometimes data is already unprefixed)
                     if all(f in data.columns for f in factor_names):
-                        print(f"  Found unprefixed factor names directly in columns")
+                        print("  Found unprefixed factor names directly in columns")
                         df = data.loc[:, factor_names].copy()
                     elif key == "means_per_cluster_mu_fg":
                         # Sometimes factor_names are integers/strings; try strict str()
                         prefixed = [f"{key}_{str(f)}" for f in factor_names]
                         missing = [c for c in prefixed if c not in data.columns]
                         if not missing:
-                            print(f"  Found columns with str() conversion")
+                            print("  Found columns with str() conversion")
                             df = data.loc[:, prefixed].copy()
                             df.columns = factor_names
                         else:
                             # Check if columns match the number of factors (might be in different order/format)
                             if data.shape[1] == len(factor_names):
-                                print(f"  Column count matches factor count, using direct column order")
+                                print("  Column count matches factor count, using direct column order")
                                 df = data.copy()
                                 df.columns = factor_names
                             else:
                                 print(f"  Column mismatch: {data.shape[1]} columns vs {len(factor_names)} factors")
-                                print(f"  Falling back to numpy conversion")
+                                print("  Falling back to numpy conversion")
                                 arr = data.to_numpy()
                                 df = pd.DataFrame(arr, index=reference_adata.var_names, columns=factor_names)
                     else:
                         # Last resort for DataFrame: convert to numpy
-                        print(f"  Using numpy conversion as fallback")
+                        print("  Using numpy conversion as fallback")
                         arr = data.to_numpy()
                         df = pd.DataFrame(arr, index=reference_adata.var_names, columns=factor_names)
                 else:
-                    print(f"  Successfully matched all prefixed columns")
+                    print("  Successfully matched all prefixed columns")
                     df = data.loc[:, prefixed].copy()
                     df.columns = factor_names
             else:
                 # Not a DataFrame: coerce to numpy/sparse array and assign names
-                print(f"  Data is not a DataFrame, converting to numpy")
+                print("  Data is not a DataFrame, converting to numpy")
                 if hasattr(data, "to_numpy"):
                     arr = data.to_numpy()
                 elif hasattr(data, "toarray"):
@@ -193,7 +198,7 @@ def _extract_cell_state_df(
             
             # Only apply pd.to_numeric if data is not already numeric
             if not all(pd.api.types.is_numeric_dtype(df[col]) for col in df.columns):
-                print(f"  Converting to numeric (some columns are non-numeric)")
+                print("  Converting to numeric (some columns are non-numeric)")
                 df = df.apply(pd.to_numeric, errors="coerce")
             
             # Check for NaN issues
@@ -219,7 +224,7 @@ def _save_cell_abundance(
     output_dir: Path,
     basename: str,
     cell_state_df: pd.DataFrame,
-) -> Optional[Path]:
+) -> Path | None:
     matrix = adata_visium.obsm.get(basename)
     if matrix is None:
         return None
@@ -239,10 +244,10 @@ def run_cell2location_visium_deconvolution(
     reference_h5ad_path: str,
     output_subdir: str = "cell2location_results",
     cell_type_column: str = "CellType",
-    reference_batch_key: Optional[str] = None,
-    reference_count_layer: Optional[str] = None,
-    visium_batch_key: Optional[str] = None,
-    visium_count_layer: Optional[str] = None,
+    reference_batch_key: str | None = None,
+    reference_count_layer: str | None = None,
+    visium_batch_key: str | None = None,
+    visium_count_layer: str | None = None,
     n_cells_per_location: float = 30.0,
     detection_alpha: float = 20.0,
     regression_max_epochs: int = 100,  # Reduced from 250 for faster training
@@ -250,14 +255,13 @@ def run_cell2location_visium_deconvolution(
     learning_rate: float = 0.01,
     posterior_samples: int = 1000,
     posterior_batch_size: int = 2048,
-    use_gpu: Optional[bool] = None,
+    use_gpu: bool | None = None,
     filter_genes: bool = True,
     min_cells_ref: int = 10,
     min_cells_vis: int = 10,
     min_counts: int = 10,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Run cell2location to deconvolve Visium spots into cell type abundances."""
-
     if use_gpu is None:
         accelerator = "gpu" if sc.settings._default_backend == "pytorch-gpu" else "cpu"
     else:
@@ -297,8 +301,6 @@ def run_cell2location_visium_deconvolution(
     # Cell2location requires raw integer counts, not normalized/log-transformed data
     if visium_count_layer is None and hasattr(adata_vis, 'raw') and adata_vis.raw is not None:
         print("Found raw counts in adata_vis.raw, using for analysis...")
-        # Store the processed data for later visualization if needed
-        adata_vis_processed = adata_vis.copy()
         # Convert .raw to the main matrix
         adata_vis = adata_vis.raw.to_adata()
         print(f"Using raw Visium data: shape {adata_vis.shape}, dtype {adata_vis.X.dtype}")
@@ -335,7 +337,8 @@ def run_cell2location_visium_deconvolution(
             "status": "error",
             "message": "Visium data does not appear to contain raw integer counts. "
                       "Cell2location requires unnormalized count data. "
-                      "Please ensure your Visium h5ad file contains raw counts in .X or specify a layer with raw counts using visium_count_layer parameter. "
+                      "Please ensure your Visium h5ad file contains raw counts in .X or specify"
+                      " a layer with raw counts using visium_count_layer parameter. "
                       "If raw counts are stored in .raw attribute, they will be used automatically."
         }
     
@@ -344,7 +347,8 @@ def run_cell2location_visium_deconvolution(
             "status": "error", 
             "message": "Reference data does not appear to contain raw integer counts. "
                       "Cell2location requires unnormalized count data. "
-                      "Please ensure your reference h5ad file contains raw counts in .X or specify a layer with raw counts using reference_count_layer parameter. "
+                      "Please ensure your reference h5ad file contains raw counts in .X or specify"
+                      " a layer with raw counts using reference_count_layer parameter. "
                       "If raw counts are stored in .raw attribute, they will be used automatically."
         }
     
@@ -392,7 +396,7 @@ def run_cell2location_visium_deconvolution(
             adata_ref = adata_ref[sampled_indices].copy()
             
             print(f"\nStratified sampling completed: {len(sampled_indices)} cells")
-            print(f"New cell type distribution:")
+            print("New cell type distribution:")
             new_dist = adata_ref.obs[cell_type_column].value_counts()
             for ct, count in new_dist.head(10).items():
                 orig_pct = 100 * original_dist[ct] / total_cells
@@ -516,7 +520,7 @@ def run_cell2location_visium_deconvolution(
     assert cell_state_df.shape[0] == adata_vis.n_vars
 
     # Configure and train the spatial deconvolution model
-    setup_spatial_kwargs: Dict[str, object] = {}
+    setup_spatial_kwargs: dict[str, object] = {}
     if visium_layer is not None:
         setup_spatial_kwargs["layer"] = visium_layer
     if visium_batch_key is not None:
@@ -556,7 +560,7 @@ def run_cell2location_visium_deconvolution(
     )
 
     # Build structured response dictionary
-    response: Dict[str, str] = {
+    response: dict[str, str] = {
         "status": "success",
         "output_dir": str(result.output_dir),
         "reference_model_dir": str(result.reference_model_dir),

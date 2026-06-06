@@ -4,13 +4,13 @@ Provides ContainerManager for Docker lifecycle and KernelClient for
 executing Python/R code via the Jupyter wire protocol.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import time
 import uuid
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import List
 
 import docker
 import requests
@@ -38,13 +38,14 @@ class ExecutionResult:
     """Structured result from a kernel execution, carrying text and images."""
 
     text: str
-    images: List[str] = field(default_factory=list)  # base64-encoded data URIs
+    images: list[str] = field(default_factory=list)  # base64-encoded data URIs
 
 
 class ContainerManager:
     """Manages the Docker container running Jupyter Kernel Gateway."""
 
     def __init__(self):
+        """Initialise the Docker client and container reference."""
         self._client = docker.from_env()
         self._container = None
 
@@ -166,12 +167,12 @@ class KernelClient:
     KERNEL_NAMES = {"python": "python3", "r": "ir"}
 
     def __init__(self, base_url: str = KERNEL_GATEWAY_URL):
+        """Initialise the client with the Kernel Gateway base URL."""
         self._base_url = base_url
         self._ws_base = base_url.replace("http://", "ws://").replace(
             "https://", "wss://"
         )
         self._kernels: dict[str, str] = {}  # language -> kernel_id
-        self._seeded: set[str] = set()
 
     def execute(self, code: str, language: str = "python") -> ExecutionResult:
         """Execute code on a kernel and return text output and any images."""
@@ -253,14 +254,7 @@ class KernelClient:
         self._kernels[language] = kernel_id
         logging.info(f"Started {language} kernel: {kernel_id}")
 
-        self._seed_kernel(language)
         return kernel_id
-
-    def _seed_kernel(self, language: str) -> None:
-        """Inject DATA_DIR / NOTEBOOK_DIR globals into a freshly started kernel."""
-        if language in self._seeded:
-            return
-        self._seeded.add(language)
 
     def shutdown_kernels(self) -> None:
         """Delete all active kernels (for cleanup between agent runs)."""
@@ -273,4 +267,3 @@ class KernelClient:
             except Exception as e:
                 logging.warning(f"Error shutting down {language} kernel: {e}")
         self._kernels.clear()
-        self._seeded.clear()

@@ -1,14 +1,14 @@
 """Tool definitions for the manager agent."""
-from typing import List
+from __future__ import annotations
 
 from langchain.tools import StructuredTool
 
 from agents.agent_utils import write_tool
 
-ManagerToolNames: List[str] = [
+ManagerToolsNames: list[str] = [
     "write",
 ]
 
-ManagerTool: List[StructuredTool] = [
+ManagerTools: list[StructuredTool] = [
     write_tool,
 ]

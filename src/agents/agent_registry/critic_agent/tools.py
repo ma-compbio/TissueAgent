@@ -1,5 +1,7 @@
 """Tool definitions for the critic agent."""
-from typing import List
+
+from __future__ import annotations
+
 from langchain.tools import StructuredTool
 from pathlib import Path
 from config import DATA_DIR
@@ -27,7 +29,7 @@ def write_file_tool(file_path: str, content: str) -> str:
 
 
 # Export tools list
-CriticTools: List[StructuredTool] = [
+CriticTools: list[StructuredTool] = [
     *file_read_tools,
     StructuredTool.from_function(
         func=write_file_tool,

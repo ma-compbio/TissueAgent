@@ -1,3 +1,5 @@
+"""Prompt and description strings for the Cell Annotater Agent."""
+
 CellTissueAnnotationDescription = """
 Performs automatic cell type and tissue annotation for single-cell or spatial transcriptomics datasets using reference-based or ontology-guided approaches.
 Handles cell-level label transfer, tissue-level mapping — no general biological literature search.

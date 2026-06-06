@@ -18,7 +18,7 @@ from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
 from pathlib import Path
 
-from agents.manager_agent.tools import ManagerToolNames
+from agents.manager_agent.tools import ManagerToolsNames
 from config import RECURSION_LIMIT
 from graph.graph_utils import log_message, record_user_message
 from server.message_serializer import serialize_history, serialize_message, serialize_subagent_state
@@ -112,8 +112,6 @@ async def _handle_user_message(ws: WebSocket, data: dict):
         return
 
     text = data.get("text", "")
-    image_ids = data.get("image_ids", [])
-    pdf_ids = data.get("pdf_ids", [])
 
     # Build multimodal content parts
     content_parts = [{"type": "text", "text": text}]
@@ -658,7 +656,7 @@ def _link_subagent_states(rendered_prefix: int) -> list[str]:
     for message in new_messages:
         if not isinstance(message, ToolMessage):
             continue
-        if message.name in ManagerToolNames:
+        if message.name in ManagerToolsNames:
             continue
         if not str(message.name or "").endswith("_transfer_tool"):
             continue

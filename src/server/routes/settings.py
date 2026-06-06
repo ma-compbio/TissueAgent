@@ -9,6 +9,8 @@ router = APIRouter(prefix="/api/settings")
 
 
 class SandboxPayload(BaseModel):
+    """Request body for updating sandbox settings."""
+
     sandbox_enabled: bool
 
 

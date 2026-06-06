@@ -163,6 +163,7 @@ def list_models() -> List[Dict[str, Any]]:
 
 
 def get_model_spec(model_id: str) -> ModelSpec:
+    """Return the ModelSpec for the given model_id, raising ValueError if unknown."""
     if model_id not in _MODELS_BY_ID:
         raise ValueError(f"Unknown model id: {model_id!r}")
     return _MODELS_BY_ID[model_id]
@@ -190,6 +191,7 @@ _revision: int = 0
 
 
 def get_selection() -> Dict[str, str]:
+    """Return the active model selection as a JSON-friendly dict."""
     with _selection_lock:
         return {
             "orchestration": _selection.orchestration,
@@ -211,11 +213,13 @@ def set_selection(orchestration: str, worker: str) -> Dict[str, str]:
 
 
 def get_revision() -> int:
+    """Return the revision counter, bumped on every selection change."""
     with _selection_lock:
         return _revision
 
 
 def get_model_id(role: Role) -> str:
+    """Return the model ID for the given role ('orchestration' or 'worker')."""
     with _selection_lock:
         return _selection.orchestration if role == "orchestration" else _selection.worker
 

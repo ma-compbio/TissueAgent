@@ -10,7 +10,6 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMe
 
 from server.utils import (
     extract_html_tags,
-    extract_tool_inputs,
     lookup_agent_badge,
     should_hide_message,
     split_route_and_body,

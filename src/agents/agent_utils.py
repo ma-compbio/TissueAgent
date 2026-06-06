@@ -5,18 +5,39 @@ blocks from LLM responses, and file-access tools (glob, grep, read) that
 operate within the DATA_DIR workspace.
 """
 
+from __future__ import annotations
+
 import base64
 import logging
 import mimetypes
 import re
 from langchain.tools import StructuredTool
 from pathlib import Path
-from typing import Dict, List, Literal, Optional
+from typing import Literal
+
+import yaml
 
 from config import DATA_DIR, MAX_OUTPUT_CHARS
 
 
-def format_skill_prompt(skill_names: List[str]) -> str:
+def parse_yaml_frontmatter(text: str) -> dict | None:
+    """Extract YAML frontmatter from a Markdown string.
+
+    Expects the text to start with ``---``, followed by YAML content,
+    closed by another ``---``.  Returns the parsed dict, or ``None`` if
+    the text has no valid frontmatter.
+    """
+    if not text.startswith("---"):
+        return None
+    try:
+        end = text.index("---", 3)
+    except ValueError:
+        return None
+    result = yaml.safe_load(text[3:end])
+    return result if isinstance(result, dict) else None
+
+
+def format_skill_prompt(skill_names: list[str]) -> str:
     """Build the skill injection block for a sub-agent system prompt.
 
     Loads skill content from the skill registry, strips YAML frontmatter,
@@ -57,7 +78,7 @@ def format_skill_prompt(skill_names: List[str]) -> str:
     return header + "\n\n" + "\n\n---\n\n".join(sections)
 
 
-def format_agent_id_descriptions(agent_id_descriptions: Dict[str, str]) -> str:
+def format_agent_id_descriptions(agent_id_descriptions: dict[str, str]) -> str:
     """Format agent ID-to-description pairs as a bulleted list for prompts.
 
     Args:
@@ -65,7 +86,7 @@ def format_agent_id_descriptions(agent_id_descriptions: Dict[str, str]) -> str:
             human-readable descriptions.
 
     Returns:
-        A newline-separated string with one \" - id: description\" entry
+        A newline-separated string with one " - id: description" entry
         per agent.
     """
     return "\n".join(
@@ -73,7 +94,7 @@ def format_agent_id_descriptions(agent_id_descriptions: Dict[str, str]) -> str:
     )
 
 
-def extract_block(pattern: str, text: str) -> Optional[str]:
+def extract_block(pattern: str, text: str) -> str | None:
     """Extract the content of an XML-style block from an LLM response.
 
     Searches *text* for ``<pattern>…</pattern>`` tags.  If a single
@@ -129,7 +150,7 @@ def _glob(pattern: str) -> str:
 
 def _grep(pattern: str, include: str = "**/*") -> str:
     """Search file contents in the workspace for a regex pattern. Binary files are skipped."""
-    hits: List[str] = []
+    hits: list[str] = []
     for path in sorted(DATA_DIR.glob(include)):
         if not path.is_file():
             continue
@@ -145,7 +166,7 @@ def _grep(pattern: str, include: str = "**/*") -> str:
     return truncate_output("\n".join(hits), MAX_OUTPUT_CHARS)
 
 
-def _read(file_path: str, offset: int = 1, limit: Optional[int] = None):
+def _read(file_path: str, offset: int = 1, limit: int | None = None):
     """Read a workspace file by path relative to DATA_DIR."""
     path = DATA_DIR / file_path
     if not path.exists():
@@ -200,7 +221,7 @@ read_tool = StructuredTool.from_function(
     ),
 )
 
-file_read_tools: List[StructuredTool] = [glob_tool, grep_tool, read_tool]
+file_read_tools: list[StructuredTool] = [glob_tool, grep_tool, read_tool]
 
 
 ### write tool
@@ -265,4 +286,4 @@ write_tool = StructuredTool.from_function(
     ),
 )
 
-file_tools: List[StructuredTool] = [glob_tool, grep_tool, read_tool, write_tool]
+file_tools: list[StructuredTool] = [glob_tool, grep_tool, read_tool, write_tool]

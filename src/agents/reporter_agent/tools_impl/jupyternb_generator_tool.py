@@ -23,7 +23,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Union
 
 import nbformat as nbf
 import nbformat.v4 as nbfv4
@@ -42,7 +41,7 @@ from config import DATA_DIR, NOTEBOOK_DIR
 _CODE_PRODUCING_AGENT_NAMES = {"Coding Agent"}
 
 
-def _collect_code_blocks() -> List[str]:
+def _collect_code_blocks() -> list[str]:
     """Return every ``<execute>`` block emitted in this run, in order.
 
     Inspects ``server.session_manager.session.subagent_states``. The
@@ -54,7 +53,7 @@ def _collect_code_blocks() -> List[str]:
     # server on coding-agent imports.
     from server.session_manager import session
 
-    blocks: List[str] = []
+    blocks: list[str] = []
     # subagent_states is a dict {tool_id: (agent_name, final_state, invocation_id)}.
     # Python dicts are insertion-ordered, and the manager populates them
     # in execution order, so iterating in order gives us run order.
@@ -66,7 +65,7 @@ def _collect_code_blocks() -> List[str]:
             continue
         if not isinstance(final_state, dict):
             continue
-        messages: List[BaseMessage] = final_state.get("messages") or []
+        messages: list[BaseMessage] = final_state.get("messages") or []
         for msg in messages:
             if not isinstance(msg, AIMessage):
                 continue
@@ -99,7 +98,7 @@ def _user_request() -> str:
     return ""
 
 
-def _normalize_filename(filename: Optional[Union[Path, str]]) -> Path:
+def _normalize_filename(filename: Path | str | None) -> Path:
     if filename is None:
         stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         target = NOTEBOOK_DIR / f"report_{stamp}.ipynb"
@@ -122,7 +121,7 @@ def _normalize_filename(filename: Optional[Union[Path, str]]) -> Path:
     return target
 
 
-def generate_jupyternb(filename: Optional[Union[Path, str]] = None) -> str:
+def generate_jupyternb(filename: Path | str | None = None) -> str:
     """Build a Jupyter notebook from the coding agent's executed code.
 
     Args:

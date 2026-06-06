@@ -4,14 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
 
-import yaml
-
-from agents.agent_utils import format_agent_id_descriptions
+from agents.agent_utils import format_agent_id_descriptions, parse_yaml_frontmatter
+from knowledge import SKILLS_DIR
 
 _DIR = Path(__file__).parent
-from knowledge import SKILLS_DIR
 
 _SKILL_REGISTRY = SKILLS_DIR
 
@@ -33,27 +30,20 @@ class SkillMeta:
 
     name: str
     description: str
-    applies_to: List[str]
-    tags: List[str] = field(default_factory=list)
+    applies_to: list[str]
+    tags: list[str] = field(default_factory=list)
     status: str = "enable"
     path: Path = field(default_factory=Path)
 
 
-def _parse_skills() -> Dict[str, SkillMeta]: 
+def _parse_skills() -> dict[str, SkillMeta]:
     """Scan ``*.md`` files (except README) in the skill registry and return enabled skills."""
-    skills: Dict[str, SkillMeta] = {}
+    skills: dict[str, SkillMeta] = {}
     for p in sorted(_SKILL_REGISTRY.glob("*.md")):
         if p.name.lower() == "readme.md":
             continue
-        text = p.read_text()
-        if not text.startswith("---"):
-            continue
-        try:
-            end = text.index("---", 3)
-        except ValueError:
-            continue
-        fm = yaml.safe_load(text[3:end])
-        if not isinstance(fm, dict):
+        fm = parse_yaml_frontmatter(p.read_text())
+        if fm is None:
             continue
         status = str(fm.get("status", "enable")).strip().lower()
         if status != "enable":
@@ -70,10 +60,10 @@ def _parse_skills() -> Dict[str, SkillMeta]:
     return skills
 
 
-_SKILL_CACHE: Optional[Dict[str, SkillMeta]] = None
+_SKILL_CACHE: dict[str, SkillMeta] | None = None
 
 
-def get_skill_metadata() -> Dict[str, SkillMeta]:
+def get_skill_metadata() -> dict[str, SkillMeta]:
     """Return the name-to-metadata mapping for all enabled skills (cached)."""
     global _SKILL_CACHE
     if _SKILL_CACHE is None:
@@ -97,8 +87,10 @@ def get_skill_index() -> str:
 # Prompt
 # ---------------------------------------------------------------------------
 
-RecruiterPrompt = lambda agent_id_descriptions: _TEMPLATE.replace(
-    "{{agent_registry}}", format_agent_id_descriptions(agent_id_descriptions)
-).replace(
-    "{{skill_registry}}", get_skill_index()
-)
+def RecruiterPrompt(agent_id_descriptions: dict[str, str]) -> str:
+    """Build the recruiter agent system prompt with registry placeholders filled."""
+    return _TEMPLATE.replace(
+        "{{agent_registry}}", format_agent_id_descriptions(agent_id_descriptions)
+    ).replace(
+        "{{skill_registry}}", get_skill_index()
+    )

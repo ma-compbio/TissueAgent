@@ -28,7 +28,7 @@ from server.plan_store import (  # noqa: E402
 
 
 def test_round_trip_idempotent() -> None:
-    """write -> read -> write yields identical markdown."""
+    """Write -> read -> write yields identical markdown."""
     with tempfile.TemporaryDirectory() as tmp:
         store = PlanStore(plan_dir=Path(tmp))
         doc = PlanDocument(

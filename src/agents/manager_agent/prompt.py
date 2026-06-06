@@ -12,6 +12,8 @@ ManagerDescription = """
 Coordinate the Executor Team composed of expert agents to execute each step in the Plan.
 """.strip()
 
-ManagerPrompt = lambda agent_id_descriptions: _TEMPLATE.replace(
-    "{agent_registry}", format_agent_id_descriptions(agent_id_descriptions)
-)
+def ManagerPrompt(agent_id_descriptions: dict[str, str]) -> str:
+    """Build the manager agent system prompt with the agent registry filled."""
+    return _TEMPLATE.replace(
+        "{agent_registry}", format_agent_id_descriptions(agent_id_descriptions)
+    )

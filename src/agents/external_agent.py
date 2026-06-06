@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable
 
 from langchain.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -43,20 +43,20 @@ class ExternalAgentDefinition:
     id: str
     name: str
     description: str
-    prompt: Union[str, Callable[..., str]]
-    tools: List[StructuredTool]
+    prompt: str | Callable[..., str]
+    tools: list[StructuredTool]
     model_ctor: Callable[..., BaseChatModel]
 
     # Metadata sourced from manifest.yaml — not used by the graph but
     # exposed to other parts of the system (UI, docs, health checks).
     version: str = "0.0.0"
-    upstream_repo: Optional[str] = None
-    upstream_commit: Optional[str] = None
-    required_env_vars: List[str] = field(default_factory=list)
-    data_subdir: Optional[str] = None
+    upstream_repo: str | None = None
+    upstream_commit: str | None = None
+    required_env_vars: list[str] = field(default_factory=list)
+    data_subdir: str | None = None
 
 
-def load_manifest(folder: Path) -> Dict[str, Any]:
+def load_manifest(folder: Path) -> dict[str, Any]:
     """Load and minimally validate a ``manifest.yaml`` from *folder*.
 
     Returns the parsed dict. Raises ``FileNotFoundError`` if the manifest
