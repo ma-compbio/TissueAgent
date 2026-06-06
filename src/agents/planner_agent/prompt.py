@@ -4,8 +4,9 @@ from pathlib import Path
 
 import yaml
 
+from knowledge import PLANS_DIR
+
 _DIR = Path(__file__).parent
-_REGISTRY = _DIR / "plan_registry"
 
 
 def _read(filename: str) -> str:
@@ -15,7 +16,7 @@ def _read(filename: str) -> str:
 def _build_template_index() -> str:
     """Build a compact template listing from YAML frontmatter in .md files."""
     lines: list[str] = []
-    for p in sorted(_REGISTRY.glob("*.md")):
+    for p in sorted(PLANS_DIR.glob("*.md")):
         text = p.read_text()
         if not text.startswith("---"):
             continue

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from langchain.tools import StructuredTool
 from pydantic import BaseModel, Field
 
-DEFAULT_REGISTRY_DIR = Path(__file__).parent.parent / "plan_registry"
+from knowledge import PLANS_DIR
+
+DEFAULT_REGISTRY_DIR = PLANS_DIR
 
 
 class ReadTemplateArgs(BaseModel):
