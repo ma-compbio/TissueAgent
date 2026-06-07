@@ -17,7 +17,6 @@ from langchain.tools import StructuredTool
 from agents.agent_utils import truncate_output
 from config import DATA_DIR, MAX_OUTPUT_CHARS
 
-
 ### file read tools
 
 
@@ -167,5 +166,4 @@ write_tool = StructuredTool.from_function(
     ),
 )
 
-file_tools_read_only: list[StructuredTool] = [glob_tool, grep_tool, read_tool]
-file_tools: list[StructuredTool] = file_tools_read_only + [write_tool]
+file_read_write_tools: list[StructuredTool] = file_read_tools + [write_tool]
