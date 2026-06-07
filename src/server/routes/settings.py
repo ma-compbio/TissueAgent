@@ -22,5 +22,8 @@ def get_settings() -> dict:
 
 @router.post("")
 def update_settings(payload: SandboxPayload) -> dict:
-    """Update agent settings. Changes take effect on the next agent run."""
+    """Update agent settings.
+
+    Changes take effect on the next agent run.
+    """
     return agent_settings.set_sandbox_enabled(payload.sandbox_enabled)

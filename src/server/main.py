@@ -42,9 +42,8 @@ from server.utils import reset_data_directories
 def _bind_retry(model):
     """Wrap a model with header-driven rate-limit retry (strategy 1A).
 
-    Honors provider Retry-After / retry-after-ms headers on 429s so the
-    wait time tracks the actual rate-limit window instead of guessing
-    via exponential backoff.
+    Honors provider Retry-After / retry-after-ms headers on 429s so the wait time tracks the actual rate-limit window
+    instead of guessing via exponential backoff.
     """
     return with_header_retry(model, max_attempts=6)
 
@@ -56,11 +55,9 @@ _settings_revision: int | None = None
 def _compile_graph(kernel_client: KernelClient) -> None:
     """(Re)compile the agent graph using the currently-selected models.
 
-    Compiles with an in-memory checkpointer so copilot mode can pause via
-    ``interrupt_before`` and resume by invoking with ``input=None`` against
-    the same ``thread_id``. Autopilot ignores both — it never passes
-    ``interrupt_before`` and never resumes — so the checkpointer is
-    effectively no-op overhead for autopilot runs.
+    Compiles with an in-memory checkpointer so copilot mode can pause via ``interrupt_before`` and resume by invoking
+    with ``input=None`` against the same ``thread_id``. Autopilot ignores both — it never passes ``interrupt_before``
+    and never resumes — so the checkpointer is effectively no-op overhead for autopilot runs.
     """
     graph = create_tissueagent_graph(
         session.state_queue, _bind_retry, kernel_client=kernel_client

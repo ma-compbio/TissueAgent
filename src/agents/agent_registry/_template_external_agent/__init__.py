@@ -1,11 +1,9 @@
 """Skeleton ``__init__.py`` for a new external agent.
 
-Rename the folder, fill in ``manifest.yaml``, write ``prompt.py``,
-``tool.py``, and ``runner.py`` using the gene_agent worked example, then
-update the imports below.
+Rename the folder, fill in ``manifest.yaml``, write ``prompt.py``, ``tool.py``, and ``runner.py`` using the gene_agent
+worked example, then update the imports below.
 
-The rest of TissueAgent only needs the ``agent_definition`` symbol from
-this module.
+The rest of TissueAgent only needs the ``agent_definition`` symbol from this module.
 """
 
 from pathlib import Path

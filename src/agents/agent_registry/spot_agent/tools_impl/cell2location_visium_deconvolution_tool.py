@@ -1,4 +1,4 @@
-"""cell2location Visium spatial deconvolution tool implementation."""
+"""Cell2location Visium spatial deconvolution tool implementation."""
 
 from __future__ import annotations
 
@@ -44,10 +44,9 @@ def _ensure_counts_layer(adata: sc.AnnData, layer_name: str | None) -> str | Non
 
 def _standardize_gene_ids(adata: sc.AnnData, prefer_ensembl: bool = True) -> sc.AnnData:
     """Standardize gene IDs to Ensembl format (ENSG...) if available.
-    
-    Checks common .var columns for Ensembl IDs and uses them as the index.
-    Falls back to existing var_names if Ensembl IDs are not found.
 
+    Checks common .var columns for Ensembl IDs and uses them as the index. Falls back to existing var_names if Ensembl
+    IDs are not found.
     """
     # Common column names that might contain Ensembl IDs
     ensembl_columns = ['gene_ids', 'gene_id', 'ensembl_id', 'ensembl_gene_id', 

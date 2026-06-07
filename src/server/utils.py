@@ -1,7 +1,7 @@
 """Framework-agnostic utilities extracted from the Streamlit app.
 
-Provides file handling, message identity, session persistence, HTML export,
-and content-parsing helpers used by the FastAPI server layer.
+Provides file handling, message identity, session persistence, HTML export, and content-parsing helpers used by the
+FastAPI server layer.
 """
 
 import base64
@@ -364,8 +364,8 @@ def collect_prompts_snapshot() -> Dict[str, str]:
 def derive_session_title(messages: Sequence[BaseMessage]) -> str:
     """Pick a short title for a saved session from its first user message.
 
-    Returns an empty string when no usable text is found. The caller
-    decides how to fall back (typically to the timestamp).
+    Returns an empty string when no usable text is found. The caller decides how to fall back (typically to the
+    timestamp).
     """
     for m in messages:
         if isinstance(m, HumanMessage):
@@ -395,8 +395,7 @@ def format_session_label(session_path: Path) -> str:
 def session_option_label(session_path: Path, title: str = "") -> str:
     """Create a label for the session selection dropdown.
 
-    Combines the title (when available) with the timestamp. Falls back
-    to the raw timestamp when no title was saved.
+    Combines the title (when available) with the timestamp. Falls back to the raw timestamp when no title was saved.
     """
     ts = format_session_label(session_path)
     return f"{title} — {ts}" if title else ts
@@ -497,8 +496,7 @@ def load_session(path: Path) -> Dict[str, Any]:
 def read_session_title(path: Path) -> str:
     """Cheap title lookup without parsing the whole message list.
 
-    Used by the list endpoint so we don't deserialise every saved
-    session's messages just to render the dropdown.
+    Used by the list endpoint so we don't deserialise every saved session's messages just to render the dropdown.
     """
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -620,15 +618,12 @@ def _render_conversation_history_html(
 def _render_plan_html(plan_markdown: str, plan_doc=None) -> str:
     """Render a saved plan markdown blob as a top-of-document HTML block.
 
-    If *plan_doc* is provided it takes precedence over re-parsing
-    *plan_markdown*. Callers should pass *plan_doc* when they have
-    already enriched it with run-time data (e.g. ``params`` populated
-    by ``annotate_steps_with_params``) that isn't carried in the
-    on-disk markdown.
+    If *plan_doc* is provided it takes precedence over re-parsing *plan_markdown*. Callers should pass *plan_doc* when
+    they have already enriched it with run-time data (e.g. ``params`` populated by ``annotate_steps_with_params``) that
+    isn't carried in the on-disk markdown.
 
-    Returns an empty string when there is no plan — callers should
-    elide the section entirely in that case rather than print an empty
-    box.
+    Returns an empty string when there is no plan — callers should elide the section entirely in that case rather than
+    print an empty box.
     """
     if plan_doc is None:
         if not plan_markdown or not plan_markdown.strip():
@@ -881,8 +876,7 @@ def build_session_markdown(
 def _demote_markdown_headings(md: str, *, by: int) -> str:
     """Shift every ATX-style heading by *by* levels (max 6).
 
-    Used so an inlined plan markdown that starts at ``# Plan`` becomes
-    ``## Plan`` inside the export's outline.
+    Used so an inlined plan markdown that starts at ``# Plan`` becomes ``## Plan`` inside the export's outline.
     """
     if by <= 0:
         return md
@@ -898,8 +892,7 @@ def _demote_markdown_headings(md: str, *, by: int) -> str:
 def _render_prompts_snapshot_html(snapshot: Mapping[str, str]) -> str:
     """Render a prompts snapshot as a collapsible section.
 
-    Returns an empty string if the snapshot is empty so callers can elide
-    the whole section.
+    Returns an empty string if the snapshot is empty so callers can elide the whole section.
     """
     if not snapshot:
         return ""

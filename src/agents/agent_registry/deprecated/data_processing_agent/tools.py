@@ -29,10 +29,13 @@ extract_tool = StructuredTool.from_function(
 import agents.agent_registry.data_processing_agent.tools_impl.cosmx_reader_tool as cosmx
 
 cosmx_description = " ".join(
-    """Converts CosMx data to an AnnData format,
-saved as a .h5ad file. REQUIRES FILES "*exprMat_file.csv" and "*metadat_file.csv"
-TO EXIST. Note that the star represents any string.
-""".splitlines()
+    """
+    Converts CosMx data to an AnnData format, saved as a .h5ad file.
+
+    REQUIRES FILES "*exprMat_file.csv" and "*metadat_file.csv" TO EXIST. Note that the star represents any string.
+    """
+
+   .splitlines()
 )
 
 
@@ -55,9 +58,13 @@ cosmx_reader_tool = StructuredTool.from_function(
 import agents.agent_registry.data_processing_agent.tools_impl.merscope_reader_tool as merscope
 
 merscope_description = " ".join(
-    """Converts MERSCOPE data to an AnnData format,
-saved as a .h5ad file. REQUIRES FILES "cell_by_gene.csv", "cell_metadata.csv" 
-TO EXIST.""".splitlines()
+    """
+    Converts MERSCOPE data to an AnnData format, saved as a .h5ad file.
+
+    REQUIRES FILES "cell_by_gene.csv", "cell_metadata.csv" TO EXIST.
+    """
+
+            .splitlines()
 )
 
 
@@ -80,8 +87,13 @@ merscope_reader_tool = StructuredTool.from_function(
 import agents.agent_registry.data_processing_agent.tools_impl.stereoseq_reader_tool as stereoseq
 
 stereoseq_description = " ".join(
-    """Converts Stereo-seq data to an AnnData format,
-saved as a .h5ad file. REQUIRES A SINGLE "*.h5ad" TO EXIST""".splitlines()
+    """
+    Converts Stereo-seq data to an AnnData format, saved as a .h5ad file.
+
+    REQUIRES A SINGLE "*.h5ad" TO EXIST
+    """
+
+                                                             .splitlines()
 )
 
 
@@ -95,19 +107,20 @@ stereoseq_reader_tool = StructuredTool.from_function(
     description=stereoseq_description,
     args_schema=StereoseqReaderInput,
 )
-
-
 # ╔═══════════════════════╗
 # ║ 🔬 Visium             ║
 # ╚═══════════════════════╝
 
 import agents.agent_registry.data_processing_agent.tools_impl.visium_reader_tool as visium
-
 visium_description = " ".join(
-    """Converts Visium HD data to an AnnData format,
-saved as a .h5ad file. REQUIRES FILE "*filtered_feature_bc_matrix.h5". REQUIRES 
-"scalefactors_json.json", "tissue_positions.csv", "tissue_hires_image.png", and 
-"tissue_lowres_image.png" TO BE IN A SEPERATE DIRECTORY CALLED "spatial/".""".splitlines()
+    """
+    Converts Visium HD data to an AnnData format, saved as a .h5ad file.
+
+    REQUIRES FILE "*filtered_feature_bc_matrix.h5". REQUIRES "scalefactors_json.json", "tissue_positions.csv",
+    "tissue_hires_image.png", and "tissue_lowres_image.png" TO BE IN A SEPERATE DIRECTORY CALLED "spatial/".
+    """
+
+                                                                             .splitlines()
 )
 
 
@@ -121,7 +134,6 @@ visium_reader_tool = StructuredTool.from_function(
     description=visium_description,
     args_schema=VisiumReaderInput,
 )
-
 # ╔═══════════════════════╗
 # ║ 🔬 Visium HD          ║
 # ╚═══════════════════════╝
@@ -129,9 +141,13 @@ visium_reader_tool = StructuredTool.from_function(
 import agents.agent_registry.data_processing_agent.tools_impl.visiumhd_reader_tool as visiumhd
 
 visiumhd_description = " ".join(
-    """Converts Visium data to an AnnData format,
-saved as a .h5ad file. REQUIRES A "*feature_slice.h5" file and "spatial/",
-"binned_outputs/" DIRECTORIES.""".splitlines()
+    """
+    Converts Visium data to an AnnData format, saved as a .h5ad file.
+
+    REQUIRES A "*feature_slice.h5" file and "spatial/", "binned_outputs/" DIRECTORIES.
+    """
+
+                                 .splitlines()
 )
 
 
@@ -145,7 +161,6 @@ visiumhd_reader_tool = StructuredTool.from_function(
     description=visiumhd_description,
     args_schema=VisiumHDReaderInput,
 )
-
 # ╔═══════════════════════╗
 # ║ ✨ Xenium             ║
 # ╚═══════════════════════╝
@@ -153,9 +168,13 @@ visiumhd_reader_tool = StructuredTool.from_function(
 import agents.agent_registry.data_processing_agent.tools_impl.xenium_reader_tool as xenium
 
 xenium_description = " ".join(
-    """Converts Xenium data to an AnnData format,
-saved as a .h5ad file. REQUIRES FILES "cell_feature_matrix.h5", "cells.parquet"
-TO EXIST.""".splitlines()
+    """
+    Converts Xenium data to an AnnData format, saved as a .h5ad file.
+
+    REQUIRES FILES "cell_feature_matrix.h5", "cells.parquet" TO EXIST.
+    """
+
+            .splitlines()
 )
 
 

@@ -1,7 +1,6 @@
 """StructuredTool exposed to the manager.
 
-Replace the placeholder name and import path. Tool names must be globally
-unique within TissueAgent.
+Replace the placeholder name and import path. Tool names must be globally unique within TissueAgent.
 """
 
 from __future__ import annotations

@@ -1,8 +1,7 @@
 """Graph node and tool factories for the TissueAgent LangGraph pipeline.
 
-Provides reusable builders for agent nodes, tool nodes, and sub-agent
-invocation tools, as well as message logging and user-state tracking
-helpers used across the graph.
+Provides reusable builders for agent nodes, tool nodes, and sub-agent invocation tools, as well as message logging and
+user-state tracking helpers used across the graph.
 """
 
 import logging
@@ -58,9 +57,8 @@ def _get_subagent_context() -> Tuple[Optional[str], Optional[str]]:
 def subagent_invocation(agent_name: str):
     """Context manager that brackets a sub-agent invocation with start/end events.
 
-    Sets thread-local context so that ``log_message()`` calls within the
-    sub-agent automatically route to the live-trace stream.  Pushes
-    ``subagent_start`` and ``subagent_end`` events onto the UI queue.
+    Sets thread-local context so that ``log_message()`` calls within the sub-agent automatically route to the live-trace
+    stream.  Pushes ``subagent_start`` and ``subagent_end`` events onto the UI queue.
 
     Yields the generated *invocation_id* (a UUID string).
     """
@@ -135,9 +133,8 @@ def get_latest_user_image_parts() -> List[Dict[str, Any]]:
 def _sanitize_message(message: BaseMessage) -> BaseMessage:
     """Ensure a message's content is safe to send back to the OpenAI API.
 
-    Reasoning models (e.g. GPT-5) may return content lists or additional_kwargs
-    entries with non-standard types that the API rejects on subsequent turns.
-    This strips those to plain text.
+    Reasoning models (e.g. GPT-5) may return content lists or additional_kwargs entries with non-standard types that the
+    API rejects on subsequent turns. This strips those to plain text.
     """
     if isinstance(message, AIMessage):
         content = message.content
@@ -367,11 +364,9 @@ def _truncate_middle(text: str, name: str) -> str:
 def compress_for_manager(messages: List[BaseMessage]) -> List[BaseMessage]:
     """Return a copy of *messages* with old sub-agent ToolMessages truncated.
 
-    The most recent ``_MANAGER_KEEP_RECENT_SUBAGENT_RESULTS`` sub-agent
-    transfer ToolMessages are preserved verbatim; earlier ones are
-    head-plus-tail truncated. Non-tool messages and main-pipeline tool
-    messages (planner/recruiter/manager/evaluator/reporter own tools) are
-    passed through unchanged.
+    The most recent ``_MANAGER_KEEP_RECENT_SUBAGENT_RESULTS`` sub-agent transfer ToolMessages are preserved verbatim;
+    earlier ones are head-plus-tail truncated. Non-tool messages and main-pipeline tool messages
+    (planner/recruiter/manager/evaluator/reporter own tools) are passed through unchanged.
     """
     # Identify which ToolMessages correspond to sub-agent transfers.
     # Convention used elsewhere in the codebase:
@@ -568,9 +563,8 @@ def _validate_step_artifacts(
 ) -> Tuple[List[str], List[str]]:
     """Check which expected artifacts exist in DATA_DIR.
 
-    Returns (found, missing) where each is a list of relative path strings.
-    Paths are matched exactly first; if not found, they are tried as glob
-    patterns to allow for minor naming variations.
+    Returns (found, missing) where each is a list of relative path strings. Paths are matched exactly first; if not
+    found, they are tried as glob patterns to allow for minor naming variations.
     """
     from config import DATA_DIR
 
@@ -712,7 +706,10 @@ def create_agent_invocation_tool(
     def _post_invocation_validate(
         result: str, step_ctx: Optional[StepContext],
     ) -> str:
-        """Validate artifacts and update the plan store. Returns result with summary appended."""
+        """Validate artifacts and update the plan store.
+
+        Returns result with summary appended.
+        """
         if step_ctx is None or not step_ctx.expected_artifacts:
             return result
         found, missing = _validate_step_artifacts(step_ctx.expected_artifacts)

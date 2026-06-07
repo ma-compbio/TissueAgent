@@ -1,20 +1,16 @@
 """REPL history compression (strategy 2H).
 
-The coding and hypothesis sub-agents run an internal AI → Python →
-AI → Python loop. Each iteration adds one AI message (containing an
-``<execute>`` block) and one ``HumanMessage`` carrying the REPL stdout.
-Long analyses can accumulate dozens of iterations, each potentially
-several thousand tokens. Re-sending the full transcript on every loop
-turn drives both context-window overflow and TPM exhaustion.
+The coding and hypothesis sub-agents run an internal AI → Python → AI → Python loop. Each iteration adds one AI message
+(containing an ``<execute>`` block) and one ``HumanMessage`` carrying the REPL stdout. Long analyses can accumulate
+dozens of iterations, each potentially several thousand tokens. Re-sending the full transcript on every loop turn drives
+both context-window overflow and TPM exhaustion.
 
-We keep the last *K* iterations in full and collapse all older
-iterations into compact placeholder messages, preserving the first AI
-message (the agent's initial plan, if any) and the most recent
-``HumanMessage`` that triggered the current turn.
+We keep the last *K* iterations in full and collapse all older iterations into compact placeholder messages, preserving
+the first AI message (the agent's initial plan, if any) and the most recent ``HumanMessage`` that triggered the current
+turn.
 
-The compression is applied only to the list of messages we pass to the
-LLM; the graph state itself is left untouched so the UI trace panel and
-session exports retain the full history.
+The compression is applied only to the list of messages we pass to the LLM; the graph state itself is left untouched so
+the UI trace panel and session exports retain the full history.
 """
 
 from __future__ import annotations

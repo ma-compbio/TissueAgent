@@ -1,10 +1,10 @@
 """Runtime-configurable agent settings for TissueAgent.
 
-Holds settings that affect agent behaviour — distinct from model selection,
-which lives in models.py. Settings are mutable at runtime via the
-/api/settings REST route; a revision counter lets the graph be rebuilt
-lazily before the next user message, the same mechanism used by models.py.
+Holds settings that affect agent behaviour — distinct from model selection, which lives in models.py. Settings are
+mutable at runtime via the /api/settings REST route; a revision counter lets the graph be rebuilt lazily before the next
+user message, the same mechanism used by models.py.
 """
+
 from __future__ import annotations
 
 import threading

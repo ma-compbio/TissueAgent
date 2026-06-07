@@ -18,8 +18,8 @@ import cellxgene_census as cg
 class CensusQuery:
     """Criteria for live filtering of CELLxGENE Census obs.
 
-    Provide labels (NOT ontology IDs) for tissue/disease/etc. that match the obs columns.
-    Handle ontology expansion/synonyms before calling this.
+    Provide labels (NOT ontology IDs) for tissue/disease/etc. that match the obs columns. Handle ontology
+    expansion/synonyms before calling this.
     """
 
     species: str = "homo_sapiens"  # "homo_sapiens" | "mus_musculus"

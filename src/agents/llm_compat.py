@@ -38,8 +38,7 @@ from typing import Any, Iterator
 def _resolve_openai_key() -> str | None:
     """Look up the OpenAI API key from TissueAgent's runtime registry.
 
-    Falls back to the environment variable when the registry is not
-    importable (e.g. during unit tests).
+    Falls back to the environment variable when the registry is not importable (e.g. during unit tests).
     """
     try:
         from models import get_api_key  # local import to avoid cycles

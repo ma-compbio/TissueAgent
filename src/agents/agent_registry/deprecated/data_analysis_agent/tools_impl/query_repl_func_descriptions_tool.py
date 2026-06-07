@@ -23,9 +23,12 @@ def create_query_repl_func_descriptions():
 
 
 QueryReplFuncDescriptionsToolDescription = " ".join(
-    """Retrieves the corresponding
-function description (overview, arguments, input / return format) from a function name.
-Input an empty string to get a list of all functions avaliable for use in the REPL.""".splitlines()
+    """
+    Retrieves the corresponding function description (overview, arguments, input / return format) from a function name.
+
+    Input an empty string to get a list of all functions avaliable for use in the REPL.
+    """
+                                                                                      .splitlines()
 )
 
 query_repl_func_descriptions_tool = StructuredTool.from_function(

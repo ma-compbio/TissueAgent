@@ -82,3 +82,13 @@ convention = "google"
 "**/__init__.py" = ["ALL"]
 "notebooks/**" = ["ALL"]
 "**/deprecated/**" = ["ALL"]
+
+[dependency-groups]
+dev = [
+    "docformatter==1.7.5",
+]
+
+[tool.docformatter]
+wrap-summaries = 120
+wrap-descriptions = 120
+style = "google"

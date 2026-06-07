@@ -26,8 +26,8 @@ def _relative_to_data_dir(path: Path) -> str:
 def _resolve_path(path_like: str, *, must_exist: bool) -> Path:
     """Resolve a user-provided path into DATA_DIR.
 
-    Allows references to common subdirectories created by the app (e.g. dataset/
-    or uploads/). Always enforces that the final target stays within DATA_DIR.
+    Allows references to common subdirectories created by the app (e.g. dataset/ or uploads/). Always enforces that the
+    final target stays within DATA_DIR.
     """
     raw_path = Path(path_like).expanduser()
     data_root = DATA_DIR.resolve()

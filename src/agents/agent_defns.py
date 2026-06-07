@@ -1,9 +1,8 @@
 """Central registry of all TissueAgent agents.
 
-Defines the :class:`ReActAgent` and :class:`CustomAgent` dataclasses used to
-declaratively describe each agent, and instantiates the five main pipeline
-agents (Planner, Recruiter, Manager, Evaluator, Reporter) plus the
-specialized sub-agents listed in :data:`AgentDefns`.
+Defines the :class:`ReActAgent` and :class:`CustomAgent` dataclasses used to declaratively describe each agent, and
+instantiates the five main pipeline agents (Planner, Recruiter, Manager, Evaluator, Reporter) plus the specialized sub-
+agents listed in :data:`AgentDefns`.
 """
 
 from __future__ import annotations

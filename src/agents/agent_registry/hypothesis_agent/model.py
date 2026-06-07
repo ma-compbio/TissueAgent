@@ -27,11 +27,9 @@ from config import DATA_DIR, PDF_UPLOADS_DIR
 class HypothesisState(MessagesState):
     """Extended message state carrying the current code/response block.
 
-    The persistent ``PythonREPL`` used by ``exec_node`` is **not** part
-    of this state — it lives in a closure-local holder in
-    :func:`create_hypothesis_agent` so it never reaches the checkpointer
-    (msgpack cannot serialise a ``PythonREPL``). The closure deliberately
-    keeps the REPL alive across invocations so prior hypothesis variables
+    The persistent ``PythonREPL`` used by ``exec_node`` is **not** part of this state — it lives in a closure-local
+    holder in :func:`create_hypothesis_agent` so it never reaches the checkpointer (msgpack cannot serialise a
+    ``PythonREPL``). The closure deliberately keeps the REPL alive across invocations so prior hypothesis variables
     remain accessible to later "test hypothesis" calls.
     """
 

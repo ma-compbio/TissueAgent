@@ -34,10 +34,8 @@ from langchain_core.language_models.chat_models import BaseChatModel
 class ExternalAgentDefinition:
     """Declarative definition of an external agent.
 
-    Attributes mirror :class:`agents.agent_defns.ReActAgent` plus
-    metadata fields that come from the manifest. Optional fields
-    default to sensible empty values so contributors only have to
-    populate what their agent actually uses.
+    Attributes mirror :class:`agents.agent_defns.ReActAgent` plus metadata fields that come from the manifest. Optional
+    fields default to sensible empty values so contributors only have to populate what their agent actually uses.
     """
 
     id: str
@@ -59,8 +57,8 @@ class ExternalAgentDefinition:
 def load_manifest(folder: Path) -> dict[str, Any]:
     """Load and minimally validate a ``manifest.yaml`` from *folder*.
 
-    Returns the parsed dict. Raises ``FileNotFoundError`` if the manifest
-    is missing and ``ValueError`` for required-field violations.
+    Returns the parsed dict. Raises ``FileNotFoundError`` if the manifest is missing and ``ValueError`` for required-
+    field violations.
     """
     manifest_path = folder / "manifest.yaml"
     if not manifest_path.is_file():

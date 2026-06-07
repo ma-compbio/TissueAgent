@@ -16,26 +16,26 @@ from queue import Queue
 from typing import Callable
 
 from langchain_core.language_models.chat_models import BaseChatModel
-from langgraph.graph import END, MessagesState, START, StateGraph
+from langgraph.graph import END, START, MessagesState, StateGraph
 
 from agents.agent_defns import (
     AgentDefns,
     CustomAgent,
-    PlannerAgent,
+    EvaluatorAgent,
     ManagerAgent,
+    PlannerAgent,
     ReActAgent,
     RecruiterAgent,
-    EvaluatorAgent,
     ReporterAgent,
 )
 from graph.graph_utils import (
     AgentState,
-    create_agent_node,
-    create_tool_node,
     create_agent_invocation_tool,
+    create_agent_node,
     create_step_context_resolver,
+    create_tool_node,
 )
-from graph.plan_output import planner_state_update, create_recruiter_state_update
+from graph.plan_output import create_recruiter_state_update, planner_state_update
 
 MAX_REPLANS = 2
 MAX_RECRUITER_RETRIES = 2
@@ -53,8 +53,8 @@ def create_tissueagent_graph(
     The caller is responsible for compiling the returned graph.
 
     Execution mode (autopilot vs copilot) is an **app-layer** concern. It
-    lives on :class:`server.session_manager.SessionState` and is honored by
-    the server's WebSocket handlers when they invoke the compiled graph.
+    lives on :class:`server.session_manager.SessionState` and is honored by the server's WebSocket
+    handlers when they invoke the compiled graph.
     Direct callers (notebook / CLI) never set up that session and therefore
     always run autopilot — copilot pauses are server-side wiring only.
 
@@ -105,9 +105,7 @@ def create_tissueagent_graph(
             else:
                 prompt_fn = base_prompt
 
-            agent_node = create_agent_node(
-                agent_node_id, agent_model, prompt_fn, tool_node_id, END
-            )
+            agent_node = create_agent_node(agent_node_id, agent_model, prompt_fn, tool_node_id, END)
 
             agent_subgraph.add_node(agent_node_id, agent_node)
             agent_subgraph.add_node(tool_node_id, tool_node)
@@ -172,9 +170,7 @@ def create_tissueagent_graph(
     ]:
         if isinstance(main_agent.prompt, str):
             prompt_preview = (
-                main_agent.prompt
-                if len(main_agent.prompt) < 600
-                else main_agent.prompt[:600] + "...[truncated]"
+                main_agent.prompt if len(main_agent.prompt) < 600 else main_agent.prompt[:600] + "...[truncated]"
             )
         else:
             try:
@@ -271,7 +267,8 @@ def create_tissueagent_graph(
 
     valid_agent_ids = {a.id for a in AgentDefns}
     recruiter_state_update_fn = create_recruiter_state_update(
-        valid_agent_ids, max_retries=MAX_RECRUITER_RETRIES,
+        valid_agent_ids,
+        max_retries=MAX_RECRUITER_RETRIES,
     )
 
     def recruiter_router(response, state) -> str:

@@ -200,7 +200,10 @@ def get_selection() -> Dict[str, str]:
 
 
 def set_selection(orchestration: str, worker: str) -> Dict[str, str]:
-    """Update the active model selection. Validates both ids."""
+    """Update the active model selection.
+
+    Validates both ids.
+    """
     # Validate before mutating so a bad request leaves state unchanged.
     get_model_spec(orchestration)
     get_model_spec(worker)
@@ -250,7 +253,10 @@ def get_api_key(provider: Provider) -> Optional[str]:
 
 
 def set_api_key(provider: Provider, key: Optional[str]) -> None:
-    """Store *key* in memory. Pass ``None`` or empty to clear and fall back to env."""
+    """Store *key* in memory.
+
+    Pass ``None`` or empty to clear and fall back to env.
+    """
     if provider not in PROVIDER_ENV_VAR:
         raise ValueError(f"Unknown provider: {provider!r}")
     clean = key.strip() if key else ""
@@ -262,7 +268,8 @@ def set_api_key(provider: Provider, key: Optional[str]) -> None:
 
 
 def get_key_status() -> Dict[str, Dict[str, Any]]:
-    """Per-provider status for the UI: env detected, UI-set flag, env-var name.
+    """
+    Per-provider status for the UI: env detected, UI-set flag, env-var name.
 
     Never returns the actual key values.
     """
@@ -288,8 +295,8 @@ def get_key_status() -> Dict[str, Dict[str, Any]]:
 def build_chat_model(model_id: str, **overrides: Any) -> BaseChatModel:
     """Instantiate a fresh chat model for *model_id*.
 
-    ``overrides`` are forwarded to the underlying constructor. Provider-
-    specific arguments not understood by the other provider are dropped.
+    ``overrides`` are forwarded to the underlying constructor. Provider- specific arguments not understood by the other
+    provider are dropped.
     """
     spec = get_model_spec(model_id)
 
@@ -341,9 +348,8 @@ def build_chat_model(model_id: str, **overrides: Any) -> BaseChatModel:
 def model_ctor_for_role(role: Role, **overrides: Any) -> Callable[..., BaseChatModel]:
     """Return a zero-argument callable that resolves the current model for *role*.
 
-    The model id is looked up at *call time*, so changing the selection
-    affects the next graph build without needing to re-wire ``model_ctor``
-    fields on every agent definition.
+    The model id is looked up at *call time*, so changing the selection affects the next graph build without needing to
+    re-wire ``model_ctor`` fields on every agent definition.
     """
 
     def ctor() -> BaseChatModel:

@@ -1,14 +1,11 @@
 """Parse structured JSON plan output from the planner and recruiter agents.
 
-Instead of using proxy tool calls (``write_plan`` / ``assign_agents``), the
-planner and recruiter now emit a fenced JSON block in their text response.
-This module extracts that JSON, validates it, builds/updates the
-:class:`~server.plan_store.PlanDocument`, persists it, and emits a
-``plan_updated`` UI event.
+Instead of using proxy tool calls (``write_plan`` / ``assign_agents``), the planner and recruiter now emit a fenced JSON
+block in their text response. This module extracts that JSON, validates it, builds/updates the
+:class:`~server.plan_store.PlanDocument`, persists it, and emits a ``plan_updated`` UI event.
 
-The two public helpers — :func:`planner_state_update` and
-:func:`recruiter_state_update` — are wired as ``state_update_fn`` callbacks
-on their respective agent nodes in :mod:`graph.graph`.
+The two public helpers — :func:`planner_state_update` and :func:`recruiter_state_update` — are wired as
+``state_update_fn`` callbacks on their respective agent nodes in :mod:`graph.graph`.
 """
 
 from __future__ import annotations
@@ -146,9 +143,8 @@ def _build_plan_from_json(data: dict) -> Optional[PlanDocument]:
 def planner_state_update(response: AIMessage, state) -> Dict[str, Any]:
     """``state_update_fn`` for the planner agent node.
 
-    If the response contains a fenced JSON plan block, persists the plan
-    and emits a ``plan_updated`` event.  Returns an empty dict (no extra
-    state keys needed).
+    If the response contains a fenced JSON plan block, persists the plan and emits a ``plan_updated`` event.  Returns an
+    empty dict (no extra state keys needed).
     """
     text = (response.content or "") if isinstance(response.content, str) else ""
     data = _extract_json(text)
@@ -226,7 +222,10 @@ def _apply_assignments_from_json(data: dict) -> Optional[PlanDocument]:
 def _validate_assignments(
     doc: PlanDocument, valid_agent_ids: set,
 ) -> List[str]:
-    """Validate recruiter assignments. Returns list of error strings (empty = valid)."""
+    """Validate recruiter assignments.
+
+    Returns list of error strings (empty = valid).
+    """
     skill_meta = get_skill_metadata()
     valid_skill_names = set(skill_meta.keys())
     errors: List[str] = []
@@ -255,9 +254,8 @@ def create_recruiter_state_update(
 ):
     """Factory that returns a ``state_update_fn`` for the recruiter node.
 
-    The returned callback parses the recruiter's JSON output, validates
-    agent IDs and skill assignments, and either persists the plan or
-    signals a retry by returning validation errors in the state.
+    The returned callback parses the recruiter's JSON output, validates agent IDs and skill assignments, and either
+    persists the plan or signals a retry by returning validation errors in the state.
     """
 
     def recruiter_state_update(response: AIMessage, state) -> Dict[str, Any]:

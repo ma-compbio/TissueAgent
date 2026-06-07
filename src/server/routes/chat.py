@@ -1,7 +1,7 @@
 """WebSocket endpoint for real-time agent chat.
 
-Handles bidirectional communication: receives user messages, invokes the
-LangGraph agent, and streams back intermediate traces and sub-agent states.
+Handles bidirectional communication: receives user messages, invokes the LangGraph agent, and streams back intermediate
+traces and sub-agent states.
 """
 
 import asyncio
@@ -34,8 +34,7 @@ _executor = ThreadPoolExecutor(max_workers=1)
 async def websocket_chat(ws: WebSocket):
     """Primary real-time chat channel.
 
-    On connect, sends current conversation history.
-    On receive, processes user messages and streams agent traces back.
+    On connect, sends current conversation history. On receive, processes user messages and streams agent traces back.
     """
     await ws.accept()
 
@@ -83,10 +82,9 @@ async def websocket_chat(ws: WebSocket):
 async def _handle_set_mode(ws: WebSocket, data: dict):
     """Update the session execution mode and echo the new value back.
 
-    Mode changes take effect on the *next* user prompt. A run that's
-    already in flight keeps the mode it started with — ``_run_graph``
-    snapshots mode at invoke time, so toggling mid-run is safe and does
-    not affect the current run's pause behavior.
+    Mode changes take effect on the *next* user prompt. A run that's already in flight keeps the mode it started with —
+    ``_run_graph`` snapshots mode at invoke time, so toggling mid-run is safe and does not affect the current run's
+    pause behavior.
     """
     requested = data.get("mode")
     if requested not in ("autopilot", "copilot"):
@@ -212,11 +210,9 @@ def _interrupt_label(next_nodes) -> Optional[str]:
 def _pending_interrupt_nodes() -> list[str]:
     """Nodes that should pause on the *next* invoke for this run.
 
-    LangGraph's ``interrupt_before`` is sticky — a node listed there
-    pauses every time the graph is about to enter it, including
-    inner-loop returns (e.g. ``manager_tools`` → ``manager_agent``).
-    We want each gate to fire **at most once** per turn, so we exclude
-    gates that have already fired (tracked on ``session.gates_fired``).
+    LangGraph's ``interrupt_before`` is sticky — a node listed there pauses every time the graph is about to enter it,
+    including inner-loop returns (e.g. ``manager_tools`` → ``manager_agent``). We want each gate to fire **at most
+    once** per turn, so we exclude gates that have already fired (tracked on ``session.gates_fired``).
     """
     return [
         node
@@ -371,9 +367,8 @@ async def _set_plan_status_and_emit(
 ) -> None:
     """Flip the on-disk plan's top-level status and notify the frontend.
 
-    No-op when the plan is empty (status ``"empty"``) — there's nothing to
-    update, and we don't want to fabricate a plan document just to carry
-    a status. Set ``only_if_present=False`` to force-write regardless.
+    No-op when the plan is empty (status ``"empty"``) — there's nothing to update, and we don't want to fabricate a plan
+    document just to carry a status. Set ``only_if_present=False`` to force-write regardless.
     """
     from server.plan_store import plan_store as _plan_store, serialize_plan
 
@@ -396,8 +391,7 @@ async def _set_plan_status_and_emit(
 async def _require_paused_at(ws: WebSocket, expected_pause: str) -> bool:
     """Validate that the session is paused at the expected gate.
 
-    Returns ``True`` if the caller may proceed. On a mismatch, sends a
-    ``run_error`` over *ws* and returns ``False``.
+    Returns ``True`` if the caller may proceed. On a mismatch, sends a ``run_error`` over *ws* and returns ``False``.
     """
     if session.paused_at is None:
         await ws.send_json({
@@ -449,9 +443,8 @@ async def _apply_user_plan_edit_and_resume(
 ) -> None:
     """Common path for plan_edited and assignments_edited.
 
-    Validates and persists *markdown* via ``plan_store.apply_user_edit``,
-    pushes a ``plan_updated`` event so the UI reflects the saved form,
-    and resumes the graph with ``input=None``.
+    Validates and persists *markdown* via ``plan_store.apply_user_edit``, pushes a ``plan_updated`` event so the UI
+    reflects the saved form, and resumes the graph with ``input=None``.
     """
     from server.plan_store import plan_store as _plan_store, PlanEditError, serialize_plan
 
@@ -487,9 +480,8 @@ async def _handle_plan_feedback(ws: WebSocket, data: dict) -> None:
 async def _handle_assignments_feedback(ws: WebSocket, data: dict) -> None:
     """Rewind to the planner with assignment-stage feedback.
 
-    Both feedback paths re-enter at the planner (see Milestone 4 design):
-    simpler, matches the existing REPLAN loop, and the planner can decide
-    whether to actually re-plan or pass through.
+    Both feedback paths re-enter at the planner (see Milestone 4 design): simpler, matches the existing REPLAN loop, and
+    the planner can decide whether to actually re-plan or pass through.
     """
     if not await _require_paused_at(ws, "before_manager"):
         return
@@ -499,9 +491,8 @@ async def _handle_assignments_feedback(ws: WebSocket, data: dict) -> None:
 async def _rewind_to_planner_with_feedback(ws: WebSocket, text: str) -> None:
     """Append feedback as a HumanMessage and re-invoke from the top.
 
-    Cycles ``thread_id`` so the new run is a fresh checkpointer thread —
-    the old interrupt state is orphaned, which is intentional. The
-    feedback message is what the planner sees on its next pass.
+    Cycles ``thread_id`` so the new run is a fresh checkpointer thread — the old interrupt state is orphaned, which is
+    intentional. The feedback message is what the planner sees on its next pass.
     """
     feedback = (text or "").strip()
     if not feedback:
@@ -541,9 +532,8 @@ async def _rewind_to_planner_with_feedback(ws: WebSocket, text: str) -> None:
 async def _handle_run_cancelled(ws: WebSocket) -> None:
     """Cancel an in-progress copilot run.
 
-    The checkpointer thread is abandoned (a fresh one is generated for
-    the next turn). The on-disk plan is wiped so the UI doesn't keep
-    showing a stale review prompt.
+    The checkpointer thread is abandoned (a fresh one is generated for the next turn). The on-disk plan is wiped so the
+    UI doesn't keep showing a stale review prompt.
     """
     if session.paused_at is None and not session.is_running:
         # Nothing to cancel — still acknowledge so the UI clears state.

@@ -1,7 +1,7 @@
 """Serialize LangChain messages to JSON dicts for WebSocket transport.
 
-Each serialized message includes parsed metadata (agent badge, route header,
-HTML tags) so the React frontend can render without duplicating parsing logic.
+Each serialized message includes parsed metadata (agent badge, route header, HTML tags) so the React frontend can render
+without duplicating parsing logic.
 """
 
 from typing import Any, Dict, List, Optional

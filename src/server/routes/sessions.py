@@ -75,11 +75,9 @@ class SaveResult(BaseModel):
 async def clear_current_session():
     """Wipe the current in-memory session.
 
-    Clears the message history, sub-agent traces, file metadata, the
-    on-disk plan, and the LangGraph thread state. Refuses while the
-    agent is running — the caller should cancel an in-flight run first.
-    Returns the cleared mode so the client can update its toggle if it
-    cares (mode itself is preserved, since it's a user preference).
+    Clears the message history, sub-agent traces, file metadata, the on-disk plan, and the LangGraph thread state.
+    Refuses while the agent is running — the caller should cancel an in-flight run first. Returns the cleared mode so
+    the client can update its toggle if it cares (mode itself is preserved, since it's a user preference).
     """
     if session.is_running:
         raise HTTPException(
@@ -211,7 +209,10 @@ async def load_selected_session(filename: str):
 
 @router.delete("/{filename}")
 async def delete_session(filename: str):
-    """Delete a saved session file. Refuses while a run is in progress."""
+    """Delete a saved session file.
+
+    Refuses while a run is in progress.
+    """
     if session.is_running:
         raise HTTPException(
             status_code=409,

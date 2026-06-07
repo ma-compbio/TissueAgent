@@ -1,8 +1,7 @@
 """REST endpoint exposing the agent registry to the frontend.
 
-The assignment-review UI in copilot mode uses this to populate the
-per-step "assigned agent" dropdown so it stays in sync with whatever
-agents are actually registered in :data:`agents.agent_defns.AgentDefns`.
+The assignment-review UI in copilot mode uses this to populate the per-step "assigned agent" dropdown so it stays in
+sync with whatever agents are actually registered in :data:`agents.agent_defns.AgentDefns`.
 """
 
 from typing import List

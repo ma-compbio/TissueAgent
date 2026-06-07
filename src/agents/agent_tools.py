@@ -1,7 +1,6 @@
 """File-access tools (glob, grep, read, write) for agents.
 
-These tools operate within the DATA_DIR workspace and are used by
-sub-agents to interact with project files.
+These tools operate within the DATA_DIR workspace and are used by sub-agents to interact with project files.
 """
 
 from __future__ import annotations
@@ -29,7 +28,10 @@ def _glob(pattern: str) -> str:
 
 
 def _grep(pattern: str, include: str = "**/*") -> str:
-    """Search file contents in the workspace for a regex pattern. Binary files are skipped."""
+    """Search file contents in the workspace for a regex pattern.
+
+    Binary files are skipped.
+    """
     hits: list[str] = []
     for path in sorted(DATA_DIR.glob(include)):
         if not path.is_file():

@@ -1,4 +1,5 @@
-"""Plan store: reads, writes, and parses the evolving plan markdown file.
+"""
+Plan store: reads, writes, and parses the evolving plan markdown file.
 
 The "evolving plan" is the single artifact that describes what TissueAgent
 is about to do or is currently doing. It is authored cooperatively:
@@ -274,10 +275,9 @@ class PlanStore:
     def _ensure_dir(self) -> None:
         """Create the plan directory if missing.
 
-        The FastAPI lifespan calls ``reset_data_directories()`` at startup
-        which wipes ``sessions/`` — including the directory this store
-        created at import time. Every read/write/reset must therefore
-        re-create the directory rather than assume it exists.
+        The FastAPI lifespan calls ``reset_data_directories()`` at startup which wipes ``sessions/`` — including the
+        directory this store created at import time. Every read/write/reset must therefore re-create the directory
+        rather than assume it exists.
         """
         self._dir.mkdir(parents=True, exist_ok=True)
 
@@ -316,7 +316,10 @@ class PlanStore:
             self.path.write_text(markdown, encoding="utf-8")
 
     def reset(self) -> None:
-        """Drop the current plan. Called at the start of each new run."""
+        """Drop the current plan.
+
+        Called at the start of each new run.
+        """
         with self._lock:
             self._ensure_dir()
             if self.path.is_file():

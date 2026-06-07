@@ -1,4 +1,5 @@
 """Tool definitions for the reporter agent."""
+
 from __future__ import annotations
 
 from langchain.tools import StructuredTool

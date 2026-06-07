@@ -1,7 +1,6 @@
 """Shared utilities for agent prompt construction.
 
-Provides helpers for formatting agent descriptions, extracting XML-style
-blocks from LLM responses, and text truncation.
+Provides helpers for formatting agent descriptions, extracting XML-style blocks from LLM responses, and text truncation.
 """
 
 from __future__ import annotations
@@ -16,9 +15,8 @@ import yaml
 def parse_yaml_frontmatter(text: str) -> dict | None:
     """Extract YAML frontmatter from a Markdown string.
 
-    Expects the text to start with ``---``, followed by YAML content,
-    closed by another ``---``.  Returns the parsed dict, or ``None`` if
-    the text has no valid frontmatter.
+    Expects the text to start with ``---``, followed by YAML content, closed by another ``---``.  Returns the parsed
+    dict, or ``None`` if the text has no valid frontmatter.
     """
     if not text.startswith("---"):
         return None
@@ -33,8 +31,8 @@ def parse_yaml_frontmatter(text: str) -> dict | None:
 def format_skill_prompt(skill_names: list[str]) -> str:
     """Build the skill injection block for a sub-agent system prompt.
 
-    Loads skill content from the skill registry, strips YAML frontmatter,
-    and wraps each skill in a formatted section with universal boilerplate.
+    Loads skill content from the skill registry, strips YAML frontmatter, and wraps each skill in a formatted section
+    with universal boilerplate.
 
     Returns empty string if no valid skills are found.
     """

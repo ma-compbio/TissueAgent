@@ -1,8 +1,7 @@
 """Global session state manager replacing Streamlit's session_state.
 
-Provides a single-user in-memory session that holds the agent graph,
-message history, sub-agent states, file upload metadata, and the
-thread-safe queues used for real-time UI streaming.
+Provides a single-user in-memory session that holds the agent graph, message history, sub-agent states, file upload
+metadata, and the thread-safe queues used for real-time UI streaming.
 """
 
 import threading
@@ -118,7 +117,10 @@ class SessionState:
         self.display_message_ids = set(message_identity(msg) for msg in existing)
 
     def append_display_message(self, message: Any) -> bool:
-        """Append *message* to the display list if it is new. Returns True if added."""
+        """Append *message* to the display list if it is new.
+
+        Returns True if added.
+        """
         if should_hide_message(message):
             return False
         msg_key = message_identity(message)

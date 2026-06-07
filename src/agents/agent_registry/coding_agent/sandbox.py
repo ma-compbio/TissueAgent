@@ -1,7 +1,7 @@
 """Docker sandbox with Jupyter Kernel Gateway for isolated code execution.
 
-Provides ContainerManager for Docker lifecycle and KernelClient for
-executing Python/R code via the Jupyter wire protocol.
+Provides ContainerManager for Docker lifecycle and KernelClient for executing Python/R code via the Jupyter wire
+protocol.
 """
 
 from __future__ import annotations

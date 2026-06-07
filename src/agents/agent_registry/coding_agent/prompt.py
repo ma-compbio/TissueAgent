@@ -12,8 +12,8 @@ def _read(filename: str) -> str:
 def CodingAgentPrompt(sandbox_enabled: bool = True) -> str:
     """Build the coding agent system prompt.
 
-    When ``sandbox_enabled`` is False the no-sandbox variant is used, which
-    adds an explicit file-access policy restricting the agent to /workspace.
+    When ``sandbox_enabled`` is False the no-sandbox variant is used, which adds an explicit file-access policy
+    restricting the agent to /workspace.
     """
     template_file = (
         "coding_agent_prompt.txt"
