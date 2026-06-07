@@ -1,7 +1,7 @@
 from langchain.tools import StructuredTool
 from pydantic import BaseModel, Field
 
-from agents.agent_utils import file_read_tools
+from agents.agent_tools import file_read_tools
 
 # ╔═══════════════════════╗
 # ║ 🤐 Unzip Tool         ║
