@@ -24,7 +24,7 @@ import agent_settings
 from agents.agent_registry.coding_agent.sandbox import ContainerManager, KernelClient
 import models as model_registry
 from graph.graph import create_tissueagent_graph
-from graph.graph_utils import register_ui_event_queue
+from graph.ui_events import register_ui_event_queue
 from server.rate_limit import with_header_retry
 from server.routes import (
     agents as agents_route,

@@ -20,7 +20,7 @@ from pathlib import Path
 
 from agents.manager_agent.tools import ManagerToolsNames
 from config import RECURSION_LIMIT
-from graph.graph_utils import log_message
+from graph.ui_events import log_message
 from server.message_serializer import serialize_history, serialize_message, serialize_subagent_state
 from server.session_manager import session
 from config import DATA_DIR

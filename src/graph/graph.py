@@ -28,15 +28,17 @@ from agents.agent_defns import (
     RecruiterAgent,
     ReporterAgent,
 )
-from graph.graph_utils import (
-    AgentState,
+from graph.message_filters import (
     compress_for_manager,
+    filter_for_execution_phase,
+    filter_for_recruiter,
+)
+from graph.node_factories import (
+    AgentState,
     create_agent_invocation_tool,
     create_agent_node,
     create_step_context_resolver,
     create_tool_node,
-    filter_for_execution_phase,
-    filter_for_recruiter,
 )
 from graph.plan_output import create_recruiter_state_update, planner_state_update
 

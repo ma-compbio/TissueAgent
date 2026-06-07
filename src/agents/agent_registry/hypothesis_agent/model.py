@@ -19,7 +19,7 @@ from agents.agent_registry.hypothesis_agent.prompt import (
     HypothesisAgentPrompt,
     HypothesisAgentDescription,
 )
-from graph.graph_utils import log_message, subagent_invocation
+from graph.ui_events import log_message, subagent_invocation
 
 from config import DATA_DIR, PDF_UPLOADS_DIR
 
@@ -200,7 +200,7 @@ def create_hypothesis_agent(
         result = final_state["messages"][-1].content
 
         if step_ctx and step_ctx.expected_artifacts:
-            from graph.graph_utils import (
+            from graph.node_factories import (
                 _validate_step_artifacts,
                 _update_step_status,
                 _format_validation_summary,

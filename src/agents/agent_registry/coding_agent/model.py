@@ -22,13 +22,8 @@ import agent_settings
 from agents.agent_registry.coding_agent.prompt import CodingAgentPrompt
 from config import DATA_DIR, ROOT
 from agents.agent_tools import file_read_write_tools
-from graph.graph_utils import (
-    AgentState,
-    create_agent_node,
-    create_tool_node,
-    log_message,
-    subagent_invocation,
-)
+from graph.node_factories import AgentState, create_agent_node, create_tool_node
+from graph.ui_events import log_message, subagent_invocation
 
 
 def create_coding_agent(
@@ -189,7 +184,7 @@ def create_coding_agent(
         result = final_state["messages"][-1].content
 
         if step_ctx and step_ctx.expected_artifacts:
-            from graph.graph_utils import (
+            from graph.node_factories import (
                 _validate_step_artifacts,
                 _update_step_status,
                 _format_validation_summary,

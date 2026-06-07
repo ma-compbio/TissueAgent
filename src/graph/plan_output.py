@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional
 from langchain_core.messages import AIMessage, HumanMessage
 
 from agents.recruiter_agent.prompt import get_skill_metadata
-from graph.graph_utils import log_message
+from graph.ui_events import log_message
 from server.plan_store import (
     PlanDocument,
     PlanProvenance,
