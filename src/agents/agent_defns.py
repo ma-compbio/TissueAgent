@@ -7,8 +7,8 @@ agents listed in :data:`AgentDefns`.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from langchain.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -20,12 +20,12 @@ from agents.agent_registry.cell_annotater_agent.prompt import (
     CellTissueAnnotationPrompt,
 )
 from agents.agent_registry.cell_annotater_agent.tools import CellAnnotaterTools
+from agents.agent_registry.coding_agent.prompt import CodingAgentDescription
 from agents.agent_registry.critic_agent.prompt import (
     CriticAgentDescription,
     CriticAgentPrompt,
 )
 from agents.agent_registry.critic_agent.tools import CriticTools
-from agents.agent_registry.coding_agent.prompt import CodingAgentDescription
 from agents.agent_registry.gene_agent import agent_definition as GeneAgentDef
 from agents.agent_registry.hypothesis_agent.prompt import HypothesisAgentDescription
 from agents.agent_registry.pdf_reader_agent.prompt import (
@@ -64,22 +64,20 @@ from models import model_ctor_for_role
 WorkerModelCtor = model_ctor_for_role("worker")
 
 
-
 @dataclass
 class ReActAgent:
     """Declarative definition of a standard ReAct-style agent.
 
-    Agents described by this class are compiled into LangGraph sub-graphs
-    with an agent node (LLM call) and a tool node (tool execution).
+    Agents described by this class are compiled into LangGraph sub-graphs with an agent node (LLM
+    call) and a tool node (tool execution).
 
     Attributes:
         id: Short unique identifier used to derive graph node IDs.
         name: Human-readable display name shown in the UI.
         description: Free-text description surfaced to the recruiter/manager.
-        prompt: System prompt string, or a callable that accepts
-            ``agent_id_descriptions`` and returns the prompt.
-        tools: List of LangChain ``StructuredTool`` instances available to
-            the agent.
+        prompt: System prompt string, or a callable that accepts ``agent_id_descriptions`` and
+            returns the prompt.
+        tools: List of LangChain ``StructuredTool`` instances available to the agent.
         model_ctor: Zero-argument callable that returns a
             :class:`~langchain_core.language_models.BaseChatModel`.
     """
@@ -96,16 +94,15 @@ class ReActAgent:
 class CustomAgent:
     """Declarative definition of an agent with a custom graph constructor.
 
-    Unlike :class:`ReActAgent`, the graph topology is built entirely by the
-    *ctor* callable, allowing non-standard patterns such as the CodeAct loop.
+    Unlike :class:`ReActAgent`, the graph topology is built entirely by the *ctor* callable,
+    allowing non-standard patterns such as the CodeAct loop.
 
     Attributes:
         id: Short unique identifier used to derive graph node IDs.
         name: Human-readable display name shown in the UI.
         description: Free-text description surfaced to the recruiter/manager.
         ctor: Factory callable that accepts a ``state_queue`` and returns a
-            :class:`~langchain.tools.StructuredTool` wrapping the compiled
-            sub-agent.
+            :class:`~langchain.tools.StructuredTool` wrapping the compiled sub-agent.
     """
 
     id: str
@@ -206,7 +203,6 @@ AgentDefns: list[ReActAgent | CustomAgent] = [
         tools=GeneAgentDef.tools,
         model_ctor=GeneAgentDef.model_ctor,
     ),
-
     ReActAgent(
         id="cell_annotator",
         name="Cell Annotator Agent",

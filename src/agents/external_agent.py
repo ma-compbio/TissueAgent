@@ -24,7 +24,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from langchain.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel

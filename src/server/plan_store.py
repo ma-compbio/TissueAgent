@@ -1,5 +1,4 @@
-"""
-Plan store: reads, writes, and parses the evolving plan markdown file.
+"""Plan store: reads, writes, and parses the evolving plan markdown file.
 
 The "evolving plan" is the single artifact that describes what TissueAgent
 is about to do or is currently doing. It is authored cooperatively:

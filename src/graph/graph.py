@@ -11,9 +11,9 @@ and exposed to the Manager as invocation tools.
 
 import json
 import logging
+from collections.abc import Callable
 from datetime import datetime, timezone
 from queue import Queue
-from typing import Callable
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph import END, START, MessagesState, StateGraph
@@ -48,33 +48,30 @@ def create_tissueagent_graph(
 ) -> StateGraph:
     """Build the full TissueAgent state graph (uncompiled).
 
-    Constructs sub-agent graphs for each entry in :data:`AgentDefns`, then
-    wires the five main pipeline agents with conditional routing edges.
-    The caller is responsible for compiling the returned graph.
+    Constructs sub-agent graphs for each entry in :data:`AgentDefns`, then wires the five main
+    pipeline agents with conditional routing edges. The caller is responsible for compiling the
+    returned graph.
 
-    Execution mode (autopilot vs copilot) is an **app-layer** concern. It
-    lives on :class:`server.session_manager.SessionState` and is honored by the server's WebSocket
-    handlers when they invoke the compiled graph.
-    Direct callers (notebook / CLI) never set up that session and therefore
-    always run autopilot — copilot pauses are server-side wiring only.
+    Execution mode (autopilot vs copilot) is an **app-layer** concern. It lives on
+    :class:`server.session_manager.SessionState` and is honored by the server's WebSocket handlers
+    when they invoke the compiled graph. Direct callers (notebook / CLI) never set up that session
+    and therefore always run autopilot; copilot pauses are server-side wiring only.
 
     Args:
-        state_queue: Thread-safe queue where completed sub-agent states are
-            placed so the UI can render them.
-        model_proc_fn: Callable applied to every bound model (typically
-            adds retry logic for rate-limit errors).
-        kernel_client: Optional :class:`KernelClient` for the coding agent's
-            Docker sandbox.  Passed to the coding agent's constructor.
+        state_queue: Thread-safe queue where completed sub-agent states are placed so the UI can
+            render them.
+        model_proc_fn: Callable applied to every bound model (typically adds retry logic for
+            rate-limit errors).
+        kernel_client: Optional :class:`KernelClient` for the coding agent's Docker sandbox. Passed
+            to the coding agent's constructor.
 
     Returns:
-        An uncompiled :class:`~langgraph.graph.StateGraph` ready to be
-        compiled via ``.compile()``.
+        An uncompiled :class:`~langgraph.graph.StateGraph` ready to be compiled via ``.compile()``.
     """
     assign_agent_node_id = lambda id: f"{id}_agent"
     assign_tool_node_id = lambda id: f"{id}_tools"
 
     agent_id_descriptions = {assign_agent_node_id(a.id): a.description for a in AgentDefns}
-
     logging.info(f"Agent ID Descriptions: {json.dumps(agent_id_descriptions, indent=4)}")
 
     ## Build Subagents
@@ -92,16 +89,11 @@ def create_tissueagent_graph(
 
             # Wrap static prompt strings in a callable that injects skill_prompt.
             base_prompt = agent.prompt
-            if isinstance(base_prompt, str):
+            if callable(base_prompt):
 
-                def _make_prompt_fn(p):
-                    def prompt_fn(state):
-                        skill_text = state.get("skill_prompt", "")
-                        return p.replace("{{skill_prompt}}", skill_text)
-
-                    return prompt_fn
-
-                prompt_fn = _make_prompt_fn(base_prompt)
+                def prompt_fn(state):
+                    skill_text = state.get("skill_prompt", "")
+                    return base_prompt.replace("{{skill_prompt}}", skill_text)
             else:
                 prompt_fn = base_prompt
 
@@ -113,10 +105,8 @@ def create_tissueagent_graph(
             agent_subgraph.add_edge(tool_node_id, agent_node_id)
             subagent = agent_subgraph.compile()
 
-            # Enable PDF support for PDF Reader Agent
-            supports_pdf = agent.id == "pdf_reader"
-
-            forward_user_images = agent.id == "coding"
+            supports_pdf = agent.id in ["pdf_reader"]
+            forward_user_images = agent.id in ["coding"]
             agent_invocation_tool = create_agent_invocation_tool(
                 agent_node_id,
                 agent.name,
@@ -170,7 +160,9 @@ def create_tissueagent_graph(
     ]:
         if isinstance(main_agent.prompt, str):
             prompt_preview = (
-                main_agent.prompt if len(main_agent.prompt) < 600 else main_agent.prompt[:600] + "...[truncated]"
+                main_agent.prompt
+                if len(main_agent.prompt) < 600
+                else main_agent.prompt[:600] + "...[truncated]"
             )
         else:
             try:

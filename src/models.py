@@ -25,7 +25,8 @@ from __future__ import annotations
 import os
 import threading
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Literal, Optional
+from collections.abc import Callable
+from typing import Any, Dict, List, Literal, Optional
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
@@ -268,8 +269,7 @@ def set_api_key(provider: Provider, key: Optional[str]) -> None:
 
 
 def get_key_status() -> Dict[str, Dict[str, Any]]:
-    """
-    Per-provider status for the UI: env detected, UI-set flag, env-var name.
+    """Per-provider status for the UI: env detected, UI-set flag, env-var name.
 
     Never returns the actual key values.
     """

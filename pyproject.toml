@@ -67,7 +67,7 @@ dependencies = [
 ]
 
 [tool.ruff]
-line-length = 120
+line-length = 100
 force-exclude = true
 
 [tool.ruff.lint]
@@ -84,11 +84,4 @@ convention = "google"
 "**/deprecated/**" = ["ALL"]
 
 [dependency-groups]
-dev = [
-    "docformatter==1.7.5",
-]
-
-[tool.docformatter]
-wrap-summaries = 120
-wrap-descriptions = 120
-style = "google"
+dev = []

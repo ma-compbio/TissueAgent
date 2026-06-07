@@ -1,17 +1,18 @@
 """Graph node and tool factories for the TissueAgent LangGraph pipeline.
 
-Provides reusable builders for agent nodes, tool nodes, and sub-agent invocation tools, as well as message logging and
-user-state tracking helpers used across the graph.
+Provides reusable builders for agent nodes, tool nodes, and sub-agent invocation tools, as well as
+message logging and user-state tracking helpers used across the graph.
 """
 
 import logging
 import threading
 import uuid
+from collections.abc import Callable
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from queue import Queue
-from typing import Any, Callable, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from langchain.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -25,7 +26,6 @@ from langchain_core.messages import (
 from langgraph.graph import MessagesState
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
-
 
 from logger import logger
 
@@ -57,18 +57,22 @@ def _get_subagent_context() -> Tuple[Optional[str], Optional[str]]:
 def subagent_invocation(agent_name: str):
     """Context manager that brackets a sub-agent invocation with start/end events.
 
-    Sets thread-local context so that ``log_message()`` calls within the sub-agent automatically route to the live-trace
-    stream.  Pushes ``subagent_start`` and ``subagent_end`` events onto the UI queue.
-
-    Yields the generated *invocation_id* (a UUID string).
+    Sets thread-local context so that ``log_message()`` calls within the sub-agent automatically
+    route to the live-trace stream.  Pushes ``subagent_start`` and ``subagent_end`` events onto the
+    UI queue. Yields the generated *invocation_id* (a UUID string).
     """
     invocation_id = str(uuid.uuid4())
 
     if _ui_event_queue is not None:
-        _ui_event_queue.put_nowait(("subagent_start", {
-            "invocation_id": invocation_id,
-            "agent_name": agent_name,
-        }))
+        _ui_event_queue.put_nowait(
+            (
+                "subagent_start",
+                {
+                    "invocation_id": invocation_id,
+                    "agent_name": agent_name,
+                },
+            )
+        )
 
     _subagent_context.invocation_id = invocation_id
     _subagent_context.agent_name = agent_name
@@ -78,10 +82,15 @@ def subagent_invocation(agent_name: str):
         _subagent_context.invocation_id = None
         _subagent_context.agent_name = None
         if _ui_event_queue is not None:
-            _ui_event_queue.put_nowait(("subagent_end", {
-                "invocation_id": invocation_id,
-                "agent_name": agent_name,
-            }))
+            _ui_event_queue.put_nowait(
+                (
+                    "subagent_end",
+                    {
+                        "invocation_id": invocation_id,
+                        "agent_name": agent_name,
+                    },
+                )
+            )
 
 
 def register_ui_event_queue(event_queue: Queue) -> None:
@@ -212,7 +221,9 @@ def standardize_message_format(message: AIMessage) -> AIMessage:
                 other_parts.append(item)
 
         combined_tool_calls = tool_calls or message.tool_calls or []
-        return AIMessage("\n".join(text_parts).strip(), id=message.id, tool_calls=combined_tool_calls)
+        return AIMessage(
+            "\n".join(text_parts).strip(), id=message.id, tool_calls=combined_tool_calls
+        )
     return message
 
 
@@ -288,11 +299,16 @@ def log_message(message: BaseMessage) -> None:
         try:
             inv_id, sa_name = _get_subagent_context()
             if inv_id is not None:
-                _ui_event_queue.put_nowait(("subagent_message", {
-                    "invocation_id": inv_id,
-                    "agent_name": sa_name,
-                    "message": message,
-                }))
+                _ui_event_queue.put_nowait(
+                    (
+                        "subagent_message",
+                        {
+                            "invocation_id": inv_id,
+                            "agent_name": sa_name,
+                            "message": message,
+                        },
+                    )
+                )
             else:
                 _ui_event_queue.put_nowait(("message", message))
         except Exception:
@@ -381,7 +397,7 @@ def compress_for_manager(messages: List[BaseMessage]) -> List[BaseMessage]:
     if len(indices) <= _MANAGER_KEEP_RECENT_SUBAGENT_RESULTS:
         return messages
 
-    to_truncate = set(indices[: -_MANAGER_KEEP_RECENT_SUBAGENT_RESULTS])
+    to_truncate = set(indices[:-_MANAGER_KEEP_RECENT_SUBAGENT_RESULTS])
 
     compressed: List[BaseMessage] = []
     for i, msg in enumerate(messages):
@@ -543,10 +559,7 @@ def create_step_context_resolver() -> Callable[[str], Optional["StepContext"]]:
         for step in doc.steps:
             if step.id in dispatched:
                 continue
-            if (
-                step.assigned_agent
-                and f"{step.assigned_agent}_agent" == agent_node_id
-            ):
+            if step.assigned_agent and f"{step.assigned_agent}_agent" == agent_node_id:
                 dispatched.add(step.id)
                 return StepContext(
                     step_id=step.id,
@@ -643,10 +656,9 @@ def create_agent_invocation_tool(
 ) -> StructuredTool:
     """Create a LangChain tool that delegates a prompt to a compiled sub-agent.
 
-    The returned :class:`~langchain.tools.StructuredTool` accepts a text
-    prompt (and optional PDF file IDs when *supports_pdf* is ``True``),
-    invokes the sub-agent graph, pushes the final state onto
-    *state_queue* for UI rendering, and returns the last message's content.
+    The returned :class:`~langchain.tools.StructuredTool` accepts a text prompt (and optional PDF
+    file IDs when *supports_pdf* is ``True``), invokes the sub-agent graph, pushes the final state
+    onto *state_queue* for UI rendering, and returns the last message's content.
 
     After invocation, if a *context_resolver* is provided, the tool
     automatically validates expected artifacts and updates the plan step
@@ -704,7 +716,8 @@ def create_agent_invocation_tool(
         return format_skill_prompt(ctx.skills), ctx
 
     def _post_invocation_validate(
-        result: str, step_ctx: Optional[StepContext],
+        result: str,
+        step_ctx: Optional[StepContext],
     ) -> str:
         """Validate artifacts and update the plan store.
 
