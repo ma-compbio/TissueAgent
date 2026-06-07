@@ -21,11 +21,11 @@ from agents.agent_registry.coding_agent.params import (
 import agent_settings
 from agents.agent_registry.coding_agent.prompt import CodingAgentPrompt
 from config import DATA_DIR, ROOT
+from agents.agent_tools import file_read_write_tools
 from graph.graph_utils import (
     AgentState,
     create_agent_node,
     create_tool_node,
-    get_latest_user_image_parts,
     log_message,
     subagent_invocation,
 )
@@ -135,6 +135,7 @@ def create_coding_agent(
         python_tool,
         r_tool,
         search_documentation_tool,
+        *file_read_write_tools,
     ]
 
     ### Build the graph
@@ -168,14 +169,7 @@ def create_coding_agent(
     def agent_invocation_tool(prompt: str) -> str:
         """Run the coding agent graph on a prompt and return the final message."""
         logging.info(f"Invoking agent `{id}`")
-
-        image_parts = get_latest_user_image_parts()
-        if image_parts:
-            logging.info("Forwarding latest user image attachments to coding agent.")
-            content = [{"type": "text", "text": prompt}, *image_parts]
-            message = HumanMessage(content=content)
-        else:
-            message = HumanMessage(prompt)
+        message = HumanMessage(prompt)
 
         skill_prompt_text = ""
         step_ctx = None

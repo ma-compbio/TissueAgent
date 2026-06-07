@@ -30,10 +30,13 @@ from agents.agent_defns import (
 )
 from graph.graph_utils import (
     AgentState,
+    compress_for_manager,
     create_agent_invocation_tool,
     create_agent_node,
     create_step_context_resolver,
     create_tool_node,
+    filter_for_execution_phase,
+    filter_for_recruiter,
 )
 from graph.plan_output import create_recruiter_state_update, planner_state_update
 
@@ -87,10 +90,9 @@ def create_tissueagent_graph(
             tool_node_id = assign_tool_node_id(agent.id)
             tool_node = create_tool_node(agent.tools)
 
-            # Wrap static prompt strings in a callable that injects skill_prompt.
             base_prompt = agent.prompt
             if callable(base_prompt):
-
+                # Wrap static prompt strings in a callable that injects skill_prompt
                 def prompt_fn(state):
                     skill_text = state.get("skill_prompt", "")
                     return base_prompt.replace("{{skill_prompt}}", skill_text)
@@ -105,15 +107,11 @@ def create_tissueagent_graph(
             agent_subgraph.add_edge(tool_node_id, agent_node_id)
             subagent = agent_subgraph.compile()
 
-            supports_pdf = agent.id in ["pdf_reader"]
-            forward_user_images = agent.id in ["coding"]
             agent_invocation_tool = create_agent_invocation_tool(
                 agent_node_id,
                 agent.name,
                 subagent,
                 state_queue,
-                supports_pdf=supports_pdf,
-                forward_user_images=forward_user_images,
                 context_resolver=context_resolver,
             )
             agent_invocation_tools.append(agent_invocation_tool)
@@ -280,11 +278,15 @@ def create_tissueagent_graph(
         recruiter_tool_node_id,
         exit_node_id_fn=recruiter_router,
         state_update_fn=recruiter_state_update_fn,
+        message_filter_fn=filter_for_recruiter,
     )
 
     ### Manager Node
 
     manager_tool_node = create_tool_node(manager_tools)
+
+    def _manager_filter(messages):
+        return compress_for_manager(filter_for_execution_phase(messages))
 
     manager_node = create_agent_node(
         manager_node_id,
@@ -292,6 +294,7 @@ def create_tissueagent_graph(
         manager_prompt,
         manager_tool_node_id,
         evaluator_node_id,
+        message_filter_fn=_manager_filter,
     )
 
     ### Evaluator node
@@ -336,6 +339,7 @@ def create_tissueagent_graph(
         evaluator_tool_node_id,
         exit_node_id_fn=evaluator_router,
         state_update_fn=evaluator_state_update,
+        message_filter_fn=filter_for_execution_phase,
     )
 
     ### Reporter node
@@ -347,6 +351,7 @@ def create_tissueagent_graph(
         ReporterAgent.prompt,
         reporter_tool_node_id,
         END,
+        message_filter_fn=filter_for_execution_phase,
     )
 
     graph = StateGraph(MessagesState)

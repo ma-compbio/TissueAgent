@@ -9,7 +9,6 @@ import threading
 import uuid
 from collections.abc import Callable
 from contextlib import contextmanager
-from copy import deepcopy
 from dataclasses import dataclass
 from queue import Queue
 from typing import Any, Dict, List, Optional, Tuple, cast
@@ -37,11 +36,10 @@ class AgentState(MessagesState):
 
 
 _ui_event_queue: Optional[Queue] = None
-_latest_user_message_content: Optional[List[Any]] = None
 
-# Thread-local storage for tracking which sub-agent is currently executing.
-# When log_message() is called from within a sub-agent invocation, this
-# context lets us tag the event so the UI can stream it into a live trace.
+# Thread-local storage for tracking which sub-agent is currently executing. When log_message() is
+# called from within a sub-agent invocation, this context lets us tag the event so the UI can stream
+# it into a live trace.
 _subagent_context = threading.local()
 
 
@@ -102,41 +100,6 @@ def register_ui_event_queue(event_queue: Queue) -> None:
     """
     global _ui_event_queue
     _ui_event_queue = event_queue
-
-
-def record_user_message(message: BaseMessage) -> None:
-    """Persist the latest user message content for downstream access.
-
-    Stores a deep copy of multimodal content (text + image parts) in a
-    module-level global so that sub-agent invocation tools can forward
-    user-attached images without re-reading session state.
-
-    Args:
-        message: The most recent user message from the conversation.
-    """
-    global _latest_user_message_content
-    content = getattr(message, "content", None)
-    if isinstance(content, list):
-        _latest_user_message_content = deepcopy(content)
-    else:
-        _latest_user_message_content = None
-
-
-def get_latest_user_image_parts() -> List[Dict[str, Any]]:
-    """Return deep copies of image parts from the latest user message.
-
-    Returns:
-        A list of image content-part dicts (``{"type": "image_url", …}``).
-        Returns an empty list when no images are attached or no user
-        message has been recorded.
-    """
-    if not isinstance(_latest_user_message_content, list):
-        return []
-    parts: List[Dict[str, Any]] = []
-    for part in _latest_user_message_content:
-        if isinstance(part, dict) and part.get("type") in {"image_url", "image"}:
-            parts.append(deepcopy(part))
-    return parts
 
 
 def _sanitize_message(message: BaseMessage) -> BaseMessage:
@@ -422,6 +385,67 @@ def compress_for_manager(messages: List[BaseMessage]) -> List[BaseMessage]:
     return compressed
 
 
+# ---------------------------------------------------------------------------
+# Per-agent message filters
+# ---------------------------------------------------------------------------
+#
+# Each main pipeline agent only needs a subset of the shared message history.
+# These filters project the full list down to the relevant slice *before* the
+# LLM call, without mutating graph state — identical in spirit to the manager
+# compression above but structural rather than size-based.
+
+
+def _last_index_of_final(messages: List[BaseMessage], agent_name: str) -> Optional[int]:
+    """Index of the last AIMessage from *agent_name* that has no tool calls.
+
+    This corresponds to the agent's final output (plan, assignments, etc.)
+    after all tool-calling rounds have completed.
+    """
+    for i in range(len(messages) - 1, -1, -1):
+        msg = messages[i]
+        if (
+            isinstance(msg, AIMessage)
+            and getattr(msg, "name", "") == agent_name
+            and not getattr(msg, "tool_calls", [])
+        ):
+            return i
+    return None
+
+
+def filter_for_recruiter(messages: List[BaseMessage]) -> List[BaseMessage]:
+    """Recruiter sees: user query + planner's final plan output only.
+
+    Strips the planner's intermediate tool calls (template reads, globs, etc.).
+    """
+    result = [msg for msg in messages if isinstance(msg, HumanMessage)]
+    idx = _last_index_of_final(messages, "planner_agent")
+    if idx is not None:
+        result.append(messages[idx])
+    return result
+
+
+def filter_for_execution_phase(messages: List[BaseMessage]) -> List[BaseMessage]:
+    """Manager / Evaluator / Reporter see: user query, finalized plan
+    (planner final + recruiter final), and all post-recruiter messages.
+
+    Strips planner and recruiter intermediate tool-calling turns.  The
+    post-recruiter slice naturally grows as the manager executes steps,
+    and later includes the evaluator's assessment for the reporter.
+    """
+    result = [msg for msg in messages if isinstance(msg, HumanMessage)]
+
+    planner_idx = _last_index_of_final(messages, "planner_agent")
+    if planner_idx is not None:
+        result.append(messages[planner_idx])
+
+    recruiter_idx = _last_index_of_final(messages, "recruiter_agent")
+    if recruiter_idx is not None:
+        result.append(messages[recruiter_idx])
+        result.extend(messages[recruiter_idx + 1 :])
+
+    return result
+
+
 def create_agent_node(
     agent_node_id: str,
     agent_model: BaseChatModel,
@@ -432,6 +456,7 @@ def create_agent_node(
     state_update_fn: Optional[
         Callable[[AIMessage, MessagesState], Optional[Dict[str, Any]]]
     ] = None,
+    message_filter_fn: Optional[Callable[[List[BaseMessage]], List[BaseMessage]]] = None,
 ) -> Callable[[MessagesState], Command]:
     """Build a LangGraph agent node that invokes an LLM and routes the result.
 
@@ -457,6 +482,9 @@ def create_agent_node(
         state_update_fn: Optional callable that receives
             ``(response, state)`` and returns a dict of extra state updates
             to merge into the command payload.
+        message_filter_fn: Optional callable that projects the full message
+            history down to the subset relevant to this agent.  Applied
+            before the LLM call without mutating graph state.
 
     Returns:
         A callable suitable for use as a LangGraph node function.
@@ -466,13 +494,8 @@ def create_agent_node(
         messages = [_sanitize_message(m) for m in state["messages"]]
         prompt_text = prompt(state) if callable(prompt) else prompt
         system_prompt = SystemMessage(prompt_text)
-        # Strategy 2F: the manager is the only orchestration agent whose
-        # context grows monotonically with sub-agent invocations. Compress
-        # older sub-agent ToolMessages on the fly before the model call.
-        # The graph state itself is left untouched so the UI / export
-        # retain the full transcript.
-        if agent_node_id == "manager_agent":
-            messages = compress_for_manager(messages)
+        if message_filter_fn:
+            messages = message_filter_fn(messages)
         response = cast(AIMessage, agent_model.invoke([system_prompt] + messages))
         response = standardize_message_format(response)
         response.name = agent_node_id
@@ -650,15 +673,13 @@ def create_agent_invocation_tool(
     agent_name: str,
     agent: CompiledStateGraph,
     state_queue: Queue,
-    supports_pdf: bool = False,
-    forward_user_images: bool = False,
     context_resolver: Optional[Callable[[str], Optional["StepContext"]]] = None,
 ) -> StructuredTool:
     """Create a LangChain tool that delegates a prompt to a compiled sub-agent.
 
-    The returned :class:`~langchain.tools.StructuredTool` accepts a text prompt (and optional PDF
-    file IDs when *supports_pdf* is ``True``), invokes the sub-agent graph, pushes the final state
-    onto *state_queue* for UI rendering, and returns the last message's content.
+    The returned :class:`~langchain.tools.StructuredTool` accepts a text
+    prompt, invokes the sub-agent graph, pushes the final state onto
+    *state_queue* for UI rendering, and returns the last message's content.
 
     After invocation, if a *context_resolver* is provided, the tool
     automatically validates expected artifacts and updates the plan step
@@ -671,10 +692,6 @@ def create_agent_invocation_tool(
         agent: The compiled sub-agent graph to invoke.
         state_queue: Queue where ``(agent_name, final_state)`` tuples are
             placed after each invocation.
-        supports_pdf: When ``True``, the generated tool accepts an
-            additional ``pdf_file_ids`` parameter.
-        forward_user_images: When ``True``, the latest user-attached
-            images are included in the prompt sent to the sub-agent.
         context_resolver: Callable that returns a :class:`StepContext`
             for the current step (skills + expected artifacts), or
             ``None`` when no matching step is found.
@@ -683,24 +700,6 @@ def create_agent_invocation_tool(
         A :class:`~langchain.tools.StructuredTool` named
         ``"{agent_node_id}_transfer_tool"``.
     """
-
-    def _build_multimodal_message(
-        prompt: str, extra_parts: Optional[List[Dict[str, Any]]] = None
-    ) -> HumanMessage:
-        """Assemble a HumanMessage from text, optional extras, and user images."""
-        if forward_user_images:
-            image_parts = get_latest_user_image_parts()
-        else:
-            image_parts = []
-        parts: list[str | dict[str, Any]] = [{"type": "text", "text": prompt}]
-        if extra_parts:
-            parts.extend(extra_parts)
-        if image_parts:
-            parts.extend(image_parts)
-            return HumanMessage(content=parts)
-        if extra_parts:
-            return HumanMessage(content=parts)
-        return HumanMessage(prompt)
 
     def _resolve_step_context() -> Tuple[str, Optional[StepContext]]:
         """Resolve context for the current step: skill prompt + step metadata."""
@@ -731,58 +730,19 @@ def create_agent_invocation_tool(
         logging.info(summary)
         return result + summary
 
-    if supports_pdf:
+    def _agent_invocation_tool(prompt: str) -> str:
+        """Invoke the sub-agent with a text prompt and return its response."""
+        logging.info(f"Invoking agent `{agent_node_id}`")
+        message = HumanMessage(prompt)
+        skill_prompt_text, step_ctx = _resolve_step_context()
+        with subagent_invocation(agent_name) as invocation_id:
+            final_state = agent.invoke({"messages": [message], "skill_prompt": skill_prompt_text})
+        state_queue.put((agent_name, final_state, invocation_id))
+        logging.info(f"Finished invoking agent `{agent_node_id}`")
+        result = final_state["messages"][-1].content
+        return _post_invocation_validate(result, step_ctx)
 
-        def _pdf_agent_invocation_tool(prompt: str, pdf_file_ids: str = "") -> str:
-            """Invoke agent with optional PDF file IDs.
-
-            Args:
-                prompt: Task instructions for the agent
-                pdf_file_ids: Comma-separated list of OpenAI file IDs (e.g. "file-abc123,file-def456")
-
-            Returns:
-                Agent's response with artifact validation summary appended
-            """
-            logging.info(f"Invoking PDF-capable agent `{agent_node_id}`")
-
-            # Build multimodal content if PDFs provided
-            content: List[Dict[str, Any]] = []
-
-            if pdf_file_ids and pdf_file_ids.strip():
-                file_ids = [fid.strip() for fid in pdf_file_ids.split(",") if fid.strip()]
-                logging.info(f"Attaching {len(file_ids)} PDF file(s) to agent invocation")
-                for file_id in file_ids:
-                    content.append({"type": "file", "file": {"file_id": file_id}})
-
-            message = _build_multimodal_message(prompt, extra_parts=content)
-            skill_prompt_text, step_ctx = _resolve_step_context()
-            with subagent_invocation(agent_name) as invocation_id:
-                final_state = agent.invoke(
-                    {"messages": [message], "skill_prompt": skill_prompt_text}
-                )
-            state_queue.put((agent_name, final_state, invocation_id))
-            logging.info(f"Finished invoking PDF-capable agent `{agent_node_id}`")
-            result = final_state["messages"][-1].content
-            return _post_invocation_validate(result, step_ctx)
-
-        agent_invocation_tool = _pdf_agent_invocation_tool
-    else:
-
-        def _basic_agent_invocation_tool(prompt: str) -> str:
-            """Invoke the sub-agent with a text prompt and return its response."""
-            logging.info(f"Invoking agent `{agent_node_id}`")
-            message = _build_multimodal_message(prompt)
-            skill_prompt_text, step_ctx = _resolve_step_context()
-            with subagent_invocation(agent_name) as invocation_id:
-                final_state = agent.invoke(
-                    {"messages": [message], "skill_prompt": skill_prompt_text}
-                )
-            state_queue.put((agent_name, final_state, invocation_id))
-            logging.info(f"Finished invoking agent `{agent_node_id}`")
-            result = final_state["messages"][-1].content
-            return _post_invocation_validate(result, step_ctx)
-
-        agent_invocation_tool = _basic_agent_invocation_tool
+    agent_invocation_tool = _agent_invocation_tool
 
     return StructuredTool.from_function(
         func=agent_invocation_tool,

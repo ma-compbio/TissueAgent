@@ -20,10 +20,11 @@ from pathlib import Path
 
 from agents.manager_agent.tools import ManagerToolsNames
 from config import RECURSION_LIMIT
-from graph.graph_utils import log_message, record_user_message
+from graph.graph_utils import log_message
 from server.message_serializer import serialize_history, serialize_message, serialize_subagent_state
 from server.session_manager import session
-from server.utils import file_to_data_url, upload_pdf_to_openai, SUBAGENT_BADGES, SUBAGENT_DEFAULT_AVATAR
+from config import DATA_DIR
+from server.utils import upload_pdf_to_openai, SUBAGENT_BADGES, SUBAGENT_DEFAULT_AVATAR
 
 router = APIRouter()
 
@@ -111,17 +112,25 @@ async def _handle_user_message(ws: WebSocket, data: dict):
 
     text = data.get("text", "")
 
-    # Build multimodal content parts
-    content_parts = [{"type": "text", "text": text}]
-
-    # Add image attachments
+    # Build multimodal content parts.
+    # User-uploaded images are saved to DATA_DIR/uploads/ by the file
+    # upload route; we reference them by workspace-relative path so that
+    # agents can read them via the standard read() tool.
+    image_refs = []
     for img in session.pending_images:
         img_path = Path(img["path"])
         if img_path.exists():
-            content_parts.append({
-                "type": "image_url",
-                "image_url": {"url": file_to_data_url(img_path)},
-            })
+            try:
+                rel = img_path.relative_to(DATA_DIR)
+            except ValueError:
+                rel = img_path.name
+            image_refs.append(str(rel))
+
+    if image_refs:
+        listing = ", ".join(image_refs)
+        text += f"\n\n[Attached images (readable via the read tool): {listing}]"
+
+    content_parts = [{"type": "text", "text": text}]
 
     # Add PDF attachments
     for pdf in session.uploaded_pdfs:
@@ -147,7 +156,6 @@ async def _handle_user_message(ws: WebSocket, data: dict):
 
     # Create and record the user message
     user_message = HumanMessage(content=content_parts)
-    record_user_message(user_message)
     log_message(user_message)
 
     session.agent_state["messages"].append(user_message)
@@ -509,7 +517,6 @@ async def _rewind_to_planner_with_feedback(ws: WebSocket, text: str) -> None:
     feedback_message = HumanMessage(
         content=f"[Copilot feedback from user] {feedback}"
     )
-    record_user_message(feedback_message)
     log_message(feedback_message)
     session.agent_state["messages"].append(feedback_message)
     session.append_display_message(feedback_message)
