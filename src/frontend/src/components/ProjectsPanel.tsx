@@ -58,29 +58,55 @@ export default function ProjectsPanel({
   return (
     <section className="projects-panel" aria-label="Projects">
       <header className="projects-header">
-        <span className="projects-title">Projects</span>
-        <button
-          type="button"
-          className="section-icon-btn"
-          onClick={handleNew}
-          aria-label="Start a new project"
-        >
-          <svg
-            viewBox="0 0 16 16"
-            width="14"
-            height="14"
-            aria-hidden="true"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
+        <h2 className="sidebar-section-title">Projects</h2>
+        <div className="projects-header-actions">
+          <button
+            type="button"
+            className="section-icon-btn"
+            onClick={handleNew}
+            aria-label="Start a new project"
           >
-            <path d="M8 3v10M3 8h10" />
-          </svg>
-          <span className="section-icon-tooltip" role="tooltip">
-            Start a new project
-          </span>
-        </button>
+            <svg
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            >
+              <path d="M8 3v10M3 8h10" />
+            </svg>
+            <span className="section-icon-tooltip" role="tooltip">
+              Start a new project
+            </span>
+          </button>
+          <button
+            type="button"
+            className="section-icon-btn"
+            onClick={() => onFetchSessions()}
+            aria-label="Refresh project list"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M13.2 7.5a5.2 5.2 0 1 1-1.6-3.7" />
+              <path d="M13.5 2.2v3.5h-3.5" />
+            </svg>
+            <span className="section-icon-tooltip" role="tooltip">
+              Refresh
+            </span>
+          </button>
+        </div>
       </header>
 
       <ul className="projects-list" role="list">

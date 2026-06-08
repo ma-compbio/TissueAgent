@@ -199,6 +199,8 @@ export default function App() {
               <h1 className="app-title">TissueAgent</h1>
             </button>
             <div className="top-bar-right">
+              <BackToChatButton onClick={() => setPage("chat")} />
+              <span className="top-bar-divider" aria-hidden="true" />
               <TutorialButton
                 active={page === "tutorial"}
                 onClick={() => setPage("tutorial")}

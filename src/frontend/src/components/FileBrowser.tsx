@@ -3,6 +3,17 @@ import type { BrowseEntry } from "../types/messages";
 import FilePreviewLightbox, {
   type PreviewItem,
 } from "./FilePreviewLightbox";
+import Splitter from "./Splitter";
+import { usePersistedSize } from "../hooks/usePersistedSize";
+
+// Library section height inside the sidebar. Project files takes the
+// rest of the available space. Persisted across reloads. Below ~120
+// the library header + a row or two stop reading; above ~900 project
+// files gets squashed on smaller laptops.
+const LIBRARY_HEIGHT_KEY = "tissueagent:sidebar-library-height";
+const LIBRARY_HEIGHT_DEFAULT = 240;
+const LIBRARY_HEIGHT_MIN = 120;
+const LIBRARY_HEIGHT_MAX = 900;
 
 const API = import.meta.env.DEV ? "http://localhost:8000" : "";
 
@@ -385,12 +396,37 @@ function BrowserPane({
             </>
           )}
           <button
-            className="file-browser-refresh-btn"
+            type="button"
+            className="section-icon-btn"
             onClick={fetchTree}
-            title="Refresh"
             aria-label={`Refresh ${title}`}
           >
-            ↻
+            {/* Refresh arrow — a 3/4 circle ending in a small chevron
+                tip. Same 14×14 visible area as the + button so the two
+                actions sit at identical optical weight in the header. */}
+            <svg
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {/* Arc: from top-right (~3 o'clock high) sweeping CCW to
+                  the 12 o'clock position, leaving a gap at top-right
+                  where the arrowhead sits. */}
+              <path d="M13.2 7.5a5.2 5.2 0 1 1-1.6-3.7" />
+              {/* Arrowhead at the end of the arc — points into the
+                  arc's direction of travel so it reads as a refresh
+                  cycle, not a "go forward" arrow. */}
+              <path d="M13.5 2.2v3.5h-3.5" />
+            </svg>
+            <span className="section-icon-tooltip" role="tooltip">
+              Refresh
+            </span>
           </button>
         </div>
       </header>
@@ -530,53 +566,75 @@ export default function FileBrowser({
     [],
   );
 
+  const libraryPane = (
+    <BrowserPane
+      title="Library"
+      description="Persistent reference data shared across every project. Use the + Upload button here to add datasets and reference files that any project can read."
+      infoText="Persistent reference data shared across all projects. Use + Upload to add datasets or files any project can read."
+      scope="library"
+      refreshKey={refreshKey}
+      emptyMessage={compact ? "No library files." : "No library files yet. Use + Upload to add datasets or reference files."}
+      uploadable
+      onUpload={onUploadToLibrary}
+      uploadTooltip="Upload to library"
+      compact={compact}
+      onOpenPreview={openPreview}
+      currentPath={libraryPath}
+      onPathChange={setLibraryPath}
+    />
+  );
+
+  const projectPane = (
+    <BrowserPane
+      title={projectLabel}
+      description={
+        currentProjectId
+          ? "Files attached to this project, plus everything the agent has written. Sidebar uploads land in uploads/; agent outputs land in outputs/."
+          : "Files you upload before the first prompt stay here as a temporary draft. They become part of the project (and persist) once you send a message."
+      }
+      infoText={
+        currentProjectId
+          ? "Files for the active project: sidebar uploads land in uploads/, chat attachments in attachments/, agent outputs in outputs/."
+          : "Draft project — uploads will be moved into this project on first prompt. Starting a new project before then discards them."
+      }
+      scope="project"
+      projectId={currentProjectId || undefined}
+      refreshKey={refreshKey}
+      emptyMessage={
+        currentProjectId
+          ? "No project files yet."
+          : "No files staged yet. Upload to stage files for the next prompt."
+      }
+      compact={compact}
+      onOpenPreview={openPreview}
+      statusBadge={!currentProjectId ? "Unsaved" : undefined}
+      currentPath={projectPath}
+      onPathChange={setProjectPath}
+      uploadable
+      onUpload={onUploadToProject}
+      uploadTooltip="Upload to project"
+    />
+  );
+
   return (
     <div className={`file-browser-stack ${compact ? "compact" : ""}`}>
-      <BrowserPane
-        title="Library"
-        description="Persistent reference data shared across every project. Use the + Upload button here to add datasets and reference files that any project can read."
-        infoText="Persistent reference data shared across all projects. Use + Upload to add datasets or files any project can read."
-        scope="library"
-        refreshKey={refreshKey}
-        emptyMessage={compact ? "No library files." : "No library files yet. Use + Upload to add datasets or reference files."}
-        uploadable
-        onUpload={onUploadToLibrary}
-        uploadTooltip="Upload to library"
-        compact={compact}
-        onOpenPreview={openPreview}
-        currentPath={libraryPath}
-        onPathChange={setLibraryPath}
-      />
-
-      <BrowserPane
-        title={projectLabel}
-        description={
-          currentProjectId
-            ? "Files attached to this project, plus everything the agent has written. Sidebar uploads land in uploads/; agent outputs land in outputs/."
-            : "Files you upload before the first prompt stay here as a temporary draft. They become part of the project (and persist) once you send a message."
-        }
-        infoText={
-          currentProjectId
-            ? "Files for the active project: sidebar uploads land in uploads/, chat attachments in attachments/, agent outputs in outputs/."
-            : "Draft project — uploads will be moved into this project on first prompt. Starting a new project before then discards them."
-        }
-        scope="project"
-        projectId={currentProjectId || undefined}
-        refreshKey={refreshKey}
-        emptyMessage={
-          currentProjectId
-            ? "No project files yet."
-            : "No files staged yet. Upload to stage files for the next prompt."
-        }
-        compact={compact}
-        onOpenPreview={openPreview}
-        statusBadge={!currentProjectId ? "Unsaved" : undefined}
-        currentPath={projectPath}
-        onPathChange={setProjectPath}
-        uploadable
-        onUpload={onUploadToProject}
-        uploadTooltip="Upload to project"
-      />
+      {compact ? (
+        // Sidebar layout: fixed-height Library on top, Project files
+        // below, resize handle between them (mirrors the Projects ↔
+        // Files split in Sidebar.tsx for visual consistency).
+        <SidebarLibraryProjectStack
+          libraryPane={libraryPane}
+          projectPane={projectPane}
+        />
+      ) : (
+        // Standalone Files page: simple stack, no resize — the two
+        // sections live as full-width cards with their own min/max
+        // heights driven by .file-browser-section CSS.
+        <>
+          {libraryPane}
+          {projectPane}
+        </>
+      )}
 
       {previewOpen && (
         <FilePreviewLightbox
@@ -588,5 +646,45 @@ export default function FileBrowser({
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Compact-mode wrapper: Library pane (resizable height) + Project pane
+ * (fills remainder) + horizontal splitter between them. Lifted out of
+ * the main render so the standalone (non-compact) layout doesn't pay
+ * for the persisted-size hook or the wrapping divs.
+ */
+function SidebarLibraryProjectStack({
+  libraryPane,
+  projectPane,
+}: {
+  libraryPane: React.ReactNode;
+  projectPane: React.ReactNode;
+}) {
+  const [libraryHeight, resizeLibrary] = usePersistedSize(
+    LIBRARY_HEIGHT_KEY,
+    LIBRARY_HEIGHT_DEFAULT,
+    LIBRARY_HEIGHT_MIN,
+    LIBRARY_HEIGHT_MAX,
+  );
+
+  return (
+    <>
+      <div
+        className="file-browser-pane-slot"
+        style={{ height: `${libraryHeight}px` }}
+      >
+        {libraryPane}
+      </div>
+      <Splitter
+        orientation="horizontal"
+        onResize={resizeLibrary}
+        ariaLabel="Resize library panel"
+      />
+      <div className="file-browser-pane-slot file-browser-pane-slot--fill">
+        {projectPane}
+      </div>
+    </>
   );
 }

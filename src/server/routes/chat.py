@@ -20,7 +20,7 @@ from langgraph.errors import GraphRecursionError
 from pathlib import Path
 
 from agents.manager_agent.tools import ManagerTools
-from config import RECURSION_LIMIT
+from config import DATA_DIR, RECURSION_LIMIT
 from graph.ui_events import log_message
 from server.message_serializer import serialize_history, serialize_message, serialize_subagent_state
 from server.session_manager import session
@@ -218,9 +218,10 @@ async def _handle_user_message(ws: WebSocket, data: dict):
     text = data.get("text", "")
 
     # Build multimodal content parts.
-    # User-uploaded images are saved to DATA_DIR/uploads/ by the file
-    # upload route; we reference them by workspace-relative path so that
-    # agents can read them via the standard read() tool.
+    # User-uploaded images are saved under the active project's
+    # attachments/ dir (or scratch/attachments/ before a project exists)
+    # by the file upload route; we reference them by workspace-relative
+    # path so that agents can read them via the standard read() tool.
     image_refs = []
     for img in session.pending_images:
         img_path = Path(img["path"])
