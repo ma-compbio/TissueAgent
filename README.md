@@ -30,29 +30,64 @@ Mode is persisted with the session and survives reloads. Switching modes mid-run
 
 ```text
 TissueAgent/
-├── src/
+├── src/                                 # application source
 │   ├── agents/
 │   │   ├── planner_agent/
-│   │   │   └── plan_registry/     # YAML workflow templates the planner retrieves
 │   │   ├── recruiter_agent/
 │   │   ├── manager_agent/
 │   │   ├── evaluator_agent/
 │   │   ├── reporter_agent/
-│   │   ├── agent_registry/        # domain/specialized agents and tools
-│   │   └── skill_registry/        # shared markdown playbooks (scaffold; not wired)
-│   ├── graph/                     # workflow graph/state orchestration
-│   ├── server/                    # FastAPI backend and routes
-│   └── frontend/                  # React + TypeScript frontend
-├── demo/                          # notebooks, sample inputs, and outputs
-├── workspace/                     # local datasets and analysis inputs
-├── docs/figures/                  # README/manuscript figures
-├── notebooks/                     # exploratory notebooks
-├── logs/                          # runtime logs
-├── sessions/                      # run/session artifacts
-├── pyproject.toml                 # Python project configuration
-├── environment.yml                # Conda environment definition
-└── flake.nix                      # Nix development environment
+│   │   ├── agent_registry/              # domain/specialised agents and tools
+│   │   └── agent_tools.py               # shared file-access tools (glob/grep/read/write)
+│   ├── graph/                           # LangGraph workflow + state orchestration
+│   ├── server/                          # FastAPI backend, WebSocket, REST routes
+│   ├── frontend/                        # React + TypeScript frontend
+│   └── config.py                        # path constants & runtime settings
+├── knowledge/                           # prompt-time source material (importable as a package)
+│   ├── plans/                           # planner template library (.md)
+│   ├── skills/                          # agent skill snippets (.md)
+│   └── docs/                            # API docs the coding agent retrieves from
+├── workspace/                           # runtime data root (== DATA_DIR in code)
+│   ├── library/                         # persistent shared input — UI section "Library"
+│   │   ├── datasets/                    #   curated reference datasets
+│   │   └── files/                       #   persistent reference uploads (PDFs, notes, …)
+│   ├── projects/                        # one folder per project — UI section "Projects"
+│   │   └── <project_id>/                #   id = timestamp (e.g. 2026-06-07_19-42-10)
+│   │       ├── chat.json                #     saved conversation (drives the project list)
+│   │       ├── uploads/                 #     sidebar uploads for this run
+│   │       ├── attachments/             #     chat-attached images/PDFs (multimodal payloads)
+│   │       └── outputs/                 #     agent's working directory (kernel cwd)
+│   ├── scratch/                         # pre-project draft (wiped on reset / new project)
+│   │   ├── uploads/                     #   surfaced in UI as "Project files — Unsaved"
+│   │   └── attachments/                 #   migrated into projects/<id>/ on first prompt
+│   ├── plan_scratch/                    # ephemeral plan markdown (in-flight only)
+│   └── notebook/                        # process-wide notebook scratch
+├── demo/                                # notebooks, sample inputs, expected outputs
+├── docs/figures/                        # README/manuscript figures
+├── notebooks/                           # exploratory notebooks
+├── logs/                                # runtime logs
+├── sessions/                            # LEGACY pre-refactor saves (migrated to workspace/projects/ on boot)
+├── pyproject.toml                       # Python project configuration
+├── environment.yml                      # Conda environment definition
+└── flake.nix                            # Nix development environment
 ```
+
+### Runtime data layout (`workspace/`)
+
+| What you see in the UI | On-disk path | Persistence |
+| --- | --- | --- |
+| **Library → Datasets** | `workspace/library/datasets/` | persistent; shared across all projects |
+| **Library → Files** | `workspace/library/files/` | persistent; shared across all projects |
+| **Project files → uploads/** | `workspace/projects/<id>/uploads/` | tied to the project; deleted with it |
+| **Project files → attachments/** | `workspace/projects/<id>/attachments/` | tied to the project; multimodal turn payloads |
+| **Project files → outputs/** | `workspace/projects/<id>/outputs/` | tied to the project; kernel cwd during a run |
+| Project list (sidebar) | `workspace/projects/*/chat.json` | one row per saved project |
+| "Unsaved" draft (no project yet) | `workspace/scratch/{uploads,attachments}/` | wiped on every server boot AND on new project |
+
+Two roots that the agent treats differently:
+
+- **`library/` is read-only to agents.** Agents `read` from it freely, but `write_*` tools refuse paths inside `library/` — the library is the user's curated reference corpus, not a dumping ground for intermediates.
+- **`projects/<active>/outputs/` is the agent's working directory.** Relative writes from the `write` tool, kernel-side `os.chdir`, and `jupyternb_generator_tool` all anchor here, so generated artifacts surface in the Files panel automatically.
 
 ## Repository set-up
 

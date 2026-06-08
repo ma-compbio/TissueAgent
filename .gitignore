@@ -11,7 +11,16 @@ __marimo__/
 /logs/
 datasets/
 cache/
-workspace/*
+# workspace/: keep the high-level folder skeleton tracked (via .gitkeep),
+# but ignore everything users / agents put inside at runtime — project
+# runs, library uploads, scratch drafts, in-flight plan files.
+workspace/library/datasets/*
+workspace/library/files/*
+workspace/projects/*
+workspace/scratch/*
+workspace/plan_scratch/*
+workspace/notebook/*
+!workspace/**/.gitkeep
 eval/
 temp/
 test/
