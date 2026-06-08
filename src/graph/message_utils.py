@@ -8,12 +8,11 @@ from langchain_core.messages import AIMessage, BaseMessage
 def sanitize_message(message: BaseMessage) -> BaseMessage:
     """Ensure a message's content is safe to send back to the OpenAI API.
 
-    Reasoning models (e.g. GPT-5) may return content lists or additional_kwargs entries with non-standard types that the
-    API rejects on subsequent turns. This strips those to plain text.
+    Reasoning models (e.g. GPT-5) may return content lists or additional_kwargs entries with
+    non-standard types that the API rejects on subsequent turns. This strips those to plain text.
     """
     if isinstance(message, AIMessage):
         content = message.content
-        # If content is a list, reduce to plain text
         if isinstance(content, list):
             text_parts = []
             for item in content:
@@ -23,7 +22,7 @@ def sanitize_message(message: BaseMessage) -> BaseMessage:
                 elif isinstance(item, str):
                     text_parts.append(item)
             content = "\n".join(text_parts).strip()
-        # Rebuild AIMessage without problematic additional_kwargs
+        # Rebuild AIMessage without additional_kwargs
         sanitized = AIMessage(
             content=content,
             id=message.id,
@@ -31,7 +30,7 @@ def sanitize_message(message: BaseMessage) -> BaseMessage:
             name=getattr(message, "name", None),
         )
         return sanitized
-    if isinstance(message.content, list):
+    elif isinstance(message.content, list):
         # For non-AI messages (Human/Tool), ensure list items have type
         sanitized_content = []
         for item in message.content:
@@ -51,17 +50,16 @@ def sanitize_message(message: BaseMessage) -> BaseMessage:
 def standardize_message_format(message: AIMessage) -> AIMessage:
     """Normalize an AI message into a consistent text + tool_calls format.
 
-    Provider responses may encode tool calls inline within the content
-    list.  This function separates text parts from tool-call parts and
-    returns a new :class:`AIMessage` with plain-text content and an
-    explicit ``tool_calls`` list.
+    Provider responses may encode tool calls inline within the content list. This function separates
+    text parts from tool-call parts and returns a new :class:`AIMessage` with plain-text content and
+    an explicit ``tool_calls`` list.
 
     Args:
         message: The raw AI message to normalize.
 
     Returns:
-        A new :class:`AIMessage` with standardized content, or the
-        original message unchanged if content is already a string.
+        A new :class:`AIMessage` with standardized content, or the original message unchanged if
+        content is already a string.
     """
     if isinstance(message.content, list):
         text_parts = []
@@ -126,7 +124,7 @@ def stringify_content(content: Any) -> List[str]:
 
 
 def content_to_text(content: Any) -> str:
-    """Best-effort flatten of LangChain message content to a string."""
+    """Flatten of LangChain message content to a string."""
     if isinstance(content, str):
         return content
     if isinstance(content, list):
@@ -135,7 +133,6 @@ def content_to_text(content: Any) -> str:
             if isinstance(chunk, str):
                 parts.append(chunk)
             elif isinstance(chunk, dict):
-                # multimodal content parts: {"type": "text", "text": "..."}
                 text = chunk.get("text")
                 if isinstance(text, str):
                     parts.append(text)

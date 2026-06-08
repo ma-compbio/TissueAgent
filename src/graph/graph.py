@@ -29,7 +29,6 @@ from agents.agent_defns import (
     ReporterAgent,
 )
 from graph.message_filters import (
-    compress_for_manager,
     filter_for_execution_phase,
     filter_for_recruiter,
 )
@@ -287,16 +286,13 @@ def create_tissueagent_graph(
 
     manager_tool_node = create_tool_node(manager_tools)
 
-    def _manager_filter(messages):
-        return compress_for_manager(filter_for_execution_phase(messages))
-
     manager_node = create_agent_node(
         manager_node_id,
         manager_model,
         manager_prompt,
         manager_tool_node_id,
         evaluator_node_id,
-        message_filter_fn=_manager_filter,
+        message_filter_fn=filter_for_execution_phase,
     )
 
     ### Evaluator node

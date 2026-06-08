@@ -81,6 +81,7 @@ def create_agent_node(
         messages = [sanitize_message(m) for m in state["messages"]]
         prompt_text = prompt(state) if callable(prompt) else prompt
         system_prompt = SystemMessage(prompt_text)
+        logging.info(f"System prompt for `{agent_node_id}`:\n{prompt_text}")
         if message_filter_fn:
             messages = message_filter_fn(messages)
         response = cast(AIMessage, agent_model.invoke([system_prompt] + messages))
