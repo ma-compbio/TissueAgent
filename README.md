@@ -285,7 +285,7 @@ GeneAgent's source is included as a git submodule pinned to a tested upstream co
 git submodule update --init --recursive
 ```
 
-This populates `src/agents/agent_registry/gene_agent/upstream/` with the GeneAgent repository. No additional pip install is required — TissueAgent imports the upstream code directly through its adapter.
+This populates `src/agents/agent_registry/gene_agent/upstream/` with the GeneAgent repository. No additional pip install is required. TissueAgent imports the upstream code directly through its adapter.
 
 **Verify the submodule is present:**
 
