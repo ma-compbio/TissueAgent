@@ -1,8 +1,10 @@
 """CodeAct-style hypothesis agent with a persistent Python REPL for hypothesis synthesis."""
 
+from __future__ import annotations
+
 import logging
 from queue import Queue
-from typing import Optional
+
 
 from langchain.tools import StructuredTool
 from langgraph.types import Command
@@ -17,7 +19,7 @@ from agents.agent_registry.hypothesis_agent.prompt import (
     HypothesisAgentPrompt,
     HypothesisAgentDescription,
 )
-from graph.graph_utils import log_message, subagent_invocation
+from graph.ui_events import log_message, subagent_invocation
 
 from config import DATA_DIR, LIBRARY_DIR, PDF_UPLOADS_DIR, active_project_outputs
 
@@ -25,28 +27,31 @@ from config import DATA_DIR, LIBRARY_DIR, PDF_UPLOADS_DIR, active_project_output
 class HypothesisState(MessagesState):
     """Extended message state carrying the current code/response block.
 
-    The persistent ``PythonREPL`` used by ``exec_node`` is **not** part
-    of this state — it lives in a closure-local holder in
-    :func:`create_hypothesis_agent` so it never reaches the checkpointer
-    (msgpack cannot serialise a ``PythonREPL``). The closure deliberately
-    keeps the REPL alive across invocations so prior hypothesis variables
+    The persistent ``PythonREPL`` used by ``exec_node`` is **not** part of this state — it lives in a closure-local
+    holder in :func:`create_hypothesis_agent` so it never reaches the checkpointer (msgpack cannot serialise a
+    ``PythonREPL``). The closure deliberately keeps the REPL alive across invocations so prior hypothesis variables
     remain accessible to later "test hypothesis" calls.
     """
 
     status_block: str  # content of <execute> or <response> block
+    skill_prompt: str  # injected skill content for system prompt
 
 
-def create_hypothesis_agent(state_queue: Queue):
+def create_hypothesis_agent(
+    state_queue: Queue,
+    context_resolver=None,
+):
     """Build and return the hypothesis agent as a StructuredTool.
 
     Args:
         state_queue: Queue to which finished agent states are posted for UI consumption.
+        context_resolver: Optional callable that resolves skill/artifact context for a step.
 
     Returns:
         A StructuredTool that invokes the hypothesis agent graph with a text prompt.
     """
     graph = StateGraph(HypothesisState)
-    id = "hypothesis_agent"
+    id = "hypothesis"
 
     ### Tools
 
@@ -64,7 +69,9 @@ def create_hypothesis_agent(state_queue: Queue):
     def agent_node(state: HypothesisState):
         """Invoke the LLM and route to exec or END based on block type."""
         messages = state["messages"]
-        system_prompt = SystemMessage(HypothesisAgentPrompt)
+        skill_text = state.get("skill_prompt", "")
+        full_prompt = HypothesisAgentPrompt.replace("{{skill_prompt}}", skill_text)
+        system_prompt = SystemMessage(full_prompt)
 
         # Strategy 2H: collapse older REPL iterations before re-sending.
         compressed = compress_repl_history(messages)
@@ -177,13 +184,40 @@ def create_hypothesis_agent(state_queue: Queue):
     def agent_invocation_tool(prompt: str) -> str:
         """Run the hypothesis agent graph on a prompt and return the final message."""
         logging.info(f"Invoking agent `{id}`")
+
+        skill_prompt_text = ""
+        step_ctx = None
+        if context_resolver:
+            step_ctx = context_resolver("hypothesis")
+            if step_ctx and step_ctx.skills:
+                from agents.agent_utils import format_skill_prompt
+
+                skill_prompt_text = format_skill_prompt(step_ctx.skills)
+
         # REPL persistence across invocations is handled by ``repl_holder``
         # in the closure above — no state-threading needed.
         with subagent_invocation("Hypothesis Agent") as invocation_id:
-            final_state = agent.invoke({"messages": [HumanMessage(prompt)]})
+            final_state = agent.invoke(
+                {"messages": [HumanMessage(prompt)], "skill_prompt": skill_prompt_text}
+            )
 
         state_queue.put((id, final_state, invocation_id))
-        return final_state["messages"][-1].content
+        result = final_state["messages"][-1].content
+
+        if step_ctx and step_ctx.expected_artifacts:
+            from graph.node_factories import (
+                _validate_step_artifacts,
+                _update_step_status,
+                _format_validation_summary,
+            )
+
+            found, missing = _validate_step_artifacts(step_ctx.expected_artifacts)
+            _update_step_status(step_ctx.step_id, found, missing)
+            summary = _format_validation_summary(step_ctx.step_id, found, missing)
+            logging.info(summary)
+            result += summary
+
+        return result
 
     return StructuredTool.from_function(
         func=agent_invocation_tool,

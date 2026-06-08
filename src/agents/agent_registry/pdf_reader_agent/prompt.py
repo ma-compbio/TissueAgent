@@ -181,5 +181,7 @@ Major claims
 - C3: PLXN–SEMA ligand–receptor interactions are spatially patterned across ventricular layers and enriched at boundaries involving the VCS. [Fig. 3; pp. 3, 6, 22]
 ```
 
+{{skill_prompt}}
+
 Begin by analyzing the PDF you receive and following this workflow.
 """

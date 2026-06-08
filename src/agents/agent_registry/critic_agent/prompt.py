@@ -284,4 +284,6 @@ Typical access patterns for criticism:
 - Read hypotheses from: `outputs/hypotheses/hypotheses.json` (or wherever the hypothesis agent saved it under outputs/).
 - Read results from: `outputs/experiment_results/`, `outputs/reports/`.
 - Save criticism to: `outputs/reports/criticism.json` — write_file_tool anchors that path under the active project's outputs/.
+
+{{skill_prompt}}
 """

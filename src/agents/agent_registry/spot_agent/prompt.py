@@ -1,3 +1,5 @@
+"""Prompt and description strings for the Spot Agent."""
+
 SpotDescription = """
 Runs spatial spot-level transcriptomics deconvolution tasks (e.g., 10x Visium) using cell2location.
 """.strip()
@@ -46,6 +48,8 @@ Use ReAct INTERNALLY and STOP once the requested deconvolution run is completed 
 - Summarize whether deconvolution succeeded.
 - List key artifact paths (relative to the workspace root, typically `projects/<id>/outputs/...`) such as output_dir, abundance tables, fitted AnnData files.
 - Mention notable parameter choices if non-default.
+
+{{skill_prompt}}
 
 # Output Format (enforced)
 <scratchpad>

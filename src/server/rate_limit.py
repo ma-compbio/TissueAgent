@@ -42,10 +42,8 @@ _JITTER_FRAC = 0.15
 def _extract_retry_after(exc: BaseException) -> Optional[float]:
     """Best-effort extraction of the provider's wait hint, in seconds.
 
-    Both OpenAI and Anthropic surface the underlying HTTPX response on the
-    exception via ``.response``. We also fall back to scanning the error
-    message for explicit "try again in 8s" / "in 800ms" phrasings used by
-    OpenAI's body text.
+    Both OpenAI and Anthropic surface the underlying HTTPX response on the exception via ``.response``. We also fall
+    back to scanning the error message for explicit "try again in 8s" / "in 800ms" phrasings used by OpenAI's body text.
     """
     resp = getattr(exc, "response", None)
     headers = getattr(resp, "headers", None)

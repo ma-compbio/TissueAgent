@@ -158,7 +158,9 @@ async def upload_files(
             }
             if f.filename in existing:
                 entry = existing[f.filename]
-                results.append(FileInfo(name=f.filename, path=entry["path"], category="pdf", file_id=entry.get("file_id")))
+                results.append(
+                    FileInfo(name=f.filename, path=entry["path"], category="pdf", file_id=entry.get("file_id"))
+                )
                 continue
             pdf_path = next_available_path(attachments_dir, f.filename)
             pdf_path.write_bytes(content)

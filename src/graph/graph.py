@@ -11,30 +11,38 @@ and exposed to the Manager as invocation tools.
 
 import json
 import logging
+from collections.abc import Callable
 from datetime import datetime, timezone
 from queue import Queue
-from typing import Callable
 
 from langchain_core.language_models.chat_models import BaseChatModel
-from langgraph.graph import END, MessagesState, START, StateGraph
+from langgraph.graph import END, START, MessagesState, StateGraph
 
 from agents.agent_defns import (
     AgentDefns,
     CustomAgent,
-    PlannerAgent,
+    EvaluatorAgent,
     ManagerAgent,
+    PlannerAgent,
     ReActAgent,
     RecruiterAgent,
-    EvaluatorAgent,
     ReporterAgent,
 )
-from graph.graph_utils import (
-    create_agent_node,
-    create_tool_node,
-    create_agent_invocation_tool,
+from graph.message_filters import (
+    filter_for_execution_phase,
+    filter_for_recruiter,
 )
+from graph.node_factories import (
+    AgentState,
+    create_agent_invocation_tool,
+    create_agent_node,
+    create_step_context_resolver,
+    create_tool_node,
+)
+from graph.plan_output import create_recruiter_state_update, planner_state_update
 
 MAX_REPLANS = 2
+MAX_RECRUITER_RETRIES = 2
 
 
 def create_tissueagent_graph(
@@ -44,51 +52,55 @@ def create_tissueagent_graph(
 ) -> StateGraph:
     """Build the full TissueAgent state graph (uncompiled).
 
-    Constructs sub-agent graphs for each entry in :data:`AgentDefns`, then
-    wires the five main pipeline agents with conditional routing edges.
-    The caller is responsible for compiling the returned graph.
+    Constructs sub-agent graphs for each entry in :data:`AgentDefns`, then wires the five main
+    pipeline agents with conditional routing edges. The caller is responsible for compiling the
+    returned graph.
 
-    Execution mode (autopilot vs copilot) is an **app-layer** concern. It
-    lives on :class:`server.session_manager.SessionState` and is honored by
-    the server's WebSocket handlers when they invoke the compiled graph.
-    Direct callers (notebook / CLI) never set up that session and therefore
-    always run autopilot — copilot pauses are server-side wiring only.
+    Execution mode (autopilot vs copilot) is an **app-layer** concern. It lives on
+    :class:`server.session_manager.SessionState` and is honored by the server's WebSocket handlers
+    when they invoke the compiled graph. Direct callers (notebook / CLI) never set up that session
+    and therefore always run autopilot; copilot pauses are server-side wiring only.
 
     Args:
-        state_queue: Thread-safe queue where completed sub-agent states are
-            placed so the UI can render them.
-        model_proc_fn: Callable applied to every bound model (typically
-            adds retry logic for rate-limit errors).
-        kernel_client: Optional :class:`KernelClient` for the coding agent's
-            Docker sandbox.  Passed to the coding agent's constructor.
+        state_queue: Thread-safe queue where completed sub-agent states are placed so the UI can
+            render them.
+        model_proc_fn: Callable applied to every bound model (typically adds retry logic for
+            rate-limit errors).
+        kernel_client: Optional :class:`KernelClient` for the coding agent's Docker sandbox. Passed
+            to the coding agent's constructor.
 
     Returns:
-        An uncompiled :class:`~langgraph.graph.StateGraph` ready to be
-        compiled via ``.compile()``.
+        An uncompiled :class:`~langgraph.graph.StateGraph` ready to be compiled via ``.compile()``.
     """
     assign_agent_node_id = lambda id: f"{id}_agent"
     assign_tool_node_id = lambda id: f"{id}_tools"
 
     agent_id_descriptions = {assign_agent_node_id(a.id): a.description for a in AgentDefns}
-
     logging.info(f"Agent ID Descriptions: {json.dumps(agent_id_descriptions, indent=4)}")
 
     ## Build Subagents
 
+    context_resolver = create_step_context_resolver()
     agent_invocation_tools = []
     for agent in AgentDefns:
         if isinstance(agent, ReActAgent):
-            agent_subgraph = StateGraph(MessagesState)
+            agent_subgraph = StateGraph(AgentState)
             agent_model = model_proc_fn(agent.model_ctor().bind_tools(agent.tools))
 
             agent_node_id = assign_agent_node_id(agent.id)
             tool_node_id = assign_tool_node_id(agent.id)
             tool_node = create_tool_node(agent.tools)
 
-            assert isinstance(agent.prompt, str)
-            agent_node = create_agent_node(
-                agent_node_id, agent_model, agent.prompt, tool_node_id, END
-            )
+            base_prompt = agent.prompt
+            if callable(base_prompt):
+                # Wrap static prompt strings in a callable that injects skill_prompt
+                def prompt_fn(state):
+                    skill_text = state.get("skill_prompt", "")
+                    return base_prompt.replace("{{skill_prompt}}", skill_text)
+            else:
+                prompt_fn = base_prompt
+
+            agent_node = create_agent_node(agent_node_id, agent_model, prompt_fn, tool_node_id, END)
 
             agent_subgraph.add_node(agent_node_id, agent_node)
             agent_subgraph.add_node(tool_node_id, tool_node)
@@ -96,17 +108,12 @@ def create_tissueagent_graph(
             agent_subgraph.add_edge(tool_node_id, agent_node_id)
             subagent = agent_subgraph.compile()
 
-            # Enable PDF support for PDF Reader Agent
-            supports_pdf = agent.id == "pdf_reader"
-
-            forward_user_images = agent.id == "coding"
             agent_invocation_tool = create_agent_invocation_tool(
                 agent_node_id,
                 agent.name,
                 subagent,
                 state_queue,
-                supports_pdf=supports_pdf,
-                forward_user_images=forward_user_images,
+                context_resolver=context_resolver,
             )
             agent_invocation_tools.append(agent_invocation_tool)
 
@@ -117,7 +124,7 @@ def create_tissueagent_graph(
                         f"ID:          {agent.id}",
                         f"Name:        {agent.name}",
                         f"Description: {agent.description}",
-                        f"Prompt:      {agent.prompt}",
+                        f"Prompt:      {agent.prompt[:200] if isinstance(agent.prompt, str) else '<callable>'}",
                         f"Tools:       {[tool.name for tool in agent.tools]}",
                     ]
                 )
@@ -125,9 +132,9 @@ def create_tissueagent_graph(
 
         elif isinstance(agent, CustomAgent):
             if agent.id == "coding" and kernel_client is not None:
-                agent_invocation_tool = agent.ctor(state_queue, kernel_client)
+                agent_invocation_tool = agent.ctor(state_queue, kernel_client, context_resolver)
             else:
-                agent_invocation_tool = agent.ctor(state_queue)
+                agent_invocation_tool = agent.ctor(state_queue, context_resolver)
             agent_invocation_tools.append(agent_invocation_tool)
 
             logging.info(
@@ -242,18 +249,37 @@ def create_tissueagent_graph(
         PlannerAgent.prompt,
         planner_tool_node_id,
         exit_node_id_fn=planner_router,
+        state_update_fn=planner_state_update,
     )
 
     ### Recruiter Node
 
     recruiter_tool_node = create_tool_node(RecruiterAgent.tools)
 
+    valid_agent_ids = {a.id for a in AgentDefns}
+    recruiter_state_update_fn = create_recruiter_state_update(
+        valid_agent_ids,
+        max_retries=MAX_RECRUITER_RETRIES,
+    )
+
+    def recruiter_router(response, state) -> str:
+        """Route recruiter output: retry on validation errors, else proceed."""
+        errors = state.get("recruiter_validation_errors")
+        if errors:
+            prior = int(state.get("recruiter_retry_count", 0) or 0)
+            if prior >= MAX_RECRUITER_RETRIES:
+                return manager_node_id
+            return recruiter_node_id
+        return manager_node_id
+
     recruiter_node = create_agent_node(
         recruiter_node_id,
         recruiter_model,
         recruiter_prompt,
         recruiter_tool_node_id,
-        manager_node_id,
+        exit_node_id_fn=recruiter_router,
+        state_update_fn=recruiter_state_update_fn,
+        message_filter_fn=filter_for_recruiter,
     )
 
     ### Manager Node
@@ -266,6 +292,7 @@ def create_tissueagent_graph(
         manager_prompt,
         manager_tool_node_id,
         evaluator_node_id,
+        message_filter_fn=filter_for_execution_phase,
     )
 
     ### Evaluator node
@@ -310,6 +337,7 @@ def create_tissueagent_graph(
         evaluator_tool_node_id,
         exit_node_id_fn=evaluator_router,
         state_update_fn=evaluator_state_update,
+        message_filter_fn=filter_for_execution_phase,
     )
 
     ### Reporter node
@@ -321,6 +349,7 @@ def create_tissueagent_graph(
         ReporterAgent.prompt,
         reporter_tool_node_id,
         END,
+        message_filter_fn=filter_for_execution_phase,
     )
 
     graph = StateGraph(MessagesState)

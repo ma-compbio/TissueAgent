@@ -8,7 +8,7 @@ from agents.agent_registry.data_analysis_agent.tools_impl.code_templates import 
 def generate_spatial_analysis_code(
     task_description: str, use_existing_tools: bool = True, execute_code: bool = True
 ) -> Dict[str, Any]:
-    """Enhanced code generation with prioritized built-in visualization"""
+    """Enhanced code generation with prioritized built-in visualization."""
     task_lower = task_description.lower()
 
     # High-priority clustering and visualization tools

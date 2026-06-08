@@ -7733,6 +7733,9 @@ requires-dist = [
     { name = "xarray-datatree", specifier = "==0.0.15" },
 ]
 
+[package.metadata.requires-dev]
+dev = []
+
 [[package]]
 name = "tokenizers"
 version = "0.22.0"

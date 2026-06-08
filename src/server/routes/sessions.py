@@ -13,7 +13,6 @@ is the new projects layout.
 import logging
 import shutil
 from datetime import datetime
-from pathlib import Path
 from typing import List, Literal
 
 from fastapi import APIRouter, HTTPException
@@ -142,7 +141,8 @@ async def clear_current_session():
     plan, and the LangGraph thread state. The on-disk project file (if
     any) is left alone — this is "start a new project", not "delete the
     current one". Refuses while the agent is running; the caller should
-    cancel an in-flight run first.
+    cancel an in-flight run first. Returns the cleared mode so the client
+    can update its toggle if it cares (mode itself is preserved, since it's a user preference).
     """
     if session.is_running:
         raise HTTPException(
@@ -189,6 +189,7 @@ async def save_current_session():
             uploaded_pdfs=session.uploaded_pdfs,
             replan_count=session.agent_state.get("replan_count", 0),
             replan_history=session.agent_state.get("replan_history", []),
+            recruiter_retry_count=session.agent_state.get("recruiter_retry_count", 0),
             mode=session.mode,
             plan_markdown=plan_markdown,
             prompts_snapshot=prompts_snapshot,
@@ -261,6 +262,7 @@ async def load_selected_session(filename: str):
     session.agent_state["messages"] = data["messages"]
     session.agent_state["replan_count"] = data["replan_count"]
     session.agent_state["replan_history"] = data["replan_history"]
+    session.agent_state["recruiter_retry_count"] = data.get("recruiter_retry_count", 0)
     session.subagent_states = data["subagent_states"]
     session.pending_subagent_states.clear()
     session.uploaded_pdfs = data["uploaded_pdfs"]

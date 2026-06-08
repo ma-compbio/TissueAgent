@@ -1,21 +1,23 @@
 """Base class for name + keyword retrieval indexes."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any
 
 
 class RetrievalIndex(ABC):
     """Abstract base for indexes that support name lookup and keyword search."""
 
-    _entries: List[Dict[str, Any]]
-    _library_mapping: Dict[int, str]
+    _entries: list[dict[str, Any]]
+    _library_mapping: dict[int, str]
 
     @abstractmethod
-    def _get_name(self, entry: Dict[str, Any]) -> str:
+    def _get_name(self, entry: dict[str, Any]) -> str:
         """Return the canonical name for an entry."""
 
     @abstractmethod
-    def _get_keywords(self, entry: Dict[str, Any]) -> List[str]:
+    def _get_keywords(self, entry: dict[str, Any]) -> list[str]:
         """Return the keywords list for an entry."""
 
     # ------------------------------------------------------------------
@@ -52,7 +54,7 @@ class RetrievalIndex(ABC):
     # Lookup by name — 4-tier cascade
     # ------------------------------------------------------------------
 
-    def _candidate_indices(self, library: str | None) -> List[int]:
+    def _candidate_indices(self, library: str | None) -> list[int]:
         if library is not None:
             return [i for i, lib in self._library_mapping.items() if lib == library]
         return list(range(len(self._entries)))
@@ -64,7 +66,7 @@ class RetrievalIndex(ABC):
         library: str | None = None,
         k: int = 5,
         fuzzy_threshold: float = 0.75,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Find entries by name with a 4-tier matching cascade.
 
         1. Exact match
@@ -76,7 +78,7 @@ class RetrievalIndex(ABC):
         query = raw.split("(", 1)[0].strip()
         candidates = self._candidate_indices(library)
 
-        def _result(idx: int, score: float) -> Dict[str, Any]:
+        def _result(idx: int, score: float) -> dict[str, Any]:
             return {
                 "score": score,
                 "entry": self._entries[idx],
@@ -127,13 +129,13 @@ class RetrievalIndex(ABC):
 
     def search_by_keyword(
         self, keyword: str, *, library: str | None = None
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Find entries whose keywords contain the query as a substring."""
         if not keyword:
             return []
         q = keyword.lower().strip()
         candidates = self._candidate_indices(library)
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         for i in candidates:
             kws = self._get_keywords(self._entries[i])
             for kw in kws:

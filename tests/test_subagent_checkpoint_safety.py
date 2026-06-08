@@ -32,6 +32,7 @@ if str(SRC) not in sys.path:
 
 
 def test_codeact_state_has_no_repl() -> None:
+    """Test that CodeActState does not declare a repl field that would break msgpack."""
     from agents.agent_registry.coding_agent.model import CodeActState
 
     annotations = getattr(CodeActState, "__annotations__", {})
@@ -44,6 +45,7 @@ def test_codeact_state_has_no_repl() -> None:
 
 
 def test_hypothesis_state_has_no_repl() -> None:
+    """Test that HypothesisState does not declare a repl field that would break msgpack."""
     from agents.agent_registry.hypothesis_agent.model import HypothesisState
 
     annotations = getattr(HypothesisState, "__annotations__", {})

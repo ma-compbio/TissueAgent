@@ -1,6 +1,7 @@
+"""Harmony-based label transfer from reference to spatial transcriptomics data."""
+
 from __future__ import annotations
 
-from typing import Dict
 from pathlib import Path
 import json
 import time
@@ -10,9 +11,6 @@ import numpy as np
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 import mygene
-import matplotlib.pyplot as plt
-import anndata as ad
-import matplotlib
 
 from config import (
     DATA_DIR,
@@ -118,8 +116,8 @@ def harmony_transfer_tool(
     mlp_max_iter: int = 500,
     mlp_random_state: int = 42,
     map_spatial_gene_names: bool = True,
-) -> Dict[str, str]:
-
+) -> dict[str, str]:
+    """Transfer cell type annotations from a reference dataset to spatial data via Harmony."""
     try:
         spatial_path = _resolve_path(spatial_anndata_path, must_exist=True)
     except FileNotFoundError as exc:
@@ -339,8 +337,7 @@ def map_genes(
     from_field: str = "symbol",
     to_field: str = "ensembl",
 ) -> pd.DataFrame:
-    """
-    Map gene identifiers using the MyGene.info API.
+    """Map gene identifiers using the MyGene.info API.
 
     Parameters
     ----------
@@ -353,7 +350,7 @@ def map_genes(
     to_field : str, default="ensembl.gene"
         The target identifier field to map to (e.g., "symbol", "entrezgene").
 
-    Returns
+    Returns:
     -------
     pd.DataFrame
         DataFrame with columns: ["query", "mapped_id"] and potentially "notfound".
@@ -398,8 +395,7 @@ def map_genes(
 
 
 def replace_var_names_with_mapping(adata: sc.AnnData, mapping_df: pd.DataFrame) -> sc.AnnData:
-    """
-    Replace adata.var_names (gene names) using a mapping DataFrame from map_genes().
+    """Replace adata.var_names (gene names) using a mapping DataFrame from map_genes().
 
     Parameters
     ----------
@@ -408,12 +404,11 @@ def replace_var_names_with_mapping(adata: sc.AnnData, mapping_df: pd.DataFrame) 
     mapping_df : pd.DataFrame
         Must contain columns ["query", "mapped_id"] as returned by map_genes().
 
-    Returns
+    Returns:
     -------
     adata : anndata.AnnData
         A new AnnData object with updated var_names (mapped IDs).
     """
-
     # Ensure mapping_df has the expected columns
     if not {"query", "mapped_id"}.issubset(mapping_df.columns):
         raise ValueError("mapping_df must contain columns: ['query', 'mapped_id'].")

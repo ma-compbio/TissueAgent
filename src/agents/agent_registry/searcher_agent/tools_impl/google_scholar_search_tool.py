@@ -1,9 +1,10 @@
 """Google Scholar search engine backed by SerpAPI."""
 
+from __future__ import annotations
+
 import os
 from pydantic import SecretStr
 from serpapi import GoogleSearch
-from typing import Optional
 
 
 class GoogleScholarAPIEngine:
@@ -11,7 +12,7 @@ class GoogleScholarAPIEngine:
 
     def __init__(
         self,
-        serp_api_key: Optional[SecretStr] = None,
+        serp_api_key: SecretStr | None = None,
         top_k_results: int = 40,
         hl: str = "en",
         lr: str = "lang_en",

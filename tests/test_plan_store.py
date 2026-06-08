@@ -21,13 +21,14 @@ from server.plan_store import (  # noqa: E402
     PlanStore,
     PlanDocument,
     PlanStep,
+    PlanProvenance,
     PlanEditError,
     _parse_markdown,
 )
 
 
 def test_round_trip_idempotent() -> None:
-    """write -> read -> write yields identical markdown."""
+    """Write -> read -> write yields identical markdown."""
     with tempfile.TemporaryDirectory() as tmp:
         store = PlanStore(plan_dir=Path(tmp))
         doc = PlanDocument(
@@ -166,10 +167,50 @@ actual_outputs: []
         print("OK: old_plan_without_metadata_loads_clean")
 
 
+def test_provenance_round_trip() -> None:
+    """New-style provenance (template_names + decision) survives write -> read."""
+    with tempfile.TemporaryDirectory() as tmp:
+        store = PlanStore(plan_dir=Path(tmp))
+        doc = PlanDocument(
+            status="draft",
+            user_request="Test provenance",
+            steps=[PlanStep(id=1, title="Step", description="d")],
+            provenance=PlanProvenance(
+                template_names=["lr_analysis", "spatial_scatter"],
+                decision="ADAPT",
+            ),
+        )
+        store.write(doc)
+        loaded = store.read()
+        assert loaded.provenance is not None
+        assert loaded.provenance.template_names == ["lr_analysis", "spatial_scatter"]
+        assert loaded.provenance.decision == "ADAPT"
+        print("OK: provenance_round_trip")
+
+
+def test_denovo_provenance_round_trip() -> None:
+    """Denovo provenance (empty template_names) survives write -> read."""
+    with tempfile.TemporaryDirectory() as tmp:
+        store = PlanStore(plan_dir=Path(tmp))
+        doc = PlanDocument(
+            status="draft",
+            user_request="r",
+            steps=[PlanStep(id=1, title="T", description="d")],
+            provenance=PlanProvenance(template_names=[], decision=None),
+        )
+        store.write(doc)
+        loaded = store.read()
+        # Empty provenance should not serialize any provenance block
+        assert loaded.provenance is None or loaded.provenance.template_names == []
+        print("OK: denovo_provenance_round_trip")
+
+
 if __name__ == "__main__":
     test_round_trip_idempotent()
     test_user_edit_rename_and_reorder()
     test_malformed_user_edit_rejected_and_does_not_corrupt()
     test_new_metadata_round_trips()
     test_old_plan_without_metadata_loads_clean()
+    test_provenance_round_trip()
+    test_denovo_provenance_round_trip()
     print("\nAll plan_store tests PASS")

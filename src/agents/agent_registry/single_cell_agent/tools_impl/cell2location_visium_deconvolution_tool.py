@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional
 
 import pandas as pd
 import scanpy as sc
@@ -19,8 +18,8 @@ class Cell2locationResultPaths:
     output_dir: Path
     reference_model_dir: Path
     spatial_model_dir: Path
-    cell_abundance_q05: Optional[Path]
-    cell_abundance_mean: Optional[Path]
+    cell_abundance_q05: Path | None
+    cell_abundance_mean: Path | None
     visium_h5ad: Path
     reference_h5ad: Path
 
@@ -46,7 +45,7 @@ def _resolve_output_dir(path_like: str) -> Path:
     return active_project_outputs() / path
 
 
-def _ensure_counts_layer(adata: sc.AnnData, layer_name: Optional[str]) -> Optional[str]:
+def _ensure_counts_layer(adata: sc.AnnData, layer_name: str | None) -> str | None:
     """Validate that layer_name exists in the AnnData, or pass through None."""
     if layer_name is None:
         return None
@@ -110,7 +109,7 @@ def _save_cell_abundance(
     output_dir: Path,
     basename: str,
     cell_state_df: pd.DataFrame,
-) -> Optional[Path]:
+) -> Path | None:
     """Export a cell-abundance obsm matrix to CSV, returning the written path or None."""
     matrix = adata_visium.obsm.get(basename)
     if matrix is None:
@@ -133,18 +132,18 @@ def run_cell2location_visium_deconvolution(
     reference_h5ad_path: str,
     output_subdir: str = "cell2location_results",
     cell_type_column: str = "cell_type",
-    reference_batch_key: Optional[str] = None,
-    reference_count_layer: Optional[str] = None,
-    visium_batch_key: Optional[str] = None,
-    visium_count_layer: Optional[str] = None,
+    reference_batch_key: str | None = None,
+    reference_count_layer: str | None = None,
+    visium_batch_key: str | None = None,
+    visium_count_layer: str | None = None,
     n_cells_per_location: float = 30.0,
     detection_alpha: float = 20.0,
     regression_max_epochs: int = 250,
     spatial_max_epochs: int = 3000,
     posterior_samples: int = 1000,
     posterior_batch_size: int = 2048,
-    use_gpu: Optional[bool] = None,
-) -> Dict[str, str]:
+    use_gpu: bool | None = None,
+) -> dict[str, str]:
     """Run cell2location to deconvolve Visium spots into cell type abundances."""
     visium_path = _resolve_input_path(visium_h5ad_path)
     reference_path = _resolve_input_path(reference_h5ad_path)
@@ -212,7 +211,7 @@ def run_cell2location_visium_deconvolution(
     cell_state_df = _extract_cell_state_df(regression_model, adata_ref, cell_type_column)
 
     # Configure and train the spatial deconvolution model
-    setup_spatial_kwargs: Dict[str, object] = {}
+    setup_spatial_kwargs: dict[str, object] = {}
     if visium_layer is not None:
         setup_spatial_kwargs["layer"] = visium_layer
     if visium_batch_key is not None:
@@ -257,7 +256,7 @@ def run_cell2location_visium_deconvolution(
     )
 
     # Build structured response dictionary
-    response: Dict[str, str] = {
+    response: dict[str, str] = {
         "status": "success",
         "output_dir": str(result.output_dir),
         "reference_model_dir": str(result.reference_model_dir),

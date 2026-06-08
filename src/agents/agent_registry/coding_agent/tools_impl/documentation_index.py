@@ -1,8 +1,10 @@
 """Name + keyword retrieval index over spatial transcriptomics library documentation."""
 
+from __future__ import annotations
+
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from agents.agent_registry.coding_agent.tools_impl.retrieval_index import RetrievalIndex
 
@@ -10,7 +12,7 @@ from agents.agent_registry.coding_agent.tools_impl.retrieval_index import Retrie
 class DocumentationIndex(RetrievalIndex):
     """Retrieval over JSON documentation entries by method name or keyword."""
 
-    def __init__(self, doc_filepaths: Dict[str, Path]):
+    def __init__(self, doc_filepaths: dict[str, Path]):
         """Load JSON docs and build the entry list.
 
         Args:
@@ -19,8 +21,8 @@ class DocumentationIndex(RetrievalIndex):
                 ``method``, ``keywords``, ``signature``, ``description``,
                 ``params``, and ``misc`` fields.
         """
-        self._entries: List[Dict[str, Any]] = []
-        self._library_mapping: Dict[int, str] = {}
+        self._entries: list[dict[str, Any]] = []
+        self._library_mapping: dict[int, str] = {}
         idx = 0
         for library_name, p in doc_filepaths.items():
             with p.open("r") as f:
@@ -30,10 +32,10 @@ class DocumentationIndex(RetrievalIndex):
                 self._library_mapping[idx] = library_name
                 idx += 1
 
-    def _get_name(self, entry: Dict[str, Any]) -> str:
+    def _get_name(self, entry: dict[str, Any]) -> str:
         return entry["method"]
 
-    def _get_keywords(self, entry: Dict[str, Any]) -> List[str]:
+    def _get_keywords(self, entry: dict[str, Any]) -> list[str]:
         return entry.get("keywords", [])
 
     # ------------------------------------------------------------------
@@ -41,7 +43,7 @@ class DocumentationIndex(RetrievalIndex):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _format_entry_verbose(entry: Dict[str, Any], library: str) -> str:
+    def _format_entry_verbose(entry: dict[str, Any], library: str) -> str:
         """Full detail for a single entry (name lookup)."""
         parts = [
             f"[{library}] {entry['method']}",
@@ -56,11 +58,11 @@ class DocumentationIndex(RetrievalIndex):
         return "\n".join(parts)
 
     @staticmethod
-    def _format_entry_compact(entry: Dict[str, Any], library: str) -> str:
+    def _format_entry_compact(entry: dict[str, Any], library: str) -> str:
         """Compact summary for keyword search results."""
         return f"[{library}] {entry['method']} — {entry['description']}"
 
-    def format_results(self, results: List[Dict[str, Any]], *, verbose: bool) -> str:
+    def format_results(self, results: list[dict[str, Any]], *, verbose: bool) -> str:
         """Render a list of results as a readable string."""
         if not results:
             return "No results found."

@@ -3,9 +3,9 @@
 The "evolving plan" is the single artifact that describes what TissueAgent
 is about to do or is currently doing. It is authored cooperatively:
 
-* The **planner** writes the skeleton via the ``write_plan`` tool. Each
+* The **planner** writes the skeleton via structured JSON output. Each
   step carries a title, description, reasoning, and expected artifacts.
-* The **recruiter** annotates each step via the ``assign_agents`` tool,
+* The **recruiter** annotates each step via structured JSON output,
   adding an ``assigned_agent`` and an ``assignment_rationale``.
 * The **manager** (phase 2) updates each step's ``status`` and records
   the ``actual_outputs`` as work completes.
@@ -57,24 +57,17 @@ StepStatus = Literal[
 EditedBy = Literal["planner", "recruiter", "manager", "user"]
 
 
-ProvenanceSource = Literal["template", "denovo"]
-
-
 @dataclass
 class PlanProvenance:
     """Records how the plan was produced.
 
-    - ``source == "template"``: the planner adapted a registry template.
-      ``template_id`` and ``decision`` come from ``template_selector_tool``.
-    - ``source == "denovo"``: the planner wrote the plan from scratch.
-      Other fields are ignored.
+    - ``template_names`` lists the templates the plan was adapted from.
+      An empty list means the plan was written from scratch (denovo).
+    - ``decision`` is "USE", "ADAPT", or "NEW" when templates are involved.
     """
 
-    source: ProvenanceSource = "denovo"
-    template_id: Optional[str] = None
-    version: Optional[str] = None
-    decision: Optional[str] = None  # "USE" | "ADAPT" | "NEW" — verbatim from selector
-    score: Optional[float] = None
+    template_names: List[str] = field(default_factory=list)
+    decision: Optional[str] = None  # "USE" | "ADAPT" | "NEW"
 
 
 @dataclass
@@ -88,6 +81,7 @@ class PlanStep:
     expected_artifacts: List[str] = field(default_factory=list)
     assigned_agent: Optional[str] = None
     assignment_rationale: Optional[str] = None
+    skills: List[str] = field(default_factory=list)
     status: StepStatus = "pending"
     actual_outputs: List[str] = field(default_factory=list)
     # Args the manager passed to the specialist tool when this step ran.
@@ -122,16 +116,13 @@ class PlanDocument:
         if self.last_edited_at is not None:
             header["last_edited_at"] = self.last_edited_at
         if self.provenance is not None:
-            prov: Dict[str, Any] = {"source": self.provenance.source}
-            if self.provenance.template_id is not None:
-                prov["template_id"] = self.provenance.template_id
-            if self.provenance.version is not None:
-                prov["version"] = self.provenance.version
+            prov: Dict[str, Any] = {}
+            if self.provenance.template_names:
+                prov["template_names"] = list(self.provenance.template_names)
             if self.provenance.decision is not None:
                 prov["decision"] = self.provenance.decision
-            if self.provenance.score is not None:
-                prov["score"] = self.provenance.score
-            header["provenance"] = prov
+            if prov:
+                header["provenance"] = prov
         out.append("```yaml")
         out.append(yaml.safe_dump(
             header, sort_keys=False, allow_unicode=True
@@ -145,6 +136,7 @@ class PlanDocument:
                 "status": step.status,
                 "assigned_agent": step.assigned_agent,
                 "assigned_rationale": step.assignment_rationale,
+                "skills": list(step.skills),
                 "expected_artifacts": list(step.expected_artifacts),
                 "actual_outputs": list(step.actual_outputs),
             }
@@ -206,32 +198,13 @@ def _parse_markdown(text: str) -> PlanDocument:
                 doc.last_edited_at = str(edited_at)
             prov_raw = header.get("provenance")
             if isinstance(prov_raw, dict):
-                source = prov_raw.get("source")
-                if source in ("template", "denovo"):
-                    score_raw = prov_raw.get("score")
-                    try:
-                        score = float(score_raw) if score_raw is not None else None
-                    except (TypeError, ValueError):
-                        score = None
-                    doc.provenance = PlanProvenance(
-                        source=source,  # type: ignore[arg-type]
-                        template_id=(
-                            str(prov_raw.get("template_id"))
-                            if prov_raw.get("template_id") is not None
-                            else None
-                        ),
-                        version=(
-                            str(prov_raw.get("version"))
-                            if prov_raw.get("version") is not None
-                            else None
-                        ),
-                        decision=(
-                            str(prov_raw.get("decision"))
-                            if prov_raw.get("decision") is not None
-                            else None
-                        ),
-                        score=score,
-                    )
+                template_names = prov_raw.get("template_names", [])
+                if isinstance(template_names, str):
+                    template_names = [template_names]
+                doc.provenance = PlanProvenance(
+                    template_names=list(template_names) if template_names else [],
+                    decision=prov_raw.get("decision"),
+                )
         except yaml.YAMLError:
             pass
 
@@ -254,6 +227,7 @@ def _parse_markdown(text: str) -> PlanDocument:
             step.status = data.get("status", "pending")  # type: ignore[assignment]
             step.assigned_agent = data.get("assigned_agent")
             step.assignment_rationale = data.get("assigned_rationale")
+            step.skills = list(data.get("skills") or [])
             step.expected_artifacts = list(data.get("expected_artifacts") or [])
             step.actual_outputs = list(data.get("actual_outputs") or [])
 
@@ -293,6 +267,7 @@ class PlanStore:
     """
 
     def __init__(self, plan_dir: Path = _DEFAULT_PLAN_DIR) -> None:
+        """Initialise the store, creating the plan directory if needed."""
         self._lock = threading.Lock()
         self._dir = plan_dir
         self._ensure_dir()
@@ -300,15 +275,15 @@ class PlanStore:
     def _ensure_dir(self) -> None:
         """Create the plan directory if missing.
 
-        The FastAPI lifespan calls ``reset_data_directories()`` at startup
-        which wipes ``sessions/`` — including the directory this store
-        created at import time. Every read/write/reset must therefore
-        re-create the directory rather than assume it exists.
+        The FastAPI lifespan calls ``reset_data_directories()`` at startup which wipes ``sessions/`` — including the
+        directory this store created at import time. Every read/write/reset must therefore re-create the directory
+        rather than assume it exists.
         """
         self._dir.mkdir(parents=True, exist_ok=True)
 
     @property
     def path(self) -> Path:
+        """Absolute path to the plan markdown file."""
         return self._dir / "plan.md"
 
     def read(self) -> PlanDocument:
@@ -341,7 +316,10 @@ class PlanStore:
             self.path.write_text(markdown, encoding="utf-8")
 
     def reset(self) -> None:
-        """Drop the current plan. Called at the start of each new run."""
+        """Drop the current plan.
+
+        Called at the start of each new run.
+        """
         with self._lock:
             self._ensure_dir()
             if self.path.is_file():

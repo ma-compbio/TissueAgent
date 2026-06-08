@@ -1,3 +1,5 @@
+"""Prompt and description strings for the Cell Annotater Agent."""
+
 CellTissueAnnotationDescription = """
 Performs automatic cell type and tissue annotation for single-cell or spatial transcriptomics datasets using reference-based or ontology-guided approaches.
 Handles cell-level label transfer, tissue-level mapping — no general biological literature search.
@@ -58,6 +60,8 @@ Use ReAct INTERNALLY and STOP once label transfer has finished, or the requested
 # Response (user-facing)
 - **Harmony transfer** → summarize success (annotated spatial AnnData path, cell type counts, mean prediction confidence, number of shared genes).
 - Keep concise. If blocked, state the missing field(s) you need.
+
+{{skill_prompt}}
 
 # Output Format (enforced)
 <scratchpad>

@@ -1,16 +1,16 @@
-# Skill Registry
+# Skills
 
-This directory holds **shared skills** — prose playbooks that one or more specialist agents in [`../agent_registry/`](../agent_registry/) can pull in when their current task matches.
+This directory holds **shared skills** — prose playbooks that one or more specialist agents in [`src/agents/agent_registry/`](../../src/agents/agent_registry/) can pull in when their current task matches.
 
-> **Status: scaffold only.** No skills exist yet, no loader has been wired up, and no agent currently consults this directory. This README locks in the format so future skills are consistent.
+> **Status: scaffold only.** No skills exist yet (aside from the disabled `_example.md` placeholder). This README locks in the format so future skills are consistent.
 
 ## What a skill is — and is not
 
-| | Skill | Agent (in `agent_registry/`) | Plan template (in `../planner_agent/plan_registry/`) |
+| | Skill | Agent (in `agent_registry/`) | Plan template (in `../plans/`) |
 |---|---|---|---|
-| **Form** | Markdown file with YAML frontmatter | Python module (`prompt.py`, `tools.py`, `model_ctor`) | YAML file |
+| **Form** | Markdown file with YAML frontmatter | Python module (`prompt.py`, `tools.py`, `model_ctor`) | Markdown file with YAML frontmatter |
 | **Scope** | A *procedure or reference* — "how to do X" or "facts to remember about Y" | A *capability* — one ReAct loop with bound tools and a model | A *workflow recipe* — sequencing + artifacts + eval gates across multiple agents |
-| **Invocation** | Loaded by an agent when the task description matches | Recruited per plan step by the recruiter | Retrieved by the planner via `template_selector_tool` |
+| **Invocation** | Loaded by an agent when the task description matches | Recruited per plan step by the recruiter | Retrieved by the planner at planning time |
 | **Has tools?** | No — pure prose | Yes — `StructuredTool` list | No — references agents by name |
 | **Has side effects?** | No | Yes (via tools) | No — declarative |
 
@@ -23,8 +23,9 @@ Skills are *shared* — multiple agents can apply the same skill. That's the mai
 Each skill is one markdown file in this directory:
 
 ```
-src/agents/skill_registry/
+knowledge/skills/
 ├── README.md                       (this file)
+├── _example.md                     (disabled placeholder)
 ├── clean_anndata.md
 ├── interpret_de_results.md
 └── …
@@ -38,13 +39,15 @@ name: clean-anndata
 description: Steps to validate and clean an AnnData object before downstream analysis. Use when receiving a fresh .h5ad and the task depends on its integrity.
 applies_to: [cell_annotater, spot, single_cell, coding]
 tags: [anndata, h5ad, quality_control, preprocessing]
+status: enable
 ---
 ```
 
 - **`name`** *(required)* — kebab-case slug. Must be unique within this directory.
 - **`description`** *(required)* — one sentence that explains **when to use the skill**. This is the retrieval surface — write it like an Anthropic skill description, not like a title.
-- **`applies_to`** *(required)* — list of agent IDs from `agent_registry/` that may load this skill. Use the agent's `id` field as it appears in [`../agent_defns.py`](../agent_defns.py) (e.g. `coding`, `cell_annotater`, `spot`, `single_cell`, `gene_agent`, `hypothesis`, `searcher`, `critic`, `pdf_reader`).
+- **`applies_to`** *(required)* — list of agent IDs that may load this skill. Use the agent's `id` field as it appears in [`src/agents/agent_defns.py`](../../src/agents/agent_defns.py) (e.g. `coding`, `cell_annotater`, `spot`, `single_cell`, `gene_agent`, `hypothesis`, `searcher`, `critic`, `pdf_reader`).
 - **`tags`** *(optional)* — lowercase keywords to assist future retrieval.
+- **`status`** *(optional, default `"enable"`)* — `"enable"` or `"disable"`. Disabled skills are excluded from the recruiter prompt index, the `read_skill` tool, and assignment validation.
 
 ### Body
 
@@ -81,8 +84,8 @@ If only one agent ever needs the content, prefer keeping it in that agent's prom
 ## Future work (not in scope for this milestone)
 
 - A `list_skills` + `load_skill` tool pair on each agent so skills load lazily (progressive disclosure, similar to Anthropic skills)
-- A skill selector based on frontmatter `description` similarity (mirroring `template_selector_tool` for plan templates)
+- A skill selector based on frontmatter `description` similarity
 - Validation that `applies_to` entries are real agent IDs at registration time
 - A schema linter run in CI to catch malformed frontmatter
 
-When that work happens, this README is the authoritative source of the format. Schema changes should land here first.
+When that work happens, the parent [knowledge/README.md](../README.md) and this file are the authoritative sources of the format. Schema changes should land here first.

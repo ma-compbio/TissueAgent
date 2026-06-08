@@ -25,7 +25,8 @@ from __future__ import annotations
 import os
 import threading
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Literal, Optional
+from collections.abc import Callable
+from typing import Any, Dict, List, Literal, Optional
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
@@ -163,6 +164,7 @@ def list_models() -> List[Dict[str, Any]]:
 
 
 def get_model_spec(model_id: str) -> ModelSpec:
+    """Return the ModelSpec for the given model_id, raising ValueError if unknown."""
     if model_id not in _MODELS_BY_ID:
         raise ValueError(f"Unknown model id: {model_id!r}")
     return _MODELS_BY_ID[model_id]
@@ -190,6 +192,7 @@ _revision: int = 0
 
 
 def get_selection() -> Dict[str, str]:
+    """Return the active model selection as a JSON-friendly dict."""
     with _selection_lock:
         return {
             "orchestration": _selection.orchestration,
@@ -198,7 +201,10 @@ def get_selection() -> Dict[str, str]:
 
 
 def set_selection(orchestration: str, worker: str) -> Dict[str, str]:
-    """Update the active model selection. Validates both ids."""
+    """Update the active model selection.
+
+    Validates both ids.
+    """
     # Validate before mutating so a bad request leaves state unchanged.
     get_model_spec(orchestration)
     get_model_spec(worker)
@@ -211,11 +217,13 @@ def set_selection(orchestration: str, worker: str) -> Dict[str, str]:
 
 
 def get_revision() -> int:
+    """Return the revision counter, bumped on every selection change."""
     with _selection_lock:
         return _revision
 
 
 def get_model_id(role: Role) -> str:
+    """Return the model ID for the given role ('orchestration' or 'worker')."""
     with _selection_lock:
         return _selection.orchestration if role == "orchestration" else _selection.worker
 
@@ -246,7 +254,10 @@ def get_api_key(provider: Provider) -> Optional[str]:
 
 
 def set_api_key(provider: Provider, key: Optional[str]) -> None:
-    """Store *key* in memory. Pass ``None`` or empty to clear and fall back to env."""
+    """Store *key* in memory.
+
+    Pass ``None`` or empty to clear and fall back to env.
+    """
     if provider not in PROVIDER_ENV_VAR:
         raise ValueError(f"Unknown provider: {provider!r}")
     clean = key.strip() if key else ""
@@ -284,8 +295,8 @@ def get_key_status() -> Dict[str, Dict[str, Any]]:
 def build_chat_model(model_id: str, **overrides: Any) -> BaseChatModel:
     """Instantiate a fresh chat model for *model_id*.
 
-    ``overrides`` are forwarded to the underlying constructor. Provider-
-    specific arguments not understood by the other provider are dropped.
+    ``overrides`` are forwarded to the underlying constructor. Provider- specific arguments not understood by the other
+    provider are dropped.
     """
     spec = get_model_spec(model_id)
 
@@ -337,9 +348,8 @@ def build_chat_model(model_id: str, **overrides: Any) -> BaseChatModel:
 def model_ctor_for_role(role: Role, **overrides: Any) -> Callable[..., BaseChatModel]:
     """Return a zero-argument callable that resolves the current model for *role*.
 
-    The model id is looked up at *call time*, so changing the selection
-    affects the next graph build without needing to re-wire ``model_ctor``
-    fields on every agent definition.
+    The model id is looked up at *call time*, so changing the selection affects the next graph build without needing to
+    re-wire ``model_ctor`` fields on every agent definition.
     """
 
     def ctor() -> BaseChatModel:

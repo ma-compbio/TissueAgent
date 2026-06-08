@@ -1,25 +1,20 @@
 """REPL history compression (strategy 2H).
 
-The coding and hypothesis sub-agents run an internal AI → Python →
-AI → Python loop. Each iteration adds one AI message (containing an
-``<execute>`` block) and one ``HumanMessage`` carrying the REPL stdout.
-Long analyses can accumulate dozens of iterations, each potentially
-several thousand tokens. Re-sending the full transcript on every loop
-turn drives both context-window overflow and TPM exhaustion.
+The coding and hypothesis sub-agents run an internal AI → Python → AI → Python loop. Each iteration adds one AI message
+(containing an ``<execute>`` block) and one ``HumanMessage`` carrying the REPL stdout. Long analyses can accumulate
+dozens of iterations, each potentially several thousand tokens. Re-sending the full transcript on every loop turn drives
+both context-window overflow and TPM exhaustion.
 
-We keep the last *K* iterations in full and collapse all older
-iterations into compact placeholder messages, preserving the first AI
-message (the agent's initial plan, if any) and the most recent
-``HumanMessage`` that triggered the current turn.
+We keep the last *K* iterations in full and collapse all older iterations into compact placeholder messages, preserving
+the first AI message (the agent's initial plan, if any) and the most recent ``HumanMessage`` that triggered the current
+turn.
 
-The compression is applied only to the list of messages we pass to the
-LLM; the graph state itself is left untouched so the UI trace panel and
-session exports retain the full history.
+The compression is applied only to the list of messages we pass to the LLM; the graph state itself is left untouched so
+the UI trace panel and session exports retain the full history.
 """
 
 from __future__ import annotations
 
-from typing import Any, List
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
@@ -43,7 +38,7 @@ def _content_len(msg: BaseMessage) -> int:
     return len(str(c))
 
 
-def compress_repl_history(messages: List[BaseMessage]) -> List[BaseMessage]:
+def compress_repl_history(messages: list[BaseMessage]) -> list[BaseMessage]:
     """Return *messages* with old REPL iterations collapsed.
 
     Heuristic: the loop alternates AI (with code) and Human (REPL output).
@@ -70,11 +65,11 @@ def compress_repl_history(messages: List[BaseMessage]) -> List[BaseMessage]:
     body = messages[first_ai_idx:]
 
     # Walk the body and group into (AI, optional Human) pairs.
-    pairs: List[List[BaseMessage]] = []
+    pairs: list[list[BaseMessage]] = []
     i = 0
     while i < len(body):
         if isinstance(body[i], AIMessage):
-            pair: List[BaseMessage] = [body[i]]
+            pair: list[BaseMessage] = [body[i]]
             if i + 1 < len(body) and isinstance(body[i + 1], HumanMessage):
                 pair.append(body[i + 1])
                 i += 2
@@ -104,7 +99,7 @@ def compress_repl_history(messages: List[BaseMessage]) -> List[BaseMessage]:
         )
     )
 
-    compressed: List[BaseMessage] = []
+    compressed: list[BaseMessage] = []
     compressed.extend(preamble)
     compressed.append(placeholder)
     for pair in keep_pairs:

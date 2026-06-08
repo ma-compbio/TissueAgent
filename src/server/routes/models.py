@@ -39,8 +39,8 @@ def list_models() -> dict:
 def set_models(payload: Selection) -> dict:
     """Update the active model selection.
 
-    The change takes effect on the next user message — the chat handler
-    rebuilds the graph lazily before invoking the agent.
+    The change takes effect on the next user message — the chat handler rebuilds the graph lazily before invoking the
+    agent.
     """
     try:
         new_selection = model_registry.set_selection(
@@ -62,8 +62,8 @@ def get_keys() -> dict:
 def set_key(payload: ApiKeyPayload) -> dict:
     """Set or clear the in-memory API key for a provider.
 
-    A non-empty key takes precedence over the corresponding env var. Pass
-    an empty string (or omit ``key``) to clear and fall back to the env.
+    A non-empty key takes precedence over the corresponding env var. Pass an empty string (or omit ``key``) to clear and
+    fall back to the env.
     """
     try:
         model_registry.set_api_key(payload.provider, payload.key)

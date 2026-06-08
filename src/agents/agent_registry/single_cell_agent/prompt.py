@@ -1,4 +1,5 @@
 """Prompt templates and description for the single cell agent."""
+
 SingleCellDescription = """
 Finds and/or downloads CZI CELLxGENE reference single-cell datasets for downstream analysis.
 Handles CELLxGENE filtering and dataset retrieval only (no general web/literature search).
@@ -71,6 +72,8 @@ Use ReAct INTERNALLY and STOP once the dataset(s) are identified, downloaded, or
 - **Download**: local path.
 - **Deconvolution**: summarize success and list key output artifacts (output directory, abundance tables, fitted AnnData paths).
 - Keep concise. If blocked, state the missing field(s) you need.
+
+{{skill_prompt}}
 
 # Output Format (enforced)
 <scratchpad>

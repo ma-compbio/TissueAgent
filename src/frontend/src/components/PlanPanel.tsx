@@ -127,16 +127,10 @@ export default function PlanPanel({
     ) : null;
 
   const provenanceCaption = plan.provenance
-    ? plan.provenance.source === "template"
-      ? `From template: ${plan.provenance.template_id ?? "?"}${
-          plan.provenance.version ? ` v${plan.provenance.version}` : ""
-        }${
-          plan.provenance.decision ? ` (${plan.provenance.decision})` : ""
-        }${
-          typeof plan.provenance.score === "number"
-            ? `, score ${plan.provenance.score.toFixed(2)}`
-            : ""
-        }`
+    ? plan.provenance.template_names.length > 0
+      ? `From template${plan.provenance.template_names.length > 1 ? "s" : ""}: ${
+          plan.provenance.template_names.join(", ")
+        }${plan.provenance.decision ? ` (${plan.provenance.decision})` : ""}`
       : "De novo plan"
     : null;
 

@@ -1,7 +1,7 @@
 """WebSocket endpoint for real-time agent chat.
 
-Handles bidirectional communication: receives user messages, invokes the
-LangGraph agent, and streams back intermediate traces and sub-agent states.
+Handles bidirectional communication: receives user messages, invokes the LangGraph agent, and streams back intermediate
+traces and sub-agent states.
 """
 
 import asyncio
@@ -19,9 +19,9 @@ from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
 from pathlib import Path
 
-from agents.manager_agent.tools import ManagerToolNames
+from agents.manager_agent.tools import ManagerTools
 from config import RECURSION_LIMIT
-from graph.graph_utils import log_message, record_user_message
+from graph.ui_events import log_message
 from server.message_serializer import serialize_history, serialize_message, serialize_subagent_state
 from server.session_manager import session
 from server.utils import (
@@ -135,8 +135,7 @@ async def _broadcast_project_saved(ws: WebSocket) -> None:
 async def websocket_chat(ws: WebSocket):
     """Primary real-time chat channel.
 
-    On connect, sends current conversation history.
-    On receive, processes user messages and streams agent traces back.
+    On connect, sends current conversation history. On receive, processes user messages and streams agent traces back.
     """
     await ws.accept()
 
@@ -184,10 +183,9 @@ async def websocket_chat(ws: WebSocket):
 async def _handle_set_mode(ws: WebSocket, data: dict):
     """Update the session execution mode and echo the new value back.
 
-    Mode changes take effect on the *next* user prompt. A run that's
-    already in flight keeps the mode it started with — ``_run_graph``
-    snapshots mode at invoke time, so toggling mid-run is safe and does
-    not affect the current run's pause behavior.
+    Mode changes take effect on the *next* user prompt. A run that's already in flight keeps the mode it started with —
+    ``_run_graph`` snapshots mode at invoke time, so toggling mid-run is safe and does not affect the current run's
+    pause behavior.
     """
     requested = data.get("mode")
     if requested not in ("autopilot", "copilot"):
@@ -218,20 +216,26 @@ async def _handle_user_message(ws: WebSocket, data: dict):
         return
 
     text = data.get("text", "")
-    image_ids = data.get("image_ids", [])
-    pdf_ids = data.get("pdf_ids", [])
 
-    # Build multimodal content parts
-    content_parts = [{"type": "text", "text": text}]
-
-    # Add image attachments
+    # Build multimodal content parts.
+    # User-uploaded images are saved to DATA_DIR/uploads/ by the file
+    # upload route; we reference them by workspace-relative path so that
+    # agents can read them via the standard read() tool.
+    image_refs = []
     for img in session.pending_images:
         img_path = Path(img["path"])
         if img_path.exists():
-            content_parts.append({
-                "type": "image_url",
-                "image_url": {"url": file_to_data_url(img_path)},
-            })
+            try:
+                rel = img_path.relative_to(DATA_DIR)
+            except ValueError:
+                rel = img_path.name
+            image_refs.append(str(rel))
+
+    if image_refs:
+        listing = ", ".join(image_refs)
+        text += f"\n\n[Attached images (readable via the read tool): {listing}]"
+
+    content_parts = [{"type": "text", "text": text}]
 
     # Add PDF attachments
     for pdf in session.uploaded_pdfs:
@@ -257,12 +261,12 @@ async def _handle_user_message(ws: WebSocket, data: dict):
 
     # Create and record the user message
     user_message = HumanMessage(content=content_parts)
-    record_user_message(user_message)
     log_message(user_message)
 
     session.agent_state["messages"].append(user_message)
     session.agent_state.setdefault("replan_count", 0)
     session.agent_state.setdefault("replan_history", [])
+    session.agent_state.setdefault("recruiter_retry_count", 0)
 
     # New user turn → fresh checkpointer thread, clear any stale plan + pause.
     from server.plan_store import plan_store as _plan_store
@@ -332,11 +336,9 @@ def _interrupt_label(next_nodes) -> Optional[str]:
 def _pending_interrupt_nodes() -> list[str]:
     """Nodes that should pause on the *next* invoke for this run.
 
-    LangGraph's ``interrupt_before`` is sticky — a node listed there
-    pauses every time the graph is about to enter it, including
-    inner-loop returns (e.g. ``manager_tools`` → ``manager_agent``).
-    We want each gate to fire **at most once** per turn, so we exclude
-    gates that have already fired (tracked on ``session.gates_fired``).
+    LangGraph's ``interrupt_before`` is sticky — a node listed there pauses every time the graph is about to enter it,
+    including inner-loop returns (e.g. ``manager_tools`` → ``manager_agent``). We want each gate to fire **at most
+    once** per turn, so we exclude gates that have already fired (tracked on ``session.gates_fired``).
     """
     return [
         node
@@ -379,7 +381,7 @@ async def _run_graph(ws: WebSocket, graph_input):
     # On a resume (graph_input is None), the plan's on-disk status may
     # still read ``awaiting_*`` from the pause. Flip it to ``running`` so
     # the UI doesn't keep telling the user "your review is needed".
-    # Downstream agents (recruiter's assign_agents_tool, etc.) may
+    # Downstream agents (recruiter's state_update_fn, etc.) may
     # overwrite this with a more specific status as they run.
     if graph_input is None:
         from server.plan_store import plan_store as _plan_store
@@ -502,9 +504,8 @@ async def _set_plan_status_and_emit(
 ) -> None:
     """Flip the on-disk plan's top-level status and notify the frontend.
 
-    No-op when the plan is empty (status ``"empty"``) — there's nothing to
-    update, and we don't want to fabricate a plan document just to carry
-    a status. Set ``only_if_present=False`` to force-write regardless.
+    No-op when the plan is empty (status ``"empty"``) — there's nothing to update, and we don't want to fabricate a plan
+    document just to carry a status. Set ``only_if_present=False`` to force-write regardless.
     """
     from server.plan_store import plan_store as _plan_store, serialize_plan
 
@@ -527,8 +528,7 @@ async def _set_plan_status_and_emit(
 async def _require_paused_at(ws: WebSocket, expected_pause: str) -> bool:
     """Validate that the session is paused at the expected gate.
 
-    Returns ``True`` if the caller may proceed. On a mismatch, sends a
-    ``run_error`` over *ws* and returns ``False``.
+    Returns ``True`` if the caller may proceed. On a mismatch, sends a ``run_error`` over *ws* and returns ``False``.
     """
     if session.paused_at is None:
         await ws.send_json({
@@ -580,9 +580,8 @@ async def _apply_user_plan_edit_and_resume(
 ) -> None:
     """Common path for plan_edited and assignments_edited.
 
-    Validates and persists *markdown* via ``plan_store.apply_user_edit``,
-    pushes a ``plan_updated`` event so the UI reflects the saved form,
-    and resumes the graph with ``input=None``.
+    Validates and persists *markdown* via ``plan_store.apply_user_edit``, pushes a ``plan_updated`` event so the UI
+    reflects the saved form, and resumes the graph with ``input=None``.
     """
     from server.plan_store import plan_store as _plan_store, PlanEditError, serialize_plan
 
@@ -618,9 +617,8 @@ async def _handle_plan_feedback(ws: WebSocket, data: dict) -> None:
 async def _handle_assignments_feedback(ws: WebSocket, data: dict) -> None:
     """Rewind to the planner with assignment-stage feedback.
 
-    Both feedback paths re-enter at the planner (see Milestone 4 design):
-    simpler, matches the existing REPLAN loop, and the planner can decide
-    whether to actually re-plan or pass through.
+    Both feedback paths re-enter at the planner (see Milestone 4 design): simpler, matches the existing REPLAN loop, and
+    the planner can decide whether to actually re-plan or pass through.
     """
     if not await _require_paused_at(ws, "before_manager"):
         return
@@ -630,9 +628,8 @@ async def _handle_assignments_feedback(ws: WebSocket, data: dict) -> None:
 async def _rewind_to_planner_with_feedback(ws: WebSocket, text: str) -> None:
     """Append feedback as a HumanMessage and re-invoke from the top.
 
-    Cycles ``thread_id`` so the new run is a fresh checkpointer thread —
-    the old interrupt state is orphaned, which is intentional. The
-    feedback message is what the planner sees on its next pass.
+    Cycles ``thread_id`` so the new run is a fresh checkpointer thread — the old interrupt state is orphaned, which is
+    intentional. The feedback message is what the planner sees on its next pass.
     """
     feedback = (text or "").strip()
     if not feedback:
@@ -649,7 +646,6 @@ async def _rewind_to_planner_with_feedback(ws: WebSocket, text: str) -> None:
     feedback_message = HumanMessage(
         content=f"[Copilot feedback from user] {feedback}"
     )
-    record_user_message(feedback_message)
     log_message(feedback_message)
     session.agent_state["messages"].append(feedback_message)
     session.append_display_message(feedback_message)
@@ -672,9 +668,8 @@ async def _rewind_to_planner_with_feedback(ws: WebSocket, text: str) -> None:
 async def _handle_run_cancelled(ws: WebSocket) -> None:
     """Cancel an in-progress copilot run.
 
-    The checkpointer thread is abandoned (a fresh one is generated for
-    the next turn). The on-disk plan is wiped so the UI doesn't keep
-    showing a stale review prompt.
+    The checkpointer thread is abandoned (a fresh one is generated for the next turn). The on-disk plan is wiped so the
+    UI doesn't keep showing a stale review prompt.
     """
     if session.paused_at is None and not session.is_running:
         # Nothing to cancel — still acknowledge so the UI clears state.
@@ -703,9 +698,9 @@ async def _drain_queues(ws: WebSocket):
             event_type, payload = event
 
             if event_type == "message":
-                # plan_updated markers are emitted by write_plan / assign_agents
-                # tools via log_message(); route them to the plan channel
-                # instead of the chat transcript.
+                # plan_updated markers are emitted by the planner/recruiter
+                # state_update_fn via log_message(); route them to the plan
+                # channel instead of the chat transcript.
                 if getattr(payload, "name", None) == "plan_updated":
                     plan_payload = (
                         getattr(payload, "additional_kwargs", {}) or {}
@@ -787,7 +782,7 @@ def _link_subagent_states(rendered_prefix: int) -> list[str]:
     for message in new_messages:
         if not isinstance(message, ToolMessage):
             continue
-        if message.name in ManagerToolNames:
+        if message.name in {t.name for t in ManagerTools}:
             continue
         if not str(message.name or "").endswith("_transfer_tool"):
             continue

@@ -38,14 +38,9 @@ export interface PlanStep {
 
 export type EditedBy = "planner" | "recruiter" | "manager" | "user";
 
-export type ProvenanceSource = "template" | "denovo";
-
 export interface PlanProvenance {
-  source: ProvenanceSource;
-  template_id?: string | null;
-  version?: string | null;
+  template_names: string[];
   decision?: string | null;
-  score?: number | null;
 }
 
 export interface Plan {

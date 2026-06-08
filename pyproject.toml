@@ -67,7 +67,7 @@ dependencies = [
 ]
 
 [tool.ruff]
-line-length = 120
+line-length = 100
 force-exclude = true
 
 [tool.ruff.lint]
@@ -82,3 +82,6 @@ convention = "google"
 "**/__init__.py" = ["ALL"]
 "notebooks/**" = ["ALL"]
 "**/deprecated/**" = ["ALL"]
+
+[dependency-groups]
+dev = []

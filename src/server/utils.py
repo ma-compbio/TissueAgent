@@ -1,7 +1,7 @@
 """Framework-agnostic utilities extracted from the Streamlit app.
 
-Provides file handling, message identity, session persistence, HTML export,
-and content-parsing helpers used by the FastAPI server layer.
+Provides file handling, message identity, session persistence, HTML export, and content-parsing helpers used by the
+FastAPI server layer.
 """
 
 import base64
@@ -10,15 +10,12 @@ import logging
 import mimetypes
 import re
 import shutil
-from collections import deque
 from copy import deepcopy
 from datetime import datetime
 from html import escape
 from pathlib import Path
-from queue import Queue
 from typing import (
     Any,
-    Deque,
     Dict,
     Iterable,
     List,
@@ -26,7 +23,6 @@ from typing import (
     MutableMapping,
     Optional,
     Sequence,
-    Set,
     Tuple,
 )
 
@@ -35,7 +31,6 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMe
 from langchain_core.messages.utils import messages_from_dict
 from langgraph.graph import MessagesState
 
-from agents.manager_agent.tools import ManagerToolNames
 from config import (
     DATA_DIR,
     DATASET_DIR,
@@ -506,8 +501,8 @@ def collect_prompts_snapshot() -> Dict[str, str]:
 def derive_session_title(messages: Sequence[BaseMessage]) -> str:
     """Pick a short title for a saved session from its first user message.
 
-    Returns an empty string when no usable text is found. The caller
-    decides how to fall back (typically to the timestamp).
+    Returns an empty string when no usable text is found. The caller decides how to fall back (typically to the
+    timestamp).
     """
     for m in messages:
         if isinstance(m, HumanMessage):
@@ -537,8 +532,7 @@ def format_session_label(session_path: Path) -> str:
 def session_option_label(session_path: Path, title: str = "") -> str:
     """Create a label for the session selection dropdown.
 
-    Combines the title (when available) with the timestamp. Falls back
-    to the raw timestamp when no title was saved.
+    Combines the title (when available) with the timestamp. Falls back to the raw timestamp when no title was saved.
     """
     ts = format_session_label(session_path)
     return f"{title} — {ts}" if title else ts
@@ -550,6 +544,7 @@ def save_session(
     uploaded_pdfs: List[Dict],
     replan_count: int,
     replan_history: List,
+    recruiter_retry_count: int = 0,
     mode: str = "autopilot",
     plan_markdown: str = "",
     prompts_snapshot: Optional[Dict[str, str]] = None,
@@ -563,10 +558,13 @@ def save_session(
         uploaded_pdfs: List of uploaded PDF metadata dicts.
         replan_count: Current replan count.
         replan_history: List of replan timestamps.
+        recruiter_retry_count: Current recruiter validation retry count.
         mode: Execution mode at save time ("autopilot" or "copilot").
         plan_markdown: The current evolving plan as on-disk markdown.
             Saved verbatim so it can be restored on load and rendered in
             HTML exports.
+        prompts_snapshot: Optional mapping of agent name to system prompt text,
+            captured at save time for inclusion in session exports.
 
     Returns:
         Path to the saved session file.
@@ -591,6 +589,7 @@ def save_session(
         "uploaded_pdfs": uploaded_pdfs,
         "replan_count": replan_count,
         "replan_history": replan_history,
+        "recruiter_retry_count": recruiter_retry_count,
         "mode": mode,
         "plan_markdown": plan_markdown,
         "prompts_snapshot": prompts_snapshot or {},
@@ -732,6 +731,7 @@ def load_session(path: Path) -> Dict[str, Any]:
         "uploaded_pdfs": payload.get("uploaded_pdfs", []),
         "replan_count": payload.get("replan_count", 0),
         "replan_history": payload.get("replan_history", []),
+        "recruiter_retry_count": payload.get("recruiter_retry_count", 0),
         "mode": mode,
         "plan_markdown": payload.get("plan_markdown", "") or "",
         "title": payload.get("title", "") or "",
@@ -742,8 +742,7 @@ def load_session(path: Path) -> Dict[str, Any]:
 def read_session_title(path: Path) -> str:
     """Cheap title lookup without parsing the whole message list.
 
-    Used by the list endpoint so we don't deserialise every saved
-    session's messages just to render the dropdown.
+    Used by the list endpoint so we don't deserialise every saved session's messages just to render the dropdown.
     """
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -865,15 +864,12 @@ def _render_conversation_history_html(
 def _render_plan_html(plan_markdown: str, plan_doc=None) -> str:
     """Render a saved plan markdown blob as a top-of-document HTML block.
 
-    If *plan_doc* is provided it takes precedence over re-parsing
-    *plan_markdown*. Callers should pass *plan_doc* when they have
-    already enriched it with run-time data (e.g. ``params`` populated
-    by ``annotate_steps_with_params``) that isn't carried in the
-    on-disk markdown.
+    If *plan_doc* is provided it takes precedence over re-parsing *plan_markdown*. Callers should pass *plan_doc* when
+    they have already enriched it with run-time data (e.g. ``params`` populated by ``annotate_steps_with_params``) that
+    isn't carried in the on-disk markdown.
 
-    Returns an empty string when there is no plan — callers should
-    elide the section entirely in that case rather than print an empty
-    box.
+    Returns an empty string when there is no plan — callers should elide the section entirely in that case rather than
+    print an empty box.
     """
     if plan_doc is None:
         if not plan_markdown or not plan_markdown.strip():
@@ -896,32 +892,18 @@ def _render_plan_html(plan_markdown: str, plan_doc=None) -> str:
         f'<span class="plan-status-pill plan-status-{escape(doc.status)}">'
         f"{escape(doc.status)}</span>"
         + (
-            f' <span class="plan-edited">edited by you</span>'
+            ' <span class="plan-edited">edited by you</span>'
             if doc.last_edited_by == "user"
             else ""
         )
         + "</div>"
     )
     if doc.provenance is not None:
-        if doc.provenance.source == "template":
-            prov_text = (
-                f"From template: <code>{escape(doc.provenance.template_id or '?')}</code>"
-                + (
-                    f" v{escape(doc.provenance.version)}"
-                    if doc.provenance.version
-                    else ""
-                )
-                + (
-                    f" ({escape(doc.provenance.decision)})"
-                    if doc.provenance.decision
-                    else ""
-                )
-                + (
-                    f", score {doc.provenance.score:.2f}"
-                    if doc.provenance.score is not None
-                    else ""
-                )
-            )
+        if doc.provenance.template_names:
+            names = ", ".join(f"<code>{escape(n)}</code>" for n in doc.provenance.template_names)
+            prov_text = f"From template{'s' if len(doc.provenance.template_names) > 1 else ''}: {names}"
+            if doc.provenance.decision:
+                prov_text += f" ({escape(doc.provenance.decision)})"
         else:
             prov_text = "De novo plan (no template used)"
         rows.append(f'<div class="plan-provenance-line">{prov_text}</div>')
@@ -1012,6 +994,10 @@ def build_session_markdown(
         plan_markdown: The evolving plan as on-disk markdown. Inlined
             verbatim at the top of the document when non-empty.
         title: Optional session title shown in the heading.
+        prompts_snapshot: Optional mapping of agent name to system prompt text,
+            appended as a prompts section when non-empty.
+        plan_doc: Optional pre-parsed PlanDocument; used to render plan
+            provenance without re-parsing plan_markdown.
 
     Returns:
         A complete markdown string.
@@ -1033,17 +1019,13 @@ def build_session_markdown(
         try:
             _doc = _pp(plan_markdown)
             if _doc.provenance is not None:
-                if _doc.provenance.source == "template":
-                    parts = [
-                        f"`{_doc.provenance.template_id or '?'}`"
-                    ]
-                    if _doc.provenance.version:
-                        parts.append(f"v{_doc.provenance.version}")
+                if _doc.provenance.template_names:
+                    names = ", ".join(f"`{n}`" for n in _doc.provenance.template_names)
+                    parts = [names]
                     if _doc.provenance.decision:
                         parts.append(f"({_doc.provenance.decision})")
-                    if _doc.provenance.score is not None:
-                        parts.append(f"score {_doc.provenance.score:.2f}")
-                    lines.append(f"_From template: {' '.join(parts)}_")
+                    label = "template" if len(_doc.provenance.template_names) == 1 else "templates"
+                    lines.append(f"_From {label}: {' '.join(parts)}_")
                 else:
                     lines.append("_De novo plan (no template used)_")
                 lines.append("")
@@ -1140,8 +1122,7 @@ def build_session_markdown(
 def _demote_markdown_headings(md: str, *, by: int) -> str:
     """Shift every ATX-style heading by *by* levels (max 6).
 
-    Used so an inlined plan markdown that starts at ``# Plan`` becomes
-    ``## Plan`` inside the export's outline.
+    Used so an inlined plan markdown that starts at ``# Plan`` becomes ``## Plan`` inside the export's outline.
     """
     if by <= 0:
         return md
@@ -1157,8 +1138,7 @@ def _demote_markdown_headings(md: str, *, by: int) -> str:
 def _render_prompts_snapshot_html(snapshot: Mapping[str, str]) -> str:
     """Render a prompts snapshot as a collapsible section.
 
-    Returns an empty string if the snapshot is empty so callers can elide
-    the whole section.
+    Returns an empty string if the snapshot is empty so callers can elide the whole section.
     """
     if not snapshot:
         return ""
@@ -1194,6 +1174,10 @@ def build_session_html(
         subagent_states: Mapping of tool message IDs to (agent_name, final_state) tuples.
         plan_markdown: The evolving plan as on-disk markdown. Rendered
             as the first block in the export when non-empty.
+        prompts_snapshot: Optional mapping of agent name to system prompt text,
+            rendered as a collapsible prompts section at the end.
+        plan_doc: Optional pre-parsed PlanDocument; used to render plan
+            provenance without re-parsing plan_markdown.
 
     Returns:
         A complete HTML string.
@@ -1208,7 +1192,8 @@ def build_session_html(
             '<meta charset="utf-8" />',
             "<title>TissueAgent Session Export</title>",
             "<style>",
-            "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 2rem; max-width: 1100px; }",
+            "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
+            " margin: 2rem; max-width: 1100px; }",
             "h1 { font-size: 1.5rem; }",
             "h2 { margin-top: 2rem; }",
             ".message { margin-bottom: 1.5rem; padding: 1rem; border-radius: 0.75rem; border: 1px solid #e0e0e0; }",

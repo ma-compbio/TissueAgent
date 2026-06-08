@@ -1,8 +1,7 @@
 """Global session state manager replacing Streamlit's session_state.
 
-Provides a single-user in-memory session that holds the agent graph,
-message history, sub-agent states, file upload metadata, and the
-thread-safe queues used for real-time UI streaming.
+Provides a single-user in-memory session that holds the agent graph, message history, sub-agent states, file upload
+metadata, and the thread-safe queues used for real-time UI streaming.
 """
 
 import threading
@@ -38,6 +37,7 @@ class SessionState:
     """Thread-safe, single-user session state container."""
 
     def __init__(self) -> None:
+        """Initialise an empty session with default values."""
         self._lock = threading.Lock()
 
         # Agent graph (compiled at startup, recompiled when model selection changes)
@@ -80,6 +80,7 @@ class SessionState:
             "messages": [],
             "replan_count": 0,
             "replan_history": [],
+            "recruiter_retry_count": 0,
         }
 
         # Sub-agent tracking: {tool_id: (agent_name, state, invocation_id)}
@@ -130,6 +131,7 @@ class SessionState:
                 "messages": [],
                 "replan_count": 0,
                 "replan_history": [],
+                "recruiter_retry_count": 0,
             }
             self.subagent_states = {}
             self.pending_subagent_states = deque()
@@ -175,7 +177,10 @@ class SessionState:
         self.display_message_ids = set(message_identity(msg) for msg in existing)
 
     def append_display_message(self, message: Any) -> bool:
-        """Append *message* to the display list if it is new. Returns True if added."""
+        """Append *message* to the display list if it is new.
+
+        Returns True if added.
+        """
         if should_hide_message(message):
             return False
         msg_key = message_identity(message)

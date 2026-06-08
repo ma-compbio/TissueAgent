@@ -1,4 +1,4 @@
-"""Tests for the Milestone 4 copilot resume protocol in chat.py.
+r"""Tests for the Milestone 4 copilot resume protocol in chat.py.
 
 The graph itself is not exercised — these tests patch ``_run_graph`` and
 focus on the dispatcher logic: gate validation, plan edits being
@@ -56,9 +56,11 @@ class FakeWS:
     """Captures messages send_json would deliver to the client."""
 
     def __init__(self) -> None:
+        """Initialise with an empty sent-messages list."""
         self.sent: list[dict] = []
 
     async def send_json(self, payload: dict) -> None:
+        """Capture a JSON payload as if sent to the client."""
         self.sent.append(payload)
 
 
@@ -67,6 +69,7 @@ def _types_sent(ws: FakeWS) -> list[str]:
 
 
 def run(coro):
+    """Run a coroutine synchronously using asyncio.run."""
     return asyncio.run(coro)
 
 
@@ -74,6 +77,7 @@ def run(coro):
 
 
 def test_plan_approved_validates_gate_and_calls_run_graph():
+    """Test that plan approval validates the pause gate and calls _run_graph."""
     _reset_session_to_paused("before_recruiter")
     _seed_plan("awaiting_plan_review")
     ws = FakeWS()
@@ -88,6 +92,7 @@ def test_plan_approved_validates_gate_and_calls_run_graph():
 
 
 def test_wrong_gate_for_assignments_approved():
+    """Test that providing the wrong pause gate rejects the resume and sends an error."""
     _reset_session_to_paused("before_recruiter")
     ws = FakeWS()
     with patch.object(chat_module, "_run_graph", new=AsyncMock()) as mock_run:
@@ -100,6 +105,7 @@ def test_wrong_gate_for_assignments_approved():
 
 
 def test_not_paused_rejects():
+    """Test that a resume attempt when not paused is rejected with a NotPaused error."""
     session.reset()
     session.paused_at = None
     ws = FakeWS()
@@ -111,6 +117,7 @@ def test_not_paused_rejects():
 
 
 def test_plan_edited_persists_markdown_and_resumes():
+    """Test that a valid plan edit is persisted and the graph is resumed."""
     _reset_session_to_paused("before_recruiter")
     _seed_plan("awaiting_plan_review")
     ws = FakeWS()
@@ -150,6 +157,7 @@ actual_outputs: []
 
 
 def test_plan_edited_rejects_malformed_without_resuming():
+    """Test that a malformed plan edit is rejected without resuming or altering state."""
     _reset_session_to_paused("before_recruiter")
     _seed_plan("awaiting_plan_review")
     before = plan_store.read_markdown()
@@ -198,6 +206,7 @@ actual_outputs: []
 
 
 def test_assignments_edited_rejects_wrong_gate():
+    """Test that editing assignments at the wrong pause gate sends a WrongPauseGate error."""
     _reset_session_to_paused("before_recruiter")  # wrong gate for assignments
     _seed_plan("awaiting_plan_review")
     ws = FakeWS()
@@ -209,6 +218,7 @@ def test_assignments_edited_rejects_wrong_gate():
 
 
 def test_plan_feedback_appends_message_cycles_thread_resets_plan():
+    """Test that plan feedback appends a message, cycles the thread, and resets the plan."""
     _reset_session_to_paused("before_recruiter")
     _seed_plan("awaiting_plan_review")
     original_thread = session.thread_id
@@ -233,6 +243,7 @@ def test_plan_feedback_appends_message_cycles_thread_resets_plan():
 
 
 def test_feedback_rejects_empty_text():
+    """Test that empty or whitespace-only feedback is rejected with an EmptyFeedback error."""
     _reset_session_to_paused("before_recruiter")
     _seed_plan("awaiting_plan_review")
     ws = FakeWS()
@@ -261,6 +272,7 @@ def test_assignments_feedback_also_rewinds_to_planner():
 
 
 def test_run_cancelled_clears_state_and_acks():
+    """Test that cancelling a run clears session state and sends a run_cancelled ack."""
     _reset_session_to_paused("before_recruiter")
     _seed_plan("awaiting_plan_review")
     original_thread = session.thread_id
@@ -275,6 +287,7 @@ def test_run_cancelled_clears_state_and_acks():
 
 
 def test_run_cancelled_with_nothing_to_cancel_still_acks():
+    """Test that cancelling when nothing is running still sends a run_cancelled ack."""
     session.reset()
     session.paused_at = None
     session.is_running = False

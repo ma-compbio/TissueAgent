@@ -1,8 +1,10 @@
 """Tool definitions for the hypothesis agent."""
+
+from __future__ import annotations
+
 from pathlib import Path
-from typing import List
 from langchain.tools import StructuredTool
-from agents.agent_utils import file_read_tools
+from agents.agent_tools import file_read_tools
 from config import DATA_DIR, LIBRARY_DIR, active_project_outputs
 
 
@@ -62,7 +64,7 @@ write_file_structured_tool = StructuredTool.from_function(
     ),
 )
 
-HypothesisTools: List[StructuredTool] = [
+HypothesisTools: list[StructuredTool] = [
     *file_read_tools,
     write_file_structured_tool,
 ]

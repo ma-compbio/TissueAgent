@@ -1,10 +1,12 @@
 """Tool definitions for the PDF reader agent."""
-from typing import List
+
+from __future__ import annotations
+
 from langchain.tools import StructuredTool
 from pathlib import Path
 from config import DATA_DIR, LIBRARY_DIR, active_project_outputs
 
-from agents.agent_utils import file_read_tools
+from agents.agent_tools import file_read_tools
 
 
 def write_file_tool(file_path: str, content: str) -> str:
@@ -53,7 +55,7 @@ def write_file_tool(file_path: str, content: str) -> str:
 
 
 # Export tools list
-PDFReaderTools: List[StructuredTool] = [
+PDFReaderTools: list[StructuredTool] = [
     *file_read_tools,
     StructuredTool.from_function(
         func=write_file_tool,

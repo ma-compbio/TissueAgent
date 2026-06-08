@@ -31,6 +31,8 @@ from langgraph.graph import END, START, StateGraph  # noqa: E402
 
 
 class S(TypedDict, total=False):
+    """Minimal graph state used by interrupt mechanics tests."""
+
     log: Annotated[list, lambda a, b: (a or []) + (b or [])]
 
 
@@ -47,6 +49,7 @@ def _build_graph():
 
 
 def test_autopilot_runs_through():
+    """Test that autopilot mode runs the graph straight through to completion."""
     g = _build_graph()
     cfg = {"configurable": {"thread_id": "t1"}}
     result = g.invoke({"log": []}, cfg)
@@ -57,6 +60,7 @@ def test_autopilot_runs_through():
 
 
 def test_copilot_pauses_before_recruiter():
+    """Test that copilot mode pauses the graph before the recruiter node."""
     g = _build_graph()
     cfg = {"configurable": {"thread_id": "t2"}}
     g.invoke({"log": []}, cfg, interrupt_before=["recruiter_agent", "manager_agent"])
@@ -79,6 +83,7 @@ def test_resume_advances_to_next_pause():
 
 
 def test_second_resume_completes():
+    """Test that a second resume runs the final node and completes the graph."""
     g = _build_graph()
     cfg = {"configurable": {"thread_id": "t4"}}
     g.invoke({"log": []}, cfg, interrupt_before=["recruiter_agent", "manager_agent"])
@@ -91,6 +96,7 @@ def test_second_resume_completes():
 
 
 def test_fresh_thread_id_is_isolated():
+    """Test that separate thread IDs maintain independent graph state."""
     g = _build_graph()
     cfg_a = {"configurable": {"thread_id": "tA"}}
     cfg_b = {"configurable": {"thread_id": "tB"}}

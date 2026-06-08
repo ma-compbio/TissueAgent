@@ -1,6 +1,7 @@
 """Factory functions that create LangChain tools for the Searcher agent."""
 
-from typing import List
+from __future__ import annotations
+
 from langchain.tools import StructuredTool
 
 from agents.agent_registry.searcher_agent.tools_impl.google_scholar_search_tool import (
@@ -56,7 +57,7 @@ def create_openai_web_search_tool() -> StructuredTool:
     )
 
 
-SearcherTools: List[StructuredTool] = [
+SearcherTools: list[StructuredTool] = [
     create_google_scholar_search_tool(),
     create_pubmed_search_tool(),
     create_openai_web_search_tool(),

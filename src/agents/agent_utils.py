@@ -1,16 +1,14 @@
-"""Shared utilities for agent prompt construction and file access.
+"""Shared utilities for agent prompt construction.
 
-Provides helpers for formatting agent descriptions, extracting XML-style
-blocks from LLM responses, and file-access tools (glob, grep, read) that
-operate within the DATA_DIR workspace.
+Provides helpers for formatting agent descriptions, extracting XML-style blocks from LLM responses, and text truncation.
 """
 
-import base64
-import mimetypes
+from __future__ import annotations
+
+import logging
 import re
-from langchain.tools import StructuredTool
-from pathlib import Path
-from typing import Dict, List, Literal, Optional
+
+import yaml
 
 from config import (
     DATA_DIR,
@@ -20,7 +18,65 @@ from config import (
 )
 
 
-def format_agent_id_descriptions(agent_id_descriptions: Dict[str, str]) -> str:
+
+def parse_yaml_frontmatter(text: str) -> dict | None:
+    """Extract YAML frontmatter from a Markdown string.
+
+    Expects the text to start with ``---``, followed by YAML content, closed by another ``---``.  Returns the parsed
+    dict, or ``None`` if the text has no valid frontmatter.
+    """
+    if not text.startswith("---"):
+        return None
+    try:
+        end = text.index("---", 3)
+    except ValueError:
+        return None
+    result = yaml.safe_load(text[3:end])
+    return result if isinstance(result, dict) else None
+
+
+def format_skill_prompt(skill_names: list[str]) -> str:
+    """Build the skill injection block for a sub-agent system prompt.
+
+    Loads skill content from the skill registry, strips YAML frontmatter, and wraps each skill in a formatted section
+    with universal boilerplate.
+
+    Returns empty string if no valid skills are found.
+    """
+    if not skill_names:
+        return ""
+    from agents.recruiter_agent.prompt import get_skill_metadata
+
+    skills = get_skill_metadata()
+    sections = []
+    for name in skill_names:
+        meta = skills.get(name)
+        if meta is None:
+            logging.warning(f"Skill '{name}' not found in registry, skipping.")
+            continue
+        text = meta.path.read_text()
+        # Strip YAML frontmatter
+        if text.startswith("---"):
+            try:
+                end = text.index("---", 3)
+                body = text[end + 3 :].strip()
+            except ValueError:
+                body = text
+        else:
+            body = text
+        sections.append(f"### Skill: {name}\n\n{body}")
+    if not sections:
+        return ""
+    header = (
+        "## Skills\n\n"
+        "The following skill templates have been assigned to guide your approach "
+        "for this task. You may adopt parts of a skill's approach without following "
+        "it exactly, adapting it to fit the specific requirements of the current task."
+    )
+    return header + "\n\n" + "\n\n---\n\n".join(sections)
+
+
+def format_agent_id_descriptions(agent_id_descriptions: dict[str, str]) -> str:
     """Format agent ID-to-description pairs as a bulleted list for prompts.
 
     Args:
@@ -28,15 +84,13 @@ def format_agent_id_descriptions(agent_id_descriptions: Dict[str, str]) -> str:
             human-readable descriptions.
 
     Returns:
-        A newline-separated string with one \" - id: description\" entry
+        A newline-separated string with one " - id: description" entry
         per agent.
     """
-    return "\n".join(
-        [f" - {id}: {description}" for id, description in agent_id_descriptions.items()]
-    )
+    return "\n".join([f" - {id}: {description}" for id, description in agent_id_descriptions.items()])
 
 
-def extract_block(pattern: str, text: str) -> Optional[str]:
+def extract_block(pattern: str, text: str) -> str | None:
     """Extract the content of an XML-style block from an LLM response.
 
     Searches *text* for ``<pattern>…</pattern>`` tags.  If a single
@@ -51,9 +105,7 @@ def extract_block(pattern: str, text: str) -> Optional[str]:
         The stripped inner content of the matched block, or ``None`` when
         zero or more than one match is found.
     """
-    complete_matches = list(
-        re.finditer(r"(?is)<" + pattern + r"(?:\s[^>]*)?>(.*?)</" + pattern + ">", text)
-    )
+    complete_matches = list(re.finditer(r"(?is)<" + pattern + r"(?:\s[^>]*)?>(.*?)</" + pattern + ">", text))
     if len(complete_matches) == 1:
         block = complete_matches[0].group(1).strip()
         return block or None
@@ -72,11 +124,7 @@ def truncate_output(text: str, max_chars: int) -> str:
         return text
     half = max_chars // 2
     removed = len(text) - max_chars
-    return (
-        f"{text[:half]}\n\n"
-        f"... [{removed} characters truncated] ...\n\n"
-        f"{text[-half:]}"
-    )
+    return f"{text[:half]}\n\n... [{removed} characters truncated] ...\n\n{text[-half:]}"
 
 
 ### file read tools
