@@ -343,6 +343,32 @@ code, pre, .num {
   gap: 0.6rem;
 }
 
+/* When the brand acts as the "return to chat" button it gets a quiet
+   pointer affordance — no visible chrome until hover, since it has to
+   sit comfortably inside the top bar without competing with the
+   icon-only nav cluster on the right. */
+.app-brand-button {
+  /* Reset native button styling. */
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  margin-left: -6px;        /* keep the brand visually flush with the bar edge */
+  border-radius: 6px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background 160ms ease-out;
+}
+
+.app-brand-button:hover {
+  background: color-mix(in oklch, var(--text-primary) 6%, transparent);
+}
+
+.app-brand-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .app-logo {
   width: 32px;
   height: 32px;
@@ -411,57 +437,8 @@ code, pre, .num {
   gap: 1rem;
 }
 
-/* ---- Top-bar navigation ------------------------------------------------ */
-
-.top-nav {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-left: var(--space-xl);
-}
-
-.top-nav-item {
-  position: relative;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: var(--space-xs) var(--space-md);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  transition: color 180ms ease-out;
-}
-
-.top-nav-item:hover {
-  color: var(--text-secondary);
-}
-
-.top-nav-item.active {
-  color: var(--text-primary);
-}
-
-/* Underline mark for the active page. Sits flush with the bottom of the
-   top-bar so it reads as a tab indicator, not a button border. */
-.top-nav-item.active::after {
-  content: "";
-  position: absolute;
-  left: var(--space-md);
-  right: var(--space-md);
-  bottom: calc(-1 * var(--space-sm) - 1px);
-  height: 2px;
-  background: var(--accent);
-}
-
-@media (max-width: 760px) {
-  .top-nav {
-    margin-left: var(--space-md);
-  }
-  .top-nav-item {
-    padding: var(--space-xs) var(--space-sm);
-  }
-}
+/* (Previously a text-based top-nav row lived here. It was replaced by
+   icon buttons in the top-right cluster — see .top-bar-icon-btn.) */
 
 /* ---- Documentation pages (Tutorial, Contact) --------------------------- */
 
@@ -1379,33 +1356,9 @@ code, pre, .num {
   max-width: 70ch;
 }
 
-.theme-toggle {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 0.4rem;
-  cursor: pointer;
-  color: var(--text-secondary);
-  font-size: 1rem;
-  line-height: 1;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-  padding: 0;
-}
-
-.theme-toggle:hover {
-  background: var(--accent-light);
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.theme-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+/* ThemeToggle is now rendered with the shared .top-bar-icon-btn class
+   alongside Tutorial / Contact / Settings, so it inherits all chrome
+   and tooltip behavior. No standalone rules needed here. */
 
 .error-banner {
   display: flex;
@@ -3132,11 +3085,14 @@ code, pre, .num {
   background: color-mix(in oklch, var(--error-text, #b91c1c) 10%, transparent);
 }
 
-/* ---- Settings: top-bar gear icon ----
-   Icon-only counterpart to ``.top-nav-item``. Used for Settings in the
-   top-right area so the main nav row stays text-based. */
+/* ---- Top-bar icon buttons ----
+   Icon-only buttons in the top-bar-right cluster. Used for Tutorial,
+   Contact, and Settings — all share the same chrome and a hover-tooltip
+   showing their label. The button is a positioning context for its
+   tooltip child. */
 
 .top-bar-icon-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3168,6 +3124,65 @@ code, pre, .num {
 .top-bar-icon-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Hover/focus tooltip shown below each top-bar icon button. Anchored to
+   the right of the button so the label grows leftward into the bar and
+   never overflows the viewport's right edge. Visual idiom mirrors
+   .section-icon-tooltip / .chat-button-tooltip — same dark slab + arrow. */
+.top-bar-icon-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: max-content;
+  max-width: 18rem;
+  z-index: 50;
+  padding: 5px 10px;
+  background: oklch(0.18 0.020 220);
+  color: oklch(0.94 0.008 200);
+  border-radius: 2px;
+  box-shadow: var(--shadow-banner);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 160ms;
+}
+
+[data-theme="dark"] .top-bar-icon-tooltip {
+  background: oklch(0.12 0.012 220);
+}
+
+.top-bar-icon-tooltip::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: 11px;
+  width: 8px;
+  height: 8px;
+  background: inherit;
+  transform: rotate(45deg);
+  border-radius: 1px;
+}
+
+.top-bar-icon-btn:hover .top-bar-icon-tooltip,
+.top-bar-icon-btn:focus-visible .top-bar-icon-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0s;
 }
 
 /* ---- Settings page: mode radio cards ----

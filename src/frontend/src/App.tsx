@@ -5,7 +5,12 @@ import PlanColumn from "./components/PlanColumn";
 import Sidebar from "./components/Sidebar";
 import Splitter from "./components/Splitter";
 import ThemeToggle from "./components/ThemeToggle";
-import TopNav, { SettingsButton } from "./components/TopNav";
+import {
+  BackToChatButton,
+  ContactButton,
+  SettingsButton,
+  TutorialButton,
+} from "./components/TopNav";
 import SettingsPage from "./components/SettingsPage";
 import TutorialPage from "./components/TutorialPage";
 import { useAgents } from "./hooks/useAgents";
@@ -178,7 +183,13 @@ export default function App() {
       <div className="app-layout app-layout-doc">
         <main className="main-area">
           <div className="top-bar">
-            <div className="app-brand">
+            <button
+              type="button"
+              className="app-brand app-brand-button"
+              onClick={() => setPage("chat")}
+              aria-label="Return to chat"
+              title="Return to chat"
+            >
               <img
                 src="/tissueagent-icon.png"
                 alt=""
@@ -186,9 +197,16 @@ export default function App() {
                 className="app-logo"
               />
               <h1 className="app-title">TissueAgent</h1>
-            </div>
-            <TopNav current={page} onNavigate={setPage} />
+            </button>
             <div className="top-bar-right">
+              <TutorialButton
+                active={page === "tutorial"}
+                onClick={() => setPage("tutorial")}
+              />
+              <ContactButton
+                active={page === "contact"}
+                onClick={() => setPage("contact")}
+              />
               <SettingsButton
                 active={page === "settings"}
                 onClick={() => setPage("settings")}
@@ -253,7 +271,13 @@ export default function App() {
 
       <main className="main-area">
         <div className="top-bar">
-          <div className="app-brand">
+          <button
+            type="button"
+            className="app-brand app-brand-button"
+            onClick={() => setPage("chat")}
+            aria-label="Return to chat"
+            title="Return to chat"
+          >
             <img
               src="/tissueagent-icon.png"
               alt=""
@@ -261,8 +285,7 @@ export default function App() {
               className="app-logo"
             />
             <h1 className="app-title">TissueAgent</h1>
-          </div>
-          <TopNav current={page} onNavigate={setPage} />
+          </button>
           <div className="top-bar-right">
             <div
               className={`connection-status status-${ws.connectionStatus}`}
@@ -276,6 +299,14 @@ export default function App() {
                   ? "Connecting…"
                   : "Disconnected"}
             </div>
+            <TutorialButton
+              active={false}
+              onClick={() => setPage("tutorial")}
+            />
+            <ContactButton
+              active={false}
+              onClick={() => setPage("contact")}
+            />
             <SettingsButton
               active={false}
               onClick={() => setPage("settings")}
