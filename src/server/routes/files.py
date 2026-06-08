@@ -17,6 +17,9 @@ from config import (
     PROJECT_OUTPUTS_DIRNAME,
     PROJECT_UPLOADS_DIRNAME,
     PROJECTS_DIR,
+    SCRATCH_ATTACHMENTS_DIR,
+    SCRATCH_DIR,
+    SCRATCH_UPLOADS_DIR,
 )
 from server.session_manager import session
 from server.utils import (
@@ -113,6 +116,21 @@ async def upload_files(
 
     results: List[FileInfo] = []
 
+    # Pick the destination dirs. ``project`` target writes into the live
+    # project's folders when one exists, or into the pre-project
+    # ``scratch/`` dirs otherwise. The migration in chat.py moves
+    # scratch into the project on first prompt.
+    if target == "project":
+        has_project = bool(session.project_id)
+        if has_project:
+            uploads_dir = project_uploads_dir(session.project_id)
+            attachments_dir = project_attachments_dir(session.project_id)
+        else:
+            uploads_dir = SCRATCH_UPLOADS_DIR
+            attachments_dir = SCRATCH_ATTACHMENTS_DIR
+            uploads_dir.mkdir(parents=True, exist_ok=True)
+            attachments_dir.mkdir(parents=True, exist_ok=True)
+
     for f in files:
         category = _classify_file(f.filename)
         content = await f.read()
@@ -121,16 +139,15 @@ async def upload_files(
             results.append(_save_library(f.filename, content, category))
             continue
 
-        # target == "project"
-        project_id = session.ensure_project_id()
+        # target == "project". Images/PDFs go to attachments/ so the
+        # multimodal turn payload finds them in a dedicated place;
+        # everything else lands in uploads/.
         if category == "image":
             existing = {img["name"]: img["path"] for img in session.pending_images}
             if f.filename in existing and Path(existing[f.filename]).exists():
                 results.append(FileInfo(name=f.filename, path=existing[f.filename], category="image"))
                 continue
-            target_path = next_available_path(
-                project_uploads_dir(project_id), f.filename
-            )
+            target_path = next_available_path(attachments_dir, f.filename)
             target_path.write_bytes(content)
             session.pending_images.append({"name": f.filename, "path": str(target_path)})
             results.append(FileInfo(name=f.filename, path=str(target_path), category="image"))
@@ -143,9 +160,7 @@ async def upload_files(
                 entry = existing[f.filename]
                 results.append(FileInfo(name=f.filename, path=entry["path"], category="pdf", file_id=entry.get("file_id")))
                 continue
-            pdf_path = next_available_path(
-                project_uploads_dir(project_id), f.filename
-            )
+            pdf_path = next_available_path(attachments_dir, f.filename)
             pdf_path.write_bytes(content)
             entry = {"name": f.filename, "path": str(pdf_path)}
             try:
@@ -158,17 +173,14 @@ async def upload_files(
             results.append(FileInfo(name=f.filename, path=str(pdf_path), category="pdf", file_id=entry.get("file_id")))
 
         else:
-            # Datasets and general files: just drop them into the
-            # project's uploads/ folder. No session-side tracking — the
-            # agent picks them up by browsing the workspace.
-            if category == "dataset" and f.filename in session.processed_files:
-                continue
+            # Datasets and general files: drop them into uploads/. Don't
+            # silently dedup here — if the user picks the same filename
+            # twice we want both to survive, with a numeric suffix on
+            # the second.
+            target_path = next_available_path(uploads_dir, f.filename)
+            target_path.write_bytes(content)
             if category == "dataset":
                 session.processed_files.add(f.filename)
-            target_path = next_available_path(
-                project_uploads_dir(project_id), f.filename
-            )
-            target_path.write_bytes(content)
             results.append(FileInfo(name=f.filename, path=str(target_path), category=category))
 
     return UploadResult(files=results)
@@ -258,7 +270,26 @@ async def browse_files(scope: str = "library", project_id: str | None = None):
     if scope == "project":
         pid = project_id or session.project_id or ""
         if not pid:
-            return []
+            # No project is active yet — surface the scratch dirs so
+            # the user can see files they've staged for the next prompt.
+            children: list[dict] = []
+            for name, src in (
+                (PROJECT_UPLOADS_DIRNAME, SCRATCH_UPLOADS_DIR),
+                (PROJECT_ATTACHMENTS_DIRNAME, SCRATCH_ATTACHMENTS_DIR),
+            ):
+                if not src.exists():
+                    continue
+                # Root is SCRATCH_DIR so paths read as ``uploads/foo.png``
+                # — same shape as for a real project.
+                children.append({
+                    "name": name,
+                    "path": name,
+                    "is_dir": True,
+                    "size": 0,
+                    "children": _build_tree(src, SCRATCH_DIR),
+                })
+            return children
+
         root = PROJECTS_DIR / pid
         if not root.exists():
             return []
@@ -301,11 +332,16 @@ def _resolve_scoped_path(scope: str, file_path: str, project_id: str | None) -> 
     elif scope == "project":
         pid = project_id or session.project_id or ""
         if not pid:
-            raise HTTPException(status_code=400, detail="No active project.")
-        root = PROJECTS_DIR / pid
-        # Refuse chat.json — it isn't a user-facing file.
-        if file_path.strip().lstrip("/") == "chat.json":
-            raise HTTPException(status_code=403, detail="Access denied")
+            # No project is active yet — paths live under scratch/.
+            # Paths from /browse for the no-project case start with
+            # ``uploads/`` or ``attachments/``, matching the shape of
+            # a real project, so SCRATCH_DIR is the correct root.
+            root = SCRATCH_DIR
+        else:
+            root = PROJECTS_DIR / pid
+            # Refuse chat.json — it isn't a user-facing file.
+            if file_path.strip().lstrip("/") == "chat.json":
+                raise HTTPException(status_code=403, detail="Access denied")
     else:
         root = DATA_DIR  # legacy/debug
 

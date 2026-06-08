@@ -27,6 +27,7 @@ from server.session_manager import session
 from server.utils import (
     SUBAGENT_BADGES,
     SUBAGENT_DEFAULT_AVATAR,
+    adopt_scratch_into_project,
     derive_session_title,
     file_to_data_url,
     project_outputs_dir,
@@ -45,22 +46,48 @@ _executor = ThreadPoolExecutor(max_workers=1)
 
 
 def _ensure_project_id() -> str:
-    """Bind the kernel to the active project's outputs/ on first use.
+    """Mint the project on first prompt and handle one-time side effects.
 
-    ``session.ensure_project_id`` mints the id if needed (idempotent);
-    this wrapper handles the chat-specific side effects: making sure
-    the outputs directory exists and pointing the kernel client at it
-    so Python/R writes land inside the project.
+    Side effects on mint:
+      - Point the kernel at the project's ``outputs/`` directory so
+        Python/R writes land inside the project.
+      - Adopt any files the user uploaded before the project existed:
+        scratch/uploads/* → projects/<id>/uploads/, scratch/attachments/*
+        → projects/<id>/attachments/. Rewrite ``pending_images`` and
+        ``uploaded_pdfs`` paths so the multimodal turn payload still
+        finds them in their new homes.
+
+    Idempotent on subsequent calls — already-minted projects no-op.
     """
     fresh = session.project_id is None
     project_id = session.ensure_project_id()
-    if fresh:
-        try:
-            outputs = project_outputs_dir(project_id)
-            from server.main import set_kernel_workspace
-            set_kernel_workspace(outputs)
-        except Exception as e:
-            logging.warning(f"Failed to bind kernel workspace for new project: {e}")
+    if not fresh:
+        return project_id
+
+    try:
+        outputs = project_outputs_dir(project_id)
+        from server.main import set_kernel_workspace
+        set_kernel_workspace(outputs)
+    except Exception as e:
+        logging.warning(f"Failed to bind kernel workspace for new project: {e}")
+
+    try:
+        moves = adopt_scratch_into_project(project_id)
+        if moves:
+            # Rewrite any in-memory references that still point at the
+            # old scratch paths so the chat handler sends the correct
+            # paths in the multimodal turn payload.
+            for img in session.pending_images:
+                new = moves.get(img.get("path"))
+                if new:
+                    img["path"] = new
+            for pdf in session.uploaded_pdfs:
+                new = moves.get(pdf.get("path"))
+                if new:
+                    pdf["path"] = new
+    except Exception as e:
+        logging.warning(f"Failed to adopt scratch into project: {e}")
+
     return project_id
 
 

@@ -64,6 +64,22 @@ interface Props {
   index: number;
   onClose: () => void;
   onIndexChange: (next: number) => void;
+  /** Jump the matching pane to a folder path and close the lightbox.
+   *  Used by clickable breadcrumb segments in the header. */
+  onJumpToPath?: (scope: "library" | "project", path: string) => void;
+}
+
+/** Split ``a/b/c`` into ``[{name:'a', path:'a'}, {name:'b', path:'a/b'}, ...]``. */
+function breadcrumbSegments(path: string): Array<{ name: string; path: string }> {
+  if (!path) return [];
+  const parts = path.split("/").filter(Boolean);
+  const out: Array<{ name: string; path: string }> = [];
+  let acc = "";
+  for (const p of parts) {
+    acc = acc ? `${acc}/${p}` : p;
+    out.push({ name: p, path: acc });
+  }
+  return out;
 }
 
 function buildUrl(item: PreviewItem): string {
@@ -77,6 +93,7 @@ export default function FilePreviewLightbox({
   index,
   onClose,
   onIndexChange,
+  onJumpToPath,
 }: Props) {
   const item = items[index];
   const kind = useMemo(() => (item ? classify(item.name) : "binary"), [item]);
@@ -180,9 +197,61 @@ export default function FilePreviewLightbox({
             <span className="lightbox-filename" title={item.path}>
               {item.name}
             </span>
-            <span className="lightbox-scope">
-              {item.scope === "library" ? "Library" : "Project"} · {item.path}
-            </span>
+            <nav
+              className="lightbox-breadcrumb"
+              aria-label={`Path to ${item.name}`}
+            >
+              {(() => {
+                // Build segments including the scope root, e.g.
+                //   [Library, datasets, spatial, foo.h5ad]
+                // The scope root and every directory segment is
+                // clickable: click closes the lightbox and navigates
+                // the matching pane to that folder. The final segment
+                // (the file itself) is rendered as plain text.
+                const segs = breadcrumbSegments(item.path);
+                const rootLabel = item.scope === "library" ? "Library" : "Project";
+                return (
+                  <>
+                    <button
+                      type="button"
+                      className="lightbox-crumb"
+                      onClick={() => onJumpToPath?.(item.scope, "")}
+                      disabled={!onJumpToPath}
+                      title={`Open ${rootLabel}`}
+                    >
+                      {rootLabel}
+                    </button>
+                    {segs.map((seg, i) => {
+                      const isLast = i === segs.length - 1;
+                      return (
+                        <span key={seg.path} className="lightbox-crumb-segment">
+                          <span className="lightbox-crumb-sep" aria-hidden="true">
+                            /
+                          </span>
+                          {isLast ? (
+                            <span className="lightbox-crumb-leaf">
+                              {seg.name}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="lightbox-crumb"
+                              onClick={() =>
+                                onJumpToPath?.(item.scope, seg.path)
+                              }
+                              disabled={!onJumpToPath}
+                              title={`Open ${seg.name}/`}
+                            >
+                              {seg.name}
+                            </button>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </>
+                );
+              })()}
+            </nav>
           </div>
           <div className="lightbox-actions">
             <a

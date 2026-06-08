@@ -36,23 +36,64 @@ function collectLeafFiles(entries: BrowseEntry[]): BrowseEntry[] {
   return out;
 }
 
+/** Walk the tree to *path* (a "a/b/c"-style relative path) and return the
+ *  entries that live there. Returns null when the path doesn't resolve
+ *  to a directory in the current tree (e.g. it was removed). Empty path
+ *  is the root. */
+function entriesAt(
+  tree: BrowseEntry[],
+  path: string,
+): BrowseEntry[] | null {
+  if (!path) return tree;
+  const parts = path.split("/").filter(Boolean);
+  let level: BrowseEntry[] = tree;
+  for (const part of parts) {
+    const next: BrowseEntry | undefined = level.find(
+      (e) => e.is_dir && e.name === part,
+    );
+    if (!next) return null;
+    level = next.children ?? [];
+  }
+  return level;
+}
+
+/** Split a path into [{ name, path }] segments for breadcrumb rendering. */
+function breadcrumbSegments(path: string): Array<{ name: string; path: string }> {
+  if (!path) return [];
+  const parts = path.split("/").filter(Boolean);
+  const out: Array<{ name: string; path: string }> = [];
+  let acc = "";
+  for (const p of parts) {
+    acc = acc ? `${acc}/${p}` : p;
+    out.push({ name: p, path: acc });
+  }
+  return out;
+}
+
+/** Drop the trailing segment from a path. ``"a/b/c"`` → ``"a/b"``;
+ *  ``"a"`` or ``""`` → ``""``. */
+function parentPath(path: string): string {
+  if (!path) return "";
+  const parts = path.split("/").filter(Boolean);
+  parts.pop();
+  return parts.join("/");
+}
+
 function FileNode({
   entry,
   scope,
   projectId,
   onDelete,
   onPreviewFile,
-  depth = 0,
+  onEnterDir,
 }: {
   entry: BrowseEntry;
   scope: FileScope;
   projectId?: string;
   onDelete: () => void;
   onPreviewFile: (path: string) => void;
-  depth?: number;
+  onEnterDir: (path: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(true);
-
   const qs = new URLSearchParams({ scope });
   if (projectId) qs.set("project_id", projectId);
   const downloadUrl = `${API}/api/files/download/${entry.path}?${qs}`;
@@ -79,26 +120,16 @@ function FileNode({
 
   if (entry.is_dir) {
     return (
-      <div className="file-node" style={{ paddingLeft: `${depth * 1.2}rem` }}>
+      <div className="file-node">
         <div
-          className="file-row dir-row"
-          onClick={() => setExpanded(!expanded)}
+          className="file-row dir-row file-row-clickable"
+          onClick={() => onEnterDir(entry.path)}
+          title={`Open ${entry.name}/`}
         >
-          <span className="file-icon">{expanded ? "📂" : "📁"}</span>
+          <span className="file-icon">📁</span>
           <span className="file-name">{entry.name}/</span>
+          <span className="file-row-chevron" aria-hidden="true">›</span>
         </div>
-        {expanded &&
-          entry.children?.map((child) => (
-            <FileNode
-              key={child.path}
-              entry={child}
-              scope={scope}
-              projectId={projectId}
-              onDelete={onDelete}
-              onPreviewFile={onPreviewFile}
-              depth={depth + 1}
-            />
-          ))}
       </div>
     );
   }
@@ -106,7 +137,7 @@ function FileNode({
   const isImage = isImageFile(entry.name);
 
   return (
-    <div className="file-node" style={{ paddingLeft: `${depth * 1.2}rem` }}>
+    <div className="file-node">
       <div
         className="file-row file-row-clickable"
         onClick={() => onPreviewFile(entry.path)}
@@ -148,6 +179,15 @@ interface BrowserPaneProps {
    *  current tree's leaf files into PreviewItem[] and tells the parent
    *  which one to focus. */
   onOpenPreview: (items: PreviewItem[], index: number) => void;
+  /** Subtle status pill shown next to the title (e.g. "Unsaved"). */
+  statusBadge?: string;
+  /** Controlled current path. When provided, the pane reads from this
+   *  instead of its own internal state. Pair with ``onPathChange``. */
+  currentPath?: string;
+  /** Notified whenever the pane wants to change its path (folder
+   *  click, breadcrumb click, up arrow). Required when ``currentPath``
+   *  is provided. */
+  onPathChange?: (next: string) => void;
 }
 
 function BrowserPane({
@@ -162,9 +202,29 @@ function BrowserPane({
   compact = false,
   infoText,
   onOpenPreview,
+  statusBadge,
+  currentPath: controlledPath,
+  onPathChange,
 }: BrowserPaneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tree, setTree] = useState<BrowseEntry[]>([]);
+  // Current folder path *within* this pane's tree. Empty string = root.
+  // When ``currentPath`` is passed as a prop the pane is controlled by
+  // the parent (so the lightbox can drive navigation); otherwise it
+  // owns its own state internally.
+  const [uncontrolledPath, setUncontrolledPath] = useState<string>("");
+  const isControlled = controlledPath !== undefined;
+  const currentPath = isControlled ? controlledPath : uncontrolledPath;
+  const setCurrentPath = useCallback(
+    (next: string) => {
+      if (isControlled) {
+        onPathChange?.(next);
+      } else {
+        setUncontrolledPath(next);
+      }
+    },
+    [isControlled, onPathChange],
+  );
 
   const fetchTree = useCallback(async () => {
     const qs = new URLSearchParams({ scope });
@@ -178,9 +238,33 @@ function BrowserPane({
     fetchTree();
   }, [fetchTree, refreshKey]);
 
+  // Tree root identity changed (e.g. user switched projects). Drop the
+  // path so we don't display contents from the previous project. Only
+  // applies in uncontrolled mode — the parent owns reset behavior when
+  // it's driving currentPath.
+  useEffect(() => {
+    if (!isControlled) setUncontrolledPath("");
+  }, [scope, projectId, isControlled]);
+
+  // After a refetch, if the currentPath no longer resolves (folder was
+  // deleted, project switched, …) fall back to the deepest ancestor
+  // that still does — or root.
+  useEffect(() => {
+    if (!currentPath) return;
+    if (entriesAt(tree, currentPath) !== null) return;
+    let p = parentPath(currentPath);
+    while (p && entriesAt(tree, p) === null) p = parentPath(p);
+    setCurrentPath(p);
+  }, [tree, currentPath, setCurrentPath]);
+
+  const visibleEntries = entriesAt(tree, currentPath) ?? [];
+
   const handleOpenPreview = useCallback(
     (path: string) => {
-      const leaves = collectLeafFiles(tree);
+      // Walk only the current folder for prev/next siblings — feels
+      // natural; "next" from a project output shouldn't jump up into
+      // attachments/ and back down.
+      const leaves = collectLeafFiles(visibleEntries);
       const items: PreviewItem[] = leaves.map((leaf) => ({
         path: leaf.path,
         name: leaf.name,
@@ -190,7 +274,7 @@ function BrowserPane({
       const idx = items.findIndex((it) => it.path === path);
       if (idx >= 0) onOpenPreview(items, idx);
     },
-    [tree, scope, projectId, onOpenPreview],
+    [visibleEntries, scope, projectId, onOpenPreview],
   );
 
   const handleUploadClick = () => fileInputRef.current?.click();
@@ -203,6 +287,9 @@ function BrowserPane({
     fetchTree();
   };
 
+  const segments = breadcrumbSegments(currentPath);
+  const isAtRoot = currentPath === "";
+
   return (
     <section
       className={`file-browser-section ${compact ? "compact" : ""}`}
@@ -211,6 +298,14 @@ function BrowserPane({
         <div className="file-browser-section-titles">
           <div className="file-browser-section-title-row">
             <h2 className="file-browser-section-title">{title}</h2>
+            {statusBadge && (
+              <span
+                className="file-browser-section-badge"
+                title={statusBadge}
+              >
+                {statusBadge}
+              </span>
+            )}
             {infoText && (
               <span
                 className="file-browser-info"
@@ -271,11 +366,54 @@ function BrowserPane({
         </div>
       </header>
 
+      <nav className="file-browser-breadcrumb" aria-label="Current path">
+        <button
+          type="button"
+          className="breadcrumb-up"
+          onClick={() => setCurrentPath(parentPath(currentPath))}
+          disabled={isAtRoot}
+          aria-label="Go up one folder"
+          title="Up one folder"
+        >
+          ↑
+        </button>
+        <ol className="breadcrumb-trail">
+          <li>
+            <button
+              type="button"
+              className={`breadcrumb-segment ${isAtRoot ? "active" : ""}`}
+              onClick={() => setCurrentPath("")}
+            >
+              {title}
+            </button>
+          </li>
+          {segments.map((seg, i) => {
+            const isLast = i === segments.length - 1;
+            return (
+              <li key={seg.path}>
+                <span className="breadcrumb-separator" aria-hidden="true">/</span>
+                <button
+                  type="button"
+                  className={`breadcrumb-segment ${isLast ? "active" : ""}`}
+                  onClick={() => setCurrentPath(seg.path)}
+                >
+                  {seg.name}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+
       <div className={`file-tree ${compact ? "compact-tree" : ""}`}>
-        {tree.length === 0 ? (
-          <div className="empty-tree">{emptyMessage ?? "No files yet."}</div>
+        {visibleEntries.length === 0 ? (
+          <div className="empty-tree">
+            {isAtRoot
+              ? (emptyMessage ?? "No files yet.")
+              : "This folder is empty."}
+          </div>
         ) : (
-          tree.map((entry) => (
+          visibleEntries.map((entry) => (
             <FileNode
               key={entry.path}
               entry={entry}
@@ -283,6 +421,7 @@ function BrowserPane({
               projectId={projectId}
               onDelete={fetchTree}
               onPreviewFile={handleOpenPreview}
+              onEnterDir={setCurrentPath}
             />
           ))
         )}
@@ -318,6 +457,18 @@ export default function FileBrowser({
       : `Project files — ${currentProjectTitle}`
     : "Project files";
 
+  // Per-pane path state lives here at the root so the lightbox can
+  // drive each pane's currentPath when the user clicks a breadcrumb
+  // segment inside it. Each pane is still self-managed otherwise.
+  const [libraryPath, setLibraryPath] = useState<string>("");
+  const [projectPath, setProjectPath] = useState<string>("");
+
+  // Reset the project pane's path whenever the active project changes
+  // (the project tree's root identity has changed too).
+  useEffect(() => {
+    setProjectPath("");
+  }, [currentProjectId]);
+
   // Lightbox state lives at the root so a single open preview is shared
   // across both panes — and so the lightbox unmounts cleanly when the
   // user closes it, regardless of which pane the file came from.
@@ -334,6 +485,17 @@ export default function FileBrowser({
 
   const closePreview = useCallback(() => setPreviewOpen(false), []);
 
+  // Lightbox breadcrumb dispatch: close the lightbox and jump the
+  // matching pane to that folder.
+  const handleJumpToPath = useCallback(
+    (scope: FileScope, path: string) => {
+      if (scope === "library") setLibraryPath(path);
+      else setProjectPath(path);
+      setPreviewOpen(false);
+    },
+    [],
+  );
+
   return (
     <div className={`file-browser-stack ${compact ? "compact" : ""}`}>
       <BrowserPane
@@ -347,6 +509,8 @@ export default function FileBrowser({
         onUpload={onUploadToLibrary}
         compact={compact}
         onOpenPreview={openPreview}
+        currentPath={libraryPath}
+        onPathChange={setLibraryPath}
       />
 
       <BrowserPane
@@ -354,19 +518,26 @@ export default function FileBrowser({
         description={
           currentProjectId
             ? "Files attached to this project, plus everything the agent has written. Sidebar uploads land in uploads/; agent outputs land in outputs/."
-            : "Send a prompt or upload from the sidebar to start a project — its files will appear here."
+            : "Files you upload before the first prompt stay here as a temporary draft. They become part of the project (and persist) once you send a message."
         }
-        infoText="Files for the active project: sidebar uploads land in uploads/, chat attachments in attachments/, agent outputs in outputs/."
+        infoText={
+          currentProjectId
+            ? "Files for the active project: sidebar uploads land in uploads/, chat attachments in attachments/, agent outputs in outputs/."
+            : "Draft project — uploads will be moved into this project on first prompt. Starting a new project before then discards them."
+        }
         scope="project"
         projectId={currentProjectId || undefined}
         refreshKey={refreshKey}
         emptyMessage={
           currentProjectId
             ? "No project files yet."
-            : "No active project."
+            : "No files staged yet. Upload to stage files for the next prompt."
         }
         compact={compact}
         onOpenPreview={openPreview}
+        statusBadge={!currentProjectId ? "Unsaved" : undefined}
+        currentPath={projectPath}
+        onPathChange={setProjectPath}
       />
 
       {previewOpen && (
@@ -375,6 +546,7 @@ export default function FileBrowser({
           index={previewIndex}
           onClose={closePreview}
           onIndexChange={setPreviewIndex}
+          onJumpToPath={handleJumpToPath}
         />
       )}
     </div>

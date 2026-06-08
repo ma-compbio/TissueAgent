@@ -155,6 +155,17 @@ class SessionState:
             self.project_id = None
             self.project_title = ""
 
+        # Wipe the pre-project scratch dirs so any files staged for the
+        # previous (unsaved) project don't bleed into the next one.
+        # Outside the lock — clear_scratch_dirs() touches disk, which
+        # shouldn't be holding the session lock.
+        try:
+            from server.utils import clear_scratch_dirs
+            clear_scratch_dirs()
+        except Exception:
+            # Best-effort; never let scratch cleanup break a reset.
+            pass
+
     def ensure_display_state(self) -> None:
         """Synchronise display_messages with the canonical agent message list."""
         existing = [

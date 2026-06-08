@@ -51,6 +51,15 @@ PROJECT_OUTPUTS_DIRNAME = "outputs"
 PROJECT_ATTACHMENTS_DIRNAME = "attachments"
 PROJECT_UPLOADS_DIRNAME = "uploads"
 
+# Pre-project scratch: where uploads land *before* a project is minted.
+# Contents are migrated into projects/<id>/uploads or .../attachments on
+# the first user prompt, and wiped on session reset / new-project. The
+# scratch directory is intentionally not surfaced in the projects list;
+# it has no chat.json.
+SCRATCH_DIR = DATA_DIR / "scratch"
+SCRATCH_UPLOADS_DIR = SCRATCH_DIR / "uploads"
+SCRATCH_ATTACHMENTS_DIR = SCRATCH_DIR / "attachments"
+
 # Back-compat aliases. ``UPLOADS_DIR`` / ``PDF_UPLOADS_DIR`` historically
 # held *chat attachments* (images and PDFs); those now live per-project
 # under ``attachments/``. The aliases keep older import sites compiling

@@ -111,20 +111,44 @@ export function useSession() {
   );
 
   const uploadFiles = useCallback(
-    async (files: FileList, target: "project" | "library" = "project") => {
+    async (
+      files: FileList,
+      target: "project" | "library" = "project",
+    ): Promise<true | string> => {
       const form = new FormData();
       for (const f of files) form.append("files", f);
-      const res = await fetch(
-        `${API}/api/files/upload?target=${target}`,
-        { method: "POST", body: form },
-      );
-      if (!res.ok) return;
+      let res: Response;
+      try {
+        res = await fetch(`${API}/api/files/upload?target=${target}`, {
+          method: "POST",
+          body: form,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        const detail = `Upload failed: ${msg}`;
+        // eslint-disable-next-line no-alert
+        alert(detail);
+        return detail;
+      }
+      if (!res.ok) {
+        let detail = `Upload failed (HTTP ${res.status}).`;
+        try {
+          const body = await res.json();
+          if (typeof body?.detail === "string") detail = body.detail;
+        } catch {
+          // Server didn't return JSON; keep the generic message.
+        }
+        // eslint-disable-next-line no-alert
+        alert(detail);
+        return detail;
+      }
       const data = await res.json();
       // Only project uploads bind to the current conversation; library
       // uploads are persistent references not tied to any chat turn.
       if (target === "project") {
         setUploadedFiles((prev) => [...prev, ...data.files]);
       }
+      return true;
     },
     [],
   );

@@ -48,6 +48,9 @@ from config import (
     PROJECT_OUTPUTS_DIRNAME,
     PROJECT_UPLOADS_DIRNAME,
     PROJECTS_DIR,
+    SCRATCH_ATTACHMENTS_DIR,
+    SCRATCH_DIR,
+    SCRATCH_UPLOADS_DIR,
     SESSIONS_DIR,  # alias; remove once nothing references it
 )
 
@@ -110,6 +113,10 @@ def reset_data_directories() -> None:
     DATASET_DIR.mkdir(parents=True, exist_ok=True)
     LIBRARY_FILES_DIR.mkdir(parents=True, exist_ok=True)
     PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    # Scratch is ephemeral but exists from boot so the upload endpoint
+    # can write into it without first checking.
+    SCRATCH_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    SCRATCH_ATTACHMENTS_DIR.mkdir(parents=True, exist_ok=True)
 
     preserve = {LIBRARY_DIR, PROJECTS_DIR}
     for child in DATA_DIR.iterdir():
@@ -117,8 +124,10 @@ def reset_data_directories() -> None:
             continue
         shutil.rmtree(child, ignore_errors=True)
 
-    # Recreate the plan scratch directory fresh.
+    # Recreate the ephemeral scratch + plan directories fresh.
     PLAN_SCRATCH_DIR.mkdir(parents=True, exist_ok=True)
+    SCRATCH_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    SCRATCH_ATTACHMENTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def migrate_legacy_library_layout() -> None:
@@ -620,6 +629,56 @@ def project_attachments_dir(project_id: str) -> Path:
     out = project_dir_for(project_id) / PROJECT_ATTACHMENTS_DIRNAME
     out.mkdir(parents=True, exist_ok=True)
     return out
+
+
+def clear_scratch_dirs() -> None:
+    """Empty the pre-project scratch dirs in place.
+
+    Called on session reset / new-project. We don't ``rmtree`` the
+    parents because the upload endpoint expects the directories to
+    exist; we just delete their children.
+    """
+    for d in (SCRATCH_UPLOADS_DIR, SCRATCH_ATTACHMENTS_DIR):
+        if not d.exists():
+            d.mkdir(parents=True, exist_ok=True)
+            continue
+        for child in d.iterdir():
+            try:
+                if child.is_dir():
+                    shutil.rmtree(child, ignore_errors=True)
+                else:
+                    child.unlink()
+            except Exception as e:
+                logging.warning(f"Failed to clear scratch entry {child}: {e}")
+
+
+def adopt_scratch_into_project(project_id: str) -> dict:
+    """Move scratch contents into ``projects/<project_id>/`` subfolders.
+
+    Returns a mapping ``{old_path: new_path}`` for every file moved so
+    the caller can rewrite any in-memory references (``pending_images``,
+    ``uploaded_pdfs``) that still point at the scratch location.
+    """
+    moves: dict = {}
+    dest_uploads = project_uploads_dir(project_id)
+    dest_attachments = project_attachments_dir(project_id)
+
+    for src_dir, dst_dir in (
+        (SCRATCH_UPLOADS_DIR, dest_uploads),
+        (SCRATCH_ATTACHMENTS_DIR, dest_attachments),
+    ):
+        if not src_dir.exists():
+            continue
+        for src in src_dir.iterdir():
+            if not src.is_file():
+                continue
+            dst = next_available_path(dst_dir, src.name)
+            try:
+                shutil.move(str(src), str(dst))
+                moves[str(src)] = str(dst)
+            except Exception as e:
+                logging.warning(f"Failed to adopt scratch file {src}: {e}")
+    return moves
 
 
 def project_uploads_dir(project_id: str) -> Path:
