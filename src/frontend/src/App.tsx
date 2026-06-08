@@ -118,7 +118,12 @@ export default function App() {
     if (ws.planEvent) {
       planHook.applyEvent(ws.planEvent as PlanPayload);
     }
-  }, [ws.planEvent, planHook]);
+    // Depend only on the event + the stable applyEvent callback. usePlan
+    // returns a fresh object each render, so depending on the whole
+    // `planHook` re-fires this effect every render (and applyEvent sets
+    // state, so that would loop). applyEvent is a stable useCallback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ws.planEvent, planHook.applyEvent]);
 
   // Auto-save fires server-side on every prompt / pause / completion.
   // The frontend uses each project_saved event as a cue to refetch the
@@ -131,7 +136,13 @@ export default function App() {
     // changed too — bump the refresh key so the sidebar Files panel
     // re-fetches without the user having to click refresh.
     setFileBrowserRefreshKey((k) => k + 1);
-  }, [ws.projectSavedEvent, session]);
+    // Depend only on the event, NOT the whole `session` object. useSession
+    // returns a fresh object literal every render, so including `session`
+    // here re-fires this effect on each render — and since it calls
+    // setState, that's an infinite re-fetch loop. The session callbacks it
+    // uses (setCurrentProjectId / fetchSessions) are stable across renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ws.projectSavedEvent]);
 
   // On first connect, recover the active project id from the server so
   // a refresh keeps the right row highlighted in the sidebar.

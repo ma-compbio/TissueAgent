@@ -33,6 +33,22 @@ EXECUTION_TIMEOUT = 300  # 5 minutes
 IMAGE_MIME_TYPES = {"image/png", "image/jpeg"}
 
 
+class KernelUnavailableError(RuntimeError):
+    """Raised when no Jupyter Kernel Gateway is reachable at the configured URL.
+
+    Surfaces the two valid backends (Docker sandbox vs. a local gateway) so the
+    operator knows how to recover, instead of leaking a raw ``ConnectionError``.
+    """
+
+    def __init__(self, url: str):
+        super().__init__(
+            f"Could not reach a Jupyter Kernel Gateway at {url}. No code "
+            f"backend is running. Either enable the Docker sandbox from the "
+            f"Settings page (starts a container automatically), or start a "
+            f"local Jupyter Kernel Gateway listening on that address."
+        )
+
+
 @dataclass
 class ExecutionResult:
     """Structured result from a kernel execution, carrying text and images."""
@@ -195,8 +211,18 @@ class KernelClient:
             self.shutdown_kernels()
 
     def execute(self, code: str, language: str = "python") -> ExecutionResult:
-        """Execute code on a kernel and return text output and any images."""
-        kernel_id = self._get_or_start_kernel(language)
+        """Execute code on a kernel and return text output and any images.
+
+        When no kernel backend is reachable, returns an ``ExecutionResult``
+        carrying an actionable ``[ERROR]`` message rather than raising — the
+        agent can then report the problem to the user instead of the run
+        crashing with a bare ``ConnectionError`` traceback.
+        """
+        try:
+            kernel_id = self._get_or_start_kernel(language)
+        except KernelUnavailableError as e:
+            logging.error(str(e))
+            return ExecutionResult(text=f"[ERROR] {e}")
         ws_url = f"{self._ws_base}/api/kernels/{kernel_id}/channels"
 
         ws = websocket.create_connection(ws_url)
@@ -264,11 +290,14 @@ class KernelClient:
         if kernel_name is None:
             raise ValueError(f"Unsupported language: {language}")
 
-        resp = requests.post(
-            f"{self._base_url}/api/kernels",
-            json={"name": kernel_name},
-            timeout=30,
-        )
+        try:
+            resp = requests.post(
+                f"{self._base_url}/api/kernels",
+                json={"name": kernel_name},
+                timeout=30,
+            )
+        except requests.ConnectionError as e:
+            raise KernelUnavailableError(self._base_url) from e
         resp.raise_for_status()
         kernel_id = resp.json()["id"]
         self._kernels[language] = kernel_id
