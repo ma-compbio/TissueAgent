@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ChatView from "./components/ChatView";
 import ContactPage from "./components/ContactPage";
-import FileBrowser from "./components/FileBrowser";
 import PlanColumn from "./components/PlanColumn";
 import Sidebar from "./components/Sidebar";
 import Splitter from "./components/Splitter";
@@ -35,9 +34,9 @@ const PLAN_COL_WIDTH_MAX = 720;
 
 /** Five top-level views. Chat + Files keep the sidebar; settings,
  *  tutorial and contact are single-column reference pages. */
-export type Page = "chat" | "files" | "settings" | "tutorial" | "contact";
+export type Page = "chat" | "settings" | "tutorial" | "contact";
 
-const PAGES: readonly Page[] = ["chat", "files", "settings", "tutorial", "contact"] as const;
+const PAGES: readonly Page[] = ["chat", "settings", "tutorial", "contact"] as const;
 
 function _readPageFromUrl(): Page {
   if (typeof window === "undefined") return "chat";
@@ -224,10 +223,11 @@ export default function App() {
   }
 
   // ─── Three-column layout ─────────────────────────────────────────
-  // [ Sidebar (Projects + Files) | Chat / Files page | Plan ]
+  // [ Sidebar (Projects + Files) | Chat | Plan ]
   //
-  // The Files top-nav page is kept for now (single-column FileBrowser
-  // in the middle); chat is the default and shows ChatView there.
+  // Project + library files live in the left sidebar; the middle
+  // column is always the chat. The old standalone "Files" top-nav
+  // page was removed — the sidebar covers the same surface area.
   return (
     <div className="app-layout">
       <Sidebar
@@ -293,27 +293,18 @@ export default function App() {
         )}
 
         <div className="content-area">
-          {page === "files" ? (
-            <FileBrowser
-              refreshKey={fileBrowserRefreshKey}
-              currentProjectId={session.currentProjectId}
-              currentProjectTitle={currentProjectTitle}
-              onUploadToLibrary={handleUploadToLibrary}
+          <div className="chat-panel">
+            <ChatView
+              messages={ws.messages}
+              subagentStates={ws.subagentStates}
+              liveTraces={ws.liveTraces}
+              isRunning={ws.isRunning}
+              elapsed={ws.elapsed}
+              enableDebug={true}
+              onSendMessage={ws.sendMessage}
+              onUploadFiles={handleUploadToProject}
             />
-          ) : (
-            <div className="chat-panel">
-              <ChatView
-                messages={ws.messages}
-                subagentStates={ws.subagentStates}
-                liveTraces={ws.liveTraces}
-                isRunning={ws.isRunning}
-                elapsed={ws.elapsed}
-                enableDebug={true}
-                onSendMessage={ws.sendMessage}
-                onUploadFiles={handleUploadToProject}
-              />
-            </div>
-          )}
+          </div>
         </div>
       </main>
 

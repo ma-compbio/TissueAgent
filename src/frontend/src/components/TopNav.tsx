@@ -13,7 +13,6 @@ interface NavProps {
 
 const ITEMS: Array<{ key: Page; label: string }> = [
   { key: "chat", label: "Chat" },
-  { key: "files", label: "Files" },
   { key: "tutorial", label: "Tutorial" },
   { key: "contact", label: "Contact" },
 ];
