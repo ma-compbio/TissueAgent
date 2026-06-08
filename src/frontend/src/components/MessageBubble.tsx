@@ -1,5 +1,7 @@
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { SerializedMessage, SubagentTranscript } from "../types/messages";
 import AgentAvatar from "./AgentAvatar";
 
@@ -126,11 +128,35 @@ function SubagentCard({
       </div>
       {finalOutput && (
         <div className="subagent-card-output">
-          {finalOutput.length > 300
-            ? finalOutput.slice(0, 300) + "..."
-            : finalOutput}
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {finalOutput}
+          </ReactMarkdown>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Extract the final response text from an agent run's messages. */
+export function extractFinalResponse(messages: SerializedMessage[]): string | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.type !== "ai") continue;
+    if (msg.tags?.response) return msg.tags.response;
+    if (msg.tags?.plan) return msg.tags.plan;
+    if (msg.body?.trim()) return msg.body;
+    if (msg.content?.trim()) return msg.content;
+  }
+  return null;
+}
+
+/** Full-width box showing the reporter's final answer, rendered in markdown. */
+export function FinalAnswerBox({ content }: { content: string }) {
+  return (
+    <div className="final-answer-box">
+      <div className="final-answer-body">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      </div>
     </div>
   );
 }
@@ -170,7 +196,9 @@ export function AgentRunCard({
       </div>
       {summary && (
         <div className="subagent-card-output">
-          {summary.length > 300 ? summary.slice(0, 300) + "..." : summary}
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {summary}
+          </ReactMarkdown>
         </div>
       )}
     </div>
