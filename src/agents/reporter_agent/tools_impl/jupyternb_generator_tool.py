@@ -31,7 +31,7 @@ from langchain.tools import StructuredTool
 from langchain_core.messages import AIMessage, BaseMessage
 
 from agents.agent_utils import extract_block
-from config import DATA_DIR, NOTEBOOK_DIR
+from config import DATA_DIR, active_project_outputs
 
 
 # Subagent state map keys for sub-agents whose transcripts contain
@@ -100,22 +100,29 @@ def _user_request() -> str:
 
 
 def _normalize_filename(filename: Optional[Union[Path, str]]) -> Path:
+    """Pick where to write the notebook.
+
+    Default: ``projects/<id>/outputs/notebook/report_<ts>.ipynb`` so the
+    notebook ships with the project. When a path is provided, anchor
+    relative paths to the active project's outputs/ as well; absolute
+    paths are accepted but must resolve inside the workspace.
+    """
+    outputs_root = active_project_outputs()
     if filename is None:
         stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        target = NOTEBOOK_DIR / f"report_{stamp}.ipynb"
+        target = outputs_root / "notebook" / f"report_{stamp}.ipynb"
     else:
         target = Path(filename)
+        if not target.is_absolute():
+            target = outputs_root / target
 
-    if not target.is_absolute():
-        target = (DATA_DIR / target).resolve()
-    else:
-        target = target.resolve()
+    target = target.resolve()
 
     try:
         target.relative_to(DATA_DIR)
     except ValueError as exc:
         raise RuntimeError(
-            f"Notebook path '{target}' must be inside DATA_DIR '{DATA_DIR}'."
+            f"Notebook path '{target}' must be inside the workspace '{DATA_DIR}'."
         ) from exc
 
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -126,9 +133,10 @@ def generate_jupyternb(filename: Optional[Union[Path, str]] = None) -> str:
     """Build a Jupyter notebook from the coding agent's executed code.
 
     Args:
-        filename: Optional output path (relative to ``DATA_DIR`` or
-            absolute). Defaults to ``data/notebook/report_<ts>.ipynb``
-            with the current timestamp.
+        filename: Optional output path. Relative paths anchor to the
+            active project's ``outputs/`` directory; absolute paths must
+            resolve inside the workspace. Defaults to
+            ``projects/<id>/outputs/notebook/report_<ts>.ipynb``.
 
     Returns:
         A short status string. Either:

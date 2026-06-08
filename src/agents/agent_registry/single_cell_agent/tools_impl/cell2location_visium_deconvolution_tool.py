@@ -9,7 +9,7 @@ from typing import Dict, Optional
 import pandas as pd
 import scanpy as sc
 from cell2location.models import Cell2location, RegressionModel
-from config import DATA_DIR
+from config import DATA_DIR, active_project_outputs
 
 
 @dataclass
@@ -25,12 +25,25 @@ class Cell2locationResultPaths:
     reference_h5ad: Path
 
 
-def _resolve_path(path_like: str) -> Path:
-    """Resolve a relative or absolute path against DATA_DIR."""
+def _resolve_input_path(path_like: str) -> Path:
+    """Resolve an input file path, looked up under the workspace root.
+
+    Inputs can come from anywhere readable: ``library/datasets/foo.h5ad``,
+    ``projects/<id>/uploads/foo.h5ad``, or absolute paths inside the
+    workspace.
+    """
     path = Path(path_like)
     if not path.is_absolute():
         path = DATA_DIR / path
     return path
+
+
+def _resolve_output_dir(path_like: str) -> Path:
+    """Resolve an output subdirectory under the active project's outputs/."""
+    path = Path(path_like)
+    if path.is_absolute():
+        return path
+    return active_project_outputs() / path
 
 
 def _ensure_counts_layer(adata: sc.AnnData, layer_name: Optional[str]) -> Optional[str]:
@@ -133,8 +146,8 @@ def run_cell2location_visium_deconvolution(
     use_gpu: Optional[bool] = None,
 ) -> Dict[str, str]:
     """Run cell2location to deconvolve Visium spots into cell type abundances."""
-    visium_path = _resolve_path(visium_h5ad_path)
-    reference_path = _resolve_path(reference_h5ad_path)
+    visium_path = _resolve_input_path(visium_h5ad_path)
+    reference_path = _resolve_input_path(reference_h5ad_path)
     if not visium_path.exists():
         return {"status": "error", "message": f"Visium file not found: {visium_path}"}
     if not reference_path.exists():
@@ -143,7 +156,7 @@ def run_cell2location_visium_deconvolution(
             "message": f"Reference file not found: {reference_path}",
         }
 
-    output_dir = _resolve_path(output_subdir)
+    output_dir = _resolve_output_dir(output_subdir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     try:

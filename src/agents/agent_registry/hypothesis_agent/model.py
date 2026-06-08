@@ -19,7 +19,7 @@ from agents.agent_registry.hypothesis_agent.prompt import (
 )
 from graph.graph_utils import log_message, subagent_invocation
 
-from config import DATA_DIR, PDF_UPLOADS_DIR
+from config import DATA_DIR, LIBRARY_DIR, PDF_UPLOADS_DIR, active_project_outputs
 
 
 class HypothesisState(MessagesState):
@@ -138,9 +138,14 @@ def create_hypothesis_agent(state_queue: Queue):
             import re
 
             tools_context = {tool.name: tool.func for tool in tools}
+            # OUTPUTS_DIR is resolved at run time so it tracks the
+            # active project. Code that wants to drop a file inside the
+            # current project should write to OUTPUTS_DIR / "foo".
             initial_context = {
                 **tools_context,
                 "DATA_DIR": DATA_DIR,
+                "LIBRARY_DIR": LIBRARY_DIR,
+                "OUTPUTS_DIR": active_project_outputs(),
                 "PDF_UPLOADS_DIR": PDF_UPLOADS_DIR,
                 "subprocess": subprocess,
                 "Path": Path,

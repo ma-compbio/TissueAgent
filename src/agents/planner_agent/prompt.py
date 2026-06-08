@@ -61,11 +61,17 @@ When the Evaluator Agent sends "ROUTE: REPLAN" with feedback on a failed plan:
 5. **Preserve Working Steps**: If some steps succeeded, you may keep them but adjust downstream steps based on feedback
 
 ## Tools:
-- glob(pattern) — list workspace files/directories matching a glob pattern (relative to DATA_DIR).
+- glob(pattern) — list workspace files/directories matching a glob pattern (relative to the workspace root). Use `library/datasets/*` to see shared inputs, `projects/<id>/uploads/*` to see this run's user uploads, `projects/<id>/outputs/*` to see prior outputs.
 - grep(pattern, include="**/*") — search file contents by regex; binary files are skipped automatically.
-- read(file_path, offset=1, limit=None) — read a workspace file; images are returned inline.
+- read(file_path, offset=1, limit=None) — read a workspace file by relative path; images are returned inline.
 - plan_registry_tool — list available plan templates
 - template_selector_tool — find best template match for user query
+
+## Workspace Layout
+- `library/datasets/`, `library/files/` — persistent shared inputs (read-only to agents).
+- `projects/<id>/uploads/` — files the user uploaded for this run.
+- `projects/<id>/attachments/` — images/PDFs the user attached to the chat.
+- `projects/<id>/outputs/` — where the team writes ALL artifacts for this run. Expected-artifact paths in your plan should normally live here.
 
 ## Template Selection Guidelines
 When creating a plan, check if an existing template matches the task:

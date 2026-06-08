@@ -14,7 +14,13 @@ import matplotlib.pyplot as plt
 import anndata as ad
 import matplotlib
 
-from config import DATA_DIR, DATASET_DIR, UPLOADS_DIR
+from config import (
+    DATA_DIR,
+    DATASET_DIR,
+    LIBRARY_FILES_DIR,
+    UPLOADS_DIR,
+    active_project_outputs,
+)
 
 
 def _relative_to_data_dir(path: Path) -> str:
@@ -26,56 +32,72 @@ def _relative_to_data_dir(path: Path) -> str:
 
 
 def _resolve_path(path_like: str, *, must_exist: bool) -> Path:
-    """
-    Resolve a user-provided path into DATA_DIR while allowing references to common
-    subdirectories created by the app (e.g. dataset/ or uploads/). Always enforces
-    that the final target stays within DATA_DIR.
+    """Resolve a user-provided path inside the workspace.
+
+    For inputs (``must_exist=True``) the function tries multiple common
+    roots so the agent can pass a bare filename and we'll find the file
+    wherever it lives: library/datasets/, library/files/, the active
+    project's uploads/ / outputs/, or the legacy dataset/ root.
+
+    For outputs (``must_exist=False``) the path is anchored under the
+    active project's outputs/ directory. Absolute paths are accepted
+    but must resolve inside the workspace.
     """
     raw_path = Path(path_like).expanduser()
     data_root = DATA_DIR.resolve()
 
-    candidate_roots = [
-        None if raw_path.is_absolute() else DATA_DIR,
-        None if raw_path.is_absolute() else DATASET_DIR,
-        None if raw_path.is_absolute() else UPLOADS_DIR,
-    ]
-
-    candidates = []
-    if raw_path.is_absolute():
-        candidates.append(raw_path)
-    else:
-        for root in candidate_roots:
-            if root is None:
-                continue
-            candidates.append(root / raw_path)
-
-    seen: set[Path] = set()
-    for candidate in candidates:
-        resolved_candidate = candidate.resolve()
-        if resolved_candidate in seen:
-            continue
-        seen.add(resolved_candidate)
-        try:
-            resolved_candidate.relative_to(data_root)
-        except ValueError:
-            continue
-        if must_exist and not resolved_candidate.exists():
-            continue
-        return resolved_candidate
-
+    # ----- Input lookup --------------------------------------------------
     if must_exist:
-        searched_locations = [str((root / raw_path).resolve()) for root in {DATA_DIR, DATASET_DIR, UPLOADS_DIR}]
+        # Search the workspace's read-able roots in priority order.
+        outputs_root = active_project_outputs()
+        candidate_roots: list[Path] = []
+        if raw_path.is_absolute():
+            candidates = [raw_path]
+        else:
+            for root in (
+                outputs_root,
+                outputs_root.parent / "uploads"
+                    if outputs_root.name == "outputs"
+                    else None,
+                DATASET_DIR,
+                LIBRARY_FILES_DIR,
+                UPLOADS_DIR,  # legacy alias; same as LIBRARY_FILES_DIR
+                DATA_DIR,
+            ):
+                if root is None:
+                    continue
+                candidate_roots.append(root)
+            candidates = [root / raw_path for root in candidate_roots]
+
+        seen: set[Path] = set()
+        for candidate in candidates:
+            resolved_candidate = candidate.resolve()
+            if resolved_candidate in seen:
+                continue
+            seen.add(resolved_candidate)
+            try:
+                resolved_candidate.relative_to(data_root)
+            except ValueError:
+                continue
+            if resolved_candidate.exists():
+                return resolved_candidate
+
+        searched_locations = sorted({str(c) for c in seen})
         raise FileNotFoundError(
-            f"Path '{path_like}' not found inside DATA_DIR '{DATA_DIR}'. "
-            f"Searched: {', '.join(sorted(searched_locations))}"
+            f"Input '{path_like}' not found inside the workspace '{DATA_DIR}'. "
+            f"Searched: {', '.join(searched_locations)}"
         )
 
-    target = (raw_path if raw_path.is_absolute() else DATA_DIR / raw_path).resolve()
+    # ----- Output path ---------------------------------------------------
+    if raw_path.is_absolute():
+        target = raw_path.resolve()
+    else:
+        target = (active_project_outputs() / raw_path).resolve()
     try:
         target.relative_to(data_root)
     except ValueError as exc:
         raise ValueError(
-            f"Output path '{path_like}' must be inside DATA_DIR '{DATA_DIR}'."
+            f"Output path '{path_like}' must be inside the workspace '{DATA_DIR}'."
         ) from exc
     return target
 

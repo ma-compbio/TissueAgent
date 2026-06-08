@@ -51,6 +51,45 @@ PROJECT_OUTPUTS_DIRNAME = "outputs"
 PROJECT_ATTACHMENTS_DIRNAME = "attachments"
 PROJECT_UPLOADS_DIRNAME = "uploads"
 
+
+def active_project_root() -> Path:
+    """Return the active project's root directory, or ``DATA_DIR`` if none.
+
+    Resolution rule: ``session.project_id`` from the singleton when
+    available; otherwise fall back to the global workspace. Imported
+    lazily to avoid a circular import — config is the dependency floor
+    that everyone else builds on, so it can't import session_manager
+    at module-load time.
+    """
+    try:
+        from server.session_manager import session  # local to break the cycle
+    except Exception:
+        return DATA_DIR
+    pid = getattr(session, "project_id", None)
+    if not pid:
+        return DATA_DIR
+    return PROJECTS_DIR / pid
+
+
+def active_project_outputs() -> Path:
+    """The directory the agent should write outputs into by default.
+
+    Equals ``projects/<active>/outputs/`` when a project is active, or
+    ``DATA_DIR`` as a fallback so writes never crash when no project
+    exists yet (e.g. during agent self-tests). Caller is responsible
+    for actually creating the directory; agents should not be in the
+    business of mkdir-ing their own workspace.
+    """
+    pid = None
+    try:
+        from server.session_manager import session
+        pid = getattr(session, "project_id", None)
+    except Exception:
+        pass
+    if not pid:
+        return DATA_DIR
+    return PROJECTS_DIR / pid / PROJECT_OUTPUTS_DIRNAME
+
 # Pre-project scratch: where uploads land *before* a project is minted.
 # Contents are migrated into projects/<id>/uploads or .../attachments on
 # the first user prompt, and wiped on session reset / new-project. The

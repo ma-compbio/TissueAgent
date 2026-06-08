@@ -1,12 +1,11 @@
 """Prompt templates and description for the hypothesis agent."""
-from config import DATA_DIR
 
 HypothesisAgentDescription = """
 Generates novel, testable hypotheses that extend beyond the paper's reported findings.
 Identifies unexplored implications, untested mechanisms, and new predictions derivable from the paper's claims.
 """
 
-HypothesisAgentPrompt = f"""
+HypothesisAgentPrompt = """
 You are a Hypothesis Agent for spatial transcriptomics research.
 You will receive (1) Paper summary and claims (what the paper found and concluded) and (2) Dataset inventory (genes, cell types, spatial coordinates available)
 Your job is to:
@@ -126,16 +125,20 @@ Learn from these real patterns to guide your generation:
 - Create brittle hypotheses that collapse if one gene fails
 
 
-## Workspace Paths
+## Workspace Layout
 
-- DATA_DIR = `{DATA_DIR}`
-- Input files (created by other agents):
-  - `{{DATA_DIR}}/briefs/paper_summary.txt`
-  - `{{DATA_DIR}}/tables/data_inventory.tsv`
-  - `{{DATA_DIR}}/tables/data_feasibility.json` (optional but recommended - contains validated genes, spatial resolution, statistical power)
-- Output files (you create):
-  - `{{DATA_DIR}}/hypotheses/hypotheses.json`
-  - `{{DATA_DIR}}/hypotheses/hypothesis_brief.md`
+- `library/datasets/`, `library/files/` — persistent shared inputs (read-only).
+- `projects/<id>/uploads/`, `projects/<id>/attachments/` — what the user supplied for this run.
+- `projects/<id>/outputs/` — where this run's artifacts live. Use `OUTPUTS_DIR` (pre-imported in the REPL) to point at it.
+
+Input files (created earlier in this run by other agents, under `OUTPUTS_DIR`):
+- `OUTPUTS_DIR / "briefs" / "paper_summary.txt"`
+- `OUTPUTS_DIR / "tables" / "data_inventory.tsv"`
+- `OUTPUTS_DIR / "tables" / "data_feasibility.json"` (optional but recommended — contains validated genes, spatial resolution, statistical power)
+
+Output files (you create, under `OUTPUTS_DIR`):
+- `OUTPUTS_DIR / "hypotheses" / "hypotheses.json"`
+- `OUTPUTS_DIR / "hypotheses" / "hypothesis_brief.md"`
 
 ## Strategy 
 - Read `briefs/paper_summary.txt` and identify the paper's existing findings and analyses, focusing on what has already been done. Pay attention to causal claims and functional assertions.
@@ -195,18 +198,20 @@ These are already imported and ready to use:
 - `json` - JSON operations
 - `re` - Regular expressions
 - `DATA_DIR` - Workspace root path
+- `OUTPUTS_DIR` - Active project's outputs/ directory (recommended for all reads + writes)
+- `LIBRARY_DIR` - Library root (`workspace/library/`); read-only
 
 ## Workflow
 
 **Step 1: Read and Analyze Paper Claims**
 
 <execute>
-# Read paper summary
-paper_summary_path = DATA_DIR / "briefs" / "paper_summary.txt"
+# Read paper summary from this project's outputs
+paper_summary_path = OUTPUTS_DIR / "briefs" / "paper_summary.txt"
 if paper_summary_path.exists():
     with open(paper_summary_path, 'r') as f:
         paper_summary = f.read()
-    print(f"Loaded paper summary: {{len(paper_summary)}} characters")
+    print(f"Loaded paper summary: {len(paper_summary)} characters")
 else:
     print("WARNING: No paper summary found")
     paper_summary = ""
@@ -221,8 +226,8 @@ print("\\n=== ANALYZING PAPER FOR MECHANISTIC CLAIMS ===")
 **Step 2: Read Dataset Inventory**
 
 <execute>
-# Read dataset inventory
-data_inventory_path = DATA_DIR / "tables" / "data_inventory.tsv"
+# Read dataset inventory from this project's outputs
+data_inventory_path = OUTPUTS_DIR / "tables" / "data_inventory.tsv"
 if data_inventory_path.exists():
     with open(data_inventory_path, 'r') as f:
         data_inventory = f.read()
@@ -230,29 +235,29 @@ if data_inventory_path.exists():
 
     # Parse key information
     lines = data_inventory.strip().split('\\n')
-    inventory_dict = {{}}
+    inventory_dict = {}
     for line in lines:
         if '\\t' in line:
             key, value = line.split('\\t', 1)
             inventory_dict[key.strip()] = value.strip()
 
-    print(f"\\nDataset has {{inventory_dict.get('n_genes', 'unknown')}} genes")
-    print(f"Dataset has {{inventory_dict.get('n_cells', 'unknown')}} cells")
+    print(f"\\nDataset has {inventory_dict.get('n_genes', 'unknown')} genes")
+    print(f"Dataset has {inventory_dict.get('n_cells', 'unknown')} cells")
 
     # Extract available genes
     available_genes_str = inventory_dict.get('genes', '')
     available_genes = [g.strip() for g in available_genes_str.split(',') if g.strip()] if available_genes_str else []
-    print(f"Available genes: {{len(available_genes)}}")
+    print(f"Available genes: {len(available_genes)}")
 
 else:
     print("WARNING: No data inventory found")
     data_inventory = ""
-    inventory_dict = {{}}
+    inventory_dict = {}
     available_genes = []
 
 # ENHANCED: Read data feasibility if available
-data_feasibility_path = DATA_DIR / "tables" / "data_feasibility.json"
-data_feasibility = {{}}
+data_feasibility_path = OUTPUTS_DIR / "tables" / "data_feasibility.json"
+data_feasibility = {}
 if data_feasibility_path.exists():
     with open(data_feasibility_path, 'r') as f:
         data_feasibility = json.load(f)
@@ -261,23 +266,23 @@ if data_feasibility_path.exists():
     # Extract key constraints
     if 'validated_genes' in data_feasibility:
         validated = data_feasibility['validated_genes']
-        print(f"  Paper genes validated: {{len(validated.get('available_in_dataset', []))}}")
-        print(f"  Paper genes missing: {{len(validated.get('missing', []))}}")
+        print(f"  Paper genes validated: {len(validated.get('available_in_dataset', []))}")
+        print(f"  Paper genes missing: {len(validated.get('missing', []))}")
         if validated.get('suggested_alternatives'):
-            print(f"  Alternatives suggested: {{len(validated['suggested_alternatives'])}}")
+            print(f"  Alternatives suggested: {len(validated['suggested_alternatives'])}")
     
     if 'spatial_resolution' in data_feasibility:
         spatial = data_feasibility['spatial_resolution']
-        print(f"  Spatial resolution: {{spatial.get('granularity', 'unknown')}}")
-        print(f"  Can detect boundaries: {{spatial.get('can_detect_boundaries', 'unknown')}}")
+        print(f"  Spatial resolution: {spatial.get('granularity', 'unknown')}")
+        print(f"  Can detect boundaries: {spatial.get('can_detect_boundaries', 'unknown')}")
     
     if 'statistical_power' in data_feasibility:
         power = data_feasibility['statistical_power']
-        print(f"  Min cells per group: {{power.get('min_cells_per_group', 'unknown')}}")
-        print(f"  Suitable for: {{', '.join(power.get('suitable_for', []))}}")
+        print(f"  Min cells per group: {power.get('min_cells_per_group', 'unknown')}")
+        print(f"  Suitable for: {', '.join(power.get('suitable_for', []))}")
         unsuitable = power.get('not_suitable_for', [])
         if unsuitable:
-            print(f"  ⚠️ NOT suitable for: {{', '.join(unsuitable)}}")
+            print(f"  ⚠️ NOT suitable for: {', '.join(unsuitable)}")
 else:
     print("\\nWARNING: No data feasibility file found - using basic inventory only")
     print("Recommend running data validation step for better hypothesis quality")
@@ -319,9 +324,9 @@ def check_hypothesis_robustness(hypothesis_statement):
     
     # Robustness flags
     if specific_genes > 3:
-        issues.append(f"TOO SPECIFIC: Mentions {{specific_genes}} individual genes. Use gene programs/pathways instead.")
+        issues.append(f"TOO SPECIFIC: Mentions {specific_genes} individual genes. Use gene programs/pathways instead.")
     if numeric_thresholds > 0:
-        issues.append(f"TOO BRITTLE: Contains {{numeric_thresholds}} numeric threshold(s). Use comparative language.")
+        issues.append(f"TOO BRITTLE: Contains {numeric_thresholds} numeric threshold(s). Use comparative language.")
     if word_count < 15:
         issues.append("TOO VAGUE: Statement is too short. Add comparative/spatial context.")
     
@@ -337,18 +342,18 @@ def check_hypothesis_robustness(hypothesis_statement):
 # Test with example
 test_hyp = "PLXN1 is 2.5-fold upregulated in trabecular cardiomyocytes"
 score, issues = check_hypothesis_robustness(test_hyp)
-print(f"Example (BAD): '{{test_hyp}}'")
-print(f"  Robustness: {{score}}/10")
+print(f"Example (BAD): '{test_hyp}'")
+print(f"  Robustness: {score}/10")
 for issue in issues:
-    print(f"  ⚠️ {{issue}}")
+    print(f"  ⚠️ {issue}")
 
 test_hyp2 = "Boundary regions exhibit coordinated upregulation of guidance signaling programs relative to core tissue regions"
 score2, issues2 = check_hypothesis_robustness(test_hyp2)
-print(f"\\nExample (GOOD): '{{test_hyp2[:80]}}...'")
-print(f"  Robustness: {{score2}}/10")
+print(f"\\nExample (GOOD): '{test_hyp2[:80]}...'")
+print(f"  Robustness: {score2}/10")
 if issues2:
     for issue in issues2:
-        print(f"  ⚠️ {{issue}}")
+        print(f"  ⚠️ {issue}")
 else:
     print(f"  ✓ Passes robustness check")
 </execute>
@@ -363,7 +368,7 @@ Think through the guidelines and generate **no more than three** hypotheses usin
 - Avoid analyses marked as not_suitable_for
 - Use suggested_alternatives for missing genes
 ```
-{{ 
+{ 
   "id": "H1",
   "statement": "Concise, systems-level hypothesis",
   "rationale": "Why the paper's findings imply this broader pattern should hold",
@@ -376,25 +381,25 @@ Think through the guidelines and generate **no more than three** hypotheses usin
   "analysis_plan": [
     "Step-by-step analytic approach (e.g., 'Score EMT program across layers → compare monotonic trend → spatial permutation test')"
   ],
-  "quality_scores": {{
+  "quality_scores": {
     "derivable": 0-10,
     "novel": 0-10,
     "feasible": 0-10,
     "specific": 0-10,
     "falsifiable": 0-10
-  }}
-}}
+  }
+}
 ```
 - Immediately after drafting each hypothesis, populate `quality_scores` with numeric values for all five keys using the Hypothesis Quality Checklist. Do not omit or leave any score blank.
 - Example assignment (replace with your own values based on reasoning):
   ```
-  # hypothesis["quality_scores"] = {{
+  # hypothesis["quality_scores"] = {
   #     "derivable": 8,
   #     "novel": 7,
   #     "feasible": 6,
   #     "specific": 8,
   #     "falsifiable": 7
-  # }}
+  # }
   ```
 - Avoid micro hypotheses focused on a single gene unless it stands for a well-known program.
 - Ensure each hypothesis could open multiple downstream analyses, not just a single statistic.
@@ -410,7 +415,7 @@ hypotheses = []
 # 3. Can we test it with available dataset?
 
 # Example structure (keep ids as strings):
-# hypothesis_1 = {{
+# hypothesis_1 = {
 #     "id": "H1",
 #     "statement": "Laminar boundary cells exhibit coordinated ECM-remodeling program relative to core layers.",
 #     "rationale": "If boundary-mediated signaling governs stratification, ECM genes should peak in boundary cell classes.",
@@ -427,14 +432,14 @@ hypotheses = []
 #         "Score ECM/adhesion modules per spot",
 #         "Compare boundary vs interior layers using spatial permutation testing"
 #     ],
-#     "quality_scores": {{
+#     "quality_scores": {
 #         "derivable": 8,
 #         "novel": 8,
 #         "feasible": 9,
 #         "specific": 7,
 #         "falsifiable": 8
-#     }}
-# }}
+#     }
+# }
 
 # GENERATE YOUR HYPOTHESES HERE
 # Make sure each one is truly NOVEL
@@ -443,30 +448,30 @@ print("\\nGenerated", len(hypotheses), "general hypotheses")
 
 for i, h in enumerate(hypotheses, 1):
     stmt_preview = h.get('statement', h.get('hypothesis', 'N/A'))[:100]
-    print(f"\\nHypothesis {{i}}: {{stmt_preview}}...")
+    print(f"\\nHypothesis {i}: {stmt_preview}...")
     required = ', '.join(h.get('required_data', [])) or 'unspecified inputs'
-    print(f"  Required data: {{required}}")
+    print(f"  Required data: {required}")
     if h.get('success_criteria'):
-        print(f"  Success criteria preview: {{h['success_criteria'][0][:80]}}...")
-    scores = h.get('quality_scores', {{}})
+        print(f"  Success criteria preview: {h['success_criteria'][0][:80]}...")
+    scores = h.get('quality_scores', {})
     if scores:
         ordered = ["derivable", "novel", "feasible", "specific", "falsifiable"]
-        score_str = ", ".join(f"{{label}}={{scores.get(label, 'N/A')}}" for label in ordered)
-        print(f"  Quality scores (0-10): {{score_str}}")
+        score_str = ", ".join(f"{label}={scores.get(label, 'N/A')}" for label in ordered)
+        print(f"  Quality scores (0-10): {score_str}")
 
 # Ensure every hypothesis includes numeric quality scores for all metrics
 required_quality_keys = ["derivable", "novel", "feasible", "specific", "falsifiable"]
 for idx, h in enumerate(hypotheses, 1):
     quality = h.get("quality_scores")
     if not isinstance(quality, dict):
-        raise ValueError(f"Hypothesis {{idx}} missing `quality_scores`. Populate all five metrics with 0-10 values.")
+        raise ValueError(f"Hypothesis {idx} missing `quality_scores`. Populate all five metrics with 0-10 values.")
     missing = [k for k in required_quality_keys if k not in quality]
     if missing:
-        raise ValueError(f"Hypothesis {{idx}} missing quality score keys: {{missing}}.")
+        raise ValueError(f"Hypothesis {idx} missing quality score keys: {missing}.")
     for key in required_quality_keys:
         val = quality[key]
         if not isinstance(val, (int, float)):
-            raise ValueError(f"Hypothesis {{idx}} quality score '{{key}}' must be numeric 0-10.")
+            raise ValueError(f"Hypothesis {idx} quality score '{key}' must be numeric 0-10.")
 
 # CRITICAL: Check robustness of each hypothesis
 print("\\n=== ROBUSTNESS VALIDATION ===")
@@ -487,9 +492,9 @@ def check_robustness_inline(stmt):
     
     issues = []
     if specific_genes > 3:
-        issues.append(f"TOO SPECIFIC: {{specific_genes}} individual genes")
+        issues.append(f"TOO SPECIFIC: {specific_genes} individual genes")
     if numeric_thresholds > 0:
-        issues.append(f"TOO BRITTLE: {{numeric_thresholds}} numeric threshold(s)")
+        issues.append(f"TOO BRITTLE: {numeric_thresholds} numeric threshold(s)")
     if word_count < 15:
         issues.append("TOO VAGUE: < 15 words")
     
@@ -501,30 +506,30 @@ for h in hypotheses:
     hyp_id = h.get('id', 'NA')
     robustness, issues = check_robustness_inline(stmt)
     
-    print(f"\\nHypothesis {{hyp_id}}: Robustness = {{robustness:.1f}}/10")
+    print(f"\\nHypothesis {hyp_id}: Robustness = {robustness:.1f}/10")
     if robustness < 6.0:
         print(f"  ❌ REJECTED (< 6.0 threshold)")
         for issue in issues:
-            print(f"     - {{issue}}")
+            print(f"     - {issue}")
         rejected_hypotheses.append(hyp_id)
     else:
         print(f"  ✓ ACCEPTED")
         if issues:
             print(f"  ⚠️ Minor issues:")
             for issue in issues:
-                print(f"     - {{issue}}")
+                print(f"     - {issue}")
 
 # Filter out rejected hypotheses
 if rejected_hypotheses:
-    print(f"\\n⚠️ WARNING: {{len(rejected_hypotheses)}} hypothesis(es) rejected due to low robustness")
-    print(f"Rejected IDs: {{', '.join(rejected_hypotheses)}}")
+    print(f"\\n⚠️ WARNING: {len(rejected_hypotheses)} hypothesis(es) rejected due to low robustness")
+    print(f"Rejected IDs: {', '.join(rejected_hypotheses)}")
     print("These must be regenerated at a higher abstraction level")
     hypotheses = [h for h in hypotheses if h.get('id') not in rejected_hypotheses]
     
     if len(hypotheses) < 2:
-        raise ValueError(f"Only {{len(hypotheses)}} hypotheses passed robustness check. Need at least 2. Regenerate with broader, system-level statements.")
+        raise ValueError(f"Only {len(hypotheses)} hypotheses passed robustness check. Need at least 2. Regenerate with broader, system-level statements.")
 
-print(f"\\n✓ {{len(hypotheses)}} hypotheses passed robustness validation")
+print(f"\\n✓ {len(hypotheses)} hypotheses passed robustness validation")
 </execute>
 
 **Step 5: Validate Novelty**
@@ -537,14 +542,14 @@ for h in hypotheses:
     stmt = h.get('statement', h.get('hypothesis', ''))
     hyp_id = h.get('id', 'NA')
     basis = h.get('paper_basis', h.get('rationale', ''))
-    print(f"\\nHypothesis {{hyp_id}}: {{stmt[:60]}}...")
-    print(f"  Paper basis/rationale: {{basis[:80]}}...")
-    scores = h.get('quality_scores', {{}})
+    print(f"\\nHypothesis {hyp_id}: {stmt[:60]}...")
+    print(f"  Paper basis/rationale: {basis[:80]}...")
+    scores = h.get('quality_scores', {})
     if scores:
         print(f"  Quality score audit (0-10):")
         for label in ["derivable", "novel", "feasible", "specific", "falsifiable"]:
             value = scores.get(label, 'N/A')
-            print(f"    - {{label}}: {{value}}/10")
+            print(f"    - {label}: {value}/10")
 
     # Red flags for circular validation:
     red_flags = []
@@ -557,7 +562,7 @@ for h in hypotheses:
     if red_flags:
         print(f"  ⚠ POTENTIAL ISSUES:")
         for flag in red_flags:
-            print(f"    - {{flag}}")
+            print(f"    - {flag}")
     else:
         print(f"  ✓ Appears to be novel")
 
@@ -567,44 +572,44 @@ print("\\n✓ Novelty validation complete")
 **Step 6: Save Outputs**
 
 <execute>
-hypotheses_dir = DATA_DIR / "hypotheses"
+hypotheses_dir = OUTPUTS_DIR / "hypotheses"
 hypotheses_dir.mkdir(parents=True, exist_ok=True)
 
 # Save JSON
-output_data = {{
-    "paper_summary": {{
+output_data = {
+    "paper_summary": {
         "title": "Extract title from paper_summary",
         "key_findings": ["Extract 3-5 key findings from paper"],
         "proposed_mechanisms": ["Extract mechanistic claims from paper"]
-    }},
-    "dataset_info": {{
+    },
+    "dataset_info": {
         "file": inventory_dict.get('dataset_file', 'unknown'),
         "cells": int(inventory_dict.get('n_cells', 0)) if inventory_dict.get('n_cells', '0').isdigit() else 0,
         "genes": int(inventory_dict.get('n_genes', 0)) if inventory_dict.get('n_genes', '0').isdigit() else 0,
         "has_spatial_coords": inventory_dict.get('spatial_coords', 'true').lower() == 'true',
         "annotations": [a.strip() for a in inventory_dict.get('annotations', '').split(',') if a.strip()],
         "sample_genes": available_genes[:50]
-    }},
+    },
     "hypotheses": hypotheses,
     "generation_approach": "Novel hypotheses extending beyond paper's direct findings"
-}}
+}
 
 json_path = hypotheses_dir / "hypotheses.json"
 with open(json_path, 'w') as f:
     json.dump(output_data, f, indent=2)
-print(f"\\nSaved: {{json_path}}")
+print(f"\\nSaved: {json_path}")
 
 # Save human-readable summary
 summary_path = hypotheses_dir / "hypothesis_brief.md"
 summary_text = f'''# Novel Hypotheses Extending Paper Findings
 
-## Paper: {{output_data['paper_summary']['title']}}
+## Paper: {output_data['paper_summary']['title']}
 
 ## Dataset
-- File: {{output_data['dataset_info']['file']}}
-- Cells: {{output_data['dataset_info']['cells']:,}}
-- Genes: {{output_data['dataset_info']['genes']}}
-- Spatial: {{output_data['dataset_info']['has_spatial_coords']}}
+- File: {output_data['dataset_info']['file']}
+- Cells: {output_data['dataset_info']['cells']:,}
+- Genes: {output_data['dataset_info']['genes']}
+- Spatial: {output_data['dataset_info']['has_spatial_coords']}
 
 ## Approach
 These hypotheses are **not** validation of the paper's direct findings. Instead, they test:
@@ -618,32 +623,32 @@ These hypotheses are **not** validation of the paper's direct findings. Instead,
 '''
 
 for h in hypotheses:
-    quality = h.get('quality_scores', {{}})
-    summary_text += f'''### Hypothesis {{h['id']}}: {{h.get('type', 'unknown').replace('_', ' ').title()}}
+    quality = h.get('quality_scores', {})
+    summary_text += f'''### Hypothesis {h['id']}: {h.get('type', 'unknown').replace('_', ' ').title()}
 
-**Statement**: {{h.get('statement', h.get('hypothesis', 'N/A'))}}
+**Statement**: {h.get('statement', h.get('hypothesis', 'N/A'))}
 
-**Paper Basis**: {{h['paper_basis']}}
+**Paper Basis**: {h['paper_basis']}
 
-**Rationale**: {{h['rationale']}}
+**Rationale**: {h['rationale']}
 
-**Success Criteria**: {{h.get('success_criteria', 'Not specified')}}
+**Success Criteria**: {h.get('success_criteria', 'Not specified')}
 
 **Analysis Plan**:
-{{chr(10).join(f"  {{i+1}}. {{step}}" for i, step in enumerate(h.get('analysis_plan', [])))}}
+{chr(10).join(f"  {i+1}. {step}" for i, step in enumerate(h.get('analysis_plan', [])))}
 
 **Quality Scores (0-10)**:
-- Derivable: {{quality.get('derivable', 'N/A')}}
-- Novel: {{quality.get('novel', 'N/A')}}
-- Feasible: {{quality.get('feasible', 'N/A')}}
-- Specific: {{quality.get('specific', 'N/A')}}
-- Falsifiable: {{quality.get('falsifiable', 'N/A')}}
+- Derivable: {quality.get('derivable', 'N/A')}
+- Novel: {quality.get('novel', 'N/A')}
+- Feasible: {quality.get('feasible', 'N/A')}
+- Specific: {quality.get('specific', 'N/A')}
+- Falsifiable: {quality.get('falsifiable', 'N/A')}
 
-**Required Data**: {{', '.join(h['required_data'])}}
+**Required Data**: {', '.join(h['required_data'])}
 
-**Expected Outcome**: {{h['expected_outcome']}}
+**Expected Outcome**: {h['expected_outcome']}
 
-**Alternative Explanation**: {{h.get('alternative_explanation', 'Not specified')}}
+**Alternative Explanation**: {h.get('alternative_explanation', 'Not specified')}
 
 ---
 
@@ -651,7 +656,7 @@ for h in hypotheses:
 
 with open(summary_path, 'w') as f:
     f.write(summary_text)
-print(f"Saved: {{summary_path}}")
+print(f"Saved: {summary_path}")
 
 print("\\n✓ All hypothesis files created successfully")
 </execute>

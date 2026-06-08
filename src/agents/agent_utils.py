@@ -12,7 +12,12 @@ from langchain.tools import StructuredTool
 from pathlib import Path
 from typing import Dict, List, Literal, Optional
 
-from config import DATA_DIR, MAX_OUTPUT_CHARS
+from config import (
+    DATA_DIR,
+    LIBRARY_DIR,
+    MAX_OUTPUT_CHARS,
+    active_project_outputs,
+)
 
 
 def format_agent_id_descriptions(agent_id_descriptions: Dict[str, str]) -> str:
@@ -133,8 +138,10 @@ glob_tool = StructuredTool.from_function(
     func=_glob,
     name="glob",
     description=(
-        "List workspace files and directories matching a glob pattern relative to DATA_DIR."
-        " Example: '**/*.h5ad' finds all HDF5 files, 'figures/*' lists the figures directory."
+        "List workspace files and directories matching a glob pattern, relative to the workspace root."
+        " The workspace contains library/datasets/, library/files/ (shared persistent inputs)"
+        " and projects/<id>/ subtrees (uploads/, attachments/, outputs/)."
+        " Examples: 'library/datasets/*.h5ad', 'projects/*/outputs/figures/*'."
     ),
 )
 
@@ -152,7 +159,9 @@ read_tool = StructuredTool.from_function(
     func=_read,
     name="read",
     description=(
-        "Read a workspace file by path relative to DATA_DIR."
+        "Read a workspace file by path relative to the workspace root."
+        " Library files (library/datasets/, library/files/) and project files"
+        " (projects/<id>/uploads/, attachments/, outputs/) are all readable."
         " Text files support `offset` (1-based line to start from) and `limit` (max lines to return)."
         " Image files (PNG, JPEG, etc.) are returned as inline content for visual inspection."
     ),
@@ -165,18 +174,46 @@ file_read_tools: List[StructuredTool] = [glob_tool, grep_tool, read_tool]
 
 
 def _resolve_artifact_path(relative_path: str) -> Path:
-    """Convert a provided relative or absolute path into a normalized path inside DATA_DIR."""
+    """Resolve a write target to the active project's outputs directory.
+
+    Relative paths anchor to ``projects/<active_id>/outputs/`` when a
+    project is active (the common case during a run). Absolute paths
+    are allowed but must resolve inside the workspace tree. Writes
+    into ``library/`` are refused — the library is read-only to the
+    agent.
+    """
     if not relative_path or not relative_path.strip():
         raise ValueError("relative_path must be a non-empty string.")
 
     candidate = Path(relative_path.strip())
-    target = candidate if candidate.is_absolute() else (DATA_DIR / candidate)
-    target = target.resolve()
+    outputs_root = active_project_outputs()
 
+    if candidate.is_absolute():
+        target = candidate.resolve()
+    else:
+        target = (outputs_root / candidate).resolve()
+
+    # Refuse writes into library/. The library is the user's curated
+    # reference corpus; agent intermediates shouldn't pollute it.
+    try:
+        library_resolved = LIBRARY_DIR.resolve()
+        target.relative_to(library_resolved)
+    except ValueError:
+        pass
+    else:
+        raise ValueError(
+            f"Writes into the library are not allowed (path '{target}'). "
+            "The library is read-only to the agent; write outputs into "
+            "your project's outputs/ directory instead."
+        )
+
+    # Stay inside the workspace.
     try:
         target.relative_to(DATA_DIR)
     except ValueError as exc:
-        raise ValueError(f"Artifact path '{target}' must be inside DATA_DIR '{DATA_DIR}'.") from exc
+        raise ValueError(
+            f"Artifact path '{target}' must be inside the workspace '{DATA_DIR}'."
+        ) from exc
 
     target.parent.mkdir(parents=True, exist_ok=True)
     return target
@@ -187,13 +224,17 @@ def _write(
     contents: str,
     mode: Literal["overwrite", "append", "error_if_exists"] = "overwrite",
 ) -> str:
-    """Persist plain-text contents to a file inside DATA_DIR.
+    """Persist plain-text contents to a file in the project's outputs/.
 
     Args:
-        relative_path: Target path relative to DATA_DIR (or absolute under DATA_DIR).
+        relative_path: Target path, normally relative to the active
+            project's ``outputs/`` directory (e.g.
+            ``"figures/umap.svg"`` or ``"reports/summary.md"``).
+            Absolute paths are accepted but must resolve inside the
+            workspace tree.
         contents: Text payload to write.
-        mode: How to write the file. `overwrite` replaces, `append` extends, `error_if_exists`
-              fails if the file already exists.
+        mode: ``overwrite`` replaces, ``append`` extends,
+            ``error_if_exists`` fails when the target already exists.
     """
     try:
         target = _resolve_artifact_path(relative_path)
@@ -202,7 +243,9 @@ def _write(
             raise ValueError("mode must be one of: 'overwrite', 'append', 'error_if_exists'.")
 
         if mode_normalized == "error_if_exists" and target.exists():
-            raise FileExistsError(f"Artifact '{target.relative_to(DATA_DIR)}' already exists.")
+            raise FileExistsError(
+                f"Artifact '{target.relative_to(DATA_DIR)}' already exists."
+            )
 
         write_mode = "a" if mode_normalized == "append" else "w"
         with target.open(write_mode, encoding="utf-8") as file_handle:
@@ -218,8 +261,9 @@ write_tool = StructuredTool.from_function(
     func=_write,
     name="write",
     description=(
-        "Create or update a UTF-8 text artifact inside DATA_DIR. "
-        "Provide a relative path (e.g., 'reports/search_summary.txt') and the text to persist."
+        "Create or update a UTF-8 text artifact in the active project's outputs/ directory. "
+        "Provide a path relative to outputs/ (e.g., 'reports/summary.md', 'figures/umap.svg'). "
+        "The library/ directory is read-only — writes there are refused."
     ),
 )
 

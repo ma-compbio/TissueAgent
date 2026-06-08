@@ -9,6 +9,20 @@ Tools
 - python(code: str) -> str: Execute Python code in a persistent Jupyter kernel. State (variables, imports, definitions) persists across calls. Use print() to surface values. When code produces plots or images (e.g. matplotlib, seaborn, PIL), they are returned inline and you can see them directly.
 - r(code: str) -> str: Execute R code in a persistent Jupyter kernel. State (variables, libraries, definitions) persists across calls. Use cat() or print() to surface values. When code produces plots (e.g. ggplot2, base R graphics), they are returned inline and you can see them directly.
 
+Workspace Layout
+The kernel's working directory (`os.getcwd()` / `getwd()`) is the active project's outputs/ folder. Bare filenames you create therefore land in that project's outputs and become visible to the user in the Files panel.
+
+  Persistent shared inputs (read-only):
+  - ../../library/datasets/   curated reference datasets (h5ad, csv, …)
+  - ../../library/files/      persistent reference uploads (PDFs, notes, screenshots)
+
+  This project (relative paths are relative to outputs/, so step up to reach siblings):
+  - ../uploads/      files the user uploaded for this run (datasets, scripts, …)
+  - ../attachments/  images / PDFs the user attached to the chat
+  - ./               your working directory — write outputs here (figures/, reports/, tables/, …)
+
+Always read user inputs from `../uploads/` (or `../attachments/`) and shared inputs from `../../library/`. Write all generated artifacts under the current directory; never write into `../../library/`. Use relative paths in code (`pd.read_csv("../uploads/foo.csv")`, `plt.savefig("figures/umap.svg")`) rather than absolute ones so notebooks stay portable.
+
 Execution Plan
 The following plan and reference material were produced by the Retrieval Agent. Follow this plan, adapting as needed based on data inspection.
 

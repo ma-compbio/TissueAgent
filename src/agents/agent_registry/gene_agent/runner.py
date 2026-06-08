@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Sequence
 
 from agents.llm_compat import patch_openai_legacy_api
-from config import DATA_DIR
+from config import DATA_DIR, active_project_outputs
 
 # The submodule path inside this folder.
 _UPSTREAM_DIR = Path(__file__).resolve().parent / "upstream"
@@ -129,7 +129,9 @@ def run_geneagent_cascade(
         raise ValueError("gene_list must contain at least one non-empty gene symbol.")
 
     run_identifier = request_id or datetime.utcnow().strftime("run_%Y%m%d_%H%M%S")
-    run_directory = DATA_DIR / "gene_agent" / run_identifier
+    # Per-project: drop runs under the active project's outputs/ so they
+    # show up in the user's Files panel and travel with the project.
+    run_directory = active_project_outputs() / "gene_agent" / run_identifier
     run_directory.mkdir(parents=True, exist_ok=True)
 
     # The upstream code writes to relative paths; pre-create them so it
