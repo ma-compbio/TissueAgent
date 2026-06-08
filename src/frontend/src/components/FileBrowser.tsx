@@ -168,6 +168,8 @@ interface BrowserPaneProps {
   uploadable?: boolean;
   /** Required when ``uploadable``. Called with the chosen files. */
   onUpload?: (files: FileList) => Promise<void> | void;
+  /** Hover/focus tooltip text for the upload button. */
+  uploadTooltip?: string;
   /** Tighter layout for narrow containers (sidebar embedding): the
    *  description block is hidden, the upload-button label is collapsed
    *  to "+", and the tree fills the column. */
@@ -205,6 +207,7 @@ function BrowserPane({
   statusBadge,
   currentPath: controlledPath,
   onPathChange,
+  uploadTooltip,
 }: BrowserPaneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tree, setTree] = useState<BrowseEntry[]>([]);
@@ -339,13 +342,39 @@ function BrowserPane({
         <div className="file-browser-section-actions">
           {uploadable && (
             <>
-              <button
-                className="file-browser-upload-btn"
-                onClick={handleUploadClick}
-                title={`Upload to ${title}`}
-              >
-                {compact ? "+" : "+ Upload"}
-              </button>
+              {compact ? (
+                <button
+                  type="button"
+                  className="section-icon-btn"
+                  onClick={handleUploadClick}
+                  aria-label={uploadTooltip ?? `Upload to ${title}`}
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  >
+                    <path d="M8 3v10M3 8h10" />
+                  </svg>
+                  <span className="section-icon-tooltip" role="tooltip">
+                    {uploadTooltip ?? `Upload to ${title}`}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="file-browser-upload-btn"
+                  onClick={handleUploadClick}
+                  title={uploadTooltip ?? `Upload to ${title}`}
+                >
+                  + Upload
+                </button>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -439,6 +468,10 @@ interface FileBrowserProps {
   currentProjectTitle: string;
   /** Upload handler for the Library "+ Upload" button. */
   onUploadToLibrary: (files: FileList) => Promise<void> | void;
+  /** Upload handler for the Project Files "+ Upload" button.
+   *  Files land in projects/<active>/uploads/, minting a project if
+   *  none is active (the upload becomes part of the next conversation). */
+  onUploadToProject: (files: FileList) => Promise<void> | void;
   /** Compact rendering for narrow sidebar embedding. Default is the
    *  full-width Files page layout. */
   compact?: boolean;
@@ -449,6 +482,7 @@ export default function FileBrowser({
   currentProjectId,
   currentProjectTitle,
   onUploadToLibrary,
+  onUploadToProject,
   compact = false,
 }: FileBrowserProps) {
   const projectLabel = currentProjectTitle?.trim()
@@ -507,6 +541,7 @@ export default function FileBrowser({
         emptyMessage={compact ? "No library files." : "No library files yet. Use + Upload to add datasets or reference files."}
         uploadable
         onUpload={onUploadToLibrary}
+        uploadTooltip="Upload to library"
         compact={compact}
         onOpenPreview={openPreview}
         currentPath={libraryPath}
@@ -538,6 +573,9 @@ export default function FileBrowser({
         statusBadge={!currentProjectId ? "Unsaved" : undefined}
         currentPath={projectPath}
         onPathChange={setProjectPath}
+        uploadable
+        onUpload={onUploadToProject}
+        uploadTooltip="Upload to project"
       />
 
       {previewOpen && (

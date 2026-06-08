@@ -242,6 +242,7 @@ export default function App() {
         hasMessages={ws.messages.length > 0}
         fileBrowserRefreshKey={fileBrowserRefreshKey}
         onUploadToLibrary={handleUploadToLibrary}
+        onUploadToProject={handleUploadToProject}
       />
 
       <Splitter

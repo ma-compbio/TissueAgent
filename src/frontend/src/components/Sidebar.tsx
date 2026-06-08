@@ -26,6 +26,7 @@ interface Props {
   hasMessages: boolean;
   fileBrowserRefreshKey: number;
   onUploadToLibrary: (files: FileList) => Promise<void> | void;
+  onUploadToProject: (files: FileList) => Promise<void> | void;
 }
 
 /**
@@ -47,6 +48,7 @@ export default function Sidebar({
   hasMessages,
   fileBrowserRefreshKey,
   onUploadToLibrary,
+  onUploadToProject,
 }: Props) {
   const [projectsHeight, resizeProjects] = usePersistedSize(
     PROJECTS_HEIGHT_KEY,
@@ -87,6 +89,7 @@ export default function Sidebar({
           currentProjectId={currentProjectId}
           currentProjectTitle={currentProjectTitle}
           onUploadToLibrary={onUploadToLibrary}
+          onUploadToProject={onUploadToProject}
           compact
         />
       </div>

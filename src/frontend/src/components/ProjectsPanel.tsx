@@ -61,10 +61,9 @@ export default function ProjectsPanel({
         <span className="projects-title">Projects</span>
         <button
           type="button"
-          className="projects-new-btn"
+          className="section-icon-btn"
           onClick={handleNew}
-          aria-label="Start new project"
-          title="Start new project"
+          aria-label="Start a new project"
         >
           <svg
             viewBox="0 0 16 16"
@@ -78,6 +77,9 @@ export default function ProjectsPanel({
           >
             <path d="M8 3v10M3 8h10" />
           </svg>
+          <span className="section-icon-tooltip" role="tooltip">
+            Start a new project
+          </span>
         </button>
       </header>
 
