@@ -43,3 +43,8 @@ node_modules/
 # direnv
 .direnv/
 .envrc
+
+# AI assistant scratch (local-only planning notes)
+COPILOT_PLAN.md
+COPILOT_QA.md
+.impeccable.md
