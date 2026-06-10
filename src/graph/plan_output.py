@@ -1,11 +1,10 @@
 """Parse structured JSON plan output from the planner and recruiter agents.
 
-Instead of using proxy tool calls (``write_plan`` / ``assign_agents``), the planner and recruiter now emit a fenced JSON
-block in their text response. This module extracts that JSON, validates it, builds/updates the
+This module extracts JSON emitted by planner and recruiter agents, validates it, builds/updates the
 :class:`~server.plan_store.PlanDocument`, persists it, and emits a ``plan_updated`` UI event.
 
-The two public helpers — :func:`planner_state_update` and :func:`recruiter_state_update` — are wired as
-``state_update_fn`` callbacks on their respective agent nodes in :mod:`graph.graph`.
+The two public helpers — :func:`planner_state_update` and :func:`recruiter_state_update` — are wired
+as ``state_update_fn`` callbacks on their respective agent nodes in :mod:`graph.graph`.
 """
 
 from __future__ import annotations
@@ -13,12 +12,12 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage
 
 from agents.recruiter_agent.prompt import get_skill_metadata
-from graph.ui_events import log_message
+from graph.ui_events import emit_message
 from server.plan_store import (
     PlanDocument,
     PlanProvenance,
@@ -27,18 +26,13 @@ from server.plan_store import (
     serialize_plan,
 )
 
-
-# ---------------------------------------------------------------------------
-# JSON extraction
-# ---------------------------------------------------------------------------
-
 _JSON_FENCE_RE = re.compile(
     r"```json\s*\n(.*?)\n\s*```",
     re.DOTALL,
 )
 
 
-def _extract_json(text: str) -> Optional[dict]:
+def _extract_json(text: str) -> dict | None:
     """Extract the first fenced JSON block from *text*.
 
     Returns the parsed dict, or ``None`` if no valid block is found.
@@ -53,10 +47,6 @@ def _extract_json(text: str) -> Optional[dict]:
         return None
 
 
-# ---------------------------------------------------------------------------
-# Plan-updated event helper
-# ---------------------------------------------------------------------------
-
 def _emit_plan_updated(doc: PlanDocument) -> None:
     """Push a plan-updated marker into the UI event stream."""
     payload = serialize_plan(doc)
@@ -65,17 +55,10 @@ def _emit_plan_updated(doc: PlanDocument) -> None:
         additional_kwargs={"plan_payload": payload},
         name="plan_updated",
     )
-    try:
-        log_message(message)
-    except Exception:
-        pass
+    emit_message(message)
 
 
-# ---------------------------------------------------------------------------
-# Planner output parsing
-# ---------------------------------------------------------------------------
-
-def _build_plan_from_json(data: dict) -> Optional[PlanDocument]:
+def _build_plan_from_json(data: dict) -> PlanDocument | None:
     """Construct a :class:`PlanDocument` from the planner's JSON output.
 
     Expected schema::
@@ -100,26 +83,28 @@ def _build_plan_from_json(data: dict) -> Optional[PlanDocument]:
     if not steps_raw or not isinstance(steps_raw, list):
         return None
 
-    steps: List[PlanStep] = []
+    steps: list[PlanStep] = []
     for i, s in enumerate(steps_raw):
         if not isinstance(s, dict):
             continue
-        steps.append(PlanStep(
-            id=i + 1,
-            title=(s.get("title") or "").strip(),
-            description=(s.get("description") or "").strip(),
-            reasoning=(s.get("reasoning") or "").strip(),
-            expected_artifacts=[
-                a.strip()
-                for a in (s.get("expected_artifacts") or [])
-                if isinstance(a, str) and a.strip()
-            ],
-        ))
+        steps.append(
+            PlanStep(
+                id=i + 1,
+                title=(s.get("title") or "").strip(),
+                description=(s.get("description") or "").strip(),
+                reasoning=(s.get("reasoning") or "").strip(),
+                expected_artifacts=[
+                    a.strip()
+                    for a in (s.get("expected_artifacts") or [])
+                    if isinstance(a, str) and a.strip()
+                ],
+            )
+        )
 
     if not steps:
         return None
 
-    provenance: Optional[PlanProvenance] = None
+    provenance: PlanProvenance | None = None
     prov_raw = data.get("provenance")
     if isinstance(prov_raw, dict):
         template_names = prov_raw.get("template_names", [])
@@ -140,21 +125,29 @@ def _build_plan_from_json(data: dict) -> Optional[PlanDocument]:
     )
 
 
-def planner_state_update(response: AIMessage, state) -> Dict[str, Any]:
+def planner_state_update(response: AIMessage, _) -> dict[str, Any]:
     """``state_update_fn`` for the planner agent node.
 
-    If the response contains a fenced JSON plan block, persists the plan and emits a ``plan_updated`` event.  Returns an
-    empty dict (no extra state keys needed).
+    If the response begins with a non-plan response (e.g. ROUTE: DIRECT, ROUTE:CLARIFY), no JSON is
+    expected, returns an empty dict. Otherwise, if the response contains a fenced JSON plan block,
+    persists the plan and emits a ``plan_updated`` event.  Returns an empty dict (no extra state
+    keys needed).
     """
     text = (response.content or "") if isinstance(response.content, str) else ""
+    head = text.strip().splitlines()[0].upper() if text.strip() else ""
+    if head.startswith("ROUTE:"):
+        return {}
+
     data = _extract_json(text)
     if data is None:
-        return {}
+        raise RuntimeError(
+            "Planner failed to produce a valid JSON plan. "
+            "No fenced JSON block found in the response."
+        )
 
     doc = _build_plan_from_json(data)
     if doc is None:
-        logging.warning("planner_state_update: JSON found but could not build plan")
-        return {}
+        raise RuntimeError("Planner produced JSON that could not be converted into a valid plan.")
 
     plan_store.write(doc)
     _emit_plan_updated(doc)
@@ -166,11 +159,7 @@ def planner_state_update(response: AIMessage, state) -> Dict[str, Any]:
     return {}
 
 
-# ---------------------------------------------------------------------------
-# Recruiter output parsing
-# ---------------------------------------------------------------------------
-
-def _apply_assignments_from_json(data: dict) -> Optional[PlanDocument]:
+def _apply_assignments_from_json(data: dict) -> PlanDocument | None:
     """Read assignments from the recruiter's JSON and annotate the on-disk plan.
 
     Expected schema::
@@ -202,7 +191,7 @@ def _apply_assignments_from_json(data: dict) -> Optional[PlanDocument]:
         if step_id is not None:
             by_id[int(step_id)] = a
 
-    missing: List[int] = []
+    missing: list[int] = []
     for step in doc.steps:
         a = by_id.get(step.id)
         if a is None:
@@ -219,16 +208,14 @@ def _apply_assignments_from_json(data: dict) -> Optional[PlanDocument]:
     return doc
 
 
-def _validate_assignments(
-    doc: PlanDocument, valid_agent_ids: set,
-) -> List[str]:
+def _validate_assignments(doc: PlanDocument, valid_agent_ids: set) -> list[str]:
     """Validate recruiter assignments.
 
     Returns list of error strings (empty = valid).
     """
     skill_meta = get_skill_metadata()
     valid_skill_names = set(skill_meta.keys())
-    errors: List[str] = []
+    errors: list[str] = []
     for step in doc.steps:
         if step.assigned_agent and step.assigned_agent not in valid_agent_ids:
             errors.append(
@@ -241,7 +228,9 @@ def _validate_assignments(
                     f"Step {step.id}: skill '{skill_name}' not found. "
                     f"Valid skills: {sorted(valid_skill_names)}"
                 )
-            elif step.assigned_agent and step.assigned_agent not in skill_meta[skill_name].applies_to:
+            elif (
+                step.assigned_agent and step.assigned_agent not in skill_meta[skill_name].applies_to
+            ):
                 errors.append(
                     f"Step {step.id}: skill '{skill_name}' does not apply to agent "
                     f"'{step.assigned_agent}'. applies_to: {skill_meta[skill_name].applies_to}"
@@ -249,16 +238,15 @@ def _validate_assignments(
     return errors
 
 
-def create_recruiter_state_update(
-    valid_agent_ids: set, max_retries: int = 2,
-):
+def create_recruiter_state_update(valid_agent_ids: set, max_retries: int = 2):
     """Factory that returns a ``state_update_fn`` for the recruiter node.
 
-    The returned callback parses the recruiter's JSON output, validates agent IDs and skill assignments, and either
-    persists the plan or signals a retry by returning validation errors in the state.
+    The returned callback parses the recruiter's JSON output, validates agent IDs and skill
+    assignments, and either persists the plan or signals a retry by returning validation errors in
+    the state.
     """
 
-    def recruiter_state_update(response: AIMessage, state) -> Dict[str, Any]:
+    def recruiter_state_update(response: AIMessage, state) -> dict[str, Any]:
         text = (response.content or "") if isinstance(response.content, str) else ""
         data = _extract_json(text)
         if data is None:
@@ -266,9 +254,7 @@ def create_recruiter_state_update(
 
         doc = _apply_assignments_from_json(data)
         if doc is None:
-            logging.warning(
-                "recruiter_state_update: JSON found but could not apply assignments"
-            )
+            logging.warning("recruiter_state_update: JSON found but could not apply assignments")
             return {}
 
         errors = _validate_assignments(doc, valid_agent_ids)
@@ -281,17 +267,17 @@ def create_recruiter_state_update(
             logging.warning("recruiter_state_update: %s", error_msg)
 
             if prior >= max_retries:
-                # Exhausted retries — persist what we have and proceed.
-                logging.warning(
+                logging.error(
                     "recruiter_state_update: retry limit reached (%d), "
-                    "proceeding with potentially invalid assignments",
+                    "aborting due to invalid assignments",
                     max_retries,
                 )
-                plan_store.write(doc)
-                _emit_plan_updated(doc)
-                return {"recruiter_validation_errors": None}
+                raise RuntimeError(
+                    f"Recruiter failed after {max_retries} retries. "
+                    f"Validation errors:\n" + "\n".join(f"- {e}" for e in errors)
+                )
 
-            # Signal retry: include the original response + feedback message.
+            # signal retry: include the original response + feedback message.
             feedback = HumanMessage(content=error_msg)
             return {
                 "messages": [response, feedback],
@@ -299,7 +285,6 @@ def create_recruiter_state_update(
                 "recruiter_retry_count": prior + 1,
             }
 
-        # Valid — persist and clear any prior errors.
         plan_store.write(doc)
         _emit_plan_updated(doc)
         logging.info(

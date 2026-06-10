@@ -23,7 +23,7 @@ from agents.agent_registry.coding_agent.prompt import CodingAgentPrompt
 from config import DATA_DIR, ROOT
 from agents.agent_tools import file_read_write_tools
 from graph.node_factories import AgentState, create_agent_node, create_tool_node
-from graph.ui_events import log_message, subagent_invocation
+from graph.ui_events import emit_message, subagent_invocation
 
 
 def create_coding_agent(
@@ -96,7 +96,7 @@ def create_coding_agent(
         logging.info(f"python tool executing:\n{code}")
         result = kernel_client.execute(code, language="python")
         logging.info(f"python tool output:\n{result.text}")
-        log_message(HumanMessage("Python Output:\n" + result.text))
+        emit_message(HumanMessage("Python Output:\n" + result.text))
         return _format_execution_result(result)
 
     python_tool = StructuredTool.from_function(
@@ -113,7 +113,7 @@ def create_coding_agent(
         logging.info(f"r tool executing:\n{code}")
         result = kernel_client.execute(code, language="r")
         logging.info(f"r tool output:\n{result.text}")
-        log_message(HumanMessage("R Output:\n" + result.text))
+        emit_message(HumanMessage("R Output:\n" + result.text))
         return _format_execution_result(result)
 
     r_tool = StructuredTool.from_function(

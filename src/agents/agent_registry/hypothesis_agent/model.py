@@ -19,7 +19,7 @@ from agents.agent_registry.hypothesis_agent.prompt import (
     HypothesisAgentPrompt,
     HypothesisAgentDescription,
 )
-from graph.ui_events import log_message, subagent_invocation
+from graph.ui_events import emit_message, subagent_invocation
 
 from config import DATA_DIR, LIBRARY_DIR, PDF_UPLOADS_DIR, active_project_outputs
 
@@ -81,7 +81,7 @@ def create_hypothesis_agent(
         logging.info(f"finished invoking {id} agent_node")
 
         response.name = id
-        log_message(response)
+        emit_message(response)
 
         response_text = str(response.content)
         code_block = extract_block("execute", response_text)
@@ -171,7 +171,7 @@ def create_hypothesis_agent(
 
         logging.info(f"finished {id} exec_node")
 
-        log_message(HumanMessage(f"Python Output:\n{output}"))
+        emit_message(HumanMessage(f"Python Output:\n{output}"))
         return {"messages": [HumanMessage(f"Python Output:\n{output}")]}
 
     graph.add_node(agent_node_id, agent_node)

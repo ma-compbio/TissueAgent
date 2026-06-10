@@ -4,11 +4,12 @@ Assembles the hierarchical multi-agent workflow:
 
     Planner → Recruiter → Manager → Evaluator → Reporter
 
-Each main agent is wired as an agent-node / tool-node pair.  Specialized
-sub-agents from :data:`AgentDefns` are compiled into independent sub-graphs
-and exposed to the Manager as invocation tools.
+Each main agent is wired as an agent-node / tool-node pair.  Specialized sub-agents from
+:data:`AgentDefns` are compiled into independent sub-graphs and exposed to the Manager as invocation
+tools.
 """
 
+import inspect
 import json
 import logging
 from collections.abc import Callable
@@ -28,6 +29,7 @@ from agents.agent_defns import (
     RecruiterAgent,
     ReporterAgent,
 )
+from config import MAX_RECRUITER_RETRIES, MAX_REPLANS
 from graph.message_filters import (
     filter_for_execution_phase,
     filter_for_recruiter,
@@ -41,14 +43,11 @@ from graph.node_factories import (
 )
 from graph.plan_output import create_recruiter_state_update, planner_state_update
 
-MAX_REPLANS = 2
-MAX_RECRUITER_RETRIES = 2
-
 
 def create_tissueagent_graph(
     state_queue: Queue,
     model_proc_fn: Callable[..., BaseChatModel],
-    kernel_client=None,
+    **custom_agent_kwargs,
 ) -> StateGraph:
     """Build the full TissueAgent state graph (uncompiled).
 
@@ -66,8 +65,10 @@ def create_tissueagent_graph(
             render them.
         model_proc_fn: Callable applied to every bound model (typically adds retry logic for
             rate-limit errors).
-        kernel_client: Optional :class:`KernelClient` for the coding agent's Docker sandbox. Passed
-            to the coding agent's constructor.
+        **custom_agent_kwargs: Extra keyword arguments forwarded to :class:`CustomAgent`
+            constructors. Each ctor receives only the kwargs it declares in its signature (filtered
+            via ``inspect.signature``). For example, ``kernel_client=...`` is consumed by the coding
+            agent's constructor.
 
     Returns:
         An uncompiled :class:`~langgraph.graph.StateGraph` ready to be compiled via ``.compile()``.
@@ -80,7 +81,7 @@ def create_tissueagent_graph(
 
     ## Build Subagents
 
-    context_resolver = create_step_context_resolver()
+    context_resolver = create_step_context_resolver(assign_agent_node_id)
     agent_invocation_tools = []
     for agent in AgentDefns:
         if isinstance(agent, ReActAgent):
@@ -94,7 +95,7 @@ def create_tissueagent_graph(
             base_prompt = agent.prompt
             if callable(base_prompt):
                 # Wrap static prompt strings in a callable that injects skill_prompt
-                def prompt_fn(state):
+                def prompt_fn(state: AgentState):
                     skill_text = state.get("skill_prompt", "")
                     return base_prompt.replace("{{skill_prompt}}", skill_text)
             else:
@@ -113,7 +114,7 @@ def create_tissueagent_graph(
                 agent.name,
                 subagent,
                 state_queue,
-                context_resolver=context_resolver,
+                context_resolver,
             )
             agent_invocation_tools.append(agent_invocation_tool)
 
@@ -131,10 +132,11 @@ def create_tissueagent_graph(
             )
 
         elif isinstance(agent, CustomAgent):
-            if agent.id == "coding" and kernel_client is not None:
-                agent_invocation_tool = agent.ctor(state_queue, kernel_client, context_resolver)
-            else:
-                agent_invocation_tool = agent.ctor(state_queue, context_resolver)
+            sig = inspect.signature(agent.ctor)
+            filtered = {k: v for k, v in custom_agent_kwargs.items() if k in sig.parameters}
+            agent_invocation_tool = agent.ctor(
+                state_queue, context_resolver=context_resolver, **filtered
+            )
             agent_invocation_tools.append(agent_invocation_tool)
 
             logging.info(
@@ -194,10 +196,7 @@ def create_tissueagent_graph(
     ### Recruiter agent
 
     recruiter_model = model_proc_fn(RecruiterAgent.model_ctor().bind_tools(RecruiterAgent.tools))
-    if isinstance(RecruiterAgent.prompt, str):
-        recruiter_prompt = RecruiterAgent.prompt
-    else:
-        recruiter_prompt = RecruiterAgent.prompt(agent_id_descriptions)
+    recruiter_prompt = RecruiterAgent.prompt(agent_id_descriptions)
     recruiter_node_id = assign_agent_node_id(RecruiterAgent.id)
     recruiter_tool_node_id = assign_tool_node_id(RecruiterAgent.id)
 
@@ -205,10 +204,7 @@ def create_tissueagent_graph(
 
     manager_tools = ManagerAgent.tools + agent_invocation_tools
     manager_model = model_proc_fn(ManagerAgent.model_ctor().bind_tools(manager_tools))
-    if isinstance(ManagerAgent.prompt, str):
-        manager_prompt = ManagerAgent.prompt
-    else:
-        manager_prompt = ManagerAgent.prompt(agent_id_descriptions)
+    manager_prompt = ManagerAgent.prompt(agent_id_descriptions)
     manager_node_id = assign_agent_node_id(ManagerAgent.id)
     manager_tool_node_id = assign_tool_node_id(ManagerAgent.id)
 
@@ -233,7 +229,7 @@ def create_tissueagent_graph(
 
     planner_tool_node = create_tool_node(PlannerAgent.tools)
 
-    def planner_router(response, state) -> str:
+    def planner_router(response, _) -> str:
         """PlannerAgent transition fn."""
         text = (response.content or "").strip()
         head = text.splitlines()[0].upper() if text else ""
@@ -248,7 +244,7 @@ def create_tissueagent_graph(
         planner_model,
         PlannerAgent.prompt,
         planner_tool_node_id,
-        exit_node_id_fn=planner_router,
+        exit_node=planner_router,
         state_update_fn=planner_state_update,
     )
 
@@ -262,7 +258,7 @@ def create_tissueagent_graph(
         max_retries=MAX_RECRUITER_RETRIES,
     )
 
-    def recruiter_router(response, state) -> str:
+    def recruiter_router(_, state) -> str:
         """Route recruiter output: retry on validation errors, else proceed."""
         errors = state.get("recruiter_validation_errors")
         if errors:
@@ -277,7 +273,7 @@ def create_tissueagent_graph(
         recruiter_model,
         recruiter_prompt,
         recruiter_tool_node_id,
-        exit_node_id_fn=recruiter_router,
+        exit_node=recruiter_router,
         state_update_fn=recruiter_state_update_fn,
         message_filter_fn=filter_for_recruiter,
     )
@@ -327,7 +323,6 @@ def create_tissueagent_graph(
             if next_attempt > MAX_REPLANS:
                 return reporter_node_id
             return planner_node_id
-        # head.startswith("ROUTE: REPORT"):
         return reporter_node_id
 
     evaluator_node = create_agent_node(
@@ -335,7 +330,7 @@ def create_tissueagent_graph(
         evaluator_model,
         evaluator_prompt,
         evaluator_tool_node_id,
-        exit_node_id_fn=evaluator_router,
+        exit_node=evaluator_router,
         state_update_fn=evaluator_state_update,
         message_filter_fn=filter_for_execution_phase,
     )

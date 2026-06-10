@@ -1,7 +1,5 @@
 """Message sanitization, normalization, and content-formatting utilities."""
 
-from typing import Any, List
-
 from langchain_core.messages import AIMessage, BaseMessage
 
 
@@ -91,12 +89,16 @@ def standardize_message_format(message: AIMessage) -> AIMessage:
     return message
 
 
-def stringify_content(content: Any) -> List[str]:
+# See https://reference.langchain.com/python/langchain-core/messages/base/BaseMessage
+type MessageContent = str | list[str | dict] | None
+
+
+def stringify_content(content: MessageContent) -> list[str]:
     """Turn content into printable lines for logging.
 
     Handles str or multimodal (list) content.
     """
-    lines: List[str] = []
+    lines: list[str] = []
     if isinstance(content, str):
         lines.extend(content.splitlines())
     elif isinstance(content, list):
@@ -121,20 +123,3 @@ def stringify_content(content: Any) -> List[str]:
     else:
         lines.append(str(content))
     return lines
-
-
-def content_to_text(content: Any) -> str:
-    """Flatten of LangChain message content to a string."""
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts: List[str] = []
-        for chunk in content:
-            if isinstance(chunk, str):
-                parts.append(chunk)
-            elif isinstance(chunk, dict):
-                text = chunk.get("text")
-                if isinstance(text, str):
-                    parts.append(text)
-        return "\n".join(parts)
-    return str(content)

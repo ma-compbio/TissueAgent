@@ -4,23 +4,22 @@ import threading
 import uuid
 from contextlib import contextmanager
 from queue import Queue
-from typing import Optional, Tuple
+from typing import cast
 
 from langchain_core.messages import BaseMessage
 
-from graph.message_utils import stringify_content
+from graph.message_utils import MessageContent, stringify_content
 from logger import logger
 
+_ui_event_queue: Queue | None = None
 
-_ui_event_queue: Optional[Queue] = None
-
-# Thread-local storage for tracking which sub-agent is currently executing. When log_message() is
+# Thread-local storage for tracking which sub-agent is currently executing. When emit_message() is
 # called from within a sub-agent invocation, this context lets us tag the event so the UI can stream
 # it into a live trace.
 _subagent_context = threading.local()
 
 
-def _get_subagent_context() -> Tuple[Optional[str], Optional[str]]:
+def _get_subagent_context() -> tuple[str | None, str | None]:
     """Return (invocation_id, agent_name) if inside a sub-agent, else (None, None)."""
     return (
         getattr(_subagent_context, "invocation_id", None),
@@ -32,7 +31,7 @@ def _get_subagent_context() -> Tuple[Optional[str], Optional[str]]:
 def subagent_invocation(agent_name: str):
     """Context manager that brackets a sub-agent invocation with start/end events.
 
-    Sets thread-local context so that ``log_message()`` calls within the sub-agent automatically
+    Sets thread-local context so that ``emit_message()`` calls within the sub-agent automatically
     route to the live-trace stream.  Pushes ``subagent_start`` and ``subagent_end`` events onto the
     UI queue. Yields the generated *invocation_id* (a UUID string).
     """
@@ -79,22 +78,20 @@ def register_ui_event_queue(event_queue: Queue) -> None:
     _ui_event_queue = event_queue
 
 
-def log_message(message: BaseMessage) -> None:
+def emit_message(message: BaseMessage) -> None:
     """Log a message's metadata and content, and push it to the UI queue.
 
-    Writes a structured log entry with the message type, name, ID, content,
-    and any tool calls.  If a UI event queue has been registered via
-    :func:`register_ui_event_queue`, the message is also enqueued for
-    real-time display.
+    Writes a structured log entry with the message type, name, ID, content, and any tool calls. If a
+    UI event queue has been registered via :func:`register_ui_event_queue`, the message is also
+    enqueued for real-time display.
 
     Args:
         message: Any LangChain message (human, AI, tool, etc.).
     """
-    # Some message types may not have .name; default to None
     msg_type = getattr(message, "type", type(message).__name__)
     msg_name = getattr(message, "name", None)
     msg_id = getattr(message, "id", None)
-    content = getattr(message, "content", None)
+    content = cast(MessageContent, getattr(message, "content", None))
     tool_calls = getattr(message, "tool_calls", [])
 
     lines = [

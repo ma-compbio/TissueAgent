@@ -1,6 +1,7 @@
 """Shared utilities for agent prompt construction.
 
-Provides helpers for formatting agent descriptions, extracting XML-style blocks from LLM responses, and text truncation.
+Provides helpers for formatting agent descriptions, extracting XML-style blocks from LLM responses,
+and text truncation.
 """
 
 from __future__ import annotations
@@ -16,12 +17,11 @@ import yaml
 # no remaining direct dependency on the workspace path layout.
 
 
-
 def parse_yaml_frontmatter(text: str) -> dict | None:
     """Extract YAML frontmatter from a Markdown string.
 
-    Expects the text to start with ``---``, followed by YAML content, closed by another ``---``.  Returns the parsed
-    dict, or ``None`` if the text has no valid frontmatter.
+    Expects the text to start with ``---``, followed by YAML content, closed by another ``---``.
+    Returns the parsed dict, or ``None`` if the text has no valid frontmatter.
     """
     if not text.startswith("---"):
         return None
@@ -36,8 +36,8 @@ def parse_yaml_frontmatter(text: str) -> dict | None:
 def format_skill_prompt(skill_names: list[str]) -> str:
     """Build the skill injection block for a sub-agent system prompt.
 
-    Loads skill content from the skill registry, strips YAML frontmatter, and wraps each skill in a formatted section
-    with universal boilerplate.
+    Loads skill content from the skill registry, strips YAML frontmatter, and wraps each skill in a
+    formatted section with universal boilerplate.
 
     Returns empty string if no valid skills are found.
     """
@@ -85,7 +85,9 @@ def format_agent_id_descriptions(agent_id_descriptions: dict[str, str]) -> str:
         A newline-separated string with one " - id: description" entry
         per agent.
     """
-    return "\n".join([f" - {id}: {description}" for id, description in agent_id_descriptions.items()])
+    return "\n".join(
+        [f" - {id}: {description}" for id, description in agent_id_descriptions.items()]
+    )
 
 
 def extract_block(pattern: str, text: str) -> str | None:
@@ -103,7 +105,9 @@ def extract_block(pattern: str, text: str) -> str | None:
         The stripped inner content of the matched block, or ``None`` when
         zero or more than one match is found.
     """
-    complete_matches = list(re.finditer(r"(?is)<" + pattern + r"(?:\s[^>]*)?>(.*?)</" + pattern + ">", text))
+    complete_matches = list(
+        re.finditer(r"(?is)<" + pattern + r"(?:\s[^>]*)?>(.*?)</" + pattern + ">", text)
+    )
     if len(complete_matches) == 1:
         block = complete_matches[0].group(1).strip()
         return block or None
@@ -123,4 +127,3 @@ def truncate_output(text: str, max_chars: int) -> str:
     half = max_chars // 2
     removed = len(text) - max_chars
     return f"{text[:half]}\n\n... [{removed} characters truncated] ...\n\n{text[-half:]}"
-

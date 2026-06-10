@@ -4,6 +4,9 @@ Defines the canonical directory layout (workspace, dataset, uploads, PDFs, noteb
 settings such as the graph recursion limit and log file location.
 """
 
+# TODO (dm): need to clean up this file. Most of these settings are either unnecessary or should be
+# controlled through the UI
+
 import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -41,7 +44,7 @@ DATA_DIR = ROOT / "workspace"
 NOTEBOOK_DIR = DATA_DIR / "notebook"
 
 LIBRARY_DIR = DATA_DIR / "library"
-DATASET_DIR = LIBRARY_DIR / "datasets"     # curated reference data
+DATASET_DIR = LIBRARY_DIR / "datasets"  # curated reference data
 LIBRARY_FILES_DIR = LIBRARY_DIR / "files"  # persistent reference uploads
 
 PROJECTS_DIR = DATA_DIR / "projects"
@@ -82,12 +85,14 @@ def active_project_outputs() -> Path:
     pid = None
     try:
         from server.session_manager import session
+
         pid = getattr(session, "project_id", None)
     except Exception:
         pass
     if not pid:
         return DATA_DIR
     return PROJECTS_DIR / pid / PROJECT_OUTPUTS_DIRNAME
+
 
 # Pre-project scratch: where uploads land *before* a project is minted.
 # Contents are migrated into projects/<id>/uploads or .../attachments on
@@ -102,8 +107,8 @@ SCRATCH_ATTACHMENTS_DIR = SCRATCH_DIR / "attachments"
 # held *chat attachments* (images and PDFs); those now live per-project
 # under ``attachments/``. The aliases keep older import sites compiling
 # while we migrate.
-UPLOADS_DIR = LIBRARY_FILES_DIR        # legacy alias — prefer LIBRARY_FILES_DIR
-PDF_UPLOADS_DIR = LIBRARY_FILES_DIR    # legacy alias — see above
+UPLOADS_DIR = LIBRARY_FILES_DIR  # legacy alias — prefer LIBRARY_FILES_DIR
+PDF_UPLOADS_DIR = LIBRARY_FILES_DIR  # legacy alias — see above
 
 # Ephemeral process-wide scratch for the currently-running plan. The
 # plan_store needs *some* stable on-disk home at import time, before any
@@ -144,3 +149,5 @@ CONTAINER_DATA_DIR = "/workspace"
 CONTAINER_NOTEBOOK_DIR = "/workspace/notebook"
 
 MAX_OUTPUT_CHARS = 3000
+MAX_REPLANS = 2
+MAX_RECRUITER_RETRIES = 2

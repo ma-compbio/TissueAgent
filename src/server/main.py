@@ -120,7 +120,7 @@ async def lifespan(app: FastAPI):
 
     kernel_client = KernelClient()
 
-    # Register the UI event queue so log_message() can push to it
+    # Register the UI event queue so emit_message() can push to it
     register_ui_event_queue(session.ui_event_queue)
 
     # Compile the agent graph

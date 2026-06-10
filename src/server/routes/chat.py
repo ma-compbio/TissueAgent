@@ -21,7 +21,7 @@ from pathlib import Path
 
 from agents.manager_agent.tools import ManagerTools
 from config import DATA_DIR, RECURSION_LIMIT
-from graph.ui_events import log_message
+from graph.ui_events import emit_message
 from server.message_serializer import serialize_history, serialize_message, serialize_subagent_state
 from server.session_manager import session
 from server.utils import (
@@ -262,7 +262,7 @@ async def _handle_user_message(ws: WebSocket, data: dict):
 
     # Create and record the user message
     user_message = HumanMessage(content=content_parts)
-    log_message(user_message)
+    emit_message(user_message)
 
     session.agent_state["messages"].append(user_message)
     session.agent_state.setdefault("replan_count", 0)
@@ -647,7 +647,7 @@ async def _rewind_to_planner_with_feedback(ws: WebSocket, text: str) -> None:
     feedback_message = HumanMessage(
         content=f"[Copilot feedback from user] {feedback}"
     )
-    log_message(feedback_message)
+    emit_message(feedback_message)
     session.agent_state["messages"].append(feedback_message)
     session.append_display_message(feedback_message)
     await ws.send_json({
@@ -700,7 +700,7 @@ async def _drain_queues(ws: WebSocket):
 
             if event_type == "message":
                 # plan_updated markers are emitted by the planner/recruiter
-                # state_update_fn via log_message(); route them to the plan
+                # state_update_fn via emit_message(); route them to the plan
                 # channel instead of the chat transcript.
                 if getattr(payload, "name", None) == "plan_updated":
                     plan_payload = (

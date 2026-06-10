@@ -128,10 +128,15 @@ export default function App() {
   // Auto-save fires server-side on every prompt / pause / completion.
   // The frontend uses each project_saved event as a cue to refetch the
   // project list and re-bind the active project id.
+  //
+  // IMPORTANT: depend on the individual stable callbacks, NOT the whole
+  // `session` object — useSession() returns a new object every render,
+  // which would re-trigger this effect in an infinite loop.
+  const { setCurrentProjectId, fetchSessions } = session;
   useEffect(() => {
     if (!ws.projectSavedEvent) return;
-    session.setCurrentProjectId(ws.projectSavedEvent.project_id);
-    session.fetchSessions();
+    setCurrentProjectId(ws.projectSavedEvent.project_id);
+    fetchSessions();
     // Project-side files (uploads/, outputs/, attachments/) may have
     // changed too — bump the refresh key so the sidebar Files panel
     // re-fetches without the user having to click refresh.
