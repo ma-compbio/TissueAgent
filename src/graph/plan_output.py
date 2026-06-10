@@ -133,6 +133,11 @@ def planner_state_update(response: AIMessage, _) -> dict[str, Any]:
     persists the plan and emits a ``plan_updated`` event.  Returns an empty dict (no extra state
     keys needed).
     """
+    # When the response carries tool calls, the agent is mid-loop (e.g. fetching a plan template)
+    # and has not yet emitted its final plan. Skip parsing until the tool loop resolves.
+    if getattr(response, "tool_calls", None):
+        return {}
+
     text = (response.content or "") if isinstance(response.content, str) else ""
     head = text.strip().splitlines()[0].upper() if text.strip() else ""
     if head.startswith("ROUTE:"):
@@ -247,6 +252,9 @@ def create_recruiter_state_update(valid_agent_ids: set, max_retries: int = 2):
     """
 
     def recruiter_state_update(response: AIMessage, state) -> dict[str, Any]:
+        # Skip mid-loop tool-call turns; assignments are only parsed from the final text response.
+        if getattr(response, "tool_calls", None):
+            return {}
         text = (response.content or "") if isinstance(response.content, str) else ""
         data = _extract_json(text)
         if data is None:
