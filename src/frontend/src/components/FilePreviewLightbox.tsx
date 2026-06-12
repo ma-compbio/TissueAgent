@@ -4,6 +4,8 @@
  * Opens over a dimmed backdrop and shows the requested file at a
  * comfortable size. Supports:
  *   - Images (png/jpg/jpeg/gif/webp/svg/tif/tiff) — rendered as <img>.
+ *   - PDFs — embedded in an <iframe> via the browser's built-in viewer
+ *     (served with Content-Disposition: inline so it renders, not downloads).
  *   - Text-ish files (txt/md/csv/tsv/json/log/yaml/yml/py/r) — fetched
  *     and shown in a monospace pane, capped at TEXT_PREVIEW_MAX_BYTES.
  *   - Anything else — a one-line "no preview" stub with a download link.
@@ -34,13 +36,14 @@ const TEXT_EXTS = new Set([
   ".jsx", ".toml", ".ini", ".env",
 ]);
 
-type FileKind = "image" | "text" | "binary";
+type FileKind = "image" | "pdf" | "text" | "binary";
 
 function classify(name: string): FileKind {
   const dot = name.lastIndexOf(".");
   if (dot < 0) return "binary";
   const ext = name.slice(dot).toLowerCase();
   if (IMAGE_EXTS.has(ext)) return "image";
+  if (ext === ".pdf") return "pdf";
   if (TEXT_EXTS.has(ext)) return "text";
   return "binary";
 }
@@ -82,9 +85,10 @@ function breadcrumbSegments(path: string): Array<{ name: string; path: string }>
   return out;
 }
 
-function buildUrl(item: PreviewItem): string {
+function buildUrl(item: PreviewItem, inline = false): string {
   const qs = new URLSearchParams({ scope: item.scope });
   if (item.projectId) qs.set("project_id", item.projectId);
+  if (inline) qs.set("inline", "1");
   return `${API}/api/files/download/${item.path}?${qs}`;
 }
 
@@ -98,6 +102,12 @@ export default function FilePreviewLightbox({
   const item = items[index];
   const kind = useMemo(() => (item ? classify(item.name) : "binary"), [item]);
   const url = useMemo(() => (item ? buildUrl(item) : ""), [item]);
+  // Inline URL (Content-Disposition: inline) so the browser's built-in PDF
+  // viewer renders in the <iframe> instead of triggering a download.
+  const inlineUrl = useMemo(
+    () => (item && kind === "pdf" ? buildUrl(item, true) : ""),
+    [item, kind],
+  );
 
   const [textBody, setTextBody] = useState<string | null>(null);
   const [textError, setTextError] = useState<string | null>(null);
@@ -304,6 +314,14 @@ export default function FilePreviewLightbox({
               src={url}
               alt={item.name}
               className="lightbox-image"
+            />
+          )}
+
+          {kind === "pdf" && (
+            <iframe
+              src={inlineUrl}
+              title={item.name}
+              className="lightbox-pdf"
             />
           )}
 

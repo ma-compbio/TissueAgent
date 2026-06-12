@@ -358,12 +358,28 @@ def _resolve_scoped_path(scope: str, file_path: str, project_id: str | None) -> 
 
 @router.get("/download/{file_path:path}")
 async def download_file(
-    file_path: str, scope: str = "library", project_id: str | None = None
+    file_path: str,
+    scope: str = "library",
+    project_id: str | None = None,
+    inline: bool = False,
 ):
-    """Download a file from the given scope's root."""
+    """Serve a file from the given scope's root.
+
+    By default the response carries ``Content-Disposition: attachment`` so the
+    browser downloads it. Pass ``inline=1`` to omit the attachment disposition,
+    letting the browser render the file in place (used by the PDF previewer,
+    which embeds this URL in an ``<iframe>``).
+    """
     full_path = _resolve_scoped_path(scope, file_path, project_id)
     if not full_path.exists() or not full_path.is_file():
         raise HTTPException(status_code=404, detail="File not found")
+    if inline:
+        # No filename= → Starlette omits Content-Disposition: attachment, so
+        # the browser renders inline instead of forcing a download.
+        return FileResponse(
+            full_path,
+            headers={"Content-Disposition": f'inline; filename="{full_path.name}"'},
+        )
     return FileResponse(full_path, filename=full_path.name)
 
 
