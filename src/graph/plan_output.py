@@ -34,18 +34,32 @@ _JSON_FENCE_RE = re.compile(
 
 
 def _extract_json(text: str) -> dict | None:
-    """Extract the first fenced JSON block from *text*.
+    """Extract JSON from *text*, trying fenced blocks first, then raw JSON.
 
-    Returns the parsed dict, or ``None`` if no valid block is found.
+    Returns the parsed dict, or ``None`` if no valid JSON is found.
     """
     match = _JSON_FENCE_RE.search(text)
-    if not match:
-        return None
-    try:
-        return json.loads(match.group(1))
-    except json.JSONDecodeError as exc:
-        logging.warning("Failed to parse plan JSON block: %s", exc)
-        return None
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError as exc:
+            logging.warning("Failed to parse plan JSON block: %s", exc)
+            return None
+    text = text.strip()
+    for open_ch, close_ch in ("{", "}"), ("[", "]"):
+        start = text.find(open_ch)
+        if start == -1:
+            continue
+        end = text.rfind(close_ch)
+        if end <= start:
+            continue
+        try:
+            return json.loads(text[start : end + 1])
+        except json.JSONDecodeError:
+            continue
+
+    logging.warning("No valid JSON found in text")
+    return None
 
 
 def _emit_plan_updated(doc: PlanDocument) -> None:
