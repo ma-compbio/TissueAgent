@@ -223,8 +223,6 @@ AgentDefns: list[ReActAgent | CustomAgent] = [
         id="hypothesis",
         name="Hypothesis Agent",
         description=HypothesisAgentDescription,
-        ctor=lambda state_queue, context_resolver=None: HypothesisAgent.create_hypothesis_agent(
-            state_queue, context_resolver
-        ),
+        ctor=HypothesisAgent.create_hypothesis_agent,
     ),
 ]

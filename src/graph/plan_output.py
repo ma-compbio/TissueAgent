@@ -133,15 +133,13 @@ def planner_state_update(response: AIMessage, _) -> dict[str, Any]:
     persists the plan and emits a ``plan_updated`` event.  Returns an empty dict (no extra state
     keys needed).
     """
-    # When the response carries tool calls, the agent is mid-loop (e.g. fetching a plan template)
-    # and has not yet emitted its final plan. Skip parsing until the tool loop resolves.
-    if getattr(response, "tool_calls", None):
+    text = (response.content.strip() or "") if isinstance(response.content, str) else ""
+    head = text.splitlines()[0].upper() if text else ""
+    if head.contains("DIRECT") or head.contains("CLARIFY"):
         return {}
-
-    text = (response.content or "") if isinstance(response.content, str) else ""
-    head = text.strip().splitlines()[0].upper() if text.strip() else ""
-    if head.startswith("ROUTE:"):
-        return {}
+    elif not head.contains("PLAN"):
+        # should raise an error here or trigger a replan for the correct format
+        pass
 
     data = _extract_json(text)
     if data is None:

@@ -1,7 +1,6 @@
 """FastAPI application entry-point for TissueAgent.
 
-Replaces the Streamlit app as the web server. Compiles the LangGraph agent
-on startup, registers event queues, and mounts REST + WebSocket routes.
+Compiles the LangGraph agent on startup, registers event queues, and mounts REST + WebSocket routes.
 
 Run with::
 
@@ -9,6 +8,7 @@ Run with::
 """
 
 import matplotlib
+
 matplotlib.use("Agg")
 
 import logging
@@ -21,18 +21,24 @@ from fastapi.staticfiles import StaticFiles
 from langgraph.checkpoint.memory import MemorySaver
 
 import agent_settings
-from agents.agent_registry.coding_agent.sandbox import ContainerManager, KernelClient
 import models as model_registry
+from agents.agent_registry.coding_agent.sandbox import ContainerManager, KernelClient
 from graph.graph import create_tissueagent_graph
 from graph.ui_events import register_ui_event_queue
 from server.rate_limit import with_header_retry
 from server.routes import (
     agents as agents_route,
+)
+from server.routes import (
     chat,
     files,
-    models as models_route,
     plan,
     sessions,
+)
+from server.routes import (
+    models as models_route,
+)
+from server.routes import (
     settings as settings_route,
 )
 from server.session_manager import session
@@ -44,10 +50,10 @@ from server.utils import (
 
 
 def _bind_retry(model):
-    """Wrap a model with header-driven rate-limit retry (strategy 1A).
+    """Wrap a model with header-driven rate-limit retry.
 
-    Honors provider Retry-After / retry-after-ms headers on 429s so the wait time tracks the actual rate-limit window
-    instead of guessing via exponential backoff.
+    Honors provider Retry-After / retry-after-ms headers on 429s so the wait time tracks the actual
+    rate-limit window instead of guessing via exponential backoff.
     """
     return with_header_retry(model, max_attempts=6)
 
@@ -59,13 +65,11 @@ _settings_revision: int | None = None
 def _compile_graph(kernel_client: KernelClient) -> None:
     """(Re)compile the agent graph using the currently-selected models.
 
-    Compiles with an in-memory checkpointer so copilot mode can pause via ``interrupt_before`` and resume by invoking
-    with ``input=None`` against the same ``thread_id``. Autopilot ignores both — it never passes ``interrupt_before``
-    and never resumes — so the checkpointer is effectively no-op overhead for autopilot runs.
+    Compiles with an in-memory checkpointer so copilot mode can pause via ``interrupt_before`` and
+    resume by invoking with ``input=None`` against the same ``thread_id``. Autopilot ignores both -
+    it never passes ``interrupt_before`` and never resumes - so the checkpointer is effectively no-op overhead for autopilot runs.
     """
-    graph = create_tissueagent_graph(
-        session.state_queue, _bind_retry, kernel_client=kernel_client
-    )
+    graph = create_tissueagent_graph(session.state_queue, _bind_retry, kernel_client=kernel_client)
     session.agent = graph.compile(checkpointer=MemorySaver())
     session.model_revision = model_registry.get_revision()
     global _settings_revision
@@ -80,8 +84,10 @@ def _compile_graph(kernel_client: KernelClient) -> None:
 
 def ensure_graph_current() -> None:
     """Rebuild the graph if the model selection or agent settings changed."""
-    if (getattr(session, "model_revision", None) != model_registry.get_revision()
-            or _settings_revision != agent_settings.get_revision()):
+    if (
+        getattr(session, "model_revision", None) != model_registry.get_revision()
+        or _settings_revision != agent_settings.get_revision()
+    ):
         assert _kernel_client is not None, "kernel_client not initialized"
         _compile_graph(_kernel_client)
 
@@ -114,8 +120,8 @@ async def lifespan(app: FastAPI):
         logging.info("Docker sandbox started.")
     else:
         logging.info(
-            "Docker sandbox disabled at startup — expecting a local Jupyter "
-            "Kernel Gateway at %s.", "KERNEL_GATEWAY_URL"
+            "Docker sandbox disabled at startup — expecting a local Jupyter Kernel Gateway at %s.",
+            "KERNEL_GATEWAY_URL",
         )
 
     kernel_client = KernelClient()

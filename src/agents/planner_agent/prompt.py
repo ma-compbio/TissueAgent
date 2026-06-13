@@ -1,15 +1,13 @@
-"""Prompt templates and description for the planner agent."""
+"""Prompt templates and description for the planner agent.
+
+See planner_state_update(response) in graph/plan_output.py for output parsing and state transition
+logic.
+"""
 
 from pathlib import Path
 
 from agents.agent_utils import parse_yaml_frontmatter
 from knowledge import PLANS_DIR
-
-_DIR = Path(__file__).parent
-
-
-def _read(filename: str) -> str:
-    return (_DIR / filename).read_text()
 
 
 def _build_template_index() -> str:
@@ -26,13 +24,9 @@ def _build_template_index() -> str:
 
 
 def _build_planner_prompt() -> str:
-    base = _read("prompt.txt")
+    prompt_path = Path(__file__).parent / "prompt.txt"
+    base = prompt_path.read_text()
     return base.replace("{{plan_template_registry}}", _build_template_index())
 
-
-PlannerDescription = """
-Turn a user query into a minimal, quality-gated multi-step plan by retrieving/adapting a template from the Plan Registry; if none fits, instantiate a new plan from a generic template.
-Return ONLY a human-readable Planning Checklist. Do NOT assign agents or tools.
-""".strip()
 
 PlannerPrompt = _build_planner_prompt()

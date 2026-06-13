@@ -11,11 +11,6 @@ import re
 
 import yaml
 
-# File-access tools (glob, grep, read, write) and the DATA_DIR /
-# LIBRARY_DIR / active_project_outputs path constants now live in
-# ``agents.agent_tools``. This module is prompt-utility only and has
-# no remaining direct dependency on the workspace path layout.
-
 
 def parse_yaml_frontmatter(text: str) -> dict | None:
     """Extract YAML frontmatter from a Markdown string.
