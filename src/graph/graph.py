@@ -29,7 +29,7 @@ from agents.agent_defns import (
     RecruiterAgent,
     ReporterAgent,
 )
-from config import MAX_RECRUITER_RETRIES, MAX_REPLANS
+from config import MAX_PLANNER_RETRIES, MAX_RECRUITER_RETRIES, MAX_REPLANS
 from graph.message_filters import (
     filter_for_execution_phase,
     filter_for_recruiter,
@@ -41,7 +41,7 @@ from graph.node_factories import (
     create_step_context_resolver,
     create_tool_node,
 )
-from graph.plan_output import create_recruiter_state_update, planner_state_update
+from graph.plan_output import create_planner_state_update, create_recruiter_state_update
 
 
 def create_tissueagent_graph(
@@ -233,11 +233,16 @@ def create_tissueagent_graph(
         """PlannerAgent transition fn."""
         text = (response.content or "").strip()
         head = text.splitlines()[0].upper() if text else ""
-        if head.startswith("ROUTE: DIRECT"):
+        if head.startswith("ROUTE: DIRECT") or head.startswith("ROUTE: CLARIFY"):
             return END
-        if head.startswith("ROUTE: CLARIFY"):
-            return END
-        return recruiter_node_id
+        if head.startswith("ROUTE: PLAN"):
+            return recruiter_node_id
+        # Invalid format — loop back (state_update_fn already injected feedback)
+        return planner_node_id
+
+    planner_state_update_fn = create_planner_state_update(
+        max_retries=MAX_PLANNER_RETRIES,
+    )
 
     planner_node = create_agent_node(
         planner_node_id,
@@ -245,7 +250,7 @@ def create_tissueagent_graph(
         PlannerAgent.prompt,
         planner_tool_node_id,
         exit_node=planner_router,
-        state_update_fn=planner_state_update,
+        state_update_fn=planner_state_update_fn,
     )
 
     ### Recruiter Node

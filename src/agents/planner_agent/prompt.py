@@ -1,6 +1,6 @@
 """Prompt templates and description for the planner agent.
 
-See planner_state_update(response) in graph/plan_output.py for output parsing and state transition
+See create_planner_state_update() in graph/plan_output.py for output parsing and state transition
 logic.
 """
 

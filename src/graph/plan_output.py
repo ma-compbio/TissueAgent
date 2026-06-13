@@ -3,8 +3,9 @@
 This module extracts JSON emitted by planner and recruiter agents, validates it, builds/updates the
 :class:`~server.plan_store.PlanDocument`, persists it, and emits a ``plan_updated`` UI event.
 
-The two public helpers — :func:`planner_state_update` and :func:`recruiter_state_update` — are wired
-as ``state_update_fn`` callbacks on their respective agent nodes in :mod:`graph.graph`.
+The two public factories - :func:`create_planner_state_update` and
+:func:`create_recruiter_state_update` - are wired as ``state_update_fn``
+callbacks on their respective agent nodes in :mod:`graph.graph`.
 """
 
 from __future__ import annotations
@@ -125,41 +126,66 @@ def _build_plan_from_json(data: dict) -> PlanDocument | None:
     )
 
 
-def planner_state_update(response: AIMessage, _) -> dict[str, Any]:
-    """``state_update_fn`` for the planner agent node.
+def create_planner_state_update(max_retries: int = 2):
+    """Factory that returns a ``state_update_fn`` for the planner node.
 
-    If the response begins with a non-plan response (e.g. ROUTE: DIRECT, ROUTE:CLARIFY), no JSON is
-    expected, returns an empty dict. Otherwise, if the response contains a fenced JSON plan block,
-    persists the plan and emits a ``plan_updated`` event.  Returns an empty dict (no extra state
-    keys needed).
+    The returned callback validates the ROUTE format, parses and persists the plan for ROUTE: PLAN,
+    and signals a retry (by returning validation feedback in the state) when the format is invalid.
+    Raises ``RuntimeError`` if retries are exhausted.
     """
-    text = (response.content.strip() or "") if isinstance(response.content, str) else ""
-    head = text.splitlines()[0].upper() if text else ""
-    if head.contains("DIRECT") or head.contains("CLARIFY"):
-        return {}
-    elif not head.contains("PLAN"):
-        # should raise an error here or trigger a replan for the correct format
-        pass
 
-    data = _extract_json(text)
-    if data is None:
-        raise RuntimeError(
-            "Planner failed to produce a valid JSON plan. "
-            "No fenced JSON block found in the response."
+    def planner_state_update(response: AIMessage, state) -> dict[str, Any]:
+        text = (response.content.strip() or "") if isinstance(response.content, str) else ""
+        head = text.splitlines()[0].upper() if text else ""
+
+        # DIRECT / CLARIFY — no plan expected
+        if "DIRECT" in head or "CLARIFY" in head:
+            return {}
+
+        # Invalid format — retry with feedback
+        if "PLAN" not in head:
+            prior = int(state.get("planner_retry_count", 0) or 0)
+            if prior >= max_retries:
+                raise RuntimeError(
+                    f"Planner failed to produce a valid ROUTE after {max_retries} retries. "
+                    f"Last response started with: {text[:120]!r}"
+                )
+            feedback = HumanMessage(
+                content=(
+                    "Your response must begin with exactly one of: "
+                    "ROUTE: DIRECT, ROUTE: CLARIFY, or ROUTE: PLAN. "
+                    "Please try again."
+                )
+            )
+            return {
+                "messages": [response, feedback],
+                "planner_retry_count": prior + 1,
+            }
+
+        # ROUTE: PLAN — parse and persist the JSON block
+        data = _extract_json(text)
+        if data is None:
+            raise RuntimeError(
+                "Planner failed to produce a valid JSON plan. "
+                "No fenced JSON block found in the response."
+            )
+
+        doc = _build_plan_from_json(data)
+        if doc is None:
+            raise RuntimeError(
+                "Planner produced JSON that could not be converted into a valid plan."
+            )
+
+        plan_store.write(doc)
+        _emit_plan_updated(doc)
+        logging.info(
+            "planner_state_update: wrote %d step(s) to %s (status=draft)",
+            len(doc.steps),
+            plan_store.path,
         )
+        return {}
 
-    doc = _build_plan_from_json(data)
-    if doc is None:
-        raise RuntimeError("Planner produced JSON that could not be converted into a valid plan.")
-
-    plan_store.write(doc)
-    _emit_plan_updated(doc)
-    logging.info(
-        "planner_state_update: wrote %d step(s) to %s (status=draft)",
-        len(doc.steps),
-        plan_store.path,
-    )
-    return {}
+    return planner_state_update
 
 
 def _apply_assignments_from_json(data: dict) -> PlanDocument | None:
