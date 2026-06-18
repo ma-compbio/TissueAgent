@@ -7,7 +7,7 @@ name = "tissueagent"
 version = "0.1.0"
 description = "autonomous AI agent for spatial transcriptomics research"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "langchain==0.3.25",
     "langchain-core==0.3.64",
@@ -60,7 +60,8 @@ dependencies = [
     "ipykernel>=7.1.0",
     "mygene==3.2.2",
     "harmonypy==0.0.10",
-    "tiledbsoma==1.17.1"
+    "tiledbsoma==1.17.1",
+    "utag",
 ]
 
 [tool.ruff]
@@ -79,3 +80,6 @@ convention = "google"
 "**/__init__.py" = ["ALL"]
 "notebooks/**" = ["ALL"]
 "**/deprecated/**" = ["ALL"]
+
+[tool.uv.sources]
+utag = { git = "https://github.com/ElementoLab/utag" }

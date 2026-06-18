@@ -1,0 +1,37 @@
+template_id: TISSUE_NICHE_ANNOTATION
+title: UTAG tissue niche annotation
+task: Annotate tissue niches in a spatial transcriptomics dataset
+version: "1.0"
+last_updated: 2026-04-29
+tags: [tissue niche annotation, spatial niche, anatomical region, allowed labels, UTAG, spatial transcriptomics]
+
+inputs:
+  - spatial AnnData(.h5ad) with .obsm['spatial']
+  - allowed tissue niche labels
+
+outputs:
+  - niche_annotation_results/tissue_niche_annotated_object.h5ad
+  - niche_annotation_results/niche_llm_queries.json
+  - niche_annotation_results/niche_llm_results.json
+  - logs/niche_annotation_run_meta.json
+
+step_sketch: >
+  run UTAG on the spatial AnnData -> label UTAG niches with internal LLM
+  constrained to allowed_labels -> save annotated AnnData and JSON artifacts;
+  no external reference dataset
+
+eval:
+  - "niche_annotation_results/tissue_niche_annotated_object.h5ad exists"
+  - "niche_annotation_results/niche_llm_queries.json exists"
+  - "niche_annotation_results/niche_llm_results.json exists"
+  - "logs/niche_annotation_run_meta.json exists"
+
+defaults:
+  annotation_col: tissue_niche
+  slide_key: auto
+  celltype_key: auto
+  output_dir: niche_annotation_results
+
+checklist:
+  - "Run UTAG-based tissue niche annotation on the spatial AnnData constrained to allowed_labels; do not acquire a reference"
+  - "Save annotated AnnData, niche query/result JSON, and run metadata"

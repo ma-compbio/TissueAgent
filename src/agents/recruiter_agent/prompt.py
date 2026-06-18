@@ -20,6 +20,8 @@ Use the following guidelines to assign agents effectively:
 - If a step involves multiple actions or expected artifacts, choose more than one agent if necessary.
 - You may assign the same agent to multiple steps.
 - If no agent is suitable for a step, leave it unassigned and provide a brief explanation in the final output.
+- For tissue niche, spatial niche, anatomical region, UTAG, or allowed-label niche annotation steps, assign cell_annotater_agent only. Do not assign single_cell_agent unless the step explicitly asks to find/download a reference or run reference-based cell-type transfer.
+- For reference-based cell-type transfer steps, assign cell_annotater_agent when a reference AnnData already exists; assign single_cell_agent only for an explicit reference acquisition/download step.
 
 You will need to output the updated <Plan> with assigned agents. For each step, add two new fields: <assigned agent> and <assignment rationale> and do not change any of the existing fields.
 The final output should follow the following format exactly:

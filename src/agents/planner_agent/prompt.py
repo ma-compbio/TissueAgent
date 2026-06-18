@@ -80,6 +80,13 @@ When creating a plan, check if an existing template matches the task:
   → Prefer GENE_PROCESS_INTERPRETATION template
 - If query asks for GO/pathway enrichment outputs (e.g., TSV table, dotplot/figure):
   → Prefer GO_ENRICHMENT_ANALYSIS template
+- If query asks for tissue niches, spatial niches, anatomical regions, or labels from
+  an allowed anatomical label set:
+  → Prefer TISSUE_NICHE_ANNOTATION template
+  → Do not add a reference-acquisition step unless the user explicitly asks for
+    reference-based cell-type transfer or provides a reference AnnData
+- If query asks for cell-type label transfer from a reference:
+  → Prefer CELL_ANNOTATION template
 - Templates provide proven checklists - adapt them to fit the specific query
 - If no template fits well, create a new plan from scratch
 
@@ -180,10 +187,10 @@ Steps:
     expected artifacts: briefs/paper_brief.md, figures/figure_thumbs.png
 
 
-Example D: Cell type annotation for spatial transcriptomics dataset
+Example D: Cell type label transfer for spatial transcriptomics dataset
 ROUTE: PLAN
 PLAN
-Task: Run the cell annotation agent that uses harmony integration to infer cell types for the spatial transcriptomics dataset of interest. Optionally, if the user request run umap on the spatial dataset and create a plot of umap features colored by inferred cell type.
+Task: Run reference-based cell type transfer for a spatial transcriptomics dataset
 Steps:
 [] step 1:
     step: Locate and download a closely matched single-cell reference (species/tissue/stage aligned to the spatial data)
@@ -193,5 +200,15 @@ Steps:
     step: Run the cell annotater agent with the spatial dataset and reference to transfer labels 
     reason: The specialized agent performs Harmony integration, preprocessing, and reporting in one pass
     expected artifacts: updated spatial adata file spatial_annotated.h5ad, no other expected artifacts
- Do not add any additional steps
+
+Example E: Tissue niche annotation for spatial transcriptomics dataset
+ROUTE: PLAN
+PLAN
+Task: Annotate tissue niches in a spatial transcriptomics dataset using allowed labels
+Steps:
+[] step 1:
+    step: Run UTAG-based tissue niche annotation on the spatial dataset constrained to the allowed labels
+    reason: Tissue niche annotation is performed directly on the spatial object without external reference acquisition
+    expected artifacts: niche_annotation_results/tissue_niche_annotated_object.h5ad, niche_annotation_results/niche_llm_queries.json, niche_annotation_results/niche_llm_results.json, logs/niche_annotation_run_meta.json
+ Do not add a reference-acquisition step unless the user explicitly asks for reference-based cell-type transfer
 """.strip()
