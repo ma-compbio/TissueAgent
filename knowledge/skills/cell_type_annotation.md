@@ -2,7 +2,6 @@
 name: cell-type-annotation
 description: Assign a cell type label to every cell in single-cell-resolution spatial data (MERFISH, Xenium, CosMx, seqFISH) by transferring annotations from a labeled scRNA-seq reference via Harmony integration + an MLP classifier. Use when the user asks to annotate / label cell types per cell, or transfer labels from a reference onto spatial cells.
 applies_to: [cell_annotator, single_cell, coding]
-tags: [annotation, label_transfer, harmony, mlp, cell_type, spatial, reference]
 status: enable
 ---
 
@@ -17,60 +16,25 @@ The data has **single-cell resolution** — each observation is one cell (MERFIS
 
 This codebase implements annotation with one method: **Harmony batch correction + an MLP classifier** trained in the integrated PCA space. There is no marker-based or ontology-LLM annotation tool here — do not promise those.
 
-## Prerequisites
+## Input
 
-- **Spatial h5ad** with cells in `.obs` and a gene-expression matrix in `.X`.
-- **Reference scRNA-seq h5ad** with a `.obs` column holding cell type labels. No reference on hand? Retrieve one from CELLxGENE — see the next section.
-- **≥50 shared genes** between the two after preprocessing (the tool aborts below this).
-- Gene identifiers must line up between datasets. If the spatial object uses gene **symbols**, the default gene-name mapping converts them (see below).
+- **Spatial h5ad** *(required)* — cells in `.obs`, a gene-expression matrix in `.X`. A bare filename is searched across the project's `outputs/`/`uploads/`, `library/datasets/`, `library/files/`, then `DATA_DIR`.
+- **Reference scRNA-seq h5ad** *(required)* — a `.obs` column holding cell type labels. No reference on hand? See the retrieval sub-path in **Workflow** (step 0).
+- **≥50 shared genes** between the two after preprocessing — a precondition the tool enforces (it aborts below this).
+- Gene identifiers must line up between datasets. If the spatial object uses gene **symbols**, the default MyGene.info mapping converts them to Ensembl.
 
-Inputs may be **raw counts** — by default the tool preprocesses (normalize + log1p + HVG). Pass `skip_preprocessing=True` only when both objects are already normalized/log-transformed the same way.
+Inputs may be **raw counts** — by default the tool preprocesses (normalize + log1p + HVG). Use `skip_preprocessing=True` only when both objects are already normalized/log-transformed the same way.
 
-## No reference? Retrieve one from CELLxGENE first
+**Tool arguments** — `harmony_transfer_tool` (agent: `cell_annotator`; also usable by `single_cell`):
 
-If the user has spatial data but **no labeled scRNA-seq reference**, do not give up — get one from the CZI **CELLxGENE Census** before annotating. This is the `single_cell` agent's job (two tools). Run it as a prerequisite step, then feed the downloaded path into `harmony_transfer_tool` as `reference_anndata_path`.
-
-1. **Find the best-matching reference** — `query_cellxgene_census_live_tool` (agent: `single_cell`). Filter the Census to match the spatial sample so the reference shares cell types and genes:
-   - `species` — `homo_sapiens` or `mus_musculus` (must match the spatial data's organism).
-   - `tissue_general` / `tissue` — the tissue of the spatial sample (use ontology labels, e.g. `heart`, `heart left ventricle`).
-   - `disease` — e.g. `["normal"]` for a healthy reference; omit if not a constraint.
-   - `development_stage`, `sex`, `assay` — optional narrowing (assay defaults to common scRNA-seq platforms).
-   - `include_cell_type_counts: True` + `top_k_cell_types` — returns each dataset's top cell types so you can confirm the reference actually contains the cell types you expect to see in the tissue.
-   - `enrich_metadata: True` (default) adds dataset titles, DOIs, and explorer URLs; `max_results` (default 20) caps results, sorted by `n_cells`.
-
-   Returns JSON: one record per `dataset_id` with `n_cells`, `n_donors`, tissues, diseases, `cell_type_topK`, and metadata. **Pick the best match** — prioritize matching tissue + species, healthy/relevant disease state, large `n_cells`, and a cell-type set that covers what you expect spatially.
-
-2. **Download the chosen reference** — `retrieve_cellxgene_single_cell_tool` (agent: `single_cell`) with the selected `dataset_id` and a `filename`. It saves to `projects/<id>/outputs/datasets/<filename>` and returns that workspace-relative path. (It refuses to overwrite an existing file — choose a fresh name or reuse the existing one.)
-
-3. **Annotate** — pass the downloaded path as `reference_anndata_path` to `harmony_transfer_tool`. The CELLxGENE reference's cell type labels live in the **`cell_type`** `.obs` column — which is exactly `harmony_transfer_tool`'s default `cell_type_column`, so you usually don't need to override it for a Census reference.
-
-In a multi-step plan this is two agents: recruit `single_cell` for steps 1–2 (produce the reference h5ad), then `cell_annotator` for step 3 (transfer labels). The same Census tools also feed `[[cell-type-deconvolution]]` when the missing reference is for spot-based data.
-
-## The tool
-
-`harmony_transfer_tool` (agent: `cell_annotator`; also usable by `single_cell`). Key arguments:
-
-- `spatial_anndata_path` *(required)* — target spatial data to label. A bare filename is searched across the project's `outputs/`/`uploads/`, `library/datasets/`, `library/files/`, then `DATA_DIR`.
-- `reference_anndata_path` *(required)* — labeled scRNA-seq reference.
-- `cell_type_column` — `.obs` column with reference labels. **Default is `cell_type`** — override it with the reference's real column (e.g. `CellType`, `celltype_mapped_refined`). The tool errors if the column is absent.
+- `spatial_anndata_path` *(required)* / `reference_anndata_path` *(required)*.
+- `cell_type_column` — `.obs` column with reference labels. **Default is `cell_type`** — override with the reference's real column (e.g. `CellType`, `celltype_mapped_refined`) unless it's a CELLxGENE reference (which uses `cell_type`). The tool errors if the column is absent.
 - `output_dir` — defaults to `harmony_transfer_results/` under the active project's `outputs/`.
-- `map_spatial_gene_names` (default `True`) — maps spatial `var_names` via the **MyGene.info API** (symbol → Ensembl, human by default). Set `False` when the spatial genes already match the reference, when you're offline, or for a non-human species (the call is hard-coded to `species="human"`).
-- `skip_preprocessing` (default `False`) — skip filter/normalize/log/HVG. Use only if both inputs are already processed identically.
-- Preprocessing: `min_genes` (50), `min_cells` (10), `target_sum` (1e4), `n_top_genes` (2000), `n_pcs` (30).
-- MLP: `mlp_hidden_layers` (`(100, 50)`), `mlp_max_iter` (500), `mlp_random_state` (42).
+- `map_spatial_gene_names` (default `True`) — maps spatial `var_names` via the **MyGene.info API** (symbol → Ensembl, human only). Set `False` when genes already match, when offline, or for a non-human species.
+- `skip_preprocessing` (default `False`) — skip filter/normalize/log/HVG.
+- Preprocessing: `min_genes` (50), `min_cells` (10), `target_sum` (1e4), `n_top_genes` (2000), `n_pcs` (30). MLP: `mlp_hidden_layers` (`(100, 50)`), `mlp_max_iter` (500), `mlp_random_state` (42).
 
-## What the tool does internally (so you can set inputs correctly)
-
-1. Resolves paths, reads both AnnData files, checks `cell_type_column` exists in the reference.
-2. If `map_spatial_gene_names`, maps spatial gene symbols → Ensembl IDs via MyGene.info (failed lookups keep their original name).
-3. Unless `skip_preprocessing`: filters cells/genes, `normalize_total`, `log1p`, and selects HVGs on **each** dataset.
-4. Intersects to **shared genes** and subsets both (**aborts if <50 shared**).
-5. Concatenates reference + spatial into one object tagged by `batch`/`dataset`.
-6. Runs `sc.pp.pca` then `sc.external.pp.harmony_integrate` for batch correction (`X_pca_harmony`).
-7. Trains an `MLPClassifier` on the **reference** cells in Harmony-PCA space (features standardized).
-8. Predicts labels + per-cell **confidence** (max class probability) for the **spatial** cells.
-
-## Outputs
+## Output
 
 Written to `<output_dir>/` under the project's `outputs/`. The tool returns a dict with `status` and:
 
@@ -81,9 +45,25 @@ Written to `<output_dir>/` under the project's `outputs/`. The tool returns a di
 - `run_meta.json` (under `logs/`) — parameters, inputs/outputs, and a summary block.
 - Returned stats: `n_cells_transferred`, `n_unique_cell_types`, `cell_type_counts`, `mean_prediction_confidence`, `n_shared_genes`.
 
-On failure the tool returns `{"status": "error", "message": ...}` instead of raising — read the message; it names the exact problem (missing column, too few shared genes, or a runtime error).
+## Success Criteria
 
-## Visualizing / using results (via the coding agent)
+- `annotated_object.h5ad` exists and carries the three new `.obs` columns above.
+- The returned `status` is `"success"`; `n_shared_genes >= 50` and `n_unique_cell_types` is plausible for the tissue.
+- `mean_prediction_confidence` is reasonable and low-confidence regions are flagged for review, not blindly trusted.
+- **Failure signal:** the tool returns `{"status": "error", "message": ...}` instead of raising — read the message; it names the exact problem (missing column, too few shared genes, runtime error).
+
+## Workflow
+
+0. **(Only if no reference is supplied) retrieve one from CELLxGENE** — agent `single_cell`, two tools:
+   1. `query_cellxgene_census_live_tool` — filter the CZI Census to match the spatial sample: `species` (`homo_sapiens`/`mus_musculus`, must match organism), `tissue_general`/`tissue` (ontology labels, e.g. `heart left ventricle`), optional `disease` (`["normal"]` for healthy), `development_stage`/`sex`/`assay`. Set `include_cell_type_counts=True` (+ `top_k_cell_types`) to confirm the reference contains the expected cell types. Returns JSON, one record per `dataset_id` (`n_cells`, tissues, `cell_type_topK`, titles/links). **Pick the best match**: matching tissue + species, relevant disease state, large `n_cells`, covering cell types.
+   2. `retrieve_cellxgene_single_cell_tool` — download the chosen `dataset_id` + a `filename`. Saves to `projects/<id>/outputs/datasets/<filename>` and returns that path (won't overwrite). Its labels are in the `cell_type` column — the tool default, so no `cell_type_column` override needed.
+   *In a plan this is two agents: `single_cell` produces the reference, then `cell_annotator` transfers labels.*
+1. **Validate inputs** — paths resolve, reference `cell_type_column` exists; decide `map_spatial_gene_names` and `skip_preprocessing` from the data.
+2. **Run** `harmony_transfer_tool` with `spatial_anndata_path` + `reference_anndata_path`. Internally it: maps gene names (if enabled) → preprocesses each dataset (unless skipped) → intersects to shared genes (**aborts if <50**) → concatenates → `sc.pp.pca` → `sc.external.pp.harmony_integrate` → trains an `MLPClassifier` on the reference in Harmony-PCA space → predicts labels + confidence for the spatial cells.
+3. **Verify** against the Success Criteria; inspect confidence.
+4. **Summarize** cell-type counts, mean confidence, shared-gene count, and the output path.
+
+## Code Template
 
 ```python
 import scanpy as sc
@@ -100,19 +80,19 @@ low = adata.obs["harmony_prediction_confidence"] < 0.5
 print(f"{low.sum()} cells below 0.5 confidence")
 ```
 
-## Pitfalls
+## Common Issues
 
-- **`cell_type_column` default is `cell_type`.** Override it with the reference's real annotation column or the run aborts (or, worse, trains on the wrong field).
-- **Gene-ID mismatch** is the most common failure: if the spatial panel uses symbols and the reference uses Ensembl (or vice versa) and mapping is off/incomplete, the shared-gene set drops below 50 and the tool aborts. Keep `map_spatial_gene_names=True` for human symbol panels; reconcile manually otherwise.
-- **Non-human species:** the MyGene mapping is hard-coded to `species="human"`. For mouse/other, set `map_spatial_gene_names=False` and pre-align identifiers yourself.
-- **`skip_preprocessing` mismatch:** skipping when inputs aren't already normalized the same way yields a bad PCA/Harmony space and garbage labels.
-- **Trust the confidence:** transferred labels for cell types absent from (or rare in) the reference will still be forced into a known class — inspect `harmony_prediction_confidence` and treat low-confidence regions skeptically.
-- **One call per dataset pair** — the model is deterministic given `mlp_random_state`; re-running with identical args won't change the result.
+- **Wrong label column → aborts or trains on the wrong field.** `cell_type_column` defaults to `cell_type`; override it with the reference's real annotation column (Census references already use `cell_type`).
+- **Gene-ID mismatch → shared genes <50 → aborts.** Most common failure: spatial uses symbols, reference uses Ensembl (or vice versa) and mapping is off/incomplete. Keep `map_spatial_gene_names=True` for human symbol panels; reconcile manually otherwise.
+- **Non-human species → bad mapping.** MyGene mapping is hard-coded to `species="human"`. For mouse/other, set `map_spatial_gene_names=False` and pre-align identifiers yourself.
+- **`skip_preprocessing` mismatch → garbage labels.** Skipping when inputs aren't already normalized identically yields a bad PCA/Harmony space.
+- **Over-trusting confidence.** Cell types absent/rare in the reference are still forced into a known class — treat low-`harmony_prediction_confidence` regions skeptically.
+- **Determinism.** Given `mlp_random_state`, re-running with identical args won't change the result.
 
 ## References
 
 - Internal tool: `harmony_transfer_tool` (`src/agents/agent_registry/cell_annotater_agent/tools.py`).
 - Implementation: `cell_annotater_agent/tools_impl/harmony_transfer.py` (Harmony integration + `MLPClassifier`; MyGene.info gene mapping).
 - Reference retrieval (agent `single_cell`): `query_cellxgene_census_live_tool` and `retrieve_cellxgene_single_cell_tool` (`src/agents/agent_registry/single_cell_agent/tools.py`).
-- Related: [[cell-type-deconvolution]] for spot-based platforms.
+- Related skill: [[cell-type-deconvolution]] for spot-based platforms.
 - External: scanpy `sc.external.pp.harmony_integrate`; MyGene.info querymany; CZI CELLxGENE Census.

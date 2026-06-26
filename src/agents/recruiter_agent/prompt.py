@@ -31,7 +31,6 @@ class SkillMeta:
     name: str
     description: str
     applies_to: list[str]
-    tags: list[str] = field(default_factory=list)
     status: str = "enable"
     path: Path = field(default_factory=Path)
 
@@ -53,7 +52,6 @@ def _parse_skills() -> dict[str, SkillMeta]:
             name=name,
             description=(fm.get("description") or "").strip(),
             applies_to=list(fm.get("applies_to") or []),
-            tags=list(fm.get("tags") or []),
             status=status,
             path=p,
         )

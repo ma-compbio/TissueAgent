@@ -37,42 +37,60 @@ knowledge/skills/
 ---
 name: clean-anndata
 description: Steps to validate and clean an AnnData object before downstream analysis. Use when receiving a fresh .h5ad and the task depends on its integrity.
-applies_to: [cell_annotater, spot, single_cell, coding]
-tags: [anndata, h5ad, quality_control, preprocessing]
+applies_to: [cell_annotator, spot, single_cell, coding]
 status: enable
 ---
 ```
 
 - **`name`** *(required)* — kebab-case slug. Must be unique within this directory.
 - **`description`** *(required)* — one sentence that explains **when to use the skill**. This is the retrieval surface — write it like an Anthropic skill description, not like a title.
-- **`applies_to`** *(required)* — list of agent IDs that may load this skill. Use the agent's `id` field as it appears in [`src/agents/agent_defns.py`](../../src/agents/agent_defns.py) (e.g. `coding`, `cell_annotater`, `spot`, `single_cell`, `gene_agent`, `hypothesis`, `searcher`, `critic`, `pdf_reader`).
-- **`tags`** *(optional)* — lowercase keywords to assist future retrieval.
+- **`applies_to`** *(required)* — list of agent IDs that may load this skill. Use the agent's `id` field as it appears in [`src/agents/agent_defns.py`](../../src/agents/agent_defns.py) (e.g. `coding`, `cell_annotator`, `spot`, `single_cell`, `gene_agent`, `hypothesis`, `searcher`, `critic`, `pdf_reader`).
 - **`status`** *(optional, default `"enable"`)* — `"enable"` or `"disable"`. Disabled skills are excluded from the recruiter prompt index, the `read_skill` tool, and assignment validation.
 
 ### Body
 
-Free-form markdown. A skeleton that works well:
+Free-form markdown, but use these standard sections so skills are consistent (see
+[`_example.md`](_example.md) for a filled-in template):
 
 ```markdown
 # Clean AnnData
 
 ## When to use
-Single-sentence trigger condition. Mirror what the frontmatter `description`
-says, expanded with examples.
+Single-sentence trigger condition (mirror the frontmatter `description`), expanded with
+examples and when NOT to use it.
 
-## Steps
-1. Confirm `.X` is numeric and 2-D.
-2. ...
+## Input
+Required and optional inputs; preconditions the agent must check first.
 
-## Pitfalls
-- ...
+## Output
+Concrete artifacts produced (names, locations) and the value the tool returns.
+
+## Success Criteria
+Checkable conditions that mean it worked (artifacts exist, sanity checks pass); how failure
+is signaled.
+
+## Workflow
+1. Validate inputs.
+2. Run the tool / analysis.
+3. Verify outputs against the success criteria.
+4. Summarize results + paths.
+
+## Code Template
+A minimal, copy-pasteable snippet the coding agent can adapt (real call, not pseudocode).
+
+## Common Issues
+Symptom → cause → fix for known pitfalls; wrong defaults; data/environment assumptions.
 
 ## References
 - Internal tool: `harmony_transfer_tool`
+- Related skills: `[[other-skill]]`
 - External docs: scanpy preprocessing
 ```
 
-Keep the body short enough to fit in a model's working context comfortably (rough guideline: < 1500 tokens). If you need more, split into multiple skills or reference external docs.
+Not every section applies to every skill — drop the ones that don't (e.g. a pure reference skill
+may have no `Code Template`). Keep the body short enough to fit in a model's working context
+comfortably (rough guideline: < 1500 tokens). If you need more, split into multiple skills or
+reference external docs.
 
 ## What lives here vs. in an agent's `prompt.py`
 
