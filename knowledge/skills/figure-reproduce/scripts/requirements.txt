@@ -1,0 +1,32 @@
+# figure-reproduce skill — helper-script dependencies.
+#
+# Every script degrades gracefully if an optional library is missing (it prints a
+# one-line install hint and does what it still can), so NONE of these is strictly
+# required to import the skill. This is the RECOMMENDED full install so all four
+# scripts run at full capability. Install with:  pip install -r requirements.txt
+#
+# ── compare_figures.py ───────────────────────────────────────────────────────
+numpy                 # core: pHash (numpy-DCT fallback) + SSIM fallback
+Pillow                # core: image load + side-by-side diff
+ImageHash             # optional: faster/robust perceptual hash (else numpy-DCT)
+scikit-image          # optional: reference SSIM (else numpy windowed fallback)
+opencv-python-headless # optional: ORB keypoint matches (else skipped)
+#
+# ── inspect_dataset.py ───────────────────────────────────────────────────────
+pandas                # core for .csv/.tsv/.parquet/.xlsx (else stdlib-csv fallback)
+anndata               # optional: .h5ad structure (obs/obsm/var_names)
+openpyxl              # optional: .xlsx sheets
+pyarrow               # optional: .parquet
+#
+# ── extract_pdf_figure.py ────────────────────────────────────────────────────
+PyMuPDF               # core: render pages, extract images + captions
+pypdf                 # optional: text-only caption fallback if PyMuPDF absent
+#
+# ── env_preflight.py ─────────────────────────────────────────────────────────
+# (stdlib only — it only *probes* for libraries, importing none of them)
+#
+# ── the reproduction itself (your plotting code) typically also wants ─────────
+matplotlib
+seaborn
+# and, for omics targets only (optional / domain-specific):
+# scanpy  squidpy
