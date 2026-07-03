@@ -8,8 +8,35 @@ from __future__ import annotations
 
 import logging
 import re
+from pathlib import Path
 
 import yaml
+
+_SHARED_PROMPTS_DIR = Path(__file__).parent / "shared_prompts"
+
+
+def _load_shared_prompts() -> dict[str, str]:
+    """Load every ``.txt`` file under ``shared_prompts/`` keyed by stem."""
+    return {p.stem: p.read_text().rstrip() for p in _SHARED_PROMPTS_DIR.glob("*.txt")}
+
+
+_SHARED_PROMPT_CACHE: dict[str, str] | None = None
+
+
+def substitute_shared_prompts(text: str) -> str:
+    """Replace ``{{<stem>}}`` placeholders with the contents of ``shared_prompts/<stem>.txt``.
+
+    Idempotent: re-applying it on already-substituted text is a no-op because the placeholder
+    string is consumed by the first pass. New shared fragments can be added by dropping a ``.txt``
+    file into ``src/agents/shared_prompts/``; any prompt that references ``{{<stem>}}`` will then
+    pick it up automatically.
+    """
+    global _SHARED_PROMPT_CACHE
+    if _SHARED_PROMPT_CACHE is None:
+        _SHARED_PROMPT_CACHE = _load_shared_prompts()
+    for name, content in _SHARED_PROMPT_CACHE.items():
+        text = text.replace(f"{{{{{name}}}}}", content)
+    return text
 
 
 def parse_yaml_frontmatter(text: str) -> dict | None:

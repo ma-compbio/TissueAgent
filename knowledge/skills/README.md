@@ -37,14 +37,14 @@ knowledge/skills/
 ---
 name: clean-anndata
 description: Steps to validate and clean an AnnData object before downstream analysis. Use when receiving a fresh .h5ad and the task depends on its integrity.
-applies_to: [cell_annotator, spot, single_cell, coding]
+applies_to: [cell_annotator_agent, spot_agent, single_cell_agent, coding_agent]
 status: enable
 ---
 ```
 
 - **`name`** *(required)* — kebab-case slug. Must be unique within this directory.
 - **`description`** *(required)* — one sentence that explains **when to use the skill**. This is the retrieval surface — write it like an Anthropic skill description, not like a title.
-- **`applies_to`** *(required)* — list of agent IDs that may load this skill. Use the agent's `id` field as it appears in [`src/agents/agent_defns.py`](../../src/agents/agent_defns.py) (e.g. `coding`, `cell_annotator`, `spot`, `single_cell`, `gene_agent`, `hypothesis`, `searcher`, `critic`, `pdf_reader`).
+- **`applies_to`** *(required)* — list of agent IDs that may load this skill. Use the agent's registry-node id (the form recruiter sees and the manager dispatches against — the agent's `id` field from [`src/agents/agent_defns.py`](../../src/agents/agent_defns.py) with `_agent` appended): `coding_agent`, `cell_annotator_agent`, `spot_agent`, `single_cell_agent`, `gene_agent`, `hypothesis_agent`, `searcher_agent`, `critic_agent`, `pdf_reader_agent`.
 - **`status`** *(optional, default `"enable"`)* — `"enable"` or `"disable"`. Disabled skills are excluded from the recruiter prompt index, the `read_skill` tool, and assignment validation.
 
 ### Body

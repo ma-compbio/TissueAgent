@@ -15,7 +15,7 @@ def write_file_tool(file_path: str, content: str) -> str:
     Args:
         file_path: Path relative to the active project's outputs/ directory
             (e.g. "reports/criticism.json" lands at
-            ``projects/<id>/outputs/reports/criticism.json``).
+            ``project/outputs/reports/criticism.json``).
             Absolute paths are accepted but must resolve inside the
             workspace; writes into ``library/`` are refused.
         content: Text content to write.

@@ -101,7 +101,7 @@ def _user_request() -> str:
 def _normalize_filename(filename: Path | str | None) -> Path:
     """Pick where to write the notebook.
 
-    Default: ``projects/<id>/outputs/notebook/report_<ts>.ipynb`` so the
+    Default: ``project/outputs/notebook/report_<ts>.ipynb`` so the
     notebook ships with the project. When a path is provided, anchor
     relative paths to the active project's outputs/ as well; absolute
     paths are accepted but must resolve inside the workspace.
@@ -135,7 +135,7 @@ def generate_jupyternb(filename: Path | str | None = None) -> str:
         filename: Optional output path. Relative paths anchor to the
             active project's ``outputs/`` directory; absolute paths must
             resolve inside the workspace. Defaults to
-            ``projects/<id>/outputs/notebook/report_<ts>.ipynb``.
+            ``project/outputs/notebook/report_<ts>.ipynb``.
 
     Returns:
         A short status string. Either:

@@ -6,8 +6,10 @@ logic.
 
 from pathlib import Path
 
-from agents.agent_utils import parse_yaml_frontmatter
+from agents.agent_utils import parse_yaml_frontmatter, substitute_shared_prompts
 from knowledge import PLANS_DIR
+
+_DIR = Path(__file__).parent
 
 
 def _build_template_index() -> str:
@@ -23,10 +25,12 @@ def _build_template_index() -> str:
     return "\n".join(lines)
 
 
-def _build_planner_prompt() -> str:
-    prompt_path = Path(__file__).parent / "prompt.txt"
-    base = prompt_path.read_text()
-    return base.replace("{{plan_template_registry}}", _build_template_index())
+def _render(filename: str) -> str:
+    """Read a planner prompt file and substitute the template registry + shared blocks."""
+    base = (_DIR / filename).read_text()
+    base = base.replace("{{plan_template_registry}}", _build_template_index())
+    return substitute_shared_prompts(base)
 
 
-PlannerPrompt = _build_planner_prompt()
+PlannerPrompt = _render("prompt.txt")
+PlannerReplanPrompt = _render("replan_prompt.txt")

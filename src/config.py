@@ -17,26 +17,24 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 
-# Top-level workspace. Everything the user or the agent reads/writes lives
-# beneath this directory.
+# Top-level workspace. ``DATA_DIR`` is the agent-visible filesystem —
+# everything inside it is reachable through agent tools and the Jupyter
+# kernel. Anything that should NOT be visible to agents lives outside.
 #
-#   workspace/library/datasets/  — curated reference datasets. Persistent.
-#   workspace/library/files/     — persistent reference files (PDFs the
-#                                  user re-uses, screenshots they want
-#                                  to keep). Survives across projects.
-#   workspace/projects/<id>/
-#       ├── chat.json            — saved conversation
-#       ├── uploads/             — files the user dropped from the
-#                                  sidebar into *this* project. Default
-#                                  target for sidebar uploads.
-#       ├── attachments/         — images / PDFs attached to *this*
-#                                  project's chat (used for the
-#                                  multimodal turn payloads).
-#       └── outputs/             — agent's working directory for this
-#                                  project. Everything the agent writes
-#                                  lands here.
-#   workspace/notebook/          — process-wide notebook scratch.
-#   workspace/plan_scratch/      — in-flight plan store. Ephemeral.
+#   workspace/library/datasets/      — curated reference datasets.
+#   workspace/library/files/         — persistent reference files.
+#   workspace/project/               — the ONLY active project. Always
+#       ├── .chat.json                 exists (empty shell pre-mint).
+#       ├── .project_id                Kernel CWD is /workspace/project/outputs.
+#       ├── uploads/
+#       ├── attachments/
+#       └── outputs/
+#   workspace/notebook/              — process-wide notebook scratch.
+#
+# Parked projects and the in-flight plan store live OUTSIDE workspace
+# (sibling of it), so agents can't reach them at all:
+#   projects/<id>/                   — parked, ready to be activated.
+#   plan_scratch/                    — per-process plan markdown store.
 #
 # Legacy ``SESSIONS_DIR`` is preserved only for the one-shot migration
 # at startup; everything else writes to ``PROJECTS_DIR``.
@@ -47,61 +45,36 @@ LIBRARY_DIR = DATA_DIR / "library"
 DATASET_DIR = LIBRARY_DIR / "datasets"  # curated reference data
 LIBRARY_FILES_DIR = LIBRARY_DIR / "files"  # persistent reference uploads
 
-PROJECTS_DIR = DATA_DIR / "projects"
-PROJECT_CHAT_FILENAME = "chat.json"
+# Parked-project storage lives OUTSIDE workspace so the agent has no
+# path into it through DATA_DIR. Switching the active project is a
+# rename between ACTIVE_PROJECT_DIR and PROJECTS_DIR/<id>.
+PROJECTS_DIR = ROOT / "projects"
+PROJECT_CHAT_FILENAME = ".chat.json"
 PROJECT_OUTPUTS_DIRNAME = "outputs"
 PROJECT_ATTACHMENTS_DIRNAME = "attachments"
 PROJECT_UPLOADS_DIRNAME = "uploads"
 
+# The active project's stable on-disk home. Always exists (empty shell
+# when no project is active). Kernel cwd is unconditionally
+# ACTIVE_PROJECT_DIR / outputs.
+ACTIVE_PROJECT_DIR = DATA_DIR / "project"
+ACTIVE_PROJECT_ID_FILE = ".project_id"
+
 
 def active_project_root() -> Path:
-    """Return the active project's root directory, or ``DATA_DIR`` if none.
+    """The active project's root — always ACTIVE_PROJECT_DIR.
 
-    Resolution rule: ``session.project_id`` from the singleton when
-    available; otherwise fall back to the global workspace. Imported
-    lazily to avoid a circular import — config is the dependency floor
-    that everyone else builds on, so it can't import session_manager
-    at module-load time.
+    Independent of session state: the active project's identity is
+    encoded by what lives at this path on disk (with its ``.project_id``
+    file), not by a session variable.
     """
-    try:
-        from server.session_manager import session  # local to break the cycle
-    except Exception:
-        return DATA_DIR
-    pid = getattr(session, "project_id", None)
-    if not pid:
-        return DATA_DIR
-    return PROJECTS_DIR / pid
+    return ACTIVE_PROJECT_DIR
 
 
 def active_project_outputs() -> Path:
-    """The directory the agent should write outputs into by default.
+    """The directory the agent writes outputs into by default."""
+    return ACTIVE_PROJECT_DIR / PROJECT_OUTPUTS_DIRNAME
 
-    Equals ``projects/<active>/outputs/`` when a project is active, or
-    ``DATA_DIR`` as a fallback so writes never crash when no project
-    exists yet (e.g. during agent self-tests). Caller is responsible
-    for actually creating the directory; agents should not be in the
-    business of mkdir-ing their own workspace.
-    """
-    pid = None
-    try:
-        from server.session_manager import session
-
-        pid = getattr(session, "project_id", None)
-    except Exception:
-        pass
-    if not pid:
-        return DATA_DIR
-    return PROJECTS_DIR / pid / PROJECT_OUTPUTS_DIRNAME
-
-
-# Pre-project scratch: where uploads land *before* a project is minted.
-# Contents are migrated into projects/<id>/uploads or .../attachments on
-# the first user prompt, and wiped on session reset / new-project. The
-# scratch directory is intentionally not surfaced in the projects list;
-# it has no chat.json.
-SCRATCH_DIR = DATA_DIR / "scratch"
-SCRATCH_UPLOADS_DIR = SCRATCH_DIR / "uploads"
-SCRATCH_ATTACHMENTS_DIR = SCRATCH_DIR / "attachments"
 
 # Back-compat aliases. ``UPLOADS_DIR`` / ``PDF_UPLOADS_DIR`` historically
 # held *chat attachments* (images and PDFs); those now live per-project
@@ -110,10 +83,11 @@ SCRATCH_ATTACHMENTS_DIR = SCRATCH_DIR / "attachments"
 UPLOADS_DIR = LIBRARY_FILES_DIR  # legacy alias — prefer LIBRARY_FILES_DIR
 PDF_UPLOADS_DIR = LIBRARY_FILES_DIR  # legacy alias — see above
 
-# Ephemeral process-wide scratch for the currently-running plan. The
-# plan_store needs *some* stable on-disk home at import time, before any
-# project_id exists; we copy a snapshot into the project on save.
-PLAN_SCRATCH_DIR = DATA_DIR / "plan_scratch"
+# Ephemeral process-wide scratch for the currently-running plan. Lives
+# outside the agent-visible workspace because nothing here is for the
+# agent to read; the autosave snapshots its markdown into the project's
+# .chat.json (plan_markdown field).
+PLAN_SCRATCH_DIR = ROOT / "plan_scratch"
 
 # Legacy on-disk location for saved sessions. Used by the startup
 # migration only — do not reference for new writes.

@@ -9,23 +9,20 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from config import (
+    ACTIVE_PROJECT_DIR,
+    ACTIVE_PROJECT_ID_FILE,
     DATA_DIR,
     DATASET_DIR,
     LIBRARY_DIR,
     LIBRARY_FILES_DIR,
     PROJECT_ATTACHMENTS_DIRNAME,
+    PROJECT_CHAT_FILENAME,
     PROJECT_OUTPUTS_DIRNAME,
     PROJECT_UPLOADS_DIRNAME,
-    PROJECTS_DIR,
-    SCRATCH_ATTACHMENTS_DIR,
-    SCRATCH_DIR,
-    SCRATCH_UPLOADS_DIR,
 )
 from server.session_manager import session
 from server.utils import (
     next_available_path,
-    project_attachments_dir,
-    project_uploads_dir,
     upload_pdf_to_openai,
 )
 
@@ -116,20 +113,14 @@ async def upload_files(
 
     results: List[FileInfo] = []
 
-    # Pick the destination dirs. ``project`` target writes into the live
-    # project's folders when one exists, or into the pre-project
-    # ``scratch/`` dirs otherwise. The migration in chat.py moves
-    # scratch into the project on first prompt.
+    # Pick the destination dirs. ``project`` target always writes into
+    # the active project shell — it exists pre-mint as an empty
+    # directory, so pre-mint and post-mint look identical.
     if target == "project":
-        has_project = bool(session.project_id)
-        if has_project:
-            uploads_dir = project_uploads_dir(session.project_id)
-            attachments_dir = project_attachments_dir(session.project_id)
-        else:
-            uploads_dir = SCRATCH_UPLOADS_DIR
-            attachments_dir = SCRATCH_ATTACHMENTS_DIR
-            uploads_dir.mkdir(parents=True, exist_ok=True)
-            attachments_dir.mkdir(parents=True, exist_ok=True)
+        uploads_dir = ACTIVE_PROJECT_DIR / PROJECT_UPLOADS_DIRNAME
+        attachments_dir = ACTIVE_PROJECT_DIR / PROJECT_ATTACHMENTS_DIRNAME
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+        attachments_dir.mkdir(parents=True, exist_ok=True)
 
     for f in files:
         category = _classify_file(f.filename)
@@ -270,34 +261,18 @@ async def browse_files(scope: str = "library", project_id: str | None = None):
         return _build_tree(LIBRARY_DIR, LIBRARY_DIR)
 
     if scope == "project":
-        pid = project_id or session.project_id or ""
-        if not pid:
-            # No project is active yet — surface the scratch dirs so
-            # the user can see files they've staged for the next prompt.
-            children: list[dict] = []
-            for name, src in (
-                (PROJECT_UPLOADS_DIRNAME, SCRATCH_UPLOADS_DIR),
-                (PROJECT_ATTACHMENTS_DIRNAME, SCRATCH_ATTACHMENTS_DIR),
-            ):
-                if not src.exists():
-                    continue
-                # Root is SCRATCH_DIR so paths read as ``uploads/foo.png``
-                # — same shape as for a real project.
-                children.append({
-                    "name": name,
-                    "path": name,
-                    "is_dir": True,
-                    "size": 0,
-                    "children": _build_tree(src, SCRATCH_DIR),
-                })
-            return children
+        # Parked projects aren't browsable — the active project is the
+        # only one the user (and the agent) can see. The ``project_id``
+        # query arg is honored only when it matches the active id; any
+        # other value is rejected so the API can't be coaxed into
+        # listing a parked tree.
+        if project_id and project_id != (session.project_id or ""):
+            raise HTTPException(
+                status_code=409,
+                detail="Only the active project can be browsed.",
+            )
 
-        root = PROJECTS_DIR / pid
-        if not root.exists():
-            return []
-        # Synthetic tree: the three named subdirs in a stable order.
-        # Skip chat.json so the user doesn't accidentally download or
-        # delete the conversation file from the Files page.
+        root = ACTIVE_PROJECT_DIR
         children: list[dict] = []
         for name in (
             PROJECT_UPLOADS_DIRNAME,
@@ -323,27 +298,24 @@ async def browse_files(scope: str = "library", project_id: str | None = None):
 def _resolve_scoped_path(scope: str, file_path: str, project_id: str | None) -> Path:
     """Resolve *file_path* under *scope*, guarding against traversal.
 
-    For ``scope=project`` the root is the project folder itself, so
+    For ``scope=project`` the root is the active project folder, so
     incoming paths look like ``attachments/foo.png`` or
-    ``outputs/bar.csv``. The project's ``chat.json`` is intentionally
-    *not* reachable through this resolver — keep that visible only via
-    the sessions route.
+    ``outputs/bar.csv``. The project's ``.chat.json`` and ``.project_id``
+    are intentionally *not* reachable through this resolver — those are
+    internal persistence files, not user-facing artifacts.
     """
     if scope == "library":
         root = LIBRARY_DIR
     elif scope == "project":
-        pid = project_id or session.project_id or ""
-        if not pid:
-            # No project is active yet — paths live under scratch/.
-            # Paths from /browse for the no-project case start with
-            # ``uploads/`` or ``attachments/``, matching the shape of
-            # a real project, so SCRATCH_DIR is the correct root.
-            root = SCRATCH_DIR
-        else:
-            root = PROJECTS_DIR / pid
-            # Refuse chat.json — it isn't a user-facing file.
-            if file_path.strip().lstrip("/") == "chat.json":
-                raise HTTPException(status_code=403, detail="Access denied")
+        if project_id and project_id != (session.project_id or ""):
+            raise HTTPException(
+                status_code=409,
+                detail="Only the active project is accessible.",
+            )
+        root = ACTIVE_PROJECT_DIR
+        normalized = file_path.strip().lstrip("/")
+        if normalized in (PROJECT_CHAT_FILENAME, ACTIVE_PROJECT_ID_FILE):
+            raise HTTPException(status_code=403, detail="Access denied")
     else:
         root = DATA_DIR  # legacy/debug
 

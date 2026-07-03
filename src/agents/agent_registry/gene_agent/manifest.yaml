@@ -1,7 +1,7 @@
 # Declarative metadata for the gene_agent external agent.
 # See INTEGRATING.md at the repo root for the full schema.
 
-id: gene_agent
+id: gene
 name: Gene Agent
 version: 0.2.0
 description: >

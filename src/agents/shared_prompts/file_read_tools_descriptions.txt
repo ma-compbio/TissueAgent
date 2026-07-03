@@ -1,0 +1,3 @@
+- glob(pattern): list workspace files/directories matching a glob pattern (relative to the workspace root).
+- grep(pattern, include="**/*"): search file contents by regex; binary files are skipped automatically.
+- read(file_path, offset=1, limit=None): read a workspace file by relative path; images are returned inline.

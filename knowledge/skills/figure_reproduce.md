@@ -1,7 +1,7 @@
 ---
 name: figure-reproduce
 description: Reproduce a target figure from a dataset — regenerate a published/reference plot (e.g. a spatial scatter, UMAP, heatmap, dotplot from a paper) using the coding agent and matching its panels, layout, and color encoding. Use when the user asks to "reproduce", "recreate", "replicate", or "remake" a figure, or to match a figure from a paper/notebook.
-applies_to: [coding]
+applies_to: [coding_agent]
 status: enable
 ---
 

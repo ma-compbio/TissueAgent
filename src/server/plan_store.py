@@ -63,11 +63,11 @@ class PlanProvenance:
 
     - ``template_names`` lists the templates the plan was adapted from.
       An empty list means the plan was written from scratch (denovo).
-    - ``decision`` is "USE", "ADAPT", or "NEW" when templates are involved.
+    - ``justification`` is a free-form string describing how each template was used.
     """
 
     template_names: List[str] = field(default_factory=list)
-    decision: Optional[str] = None  # "USE" | "ADAPT" | "NEW"
+    justification: str = ""
 
 
 @dataclass
@@ -100,7 +100,12 @@ class PlanDocument:
     steps: List[PlanStep] = field(default_factory=list)
     last_edited_by: Optional[EditedBy] = None
     last_edited_at: Optional[str] = None  # ISO-8601 UTC timestamp
-    provenance: Optional[PlanProvenance] = None
+    provenance: PlanProvenance = field(default_factory=PlanProvenance)
+    # Manager-owned cursor: the id of the next step to dispatch. Advances on next_step,
+    # stays put on retry_step. Initialised to 1 (or the smallest step id if the plan is
+    # populated). At any moment, at most one step is in status="running" — the one most
+    # recently dispatched, sitting at id == current_step_id - 1.
+    current_step_id: int = 1
 
     def to_markdown(self) -> str:
         """Serialise to the on-disk markdown form."""
@@ -110,19 +115,16 @@ class PlanDocument:
         header: Dict[str, Any] = {
             "status": self.status,
             "user_request": _block_string(self.user_request),
+            "current_step_id": int(self.current_step_id),
         }
         if self.last_edited_by is not None:
             header["last_edited_by"] = self.last_edited_by
         if self.last_edited_at is not None:
             header["last_edited_at"] = self.last_edited_at
-        if self.provenance is not None:
-            prov: Dict[str, Any] = {}
-            if self.provenance.template_names:
-                prov["template_names"] = list(self.provenance.template_names)
-            if self.provenance.decision is not None:
-                prov["decision"] = self.provenance.decision
-            if prov:
-                header["provenance"] = prov
+        header["provenance"] = {
+            "template_names": list(self.provenance.template_names),
+            "justification": self.provenance.justification,
+        }
         out.append("```yaml")
         out.append(yaml.safe_dump(
             header, sort_keys=False, allow_unicode=True
@@ -190,6 +192,10 @@ def _parse_markdown(text: str) -> PlanDocument:
             header = yaml.safe_load(header_match.group(1)) or {}
             doc.status = str(header.get("status", "empty"))  # type: ignore[assignment]
             doc.user_request = str(header.get("user_request", ""))
+            try:
+                doc.current_step_id = int(header.get("current_step_id", 1))
+            except (TypeError, ValueError):
+                doc.current_step_id = 1
             edited_by = header.get("last_edited_by")
             if edited_by in ("planner", "recruiter", "manager", "user"):
                 doc.last_edited_by = edited_by  # type: ignore[assignment]
@@ -203,7 +209,7 @@ def _parse_markdown(text: str) -> PlanDocument:
                     template_names = [template_names]
                 doc.provenance = PlanProvenance(
                     template_names=list(template_names) if template_names else [],
-                    decision=prov_raw.get("decision"),
+                    justification=prov_raw.get("justification") or "",
                 )
         except yaml.YAMLError:
             pass
@@ -368,7 +374,8 @@ def annotate_steps_with_params(doc: PlanDocument, messages) -> PlanDocument:
 
     1. For every step in ``doc.steps`` with an ``assigned_agent``, look
        for the next unmatched tool call where the tool name starts with
-       ``{assigned_agent}_agent_``.
+       ``{assigned_agent}_`` (assigned_agent is the suffixed registry id,
+       e.g. ``coding_agent``, so this matches ``coding_agent_transfer_tool``).
     2. If a match is found, set ``step.params`` to that call's ``args``.
 
     A step gets ``params`` only when there's a clear single matching call;
@@ -396,7 +403,7 @@ def annotate_steps_with_params(doc: PlanDocument, messages) -> PlanDocument:
     for step in doc.steps:
         if not step.assigned_agent:
             continue
-        prefix = f"{step.assigned_agent}_agent_"
+        prefix = f"{step.assigned_agent}_"
         for i, (name, args) in enumerate(calls):
             if consumed[i]:
                 continue
@@ -412,8 +419,9 @@ def serialize_plan(doc: PlanDocument) -> Dict[str, Any]:
     return {
         "status": doc.status,
         "user_request": doc.user_request,
+        "current_step_id": int(doc.current_step_id),
         "steps": [asdict(s) for s in doc.steps],
         "last_edited_by": doc.last_edited_by,
         "last_edited_at": doc.last_edited_at,
-        "provenance": asdict(doc.provenance) if doc.provenance is not None else None,
+        "provenance": asdict(doc.provenance),
     }

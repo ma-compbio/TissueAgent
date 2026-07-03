@@ -31,7 +31,7 @@ def _resolve_input_path(path_like: str) -> Path:
     """Resolve an input file path under the workspace root.
 
     Inputs can come from anywhere readable: library/datasets/,
-    projects/<id>/uploads/, or absolute paths inside the workspace.
+    project/uploads/, or absolute paths inside the workspace.
     """
     path = Path(path_like)
     if not path.is_absolute():

@@ -46,6 +46,28 @@ export type SessionMode = "autopilot" | "copilot";
 /** Copilot pause labels — must match server-side `_interrupt_label`. */
 export type PauseLabel = "before_recruiter" | "before_manager";
 
+/** Per-agent accumulated API usage across the session. Mirrors
+ *  ``server.usage_tracker.AgentMetrics``. */
+export interface AgentMetrics {
+  input_tokens: number;
+  output_tokens: number;
+  time_seconds: number;
+  llm_calls: number;
+}
+
+/** Per-plan-step accumulated API usage. Mirrors
+ *  ``server.usage_tracker.StepMetrics``. */
+export interface StepMetrics extends AgentMetrics {
+  step_id: number;
+  agent_name: string;
+}
+
+/** Full snapshot of the session's API usage. */
+export interface MetricsData {
+  agents: Record<string, AgentMetrics>;
+  steps: StepMetrics[];
+}
+
 /** WebSocket event types from server. */
 export type ServerEvent =
   | { type: "history"; data: HistoryData }
@@ -61,7 +83,8 @@ export type ServerEvent =
   | { type: "plan_review_requested"; data: { pause: PauseLabel } }
   | { type: "assignment_review_requested"; data: { pause: PauseLabel } }
   | { type: "run_cancelled"; data: Record<string, never> }
-  | { type: "project_saved"; data: { project_id: string; title: string } };
+  | { type: "project_saved"; data: { project_id: string; title: string } }
+  | { type: "metrics_updated"; data: MetricsData };
 
 /** WebSocket event types from client. */
 export interface SendMessageEvent {

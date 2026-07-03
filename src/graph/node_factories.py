@@ -5,6 +5,7 @@ step-context resolution and artifact validation helpers.
 """
 
 import logging
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from queue import Queue
@@ -26,8 +27,9 @@ from langgraph.types import Command
 from agents.agent_utils import format_skill_prompt
 from config import DATA_DIR
 from graph.message_utils import sanitize_message, standardize_message_format
-from graph.ui_events import emit_message, subagent_invocation
+from graph.ui_events import _get_subagent_context, emit_message, subagent_invocation
 from server.plan_store import plan_store, serialize_plan
+from server.usage_tracker import usage_tracker
 
 
 class AgentState(MessagesState):
@@ -76,11 +78,21 @@ def create_agent_node(
         prompt_text = prompt(state) if callable(prompt) else prompt
         system_prompt = SystemMessage(prompt_text)
         logging.info(f"System prompt for `{agent_node_id}`:\n{prompt_text}")
+        t0 = time.perf_counter()
         response = standardize_message_format(
             cast(AIMessage, agent_model.invoke([system_prompt] + messages))
         )
+        elapsed = time.perf_counter() - t0
         response.name = agent_node_id
         emit_message(response)
+
+        _, subagent_name, step_id = _get_subagent_context()
+        usage_tracker.record_llm_call(
+            subagent_name or agent_node_id,
+            step_id,
+            getattr(response, "usage_metadata", None),
+            elapsed,
+        )
 
         extra_update: dict[str, Any] = {}
         if state_update_fn:
@@ -147,26 +159,22 @@ type ContextResolver = Callable[[str], StepContext | None]
 
 
 def create_step_context_resolver(assign_agent_node_id: Callable[[str], str]) -> ContextResolver:
-    """Create a resolver that maps agent invocations to plan step context.
+    """Create a resolver that returns the currently-running step's context.
 
-    Returns a callable: resolve(agent_node_id) -> StepContext or None. Uses a shared set to track
-    dispatched steps across all transfer tools, ensuring each step's context is only returned once
-    (for sequential execution).
+    Manager-judgment model: the manager's ``next_step`` / ``retry_step`` tools set exactly one
+    plan step to ``status="running"`` before invoking the sub-agent. The resolver simply finds
+    that step, so it transparently handles retries (same step dispatched twice in a row) without
+    needing a per-call dispatched-set.
 
-    Args:
-        assign_agent_node_id: Function that maps agent names to their node IDs.
+    The ``agent_node_id`` argument is retained for backward compatibility with CustomAgent ctors
+    that pass their own agent id; it is not used for matching.
     """
-    dispatched: set[int] = set()
-
     def resolve(agent_node_id: str) -> StepContext | None:
         from server.plan_store import plan_store
 
         doc = plan_store.read()
         for step in doc.steps:
-            if step.id in dispatched:
-                continue
-            if step.assigned_agent and assign_agent_node_id(step.assigned_agent) == agent_node_id:
-                dispatched.add(step.id)
+            if step.status == "running":
                 return StepContext(
                     step_id=step.id,
                     skills=list(step.skills),
@@ -199,25 +207,20 @@ def _validate_step_artifacts(expected_artifacts: list[str]) -> tuple[list[str], 
     return found, missing
 
 
-def _update_step_status(
-    step_id: int,
-    found: list[str],
-    missing: list[str],
-) -> None:
-    """Update a plan step's status and actual_outputs after artifact validation.
+def _record_step_outputs(step_id: int, found: list[str]) -> None:
+    """Update a plan step's ``actual_outputs`` and emit a ``plan_updated`` UI event.
 
-    Emits a ``plan_updated`` UI event so the frontend reflects the change.
+    Manager-judgment model: this never writes ``step.status`` — completion is decided
+    explicitly by the manager via ``next_step`` / ``retry_step``. We only record what
+    files were observed so the UI can show progress against expected artifacts.
     """
     doc = plan_store.read()
     for step in doc.steps:
         if step.id == step_id:
             step.actual_outputs = list(found)
-            step.status = "done" if not missing else "failed"
             break
-
     plan_store.write(doc)
 
-    # Emit plan_updated event for the UI.
     payload = serialize_plan(doc)
     message = AIMessage(
         content="plan_updated",
@@ -232,8 +235,8 @@ def _format_validation_summary(
     found: list[str],
     missing: list[str],
 ) -> str:
-    """Format a human-readable validation summary appended to the tool result."""
-    lines = [f"\n\n--- Artifact Validation (Step {step_id}) ---"]
+    """Format a human-readable validation summary for the UI event payload."""
+    lines = [f"--- Artifact Validation (Step {step_id}) ---"]
     if found:
         lines.append(f"Found: {', '.join(found)}")
     if missing:
@@ -241,6 +244,55 @@ def _format_validation_summary(
     status = "PASSED" if not missing else "FAILED"
     lines.append(f"Status: {status}")
     return "\n".join(lines)
+
+
+def _emit_artifact_validation(
+    step_id: int,
+    found: list[str],
+    missing: list[str],
+) -> None:
+    """Push a UI-only ``artifact_validation`` event.
+
+    The payload is intended for display alongside the step in the plan view. The manager
+    never sees this message — its ``filter_for_manager`` strips events with this name.
+    """
+    summary = _format_validation_summary(step_id, found, missing)
+    verdict = "PASSED" if not missing else "FAILED"
+    message = AIMessage(
+        content=summary,
+        additional_kwargs={
+            "validation_payload": {
+                "step_id": step_id,
+                "found": list(found),
+                "missing": list(missing),
+                "verdict": verdict,
+            },
+        },
+        name="artifact_validation",
+    )
+    emit_message(message)
+
+
+def run_heuristic_validation(
+    step_id: int,
+    expected_artifacts: list[str],
+) -> tuple[list[str], list[str]]:
+    """Validate expected artifacts, record outputs, and emit a UI event.
+
+    Wraps the three steps the manager's ``next_step``/``retry_step`` need after invoking
+    a sub-agent:
+
+    1. Glob/exact-match each expected artifact under ``DATA_DIR``.
+    2. Record what was found in ``step.actual_outputs`` (no status write).
+    3. Emit an ``artifact_validation`` UI event for display.
+
+    Returns ``(found, missing)`` so the caller can also log it if desired. The manager
+    does *not* see this result via the tool channel — it's UI-only.
+    """
+    found, missing = _validate_step_artifacts(expected_artifacts)
+    _record_step_outputs(step_id, found)
+    _emit_artifact_validation(step_id, found, missing)
+    return found, missing
 
 
 def create_agent_invocation_tool(
@@ -256,9 +308,10 @@ def create_agent_invocation_tool(
     sub-agent graph, pushes the final state onto *state_queue* for UI rendering, and returns the
     last message's content.
 
-    After invocation, if a *context_resolver* is provided, the tool automatically validates expected
-    artifacts and updates the plan step status in the plan store — removing the need for the manager
-    LLM to perform artifact checking.
+    Under the manager-judgment model, validation is NOT performed here. The manager's
+    ``next_step`` / ``retry_step`` wrappers call :func:`run_heuristic_validation` themselves
+    after invoking this tool, so the validation result reaches the UI but never enters the
+    tool's return value to the manager.
 
     Args:
         agent_node_id: Node ID of the sub-agent (used in the tool name).
@@ -266,8 +319,9 @@ def create_agent_invocation_tool(
         agent: The compiled sub-agent graph to invoke.
         state_queue: Queue where ``(agent_name, final_state)`` tuples are placed after each
             invocation.
-        context_resolver: Callable that returns a :class:`StepContext` for the current step (skills
-            + expected artifacts), or ``None`` when no matching step is found.
+        context_resolver: Callable that returns a :class:`StepContext` for the current step
+            (skills + expected artifacts), or ``None`` when no matching step is found. Used to
+            build the ``skill_prompt`` injection for the sub-agent.
 
     Returns:
         A :class:`~langchain.tools.StructuredTool` named ``"{agent_node_id}_transfer_tool"``.
@@ -284,33 +338,25 @@ def create_agent_invocation_tool(
             return "", ctx
         return format_skill_prompt(ctx.skills), ctx
 
-    def _post_invocation_validate(
-        result: str,
-        step_ctx: StepContext | None,
-    ) -> str:
-        """Validate artifacts and update the plan store.
-
-        Returns result with summary appended.
-        """
-        if step_ctx is None or not step_ctx.expected_artifacts:
-            return result
-        found, missing = _validate_step_artifacts(step_ctx.expected_artifacts)
-        _update_step_status(step_ctx.step_id, found, missing)
-        summary = _format_validation_summary(step_ctx.step_id, found, missing)
-        logging.info(summary)
-        return result + summary
-
     def _agent_invocation_tool(prompt: str) -> str:
-        """Invoke the sub-agent with a text prompt and return its response."""
+        """Invoke the sub-agent with a text prompt and return its response.
+
+        Pure invocation: pushes state to the UI queue and returns the sub-agent's last
+        message content. Artifact validation is no longer appended here — the manager's
+        ``next_step`` / ``retry_step`` orchestrate validation via
+        :func:`run_heuristic_validation` and route it through the UI channel only.
+        """
         logging.info(f"Invoking agent `{agent_node_id}`")
         message = HumanMessage(prompt)
         skill_prompt_text, step_ctx = _resolve_step_context()
-        with subagent_invocation(agent_name) as invocation_id:
+        with subagent_invocation(
+            agent_name,
+            step_id=step_ctx.step_id if step_ctx else None,
+        ) as invocation_id:
             final_state = agent.invoke({"messages": [message], "skill_prompt": skill_prompt_text})
         state_queue.put((agent_name, final_state, invocation_id))
         logging.info(f"Finished invoking agent `{agent_node_id}`")
-        result = final_state["messages"][-1].content
-        return _post_invocation_validate(result, step_ctx)
+        return final_state["messages"][-1].content
 
     agent_invocation_tool = _agent_invocation_tool
 

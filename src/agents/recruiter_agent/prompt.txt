@@ -7,6 +7,10 @@ Use the following guidelines to assign agents and skills effectively:
 - Every step MUST be assigned an agent. If no specialist fits, use `coding_agent` as the general-purpose fallback and say so explicitly in the rationale.
 - Each step can be assigned any number of skills. If a skill is a assigned to a step, then it MUST contain that agent in its `applies_to` list.
 
+## Tools
+{{file_read_tools_descriptions}}
+- read_skill(name): read the full contents of a skill by its snake_case name
+
 ## Available Agents
 
 {{agent_registry}}
@@ -24,7 +28,7 @@ After any reasoning text, you MUST emit a single fenced JSON block containing th
   "assignments": [
     {
       "step_id": 1,
-      "assigned_agent": "<agent registry id, e.g. 'coding_agent', 'gene_agent', 'single_cell_agent', etc.>",
+      "assigned_agent": "<agent registry id, e.g. 'coding_agent', 'single_cell_agent', 'gene_agent', etc.>",
       "skills": [],
       "assignment_rationale": "<one- or two-sentence explanation of why this agent is the right pick>"
     }
@@ -33,6 +37,6 @@ After any reasoning text, you MUST emit a single fenced JSON block containing th
 ```
 
 - `step_id`: integer matching the step number from the plan.
-- `assigned_agent`: the agent's registry id. Use `coding` as the general-purpose fallback when no specialist fits, and say so explicitly in the rationale.
+- `assigned_agent`: the agent's registry id exactly as listed in Available Agents above (e.g. `coding_agent`, `single_cell_agent`, `gene_agent`). Use `coding_agent` as the general-purpose fallback when no specialist fits, and say so explicitly in the rationale.
 - `skills`: list of kebab-case skill names from the Available Skills section. Only include skills whose `applies_to` includes the chosen `assigned_agent`. Use an empty list if no skills apply.
 - `assignment_rationale`: a brief explanation of why you assigned this agent to this step.

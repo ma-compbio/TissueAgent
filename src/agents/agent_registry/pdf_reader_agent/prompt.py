@@ -29,13 +29,13 @@ After analyzing the PDF and saving outputs, you **must** output a `<response>` b
 ## Tools Available
 
 - **write_file_tool**: Save text content to files. Paths are relative to the active project's `outputs/` directory.
-  - Example: `write_file_tool(file_path="briefs/paper_summary.txt", content="...")` lands at `projects/<id>/outputs/briefs/paper_summary.txt`.
+  - Example: `write_file_tool(file_path="briefs/paper_summary.txt", content="...")` lands at `project/outputs/briefs/paper_summary.txt`.
 
 ## Workspace Layout
 
 - `library/datasets/`, `library/files/` — persistent shared inputs (read-only).
-- `projects/<id>/uploads/`, `projects/<id>/attachments/` — what the user supplied for this run (PDFs you analyze typically arrive via `attachments/`).
-- `projects/<id>/outputs/` — where your summaries are saved. Use paths like `briefs/paper_summary.txt`; the write tool anchors them under `outputs/` automatically.
+- `project/uploads/`, `project/attachments/` — what the user supplied for this run (PDFs you analyze typically arrive via `attachments/`).
+- `project/outputs/` — where your summaries are saved. Use paths like `briefs/paper_summary.txt`; the write tool anchors them under `outputs/` automatically.
 
 ## Workflow
 **Step 1: Analyze the PDF**

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ChatView from "./components/ChatView";
 import ContactPage from "./components/ContactPage";
+import MetricsPage from "./components/MetricsPage";
 import PlanColumn from "./components/PlanColumn";
 import Sidebar from "./components/Sidebar";
 import Splitter from "./components/Splitter";
@@ -8,6 +9,7 @@ import ThemeToggle from "./components/ThemeToggle";
 import {
   BackToChatButton,
   ContactButton,
+  MetricsButton,
   SettingsButton,
   TutorialButton,
 } from "./components/TopNav";
@@ -37,11 +39,17 @@ const PLAN_COL_WIDTH_DEFAULT = 360;
 const PLAN_COL_WIDTH_MIN = 260;
 const PLAN_COL_WIDTH_MAX = 720;
 
-/** Five top-level views. Chat + Files keep the sidebar; settings,
- *  tutorial and contact are single-column reference pages. */
-export type Page = "chat" | "settings" | "tutorial" | "contact";
+/** Top-level views. Chat keeps the sidebar; settings, tutorial, contact,
+ *  and metrics are single-column reference pages. */
+export type Page = "chat" | "settings" | "tutorial" | "contact" | "metrics";
 
-const PAGES: readonly Page[] = ["chat", "settings", "tutorial", "contact"] as const;
+const PAGES: readonly Page[] = [
+  "chat",
+  "settings",
+  "tutorial",
+  "contact",
+  "metrics",
+] as const;
 
 function _readPageFromUrl(): Page {
   if (typeof window === "undefined") return "chat";
@@ -193,8 +201,13 @@ export default function App() {
     );
   }, [session.currentProjectId, session.sessions]);
 
-  // Settings, Tutorial and Contact: single-column doc layout, no sidebar.
-  if (page === "settings" || page === "tutorial" || page === "contact") {
+  // Settings, Tutorial, Contact, Metrics: single-column doc layout, no sidebar.
+  if (
+    page === "settings" ||
+    page === "tutorial" ||
+    page === "contact" ||
+    page === "metrics"
+  ) {
     return (
       <div className="app-layout app-layout-doc">
         <main className="main-area">
@@ -217,6 +230,10 @@ export default function App() {
             <div className="top-bar-right">
               <BackToChatButton onClick={() => setPage("chat")} />
               <span className="top-bar-divider" aria-hidden="true" />
+              <MetricsButton
+                active={page === "metrics"}
+                onClick={() => setPage("metrics")}
+              />
               <TutorialButton
                 active={page === "tutorial"}
                 onClick={() => setPage("tutorial")}
@@ -249,8 +266,10 @@ export default function App() {
               />
             ) : page === "tutorial" ? (
               <TutorialPage />
-            ) : (
+            ) : page === "contact" ? (
               <ContactPage />
+            ) : (
+              <MetricsPage metrics={ws.metrics} />
             )}
           </div>
         </main>
@@ -317,6 +336,10 @@ export default function App() {
                   ? "Connecting…"
                   : "Disconnected"}
             </div>
+            <MetricsButton
+              active={false}
+              onClick={() => setPage("metrics")}
+            />
             <TutorialButton
               active={false}
               onClick={() => setPage("tutorial")}

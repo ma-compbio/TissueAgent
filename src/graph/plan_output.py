@@ -88,9 +88,9 @@ def _build_plan_from_json(data: dict) -> PlanDocument | None:
               "expected_artifacts": ["..."]
             }
           ],
-          "provenance": {                 // optional
+          "provenance": {
             "template_names": ["..."],
-            "decision": "USE"|"ADAPT"|"NEW"
+            "justification": "free-form description of how templates were used"
           }
         }
     """
@@ -119,7 +119,6 @@ def _build_plan_from_json(data: dict) -> PlanDocument | None:
     if not steps:
         return None
 
-    provenance: PlanProvenance | None = None
     prov_raw = data.get("provenance")
     if isinstance(prov_raw, dict):
         template_names = prov_raw.get("template_names", [])
@@ -127,7 +126,7 @@ def _build_plan_from_json(data: dict) -> PlanDocument | None:
             template_names = [template_names]
         provenance = PlanProvenance(
             template_names=list(template_names) if template_names else [],
-            decision=prov_raw.get("decision"),
+            justification=(prov_raw.get("justification") or "").strip(),
         )
     else:
         provenance = PlanProvenance()
@@ -140,16 +139,70 @@ def _build_plan_from_json(data: dict) -> PlanDocument | None:
     )
 
 
+def _parse_and_persist_plan(text: str) -> "PlanDocument | None":
+    """Extract a plan JSON block from *text*, persist it, and emit the UI event.
+
+    Returns the persisted :class:`PlanDocument` on success or ``None`` when the
+    response contains no parseable plan.
+    """
+    data = _extract_json(text)
+    if data is None:
+        return None
+    doc = _build_plan_from_json(data)
+    if doc is None:
+        return None
+    plan_store.write(doc)
+    _emit_plan_updated(doc)
+    logging.info(
+        "planner_state_update: wrote %d step(s) to %s (status=draft)",
+        len(doc.steps),
+        plan_store.path,
+    )
+    return doc
+
+
 def create_planner_state_update(max_retries: int = 2):
     """Factory that returns a ``state_update_fn`` for the planner node.
 
-    The returned callback validates the ROUTE format, parses and persists the plan for ROUTE: PLAN,
-    and signals a retry (by returning validation feedback in the state) when the format is invalid.
+    Initial plan: validates the ROUTE first-line header, parses and persists the plan for
+    ROUTE: PLAN, signals a retry when the format is invalid.
+
+    Replan (state["replan_count"] > 0): the replan prompt instructs the model to emit only
+    a JSON fenced block (no ROUTE header), so we skip the ROUTE check and try to parse the
+    JSON directly. Parse failures populate ``planner_validation_errors`` so ``planner_router``
+    knows to loop back instead of advancing to the recruiter.
+
     Raises ``RuntimeError`` if retries are exhausted.
     """
 
     def planner_state_update(response: AIMessage, state) -> dict[str, Any]:
+        # Mid-loop tool-call turns produce no plan content; nothing to validate or persist.
+        if getattr(response, "tool_calls", None):
+            return {}
         text = (response.content.strip() or "") if isinstance(response.content, str) else ""
+        is_replan = int(state.get("replan_count", 0) or 0) > 0
+
+        if is_replan:
+            if _parse_and_persist_plan(text) is not None:
+                return {"planner_validation_errors": None}
+            prior = int(state.get("planner_retry_count", 0) or 0)
+            if prior >= max_retries:
+                raise RuntimeError(
+                    f"Planner failed to produce a valid JSON plan on replan after "
+                    f"{max_retries} retries. Last response started with: {text[:120]!r}"
+                )
+            feedback = HumanMessage(
+                content=(
+                    "Your response must contain a single fenced ```json``` code block "
+                    "with the plan schema (user_request, steps, provenance). Please try again."
+                )
+            )
+            return {
+                "messages": [response, feedback],
+                "planner_retry_count": prior + 1,
+                "planner_validation_errors": "replan_json_parse_failed",
+            }
+
         head = text.splitlines()[0].upper() if text else ""
 
         # DIRECT / CLARIFY — no plan expected
@@ -177,26 +230,11 @@ def create_planner_state_update(max_retries: int = 2):
             }
 
         # ROUTE: PLAN — parse and persist the JSON block
-        data = _extract_json(text)
-        if data is None:
+        if _parse_and_persist_plan(text) is None:
             raise RuntimeError(
                 "Planner failed to produce a valid JSON plan. "
                 "No fenced JSON block found in the response."
             )
-
-        doc = _build_plan_from_json(data)
-        if doc is None:
-            raise RuntimeError(
-                "Planner produced JSON that could not be converted into a valid plan."
-            )
-
-        plan_store.write(doc)
-        _emit_plan_updated(doc)
-        logging.info(
-            "planner_state_update: wrote %d step(s) to %s (status=draft)",
-            len(doc.steps),
-            plan_store.path,
-        )
         return {}
 
     return planner_state_update
@@ -211,7 +249,7 @@ def _apply_assignments_from_json(data: dict) -> PlanDocument | None:
           "assignments": [
             {
               "step_id": 1,
-              "assigned_agent": "coding",
+              "assigned_agent": "coding_agent",
               "assignment_rationale": "..."
             }
           ]

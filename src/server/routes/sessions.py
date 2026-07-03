@@ -21,6 +21,7 @@ from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
 
 from config import (
+    ACTIVE_PROJECT_DIR,
     PROJECT_CHAT_FILENAME,
     PROJECT_OUTPUTS_DIRNAME,
     PROJECTS_DIR,
@@ -29,15 +30,19 @@ from server.session_manager import session
 from server.utils import (
     SESSION_FILENAME_PREFIX,
     SESSION_FILENAME_SUFFIX,
+    SwitchCollisionError,
+    SwitchMissingError,
     build_session_html,
     build_session_markdown,
     derive_session_title,
     list_project_chat_files,
     load_session,
     project_dir_for,
+    read_active_project_id,
     read_session_title,
     save_session,
     session_option_label,
+    switch_active_project,
 )
 
 router = APIRouter(prefix="/api/sessions")
@@ -108,13 +113,20 @@ def _normalize_project_id(raw: str) -> str:
 
 
 def _project_dir_safe(project_id: str) -> Path:
-    """Return the project's on-disk folder, guarding against traversal."""
+    """Return the project's on-disk folder, guarding against traversal.
+
+    The id may resolve to either ACTIVE_PROJECT_DIR (when ``project_id``
+    matches the currently-bound project) or ``PROJECTS_DIR/<id>/``.
+    Both are valid; reject anything else as an attempted escape.
+    """
     project_id = _normalize_project_id(project_id)
     if not project_id or "/" in project_id or "\\" in project_id:
         raise HTTPException(status_code=400, detail="Invalid project id.")
     candidate = project_dir_for(project_id)
     try:
-        if not candidate.resolve().is_relative_to(PROJECTS_DIR.resolve()):
+        resolved = candidate.resolve()
+        allowed = (PROJECTS_DIR.resolve(), ACTIVE_PROJECT_DIR.resolve())
+        if not any(resolved.is_relative_to(root) or resolved == root for root in allowed):
             raise HTTPException(status_code=403, detail="Access denied.")
     except (ValueError, OSError):
         raise HTTPException(status_code=400, detail="Invalid project id.")
@@ -248,11 +260,40 @@ async def list_sessions():
 
 @router.post("/load")
 async def load_selected_session(filename: str):
-    """Load a saved project by id. ``filename`` is the project_id."""
-    project_dir = _project_dir_safe(filename)
-    chat_path = project_dir / PROJECT_CHAT_FILENAME
-    if not chat_path.exists():
+    """Load a saved project by id. ``filename`` is the project_id.
+
+    Swaps the active project on disk (renames the parked folder into
+    ``workspace/project/``, parks whatever was previously active), then
+    rehydrates the in-memory session from the now-active ``.chat.json``.
+    """
+    if session.is_running:
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot load a project while the agent is running.",
+        )
+
+    project_id = _normalize_project_id(filename)
+    if not project_id or "/" in project_id or "\\" in project_id:
+        raise HTTPException(status_code=400, detail="Invalid project id.")
+
+    # No-op when it's already active; otherwise the parked folder must exist.
+    if read_active_project_id() != project_id and not (PROJECTS_DIR / project_id).exists():
         raise HTTPException(status_code=404, detail="Project not found.")
+
+    try:
+        switch_active_project(project_id)
+    except SwitchCollisionError as e:
+        logging.error("Switch collision while loading", exc_info=e)
+        raise HTTPException(status_code=500, detail="Project switch collided on disk.")
+    except SwitchMissingError:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    except Exception as e:
+        logging.error("Failed to switch projects", exc_info=e)
+        raise HTTPException(status_code=500, detail="Failed to load project.")
+
+    chat_path = ACTIVE_PROJECT_DIR / PROJECT_CHAT_FILENAME
+    if not chat_path.exists():
+        raise HTTPException(status_code=404, detail="Project chat file missing.")
 
     try:
         data = load_session(chat_path)
@@ -270,19 +311,7 @@ async def load_selected_session(filename: str):
     session.pending_images = []
     session.mode = data["mode"]  # type: ignore[assignment]
     session.ensure_display_state()
-
-    session.project_id = project_dir.name
     session.project_title = data.get("title", "") or ""
-
-    # Make sure the outputs folder exists so the active project always
-    # has somewhere for the agent to write to, then point the kernel at it.
-    outputs_dir = project_dir / PROJECT_OUTPUTS_DIRNAME
-    outputs_dir.mkdir(exist_ok=True)
-    try:
-        from server.main import set_kernel_workspace
-        set_kernel_workspace(outputs_dir)
-    except Exception as e:
-        logging.warning(f"Failed to bind kernel workspace on load: {e}")
 
     from server.plan_store import plan_store
     plan_markdown = data.get("plan_markdown", "") or ""
@@ -293,38 +322,48 @@ async def load_selected_session(filename: str):
 
     return {
         "status": "loaded",
-        "filename": project_dir.name,
+        "filename": project_id,
         "mode": session.mode,
     }
 
 
 @router.delete("/{filename}")
 async def delete_session(filename: str):
-    """Delete a project folder (chat + outputs). Refuses during a run."""
+    """Delete a project folder (chat + outputs). Refuses during a run.
+
+    If the project is currently active, it's first parked
+    (``switch_active_project(None)``) so the rmtree operates on a stable
+    parked folder rather than the live workspace.
+    """
     if session.is_running:
         raise HTTPException(
             status_code=409,
             detail="Cannot delete projects while the agent is running.",
         )
 
-    project_dir = _project_dir_safe(filename)
-    if not project_dir.exists():
+    project_id = _normalize_project_id(filename)
+    if not project_id or "/" in project_id or "\\" in project_id:
+        raise HTTPException(status_code=400, detail="Invalid project id.")
+
+    # If active, park it so the rmtree below targets a parked folder.
+    if read_active_project_id() == project_id:
+        try:
+            switch_active_project(None)
+        except Exception as e:
+            logging.error("Failed to park before delete", exc_info=e)
+            raise HTTPException(status_code=500, detail="Failed to park project for delete.")
+
+    parked = PROJECTS_DIR / project_id
+    if not parked.exists():
         raise HTTPException(status_code=404, detail="Project not found.")
 
     try:
-        shutil.rmtree(project_dir)
+        shutil.rmtree(parked)
     except Exception as e:
         logging.error("Failed to delete project", exc_info=e)
         raise HTTPException(status_code=500, detail="Failed to delete project.")
 
-    # If the user deleted the currently-loaded project, drop the in-
-    # memory binding so the next prompt mints a fresh id rather than
-    # trying to write to a folder we just removed.
-    if session.project_id == project_dir.name:
-        session.project_id = None
-        session.project_title = ""
-
-    return {"status": "deleted", "filename": project_dir.name}
+    return {"status": "deleted", "filename": project_id}
 
 
 @router.get("/export/html")

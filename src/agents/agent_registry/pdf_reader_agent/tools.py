@@ -13,7 +13,7 @@ def write_file_tool(file_path: str, content: str) -> str:
     """Write text content to a file in the active project's outputs/.
 
     Args:
-        file_path: Path relative to ``projects/<id>/outputs/`` (e.g.
+        file_path: Path relative to ``project/outputs/`` (e.g.
             ``"briefs/paper_summary.txt"``). Absolute paths are accepted
             but must resolve inside the workspace; writes into
             ``library/`` are refused.

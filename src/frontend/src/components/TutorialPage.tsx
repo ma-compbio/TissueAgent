@@ -162,27 +162,27 @@ export default function TutorialPage() {
         <p>
           Each plan step is handed off to one expert agent from the
           registry. When no expert fits, the recruiter falls back to{" "}
-          <code>coding</code> and explains the choice in the
+          <code>coding_agent</code> and explains the choice in the
           assignment rationale.
         </p>
         <dl className="doc-agents">
-          <dt><code>coding</code></dt>
+          <dt><code>coding_agent</code></dt>
           <dd>General-purpose Python execution</dd>
-          <dt><code>cell_annotator</code></dt>
+          <dt><code>cell_annotator_agent</code></dt>
           <dd>Harmony-based label transfer</dd>
-          <dt><code>spot</code></dt>
+          <dt><code>spot_agent</code></dt>
           <dd>cell2location for Visium deconvolution</dd>
-          <dt><code>single_cell</code></dt>
+          <dt><code>single_cell_agent</code></dt>
           <dd>scRNA-seq processing</dd>
           <dt><code>gene_agent</code></dt>
           <dd>Biological reasoning about gene lists</dd>
-          <dt><code>hypothesis</code></dt>
+          <dt><code>hypothesis_agent</code></dt>
           <dd>Hypothesis generation and testing</dd>
-          <dt><code>pdf_reader</code></dt>
+          <dt><code>pdf_reader_agent</code></dt>
           <dd>Reads attached PDFs</dd>
-          <dt><code>searcher</code></dt>
+          <dt><code>searcher_agent</code></dt>
           <dd>Web and literature search</dd>
-          <dt><code>critic</code></dt>
+          <dt><code>critic_agent</code></dt>
           <dd>Falsification and confound review</dd>
         </dl>
       </Section>

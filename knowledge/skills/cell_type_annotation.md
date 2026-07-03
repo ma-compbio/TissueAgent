@@ -1,7 +1,7 @@
 ---
 name: cell-type-annotation
 description: Assign a cell type label to every cell in single-cell-resolution spatial data (MERFISH, Xenium, CosMx, seqFISH) by transferring annotations from a labeled scRNA-seq reference via Harmony integration + an MLP classifier. Use when the user asks to annotate / label cell types per cell, or transfer labels from a reference onto spatial cells.
-applies_to: [cell_annotator, single_cell, coding]
+applies_to: [cell_annotator_agent, single_cell_agent, coding_agent]
 status: enable
 ---
 
@@ -25,7 +25,7 @@ This codebase implements annotation with one method: **Harmony batch correction 
 
 Inputs may be **raw counts** — by default the tool preprocesses (normalize + log1p + HVG). Use `skip_preprocessing=True` only when both objects are already normalized/log-transformed the same way.
 
-**Tool arguments** — `harmony_transfer_tool` (agent: `cell_annotator`; also usable by `single_cell`):
+**Tool arguments** — `harmony_transfer_tool` (agent: `cell_annotator_agent`; also usable by `single_cell_agent`):
 
 - `spatial_anndata_path` *(required)* / `reference_anndata_path` *(required)*.
 - `cell_type_column` — `.obs` column with reference labels. **Default is `cell_type`** — override with the reference's real column (e.g. `CellType`, `celltype_mapped_refined`) unless it's a CELLxGENE reference (which uses `cell_type`). The tool errors if the column is absent.
@@ -54,10 +54,10 @@ Written to `<output_dir>/` under the project's `outputs/`. The tool returns a di
 
 ## Workflow
 
-0. **(Only if no reference is supplied) retrieve one from CELLxGENE** — agent `single_cell`, two tools:
+0. **(Only if no reference is supplied) retrieve one from CELLxGENE** — agent `single_cell_agent`, two tools:
    1. `query_cellxgene_census_live_tool` — filter the CZI Census to match the spatial sample: `species` (`homo_sapiens`/`mus_musculus`, must match organism), `tissue_general`/`tissue` (ontology labels, e.g. `heart left ventricle`), optional `disease` (`["normal"]` for healthy), `development_stage`/`sex`/`assay`. Set `include_cell_type_counts=True` (+ `top_k_cell_types`) to confirm the reference contains the expected cell types. Returns JSON, one record per `dataset_id` (`n_cells`, tissues, `cell_type_topK`, titles/links). **Pick the best match**: matching tissue + species, relevant disease state, large `n_cells`, covering cell types.
    2. `retrieve_cellxgene_single_cell_tool` — download the chosen `dataset_id` + a `filename`. Saves to `projects/<id>/outputs/datasets/<filename>` and returns that path (won't overwrite). Its labels are in the `cell_type` column — the tool default, so no `cell_type_column` override needed.
-   *In a plan this is two agents: `single_cell` produces the reference, then `cell_annotator` transfers labels.*
+   *In a plan this is two agents: `single_cell_agent` produces the reference, then `cell_annotator_agent` transfers labels.*
 1. **Validate inputs** — paths resolve, reference `cell_type_column` exists; decide `map_spatial_gene_names` and `skip_preprocessing` from the data.
 2. **Run** `harmony_transfer_tool` with `spatial_anndata_path` + `reference_anndata_path`. Internally it: maps gene names (if enabled) → preprocesses each dataset (unless skipped) → intersects to shared genes (**aborts if <50**) → concatenates → `sc.pp.pca` → `sc.external.pp.harmony_integrate` → trains an `MLPClassifier` on the reference in Harmony-PCA space → predicts labels + confidence for the spatial cells.
 3. **Verify** against the Success Criteria; inspect confidence.
@@ -93,6 +93,6 @@ print(f"{low.sum()} cells below 0.5 confidence")
 
 - Internal tool: `harmony_transfer_tool` (`src/agents/agent_registry/cell_annotater_agent/tools.py`).
 - Implementation: `cell_annotater_agent/tools_impl/harmony_transfer.py` (Harmony integration + `MLPClassifier`; MyGene.info gene mapping).
-- Reference retrieval (agent `single_cell`): `query_cellxgene_census_live_tool` and `retrieve_cellxgene_single_cell_tool` (`src/agents/agent_registry/single_cell_agent/tools.py`).
+- Reference retrieval (agent `single_cell_agent`): `query_cellxgene_census_live_tool` and `retrieve_cellxgene_single_cell_tool` (`src/agents/agent_registry/single_cell_agent/tools.py`).
 - Related skill: [[cell-type-deconvolution]] for spot-based platforms.
 - External: scanpy `sc.external.pp.harmony_integrate`; MyGene.info querymany; CZI CELLxGENE Census.

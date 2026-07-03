@@ -10,6 +10,8 @@ import logging
 import mimetypes
 import re
 import shutil
+import threading
+import time
 from copy import deepcopy
 from datetime import datetime
 from html import escape
@@ -32,6 +34,8 @@ from langchain_core.messages.utils import messages_from_dict
 from langgraph.graph import MessagesState
 
 from config import (
+    ACTIVE_PROJECT_DIR,
+    ACTIVE_PROJECT_ID_FILE,
     DATA_DIR,
     DATASET_DIR,
     LEGACY_SESSIONS_DIR,
@@ -43,11 +47,13 @@ from config import (
     PROJECT_OUTPUTS_DIRNAME,
     PROJECT_UPLOADS_DIRNAME,
     PROJECTS_DIR,
-    SCRATCH_ATTACHMENTS_DIR,
-    SCRATCH_DIR,
-    SCRATCH_UPLOADS_DIR,
     SESSIONS_DIR,  # alias; remove once nothing references it
 )
+
+# Guards every operation that mutates the on-disk active-project state.
+# Held by switch_active_project; routes that mutate active state acquire
+# it before calling helpers in this module.
+_switch_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
 # File helpers
@@ -94,8 +100,9 @@ def reset_data_directories() -> None:
 
     Preserved across restarts:
         - ``LIBRARY_DIR`` (persistent shared input)
-        - ``PROJECTS_DIR`` (one folder per project, including chat.json
-          and the per-project ``outputs/`` directory)
+        - ``ACTIVE_PROJECT_DIR`` (the currently-active project's home;
+          actual contents are restored by ``recover_active_project``)
+        - ``PROJECTS_DIR`` (parked projects, outside DATA_DIR)
         - ``LEGACY_SESSIONS_DIR`` (so the one-shot migration at startup
           can still find old session files; gone after migration)
 
@@ -108,21 +115,16 @@ def reset_data_directories() -> None:
     DATASET_DIR.mkdir(parents=True, exist_ok=True)
     LIBRARY_FILES_DIR.mkdir(parents=True, exist_ok=True)
     PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
-    # Scratch is ephemeral but exists from boot so the upload endpoint
-    # can write into it without first checking.
-    SCRATCH_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-    SCRATCH_ATTACHMENTS_DIR.mkdir(parents=True, exist_ok=True)
+    ACTIVE_PROJECT_DIR.mkdir(parents=True, exist_ok=True)
 
-    preserve = {LIBRARY_DIR, PROJECTS_DIR}
+    preserve = {LIBRARY_DIR, ACTIVE_PROJECT_DIR}
     for child in DATA_DIR.iterdir():
         if not child.is_dir() or child in preserve:
             continue
         shutil.rmtree(child, ignore_errors=True)
 
-    # Recreate the ephemeral scratch + plan directories fresh.
+    # Plan scratch lives outside DATA_DIR (see config.py); ensure it exists.
     PLAN_SCRATCH_DIR.mkdir(parents=True, exist_ok=True)
-    SCRATCH_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-    SCRATCH_ATTACHMENTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def migrate_legacy_library_layout() -> None:
@@ -188,7 +190,7 @@ def migrate_legacy_library_layout() -> None:
 
 
 def migrate_legacy_sessions() -> None:
-    """One-shot move of ``sessions/session_*.json`` → ``projects/<id>/chat.json``.
+    """One-shot move of ``sessions/session_*.json`` → ``projects/<id>/.chat.json``.
 
     Idempotent. Runs once at startup. After the move, the legacy
     ``sessions/`` directory is left in place (now empty) so an aborted
@@ -230,6 +232,134 @@ def migrate_legacy_sessions() -> None:
 
     if moved:
         logging.info(f"Migrated {moved} legacy session(s) to projects/.")
+
+
+def migrate_projects_out_of_workspace() -> None:
+    """Move any ``workspace/projects/<id>/`` → ``<ROOT>/projects/<id>/``.
+
+    Used to live inside DATA_DIR (agent-visible); now lives outside it
+    so parked projects are unreachable through tool calls. Idempotent.
+    """
+    old_root = DATA_DIR / "projects"
+    if not old_root.exists() or old_root.resolve() == PROJECTS_DIR.resolve():
+        return
+
+    PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    moved = 0
+    for child in list(old_root.iterdir()):
+        if not child.is_dir():
+            continue
+        dest = PROJECTS_DIR / child.name
+        if dest.exists():
+            logging.warning(
+                f"Skipping migration of {child} — destination {dest} already exists."
+            )
+            continue
+        try:
+            shutil.move(str(child), str(dest))
+            moved += 1
+        except Exception as e:
+            logging.warning(f"Failed to migrate {child}: {e}")
+
+    # Drop the now-empty old directory so it doesn't shadow the agent's
+    # view of the workspace.
+    try:
+        if not any(old_root.iterdir()):
+            old_root.rmdir()
+    except Exception:
+        pass
+
+    if moved:
+        logging.info(f"Moved {moved} parked project(s) out of workspace.")
+
+
+def migrate_plan_scratch_out_of_workspace() -> None:
+    """Move ``workspace/plan_scratch/`` → ``<ROOT>/plan_scratch/``. Idempotent."""
+    old = DATA_DIR / "plan_scratch"
+    if not old.exists() or old.resolve() == PLAN_SCRATCH_DIR.resolve():
+        return
+
+    PLAN_SCRATCH_DIR.mkdir(parents=True, exist_ok=True)
+    for child in list(old.iterdir()):
+        dest = PLAN_SCRATCH_DIR / child.name
+        if dest.exists():
+            continue
+        try:
+            shutil.move(str(child), str(dest))
+        except Exception as e:
+            logging.warning(f"Failed to migrate plan scratch {child}: {e}")
+    try:
+        if not any(old.iterdir()):
+            old.rmdir()
+    except Exception:
+        pass
+
+
+def migrate_chat_json_to_dotfile() -> None:
+    """Rename ``chat.json`` → ``.chat.json`` in active and parked projects.
+
+    The dotfile naming hides the persistence file from default ``glob('**/*')``
+    patterns in agent tools. Idempotent.
+    """
+    candidates: List[Path] = []
+    if PROJECTS_DIR.exists():
+        for child in PROJECTS_DIR.iterdir():
+            if child.is_dir():
+                candidates.append(child / "chat.json")
+    candidates.append(ACTIVE_PROJECT_DIR / "chat.json")
+
+    renamed = 0
+    for old in candidates:
+        if not old.exists():
+            continue
+        new = old.with_name(PROJECT_CHAT_FILENAME)
+        if new.exists():
+            continue
+        try:
+            old.rename(new)
+            renamed += 1
+        except Exception as e:
+            logging.warning(f"Failed to rename {old} → {new}: {e}")
+    if renamed:
+        logging.info(f"Renamed {renamed} chat.json → {PROJECT_CHAT_FILENAME}.")
+
+
+def migrate_scratch_into_active_project() -> None:
+    """Drain legacy ``workspace/scratch/{uploads,attachments}/*`` into
+    ``workspace/project/{uploads,attachments}/``.
+
+    No-op if the old scratch dir doesn't exist. Idempotent.
+    """
+    old_root = DATA_DIR / "scratch"
+    if not old_root.exists():
+        return
+
+    ACTIVE_PROJECT_DIR.mkdir(parents=True, exist_ok=True)
+    moved = 0
+    for sub, dest_name in (("uploads", PROJECT_UPLOADS_DIRNAME),
+                            ("attachments", PROJECT_ATTACHMENTS_DIRNAME)):
+        src_dir = old_root / sub
+        if not src_dir.exists():
+            continue
+        dst_dir = ACTIVE_PROJECT_DIR / dest_name
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        for src in list(src_dir.iterdir()):
+            if not src.is_file():
+                continue
+            dst = next_available_path(dst_dir, src.name)
+            try:
+                shutil.move(str(src), str(dst))
+                moved += 1
+            except Exception as e:
+                logging.warning(f"Failed to migrate scratch file {src}: {e}")
+
+    try:
+        shutil.rmtree(old_root, ignore_errors=True)
+    except Exception:
+        pass
+
+    if moved:
+        logging.info(f"Migrated {moved} scratch file(s) into active project.")
 
 
 # ---------------------------------------------------------------------------
@@ -606,8 +736,41 @@ def save_session(
     return target_path
 
 
+# ---------------------------------------------------------------------------
+# Active project resolution
+#
+# The active project lives at ACTIVE_PROJECT_DIR. Parked projects live at
+# PROJECTS_DIR/<id>/. The functions below route per-project paths to the
+# active home when the id matches, and to the parked location otherwise.
+# ---------------------------------------------------------------------------
+
+
+def read_active_project_id() -> Optional[str]:
+    """Return the active project's id, or None if no project is bound."""
+    pid_file = ACTIVE_PROJECT_DIR / ACTIVE_PROJECT_ID_FILE
+    if not pid_file.exists():
+        return None
+    try:
+        raw = pid_file.read_text(encoding="utf-8").strip()
+    except Exception:
+        return None
+    return raw or None
+
+
+def write_active_project_id(pid: str) -> None:
+    """Record the active project's id in ``project/.project_id``."""
+    ACTIVE_PROJECT_DIR.mkdir(parents=True, exist_ok=True)
+    (ACTIVE_PROJECT_DIR / ACTIVE_PROJECT_ID_FILE).write_text(pid, encoding="utf-8")
+
+
 def project_dir_for(project_id: str) -> Path:
-    """Return the on-disk folder for ``project_id`` (does not create it)."""
+    """Return the on-disk folder for ``project_id``.
+
+    Returns ``ACTIVE_PROJECT_DIR`` when the id matches the active project,
+    otherwise the parked path under PROJECTS_DIR.
+    """
+    if project_id and project_id == read_active_project_id():
+        return ACTIVE_PROJECT_DIR
     return PROJECTS_DIR / project_id
 
 
@@ -619,90 +782,221 @@ def project_outputs_dir(project_id: str) -> Path:
 
 
 def project_attachments_dir(project_id: str) -> Path:
-    """Return the per-project attachments directory; creates it if missing.
-
-    Attachments are images and PDFs the user dropped into the chat. They
-    live with the project (unlike the library, which is curated reference
-    data shared across all projects).
-    """
+    """Return the per-project attachments directory; creates it if missing."""
     out = project_dir_for(project_id) / PROJECT_ATTACHMENTS_DIRNAME
     out.mkdir(parents=True, exist_ok=True)
     return out
 
 
-def clear_scratch_dirs() -> None:
-    """Empty the pre-project scratch dirs in place.
-
-    Called on session reset / new-project. We don't ``rmtree`` the
-    parents because the upload endpoint expects the directories to
-    exist; we just delete their children.
-    """
-    for d in (SCRATCH_UPLOADS_DIR, SCRATCH_ATTACHMENTS_DIR):
-        if not d.exists():
-            d.mkdir(parents=True, exist_ok=True)
-            continue
-        for child in d.iterdir():
-            try:
-                if child.is_dir():
-                    shutil.rmtree(child, ignore_errors=True)
-                else:
-                    child.unlink()
-            except Exception as e:
-                logging.warning(f"Failed to clear scratch entry {child}: {e}")
-
-
-def adopt_scratch_into_project(project_id: str) -> dict:
-    """Move scratch contents into ``projects/<project_id>/`` subfolders.
-
-    Returns a mapping ``{old_path: new_path}`` for every file moved so
-    the caller can rewrite any in-memory references (``pending_images``,
-    ``uploaded_pdfs``) that still point at the scratch location.
-    """
-    moves: dict = {}
-    dest_uploads = project_uploads_dir(project_id)
-    dest_attachments = project_attachments_dir(project_id)
-
-    for src_dir, dst_dir in (
-        (SCRATCH_UPLOADS_DIR, dest_uploads),
-        (SCRATCH_ATTACHMENTS_DIR, dest_attachments),
-    ):
-        if not src_dir.exists():
-            continue
-        for src in src_dir.iterdir():
-            if not src.is_file():
-                continue
-            dst = next_available_path(dst_dir, src.name)
-            try:
-                shutil.move(str(src), str(dst))
-                moves[str(src)] = str(dst)
-            except Exception as e:
-                logging.warning(f"Failed to adopt scratch file {src}: {e}")
-    return moves
-
-
 def project_uploads_dir(project_id: str) -> Path:
-    """Return the per-project sidebar uploads directory; creates it if missing.
-
-    Default landing place for sidebar uploads inside a project. Distinct
-    from ``attachments/`` so chat-attached images/PDFs (which need to be
-    sent as part of the next message payload) stay grouped together
-    apart from general per-project files.
-    """
+    """Return the per-project sidebar uploads directory; creates it if missing."""
     out = project_dir_for(project_id) / PROJECT_UPLOADS_DIRNAME
     out.mkdir(parents=True, exist_ok=True)
     return out
 
 
+def clear_active_project_dir() -> None:
+    """Wipe the active project dir back to a clean empty shell.
+
+    Removes ``.project_id``, deletes all children, recreates the canonical
+    three subdirs. The directory itself is preserved (it must always exist).
+    """
+    ACTIVE_PROJECT_DIR.mkdir(parents=True, exist_ok=True)
+    for child in list(ACTIVE_PROJECT_DIR.iterdir()):
+        try:
+            if child.is_dir():
+                shutil.rmtree(child, ignore_errors=True)
+            else:
+                child.unlink()
+        except Exception as e:
+            logging.warning(f"Failed to clear active-project entry {child}: {e}")
+    for sub in (
+        PROJECT_UPLOADS_DIRNAME,
+        PROJECT_ATTACHMENTS_DIRNAME,
+        PROJECT_OUTPUTS_DIRNAME,
+    ):
+        (ACTIVE_PROJECT_DIR / sub).mkdir(parents=True, exist_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# Project switch protocol
+# ---------------------------------------------------------------------------
+
+
+class SwitchCollisionError(RuntimeError):
+    """The destination for a park already exists — refuse to silently merge."""
+
+
+class SwitchMissingError(RuntimeError):
+    """The requested new project doesn't exist under PROJECTS_DIR."""
+
+
+def _force_kernel_restart() -> None:
+    """Best-effort kernel teardown around a project switch. Lazily imported."""
+    try:
+        from config import active_project_outputs
+        from server.main import set_kernel_workspace
+        set_kernel_workspace(active_project_outputs(), force_restart=True)
+    except Exception as e:
+        logging.warning(f"Kernel teardown failed during switch: {e}")
+
+
+def _rearm_kernel() -> None:
+    """Post-switch: re-arm the kernel for the (possibly new) contents."""
+    try:
+        from config import active_project_outputs
+        from server.main import set_kernel_workspace
+        set_kernel_workspace(active_project_outputs(), force_restart=False)
+    except Exception as e:
+        logging.warning(f"Kernel re-arm failed after switch: {e}")
+
+
+def switch_active_project(new_id: Optional[str]) -> None:
+    """Atomically swap the active project to ``new_id`` (or to "empty shell").
+
+    Protocol:
+        1. Force-kill kernels (path string is invariant; equality check
+           in ``set_workspace`` won't fire on its own).
+        2. If a project is currently active, park it
+           (``project/`` → ``projects/<old_id>/``).
+        3. If ``new_id`` is given, promote
+           (``projects/<new_id>/`` → ``project/``); else recreate an
+           empty shell.
+        4. Re-arm the kernel.
+
+    Concurrency: holds ``_switch_lock`` for the entire body. Callers
+    must already have checked ``session.is_running`` if they want to
+    refuse mid-turn switches (routes do this today).
+    """
+    with _switch_lock:
+        old_id = read_active_project_id()
+        if new_id == old_id:
+            return
+
+        _force_kernel_restart()
+
+        # 2. Park current project/ → projects/<old_id>/.
+        if old_id is not None:
+            dest = PROJECTS_DIR / old_id
+            if dest.exists():
+                raise SwitchCollisionError(old_id)
+            PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+            ACTIVE_PROJECT_DIR.rename(dest)
+
+        # 3. Promote projects/<new_id>/ → project/, or recreate empty shell.
+        try:
+            if new_id is not None:
+                src = PROJECTS_DIR / new_id
+                if not src.exists():
+                    raise SwitchMissingError(new_id)
+                # If we're here with ACTIVE_PROJECT_DIR still present, it
+                # means step 2 didn't park (old_id was None) — i.e. we're
+                # promoting over an anonymous shell. Remove it so the
+                # rename has a clean target.
+                if ACTIVE_PROJECT_DIR.exists():
+                    shutil.rmtree(ACTIVE_PROJECT_DIR)
+                src.rename(ACTIVE_PROJECT_DIR)
+                for sub in (
+                    PROJECT_UPLOADS_DIRNAME,
+                    PROJECT_ATTACHMENTS_DIRNAME,
+                    PROJECT_OUTPUTS_DIRNAME,
+                ):
+                    (ACTIVE_PROJECT_DIR / sub).mkdir(exist_ok=True)
+                write_active_project_id(new_id)
+            else:
+                ACTIVE_PROJECT_DIR.mkdir(exist_ok=True)
+                clear_active_project_dir()
+        except SwitchMissingError:
+            # Roll back step 2 so we leave a consistent state.
+            if old_id is not None:
+                try:
+                    (PROJECTS_DIR / old_id).rename(ACTIVE_PROJECT_DIR)
+                except Exception as e:
+                    logging.error(
+                        f"Failed to roll back park of {old_id} after missing "
+                        f"new project {new_id}: {e}"
+                    )
+            raise
+
+        # Update in-memory session state to match.
+        try:
+            from server.session_manager import session
+            session.project_id = new_id
+            if new_id is None:
+                session.project_title = ""
+        except Exception:
+            pass
+
+        _rearm_kernel()
+
+
+def recover_active_project() -> Optional[str]:
+    """Reconcile on-disk state at startup. Returns active id or None.
+
+    State table:
+        B.1 project/ absent           → mkdir empty shell, return None
+        B.2 project/ + .project_id    → return that id
+        B.3 project/ no .project_id   → return None (anonymous shell)
+        B.4 project/ AND parked twin  → rename twin to __rescued_<ts>,
+                                         keep live, return id
+        B.5 only parked exists        → mkdir empty shell, return None
+    """
+    ACTIVE_PROJECT_DIR.mkdir(parents=True, exist_ok=True)
+    for sub in (
+        PROJECT_UPLOADS_DIRNAME,
+        PROJECT_ATTACHMENTS_DIRNAME,
+        PROJECT_OUTPUTS_DIRNAME,
+    ):
+        (ACTIVE_PROJECT_DIR / sub).mkdir(exist_ok=True)
+
+    pid = read_active_project_id()
+    if pid is None:
+        return None
+    # Validate per the same rules as the route normalizer.
+    if not pid or "/" in pid or "\\" in pid or pid in (".", ".."):
+        logging.warning(f"Invalid .project_id contents: {pid!r}; ignoring.")
+        return None
+
+    parked = PROJECTS_DIR / pid
+    if parked.exists():
+        # B.4 — collision. The live folder is what's in front of the user;
+        # rename the parked twin out of the way for forensics.
+        rescue = PROJECTS_DIR / f"{pid}__rescued_{int(time.time())}"
+        try:
+            parked.rename(rescue)
+            logging.warning(
+                f"Rescued conflicting parked project {pid} → {rescue.name}"
+            )
+        except Exception as e:
+            logging.error(f"Failed to rescue conflicting parked {pid}: {e}")
+    return pid
+
+
 def list_project_chat_files() -> List[Path]:
-    """Return all ``projects/<id>/chat.json`` paths, newest mtime first."""
+    """Return all chat files (active + parked), newest mtime first.
+
+    Includes ``ACTIVE_PROJECT_DIR / .chat.json`` (if a ``.project_id`` is
+    present) plus every ``PROJECTS_DIR / <id> / .chat.json``. Deduped by
+    id so the active project isn't double-counted.
+    """
     PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    seen_ids: set = set()
     chats: List[Path] = []
+
+    active_pid = read_active_project_id()
+    if active_pid is not None:
+        active_chat = ACTIVE_PROJECT_DIR / PROJECT_CHAT_FILENAME
+        if active_chat.exists():
+            chats.append(active_chat)
+            seen_ids.add(active_pid)
+
     for child in PROJECTS_DIR.iterdir():
-        if not child.is_dir():
+        if not child.is_dir() or child.name in seen_ids:
             continue
         chat = child / PROJECT_CHAT_FILENAME
         if chat.exists():
             chats.append(chat)
+
     chats.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     return chats
 
@@ -898,15 +1192,14 @@ def _render_plan_html(plan_markdown: str, plan_doc=None) -> str:
         )
         + "</div>"
     )
-    if doc.provenance is not None:
-        if doc.provenance.template_names:
-            names = ", ".join(f"<code>{escape(n)}</code>" for n in doc.provenance.template_names)
-            prov_text = f"From template{'s' if len(doc.provenance.template_names) > 1 else ''}: {names}"
-            if doc.provenance.decision:
-                prov_text += f" ({escape(doc.provenance.decision)})"
-        else:
-            prov_text = "De novo plan (no template used)"
-        rows.append(f'<div class="plan-provenance-line">{prov_text}</div>')
+    if doc.provenance.template_names:
+        names = ", ".join(f"<code>{escape(n)}</code>" for n in doc.provenance.template_names)
+        prov_text = f"From template{'s' if len(doc.provenance.template_names) > 1 else ''}: {names}"
+    else:
+        prov_text = "De novo plan (no template used)"
+    if doc.provenance.justification:
+        prov_text += f" &mdash; {escape(doc.provenance.justification)}"
+    rows.append(f'<div class="plan-provenance-line">{prov_text}</div>')
     if doc.user_request:
         rows.append(
             f'<div class="plan-request"><strong>Request:</strong> '
@@ -1018,17 +1311,17 @@ def build_session_markdown(
         from server.plan_store import _parse_markdown as _pp
         try:
             _doc = _pp(plan_markdown)
-            if _doc.provenance is not None:
-                if _doc.provenance.template_names:
-                    names = ", ".join(f"`{n}`" for n in _doc.provenance.template_names)
-                    parts = [names]
-                    if _doc.provenance.decision:
-                        parts.append(f"({_doc.provenance.decision})")
-                    label = "template" if len(_doc.provenance.template_names) == 1 else "templates"
-                    lines.append(f"_From {label}: {' '.join(parts)}_")
-                else:
-                    lines.append("_De novo plan (no template used)_")
-                lines.append("")
+            if _doc.provenance.template_names:
+                names = ", ".join(f"`{n}`" for n in _doc.provenance.template_names)
+                label = "template" if len(_doc.provenance.template_names) == 1 else "templates"
+                line = f"_From {label}: {names}"
+            else:
+                line = "_De novo plan (no template used)"
+            if _doc.provenance.justification:
+                line += f" — {_doc.provenance.justification}"
+            line += "_"
+            lines.append(line)
+            lines.append("")
         except Exception:
             pass
         # The on-disk plan markdown already has its own ``# Plan`` heading

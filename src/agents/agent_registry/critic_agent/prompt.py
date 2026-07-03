@@ -270,15 +270,15 @@ Use `write_file_tool` to save to `reports/post_execution_criticism.json`:
 ## Tools Available
 
 - **write_file_tool**: Save criticism to files. Paths are relative to the active project's outputs/ (e.g. `reports/criticism.json`).
-- **glob(pattern)**: List workspace files/directories matching a glob pattern (relative to the workspace root). Use `projects/*/outputs/**` for prior outputs.
+- **glob(pattern)**: List workspace files/directories matching a glob pattern (relative to the workspace root). Use `project/outputs/**` for this run's outputs.
 - **grep(pattern, include="**/*")**: Search file contents by regex; binary files are skipped.
 - **read(file_path, offset=1, limit=None)**: Read a workspace file by relative path; images are returned inline.
 
 ## Workspace Layout
 
 - `library/datasets/`, `library/files/` — persistent shared inputs (read-only).
-- `projects/<id>/uploads/`, `projects/<id>/attachments/` — what the user supplied for this run.
-- `projects/<id>/outputs/` — where the team writes results. The critic both reads from and writes to this directory.
+- `project/uploads/`, `project/attachments/` — what the user supplied for this run.
+- `project/outputs/` — where the team writes results. The critic both reads from and writes to this directory.
 
 Typical access patterns for criticism:
 - Read hypotheses from: `outputs/hypotheses/hypotheses.json` (or wherever the hypothesis agent saved it under outputs/).

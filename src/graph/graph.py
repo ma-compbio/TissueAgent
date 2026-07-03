@@ -29,10 +29,16 @@ from agents.agent_defns import (
     RecruiterAgent,
     ReporterAgent,
 )
+from agents.agent_utils import substitute_shared_prompts
+from agents.planner_agent.prompt import PlannerReplanPrompt
 from config import MAX_PLANNER_RETRIES, MAX_RECRUITER_RETRIES, MAX_REPLANS
+from agents.manager_agent.tools import create_manager_step_tools
 from graph.message_filters import (
     filter_for_execution_phase,
+    filter_for_manager,
+    filter_for_planner,
     filter_for_recruiter,
+    find_last_planner_final_content,
 )
 from graph.node_factories import (
     AgentState,
@@ -83,6 +89,7 @@ def create_tissueagent_graph(
 
     context_resolver = create_step_context_resolver(assign_agent_node_id)
     agent_invocation_tools = []
+    invocation_tools_by_agent: dict[str, "StructuredTool"] = {}
     for agent in AgentDefns:
         if isinstance(agent, ReActAgent):
             agent_subgraph = StateGraph(AgentState)
@@ -93,13 +100,20 @@ def create_tissueagent_graph(
             tool_node = create_tool_node(agent.tools)
 
             base_prompt = agent.prompt
-            if callable(base_prompt):
-                # Wrap static prompt strings in a callable that injects skill_prompt
-                def prompt_fn(state: AgentState):
+            if isinstance(base_prompt, str):
+                # Substitute shared prompts once at build time, then wrap in a callable that
+                # injects the per-step skill_prompt at invocation time. The default-arg binding
+                # captures the current loop iteration's prompt instead of the last one.
+                substituted = substitute_shared_prompts(base_prompt)
+
+                def prompt_fn(state: AgentState, _prompt: str = substituted) -> str:
                     skill_text = state.get("skill_prompt", "")
-                    return base_prompt.replace("{{skill_prompt}}", skill_text)
+                    return _prompt.replace("{{skill_prompt}}", skill_text)
             else:
-                prompt_fn = base_prompt
+                # Callable prompts handle their own substitution; just wrap to also apply the
+                # shared-prompt pass on whatever the callable returns.
+                def prompt_fn(state: AgentState, _base: Callable = base_prompt) -> str:
+                    return substitute_shared_prompts(_base(state))
 
             agent_node = create_agent_node(agent_node_id, agent_model, prompt_fn, tool_node_id, END)
 
@@ -117,6 +131,7 @@ def create_tissueagent_graph(
                 context_resolver,
             )
             agent_invocation_tools.append(agent_invocation_tool)
+            invocation_tools_by_agent[assign_agent_node_id(agent.id)] = agent_invocation_tool
 
             logging.info(
                 "\n\n".join(
@@ -138,6 +153,7 @@ def create_tissueagent_graph(
                 state_queue, context_resolver=context_resolver, **filtered
             )
             agent_invocation_tools.append(agent_invocation_tool)
+            invocation_tools_by_agent[assign_agent_node_id(agent.id)] = agent_invocation_tool
 
             logging.info(
                 "\n\n".join(
@@ -167,14 +183,21 @@ def create_tissueagent_graph(
             )
         else:
             try:
-                prompt_preview = main_agent.prompt(agent_id_descriptions)
+                prompt_obj = main_agent.prompt(agent_id_descriptions)
+                # Some prompts (e.g., the manager's) return a state-aware callable
+                # rather than a string. Render once with an empty state for preview.
+                if callable(prompt_obj):
+                    prompt_obj = prompt_obj({"messages": []})
+                prompt_preview = prompt_obj
                 if len(prompt_preview) > 600:
                     prompt_preview = prompt_preview[:600] + "...[truncated]"
             except Exception as e:
                 prompt_preview = f"<Prompt callable: {e}>"
         tool_names = [tool.name for tool in main_agent.tools]
         if main_agent == ManagerAgent:
-            tool_names += [tool.name for tool in agent_invocation_tools]
+            # Manager's transfer-tool surface is wrapped by next_step/retry_step;
+            # the per-agent transfer tools are no longer bound directly.
+            tool_names += ["next_step", "retry_step"]
         logging.info(
             "\n".join(
                 [
@@ -190,21 +213,45 @@ def create_tissueagent_graph(
 
     planner_model = model_proc_fn(PlannerAgent.model_ctor().bind_tools(PlannerAgent.tools))
     assert isinstance(PlannerAgent.prompt, str)
+    initial_planner_prompt = substitute_shared_prompts(PlannerAgent.prompt)
+    replan_prompt = substitute_shared_prompts(PlannerReplanPrompt)
+
+    def planner_prompt_fn(state) -> str:
+        """Swap to the replan prompt once the evaluator has bounced us back at least once.
+
+        On replan, substitute the previous planner_agent final's content into the
+        {{previous_plan}} placeholder. The previous plan is pulled directly from the
+        prior planner response (not the recruiter-annotated plan_store), and the
+        message filter strips the same response so it isn't shown twice.
+        """
+        if int(state.get("replan_count", 0) or 0) > 0:
+            previous_plan = find_last_planner_final_content(state.get("messages", []))
+            return replan_prompt.replace("{{previous_plan}}", previous_plan)
+        return initial_planner_prompt
+
     planner_node_id = assign_agent_node_id(PlannerAgent.id)
     planner_tool_node_id = assign_tool_node_id(PlannerAgent.id)
 
     ### Recruiter agent
 
     recruiter_model = model_proc_fn(RecruiterAgent.model_ctor().bind_tools(RecruiterAgent.tools))
-    recruiter_prompt = RecruiterAgent.prompt(agent_id_descriptions)
+    recruiter_prompt = substitute_shared_prompts(RecruiterAgent.prompt(agent_id_descriptions))
     recruiter_node_id = assign_agent_node_id(RecruiterAgent.id)
     recruiter_tool_node_id = assign_tool_node_id(RecruiterAgent.id)
 
     ### Manager agent
 
-    manager_tools = ManagerAgent.tools + agent_invocation_tools
+    manager_step_tools = create_manager_step_tools(invocation_tools_by_agent)
+    manager_tools = ManagerAgent.tools + manager_step_tools
     manager_model = model_proc_fn(ManagerAgent.model_ctor().bind_tools(manager_tools))
-    manager_prompt = ManagerAgent.prompt(agent_id_descriptions)
+
+    # ManagerPrompt returns a state-aware callable. Wrap it so shared-prompt substitution
+    # is applied to each per-turn render (matches how prompts are wrapped elsewhere).
+    _manager_prompt_render = ManagerAgent.prompt(agent_id_descriptions)
+
+    def manager_prompt(state) -> str:
+        return substitute_shared_prompts(_manager_prompt_render(state))
+
     manager_node_id = assign_agent_node_id(ManagerAgent.id)
     manager_tool_node_id = assign_tool_node_id(ManagerAgent.id)
 
@@ -212,7 +259,7 @@ def create_tissueagent_graph(
 
     evaluator_model = model_proc_fn(EvaluatorAgent.model_ctor().bind_tools(EvaluatorAgent.tools))
     assert isinstance(EvaluatorAgent.prompt, str)
-    evaluator_prompt = EvaluatorAgent.prompt
+    evaluator_prompt = substitute_shared_prompts(EvaluatorAgent.prompt)
     evaluator_node_id = assign_agent_node_id(EvaluatorAgent.id)
     evaluator_tool_node_id = assign_tool_node_id(EvaluatorAgent.id)
 
@@ -220,6 +267,7 @@ def create_tissueagent_graph(
 
     reporter_model = model_proc_fn(ReporterAgent.model_ctor().bind_tools(ReporterAgent.tools))
     assert isinstance(ReporterAgent.prompt, str)
+    reporter_prompt = substitute_shared_prompts(ReporterAgent.prompt)
     reporter_node_id = assign_agent_node_id(ReporterAgent.id)
     reporter_tool_node_id = assign_tool_node_id(ReporterAgent.id)
 
@@ -229,8 +277,17 @@ def create_tissueagent_graph(
 
     planner_tool_node = create_tool_node(PlannerAgent.tools)
 
-    def planner_router(response, _) -> str:
-        """PlannerAgent transition fn."""
+    def planner_router(response, state) -> str:
+        """PlannerAgent transition fn.
+
+        On replan the planner emits a bare JSON plan with no ROUTE header, so route
+        straight to the recruiter unless state_update_fn flagged a parse failure
+        (in which case it added retry feedback and we loop back).
+        """
+        if int(state.get("replan_count", 0) or 0) > 0:
+            if state.get("planner_validation_errors"):
+                return planner_node_id
+            return recruiter_node_id
         text = (response.content or "").strip()
         head = text.splitlines()[0].upper() if text else ""
         if head.startswith("ROUTE: DIRECT") or head.startswith("ROUTE: CLARIFY"):
@@ -247,17 +304,18 @@ def create_tissueagent_graph(
     planner_node = create_agent_node(
         planner_node_id,
         planner_model,
-        PlannerAgent.prompt,
+        planner_prompt_fn,
         planner_tool_node_id,
         exit_node=planner_router,
         state_update_fn=planner_state_update_fn,
+        message_filter_fn=filter_for_planner,
     )
 
     ### Recruiter Node
 
     recruiter_tool_node = create_tool_node(RecruiterAgent.tools)
 
-    valid_agent_ids = {a.id for a in AgentDefns}
+    valid_agent_ids = {assign_agent_node_id(a.id) for a in AgentDefns}
     recruiter_state_update_fn = create_recruiter_state_update(
         valid_agent_ids,
         max_retries=MAX_RECRUITER_RETRIES,
@@ -293,7 +351,7 @@ def create_tissueagent_graph(
         manager_prompt,
         manager_tool_node_id,
         evaluator_node_id,
-        message_filter_fn=filter_for_execution_phase,
+        message_filter_fn=filter_for_manager,
     )
 
     ### Evaluator node
@@ -346,7 +404,7 @@ def create_tissueagent_graph(
     reporter_node = create_agent_node(
         reporter_node_id,
         reporter_model,
-        ReporterAgent.prompt,
+        reporter_prompt,
         reporter_tool_node_id,
         END,
         message_filter_fn=filter_for_execution_phase,

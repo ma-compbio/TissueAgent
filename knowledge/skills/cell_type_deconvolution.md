@@ -1,7 +1,7 @@
 ---
 name: cell-type-deconvolution
 description: Estimate per-spot cell type composition on spot-based spatial data (10x Visium, Slide-seq, ST) by mapping a scRNA-seq reference with cell2location. Use when the user asks to deconvolve spots, infer cell type proportions/abundances, or "annotate cell types" on multi-cell spatial spots.
-applies_to: [spot, single_cell, coding]
+applies_to: [spot_agent, single_cell_agent, coding_agent]
 status: enable
 ---
 
@@ -24,7 +24,7 @@ This codebase implements deconvolution with **cell2location only** (Bayesian map
 - Counts must be **unnormalized**; log/normalized matrices are rejected (the tool samples `.X` for non-integer / negative / suspiciously-small-max values and errors out).
 - GPU strongly recommended; the tool falls back to CPU (much slower).
 
-**Tool arguments** — `cell2location_visium_deconvolution_tool` (agent: `spot`; also available to `single_cell`):
+**Tool arguments** — `cell2location_visium_deconvolution_tool` (agent: `spot_agent`; also available to `single_cell_agent`):
 
 - `visium_h5ad_path` *(required)* / `reference_h5ad_path` *(required)*.
 - `cell_type_column` — `.obs` column with reference labels. **Default is `leiden`** — almost always wrong; pass the real annotation column (e.g. `CellType`, `celltype_mapped_refined`, or `cell_type` for a CELLxGENE reference). The tool errors if absent.
@@ -55,10 +55,10 @@ Written to `<output_subdir>/` under the project's `outputs/`. The tool returns a
 
 ## Workflow
 
-0. **(Only if no reference is supplied) retrieve one from CELLxGENE** — agent `single_cell`, two tools:
+0. **(Only if no reference is supplied) retrieve one from CELLxGENE** — agent `single_cell_agent`, two tools:
    1. `query_cellxgene_census_live_tool` — filter the CZI Census to match the spatial sample (`species`, `tissue_general`/`tissue`, optional `disease`/`development_stage`/`assay`). Set `include_cell_type_counts=True` so each candidate's top cell types are returned; pick a reference covering the expected cell types, matching species/tissue, with large `n_cells`. Returns JSON, one record per `dataset_id`, with metadata/links.
    2. `retrieve_cellxgene_single_cell_tool` — download the chosen `dataset_id` + a `filename`. Saves to `projects/<id>/outputs/datasets/<filename>` and returns that path (won't overwrite). **Its labels are in `cell_type`, but this tool defaults `cell_type_column` to `leiden` — you MUST set `cell_type_column="cell_type"`** for a Census reference.
-   *In a plan this is two agents: `single_cell` produces the reference, then `single_cell`/`spot` runs cell2location.*
+   *In a plan this is two agents: `single_cell_agent` produces the reference, then `single_cell_agent`/`spot_agent` runs cell2location.*
 1. **Validate inputs** — paths resolve, reference `cell_type_column` exists, counts are raw; set `n_cells_per_location` for the tissue.
 2. **Run** `cell2location_visium_deconvolution_tool` with `visium_h5ad_path` + `reference_h5ad_path`. Internally it: recovers raw counts (promotes `.raw` if needed) → validates counts are integers (**aborts otherwise**) → **stratified-subsamples references >100k cells to ~10k** → standardizes gene IDs to Ensembl → QC-filters + removes MT- genes → intersects to shared genes (**aborts if <50**) → trains the reference `RegressionModel` (cell-state signatures) → trains the spatial `Cell2location` model → exports per-spot abundance.
 3. **Verify** against the Success Criteria.
@@ -91,6 +91,6 @@ plt.tight_layout(); plt.savefig("celltype_abundance.png", dpi=150)
 
 - Internal tool: `cell2location_visium_deconvolution_tool` (`src/agents/agent_registry/spot_agent/tools.py`).
 - Implementation: `spot_agent/tools_impl/cell2location_visium_deconvolution_tool.py`.
-- Reference retrieval (agent `single_cell`): `query_cellxgene_census_live_tool` and `retrieve_cellxgene_single_cell_tool` (`src/agents/agent_registry/single_cell_agent/tools.py`).
+- Reference retrieval (agent `single_cell_agent`): `query_cellxgene_census_live_tool` and `retrieve_cellxgene_single_cell_tool` (`src/agents/agent_registry/single_cell_agent/tools.py`).
 - Related skill: [[cell-type-annotation]] for single-cell-resolution platforms.
 - External: cell2location docs (RegressionModel → Cell2location two-stage mapping); CZI CELLxGENE Census.

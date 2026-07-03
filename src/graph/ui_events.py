@@ -19,21 +19,27 @@ _ui_event_queue: Queue | None = None
 _subagent_context = threading.local()
 
 
-def _get_subagent_context() -> tuple[str | None, str | None]:
-    """Return (invocation_id, agent_name) if inside a sub-agent, else (None, None)."""
+def _get_subagent_context() -> tuple[str | None, str | None, int | None]:
+    """Return ``(invocation_id, agent_name, step_id)`` if inside a sub-agent, else ``(None, None,
+    None)``. ``step_id`` is the plan step that the manager dispatched this sub-agent to execute, or
+    ``None`` when the call wasn't tied to a plan step (e.g. ad-hoc invocations)."""
     return (
         getattr(_subagent_context, "invocation_id", None),
         getattr(_subagent_context, "agent_name", None),
+        getattr(_subagent_context, "step_id", None),
     )
 
 
 @contextmanager
-def subagent_invocation(agent_name: str):
+def subagent_invocation(agent_name: str, step_id: int | None = None):
     """Context manager that brackets a sub-agent invocation with start/end events.
 
     Sets thread-local context so that ``emit_message()`` calls within the sub-agent automatically
     route to the live-trace stream.  Pushes ``subagent_start`` and ``subagent_end`` events onto the
     UI queue. Yields the generated *invocation_id* (a UUID string).
+
+    ``step_id`` is propagated via the thread-local context so inner LLM calls can be attributed to
+    the plan step the manager dispatched on.
     """
     invocation_id = str(uuid.uuid4())
 
@@ -50,11 +56,13 @@ def subagent_invocation(agent_name: str):
 
     _subagent_context.invocation_id = invocation_id
     _subagent_context.agent_name = agent_name
+    _subagent_context.step_id = step_id
     try:
         yield invocation_id
     finally:
         _subagent_context.invocation_id = None
         _subagent_context.agent_name = None
+        _subagent_context.step_id = None
         if _ui_event_queue is not None:
             _ui_event_queue.put_nowait(
                 (
@@ -114,7 +122,7 @@ def emit_message(message: BaseMessage) -> None:
     logger.info(full_message)
     if _ui_event_queue is not None:
         try:
-            inv_id, sa_name = _get_subagent_context()
+            inv_id, sa_name, _ = _get_subagent_context()
             if inv_id is not None:
                 _ui_event_queue.put_nowait(
                     (

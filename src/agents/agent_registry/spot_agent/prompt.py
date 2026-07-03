@@ -25,7 +25,7 @@ Use ReAct INTERNALLY and STOP once the requested deconvolution run is completed 
 
 # Preconditions
 - Requires BOTH a spatial AnnData path (Visium) and a reference AnnData path (scRNA-seq) that share sufficient genes.
-- Ensure provided input paths exist somewhere readable in the workspace (under `library/datasets/`, `library/files/`, or `projects/<id>/uploads/`). Output paths anchor to the active project's `outputs/` directory unless given as absolute.
+- Ensure provided input paths exist somewhere readable in the workspace (under `library/datasets/`, `library/files/`, or `project/uploads/`). Output paths anchor to the active project's `outputs/` directory unless given as absolute.
 - Confirm the cell type column, count layers, and batch keys as needed; use defaults if unspecified.
 
 # Parameter Guidelines
@@ -41,12 +41,12 @@ Use ReAct INTERNALLY and STOP once the requested deconvolution run is completed 
 3. Inspect tool response; if success, report key artifact paths. If failure, surface the error and request clarified inputs.
 
 # Good-Enough Criteria (STOP EARLY)
-- cell2location completed successfully AND you can list output_dir plus key artifacts (model directories, posterior AnnData, abundance tables) with paths relative to the workspace root (typically under `projects/<id>/outputs/`).
+- cell2location completed successfully AND you can list output_dir plus key artifacts (model directories, posterior AnnData, abundance tables) with paths relative to the workspace root (typically under `project/outputs/`).
 - If inputs are missing/invalid, explain what is required instead of running the tool repeatedly.
 
 # Response (user-facing)
 - Summarize whether deconvolution succeeded.
-- List key artifact paths (relative to the workspace root, typically `projects/<id>/outputs/...`) such as output_dir, abundance tables, fitted AnnData files.
+- List key artifact paths (relative to the workspace root, typically `project/outputs/...`) such as output_dir, abundance tables, fitted AnnData files.
 - Mention notable parameter choices if non-default.
 
 {{skill_prompt}}

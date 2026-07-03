@@ -28,7 +28,7 @@ def _resolve_input_path(path_like: str) -> Path:
     """Resolve an input file path, looked up under the workspace root.
 
     Inputs can come from anywhere readable: ``library/datasets/foo.h5ad``,
-    ``projects/<id>/uploads/foo.h5ad``, or absolute paths inside the
+    ``project/uploads/foo.h5ad``, or absolute paths inside the
     workspace.
     """
     path = Path(path_like)

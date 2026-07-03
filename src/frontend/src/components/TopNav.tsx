@@ -151,6 +151,39 @@ export function TutorialButton({
   );
 }
 
+/** Bar chart — three vertical bars of increasing height inside the
+ *  inner 3.5–20.5 box, sharing a baseline. Reads as "metrics" without
+ *  the visual clutter of axes or gridlines. */
+export function MetricsButton({
+  active,
+  onClick,
+}: Omit<IconButtonProps, "label">) {
+  return (
+    <TopBarIconButton active={active} onClick={onClick} label="Metrics">
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {/* Baseline — the floor the three bars rest on. Drawn slightly
+            inset so it doesn't collide with the button's hover ring. */}
+        <path d="M3.5 20.5h17" />
+        {/* Three bars at x = 6, 12, 17 with heights stepping up so the
+            shape reads as a growth chart, not a barcode. */}
+        <path d="M6 20.5v-5" />
+        <path d="M12 20.5v-9" />
+        <path d="M17 20.5v-13" />
+      </svg>
+    </TopBarIconButton>
+  );
+}
+
 /** Envelope — kept close to the previous version because it was already
  *  the cleanest of the three. The flap (interior crease) is shortened
  *  to a chevron so it sits *inside* the envelope body rather than

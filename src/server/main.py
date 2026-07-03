@@ -43,8 +43,13 @@ from server.routes import (
 )
 from server.session_manager import session
 from server.utils import (
+    migrate_chat_json_to_dotfile,
     migrate_legacy_library_layout,
     migrate_legacy_sessions,
+    migrate_plan_scratch_out_of_workspace,
+    migrate_projects_out_of_workspace,
+    migrate_scratch_into_active_project,
+    recover_active_project,
     reset_data_directories,
 )
 
@@ -92,17 +97,21 @@ def ensure_graph_current() -> None:
         _compile_graph(_kernel_client)
 
 
-def set_kernel_workspace(path: Path) -> None:
+def set_kernel_workspace(path: Path, *, force_restart: bool = False) -> None:
     """Point the running kernel client at *path* as the active workspace.
 
-    Called by the chat handler when a project is minted or loaded so
-    every Python/R execution lands inside ``projects/<id>/outputs/``.
+    Called by the chat handler when a project is minted/loaded and by the
+    active-project switch protocol. Pass ``force_restart=True`` when the
+    on-disk contents of *path* changed but the path string itself didn't
+    (e.g. the active-project rename swap — kernel cwd remains
+    ``/workspace/project/outputs`` across switches).
+
     No-op when the kernel client isn't initialized yet (e.g. very early
     in startup), to keep the boot path simple.
     """
     if _kernel_client is None:
         return
-    _kernel_client.set_workspace(path)
+    _kernel_client.set_workspace(path, force_restart=force_restart)
 
 
 @asynccontextmanager
@@ -111,6 +120,13 @@ async def lifespan(app: FastAPI):
     reset_data_directories()
     migrate_legacy_sessions()
     migrate_legacy_library_layout()
+    migrate_projects_out_of_workspace()
+    migrate_plan_scratch_out_of_workspace()
+    migrate_chat_json_to_dotfile()
+    migrate_scratch_into_active_project()
+    recovered_pid = recover_active_project()
+    if recovered_pid is not None:
+        session.project_id = recovered_pid
 
     # Start the Docker sandbox only when sandbox_enabled is set at startup.
     container_mgr: ContainerManager | None = None

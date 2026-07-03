@@ -4,6 +4,7 @@ import type {
   AssignmentsEditedEvent,
   AssignmentsFeedbackEvent,
   HistoryData,
+  MetricsData,
   PlanApprovedEvent,
   PlanEditedEvent,
   PlanFeedbackEvent,
@@ -81,6 +82,8 @@ interface UseWebSocketReturn {
   reviewState: ReviewState;
   /** Most recent pipeline stage observed in the message stream, or null. */
   pipelineStage: PipelineStage | null;
+  /** Latest API usage snapshot from the server, or null before the first event. */
+  metrics: MetricsData | null;
   approvePlan: () => void;
   editPlan: (markdown: string) => void;
   sendPlanFeedback: (text: string) => void;
@@ -122,6 +125,7 @@ export function useWebSocket(): UseWebSocketReturn {
     useState<ProjectSavedPayload | null>(null);
   const [mode, setModeState] = useState<SessionMode>("autopilot");
   const [reviewState, setReviewState] = useState<ReviewState>(null);
+  const [metrics, setMetrics] = useState<MetricsData | null>(null);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -275,6 +279,9 @@ export function useWebSocket(): UseWebSocketReturn {
           break;
         case "project_saved":
           setProjectSavedEvent(data.data);
+          break;
+        case "metrics_updated":
+          setMetrics(data.data);
           break;
       }
     };
@@ -434,6 +441,7 @@ export function useWebSocket(): UseWebSocketReturn {
     clearError,
     reviewState,
     pipelineStage,
+    metrics,
     approvePlan,
     editPlan,
     sendPlanFeedback,

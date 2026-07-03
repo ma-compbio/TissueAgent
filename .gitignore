@@ -45,6 +45,7 @@ node_modules/
 .envrc
 
 # AI assistant scratch (local-only planning notes)
+AGENTS.md
 COPILOT_PLAN.md
 COPILOT_QA.md
 .impeccable.md

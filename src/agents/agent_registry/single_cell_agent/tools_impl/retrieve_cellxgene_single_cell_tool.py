@@ -11,7 +11,7 @@ def retrieve_cellxgene_single_cell(dataset_id: str, filename: str):
     Args:
         dataset_id: CELLxGENE Census dataset identifier.
         filename: Target filename. Lands at
-            ``projects/<id>/outputs/datasets/<filename>`` so the user
+            ``project/outputs/datasets/<filename>`` so the user
             can see the downloaded dataset in the Files panel and the
             agent can read it back from a stable relative path.
 

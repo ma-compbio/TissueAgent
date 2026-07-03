@@ -21,10 +21,10 @@ description: >
 
 ## Details
 - Apply the `cell-type-annotation` skill.
-- **Reference step (only if no reference is provided), agent `single_cell`:**
+- **Reference step (only if no reference is provided), agent `single_cell_agent`:**
   - `query_cellxgene_census_live_tool` — filter CELLxGENE Census to match the spatial sample (species, tissue). Set `include_cell_type_counts=True` to confirm expected cell types; pick the best match by tissue/species/`n_cells`.
   - `retrieve_cellxgene_single_cell_tool` — download the chosen `dataset_id` to `outputs/datasets/<filename>`.
-- **Annotation step, agent `cell_annotator`:** `harmony_transfer_tool` with `spatial_anndata_path` and `reference_anndata_path`. A CELLxGENE reference stores labels in the `cell_type` column — the tool's default `cell_type_column`, so no override needed; otherwise set it to the reference's real label column.
+- **Annotation step, agent `cell_annotator_agent`:** `harmony_transfer_tool` with `spatial_anndata_path` and `reference_anndata_path`. A CELLxGENE reference stores labels in the `cell_type` column — the tool's default `cell_type_column`, so no override needed; otherwise set it to the reference's real label column.
 - Use this plan for **single-cell-resolution** platforms. For spot-based data (Visium/Slide-seq/ST) use `spatial_deconvolution` instead.
 
 ## Evaluation Criteria

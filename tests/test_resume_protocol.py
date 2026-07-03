@@ -188,7 +188,7 @@ user_request: x
 
 ```yaml
 status: pending
-assigned_agent: coding
+assigned_agent: coding_agent
 assigned_rationale: changed by user
 expected_artifacts: []
 actual_outputs: []
@@ -201,7 +201,7 @@ actual_outputs: []
         run(chat_module._handle_assignments_edited(ws, {"markdown": edited}))
         mock_run.assert_awaited_once()
     doc = plan_store.read()
-    assert doc.steps[0].assigned_agent == "coding"
+    assert doc.steps[0].assigned_agent == "coding_agent"
     print("OK: assignments_edited_uses_before_manager_gate")
 
 

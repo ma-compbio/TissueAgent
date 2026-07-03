@@ -24,15 +24,16 @@ from config import DATA_DIR, RECURSION_LIMIT
 from graph.ui_events import emit_message
 from server.message_serializer import serialize_history, serialize_message, serialize_subagent_state
 from server.session_manager import session
+from server.usage_tracker import usage_tracker
 from server.utils import (
     SUBAGENT_BADGES,
     SUBAGENT_DEFAULT_AVATAR,
-    adopt_scratch_into_project,
     derive_session_title,
     file_to_data_url,
     project_outputs_dir,
     save_session,
     upload_pdf_to_openai,
+    write_active_project_id,
 )
 
 router = APIRouter()
@@ -48,14 +49,13 @@ _executor = ThreadPoolExecutor(max_workers=1)
 def _ensure_project_id() -> str:
     """Mint the project on first prompt and handle one-time side effects.
 
-    Side effects on mint:
-      - Point the kernel at the project's ``outputs/`` directory so
-        Python/R writes land inside the project.
-      - Adopt any files the user uploaded before the project existed:
-        scratch/uploads/* → projects/<id>/uploads/, scratch/attachments/*
-        → projects/<id>/attachments/. Rewrite ``pending_images`` and
-        ``uploaded_pdfs`` paths so the multimodal turn payload still
-        finds them in their new homes.
+    The active project dir (``workspace/project/``) always exists as an
+    empty shell, so any files the user uploaded pre-prompt are already
+    in their final location — no migration needed. We just have to:
+      - Assign the project an id (recorded both in session and as a
+        ``.project_id`` dotfile inside the active project dir).
+      - Re-arm the kernel so the next code execution sees the canonical
+        ``/workspace/project/outputs`` cwd.
 
     Idempotent on subsequent calls — already-minted projects no-op.
     """
@@ -65,28 +65,16 @@ def _ensure_project_id() -> str:
         return project_id
 
     try:
+        write_active_project_id(project_id)
+    except Exception as e:
+        logging.warning(f"Failed to write .project_id: {e}")
+
+    try:
         outputs = project_outputs_dir(project_id)
         from server.main import set_kernel_workspace
         set_kernel_workspace(outputs)
     except Exception as e:
         logging.warning(f"Failed to bind kernel workspace for new project: {e}")
-
-    try:
-        moves = adopt_scratch_into_project(project_id)
-        if moves:
-            # Rewrite any in-memory references that still point at the
-            # old scratch paths so the chat handler sends the correct
-            # paths in the multimodal turn payload.
-            for img in session.pending_images:
-                new = moves.get(img.get("path"))
-                if new:
-                    img["path"] = new
-            for pdf in session.uploaded_pdfs:
-                new = moves.get(pdf.get("path"))
-                if new:
-                    pdf["path"] = new
-    except Exception as e:
-        logging.warning(f"Failed to adopt scratch into project: {e}")
 
     return project_id
 
@@ -116,6 +104,11 @@ def _persist_project(notify_ws: Optional[WebSocket] = None) -> None:
     except Exception as e:
         # Auto-save must never break the run. Log + continue.
         logging.warning(f"Auto-save failed: {e}")
+
+
+async def _emit_metrics(ws: WebSocket) -> None:
+    """Send the current usage snapshot to the client."""
+    await ws.send_json({"type": "metrics_updated", "data": usage_tracker.to_dict()})
 
 
 async def _broadcast_project_saved(ws: WebSocket) -> None:
@@ -149,6 +142,9 @@ async def websocket_chat(ws: WebSocket):
     # Send current execution mode on connect so the UI can render the
     # sidebar toggle in the correct position without an extra fetch.
     await ws.send_json({"type": "mode_updated", "data": {"mode": session.mode}})
+
+    # Re-send the metrics snapshot so a page refresh preserves the Metrics page.
+    await _emit_metrics(ws)
 
     try:
         while True:
@@ -426,6 +422,7 @@ async def _run_graph(ws: WebSocket, graph_input):
             # ``manager_agent`` and the run would stall after each step.
             session.gates_fired.add(pause_label)
             await _emit_pause(ws, pause_label)
+            await _emit_metrics(ws)
             try:
                 _persist_project()
                 await _broadcast_project_saved(ws)
@@ -454,6 +451,7 @@ async def _run_graph(ws: WebSocket, graph_input):
             "type": "run_complete",
             "elapsed_seconds": round(elapsed, 1),
         })
+        await _emit_metrics(ws)
 
         try:
             _persist_project()

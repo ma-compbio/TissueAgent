@@ -11,6 +11,6 @@ Package results into a human-readable report with clear artifact paths, versioni
 """.strip()
 
 # Note: the prompt content describes the project workspace layout
-# (``library/...``, ``projects/<id>/outputs/...``) rather than baking a
+# (``library/...``, ``project/outputs/...``) rather than baking a
 # specific ``DATA_DIR`` into the text, so no substitution is needed.
 ReporterPrompt = _TEMPLATE

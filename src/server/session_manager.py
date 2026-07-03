@@ -154,19 +154,22 @@ class SessionState:
             self.thread_id = _new_thread_id()
             self.paused_at = None
             self.gates_fired = set()
-            self.project_id = None
-            self.project_title = ""
+            # project_id / project_title are cleared by switch_active_project
+            # below — leaving them set here would lie about on-disk state.
 
-        # Wipe the pre-project scratch dirs so any files staged for the
-        # previous (unsaved) project don't bleed into the next one.
-        # Outside the lock — clear_scratch_dirs() touches disk, which
-        # shouldn't be holding the session lock.
+        # Park the active project (if any) and reset workspace/project/ to
+        # an empty shell. Outside the lock — touches disk and the kernel
+        # client, which shouldn't be holding the session lock.
         try:
-            from server.utils import clear_scratch_dirs
-            clear_scratch_dirs()
+            from server.utils import switch_active_project
+            switch_active_project(None)
         except Exception:
-            # Best-effort; never let scratch cleanup break a reset.
+            # Best-effort; never let workspace cleanup break a reset.
             pass
+
+        # Reset accumulated API usage metrics — a new project starts clean.
+        from server.usage_tracker import usage_tracker
+        usage_tracker.reset()
 
     def ensure_display_state(self) -> None:
         """Synchronise display_messages with the canonical agent message list."""

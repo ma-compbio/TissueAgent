@@ -195,7 +195,7 @@ class KernelClient:
         # workspace from breaking startup.
         self._workspace: Path | None = None
 
-    def set_workspace(self, path: Path) -> None:
+    def set_workspace(self, path: Path, *, force_restart: bool = False) -> None:
         """Point future kernel executions at *path* as their working dir.
 
         Implementation note: any kernels already alive are shut down so
@@ -204,10 +204,17 @@ class KernelClient:
         ms) and avoids the alternative of injecting chdir into every
         execute call, which would silently fail if the user pasted a
         ``cd`` of their own.
+
+        ``force_restart`` is for callers that need a fresh kernel even
+        though the *path string* didn't change — e.g. the active-project
+        switch renames the directory on disk under a stable
+        ``/workspace/project/outputs`` path, so equality alone won't
+        trigger a restart.
         """
         previous = self._workspace
         self._workspace = Path(path)
-        if previous != self._workspace and self._kernels:
+        if self._kernels and (force_restart or previous != self._workspace):
+            self._seeded.clear()
             self.shutdown_kernels()
 
     def execute(self, code: str, language: str = "python") -> ExecutionResult:

@@ -14,9 +14,19 @@ from typing import Literal
 from langchain.tools import StructuredTool
 
 from agents.agent_utils import truncate_output
-from config import DATA_DIR, MAX_OUTPUT_CHARS
+from config import ACTIVE_PROJECT_DIR, DATA_DIR, LIBRARY_DIR, MAX_OUTPUT_CHARS, NOTEBOOK_DIR
 
 ### file read tools
+
+
+# Roots the agent is allowed to traverse. Anything else inside DATA_DIR
+# (or outside it) is unreachable through these tools — defense in depth
+# on top of the DATA_DIR boundary check in _resolve_artifact_path.
+_AGENT_VISIBLE_ROOTS: tuple[Path, ...] = (
+    ACTIVE_PROJECT_DIR,
+    LIBRARY_DIR,
+    NOTEBOOK_DIR,
+)
 
 
 def _resolve_artifact_path(relative_path: str) -> Path:
@@ -37,9 +47,53 @@ def _resolve_artifact_path(relative_path: str) -> Path:
     return target
 
 
+def _has_hidden_component(path: Path, root: Path) -> bool:
+    """True if any path component below *root* starts with a dot.
+
+    Hidden files (dotfiles) carry internal persistence data — ``.chat.json``,
+    ``.project_id`` — and the agent should not see them unless it asks
+    for them explicitly by name. ``Path.glob('**/*')`` doesn't filter
+    these out automatically, so we do it here.
+    """
+    try:
+        rel = path.relative_to(root)
+    except ValueError:
+        return False
+    return any(part.startswith(".") for part in rel.parts)
+
+
+def _iter_visible_files(pattern: str):
+    """Yield files matching *pattern* under each agent-visible root.
+
+    The pattern may include a leading root component (e.g. ``project/...``
+    or ``library/...``); in that case only the matching root is walked.
+    Otherwise the pattern is evaluated against every visible root and the
+    results unioned. Hidden (dot-prefixed) files and directories are
+    skipped unless the pattern explicitly names them.
+    """
+    parts = Path(pattern).parts
+    root_name = parts[0] if parts else ""
+    by_name = {r.name: r for r in _AGENT_VISIBLE_ROOTS}
+    explicit_dot = any(part.startswith(".") for part in parts)
+
+    if root_name in by_name:
+        rest = str(Path(*parts[1:])) if len(parts) > 1 else "*"
+        for p in by_name[root_name].glob(rest):
+            if not explicit_dot and _has_hidden_component(p, by_name[root_name]):
+                continue
+            yield p
+        return
+
+    for root in _AGENT_VISIBLE_ROOTS:
+        for p in root.glob(pattern):
+            if not explicit_dot and _has_hidden_component(p, root):
+                continue
+            yield p
+
+
 def _glob(pattern: str) -> str:
     """Find workspace files and directories matching a glob pattern relative to DATA_DIR."""
-    matches = sorted(str(p.relative_to(DATA_DIR)) for p in DATA_DIR.glob(pattern))
+    matches = sorted({str(p.relative_to(DATA_DIR)) for p in _iter_visible_files(pattern)})
     if not matches:
         return f"No matches for '{pattern}'."
     return truncate_output("\n".join(matches), MAX_OUTPUT_CHARS)
@@ -51,9 +105,11 @@ def _grep(pattern: str, include: str = "**/*") -> str:
     Binary files are skipped.
     """
     hits: list[str] = []
-    for path in sorted(DATA_DIR.glob(include)):
-        if not path.is_file():
+    seen: set[Path] = set()
+    for path in sorted(_iter_visible_files(include)):
+        if not path.is_file() or path in seen:
             continue
+        seen.add(path)
         try:
             text = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, PermissionError):
