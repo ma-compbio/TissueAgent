@@ -283,15 +283,19 @@ def create_tissueagent_graph(
         On replan the planner emits a bare JSON plan with no ROUTE header, so route
         straight to the recruiter unless state_update_fn flagged a parse failure
         (in which case it added retry feedback and we loop back).
+
+        When retries are exhausted, state_update_fn rewrites response.content to
+        ``ROUTE: DIRECT`` and clears planner_validation_errors — so an exhausted
+        replan short-circuits to END the same way an intentional DIRECT does.
         """
-        if int(state.get("replan_count", 0) or 0) > 0:
-            if state.get("planner_validation_errors"):
-                return planner_node_id
-            return recruiter_node_id
         text = (response.content or "").strip()
         head = text.splitlines()[0].upper() if text else ""
         if head.startswith("ROUTE: DIRECT") or head.startswith("ROUTE: CLARIFY"):
             return END
+        if int(state.get("replan_count", 0) or 0) > 0:
+            if state.get("planner_validation_errors"):
+                return planner_node_id
+            return recruiter_node_id
         if head.startswith("ROUTE: PLAN"):
             return recruiter_node_id
         # Invalid format — loop back (state_update_fn already injected feedback)
@@ -367,24 +371,29 @@ def create_tissueagent_graph(
             history = list(state.get("replan_history", []))
             history.append(datetime.now(timezone.utc).isoformat())
             if new_count > MAX_REPLANS:
+                # Rewrite the verdict in place so the UI and the router agree.
+                # The router now decides purely from replan_count, but keeping
+                # the content in sync avoids stale REPLAN text bleeding into
+                # the reporter's context.
                 response.content = (
                     "ROUTE: REPORT\n\n"
-                    "EVALUATION: Replan limit reached (maximum 2). Returning latest evaluator assessment.\n\n"
-                    "NOTE: The evaluator attempted to trigger replanning more than twice; "
+                    f"EVALUATION: Replan limit reached (maximum {MAX_REPLANS}). Returning latest evaluator assessment.\n\n"
+                    "NOTE: The evaluator attempted to trigger replanning beyond the limit; "
                     "please review earlier feedback for unresolved blockers."
                 )
             return {"replan_count": new_count, "replan_history": history}
         return {}
 
     def evaluator_router(response, state) -> str:
-        """EvaluatorAgent transition function."""
+        """EvaluatorAgent transition function.
+
+        state_update_fn runs first (see create_agent_node) and rewrites the
+        response content to "ROUTE: REPORT" when the replan limit is hit,
+        so routing off the current content is the single source of truth.
+        """
         text = (response.content or "").strip()
         head = text.splitlines()[0].upper() if text else ""
         if head.startswith("ROUTE: REPLAN"):
-            prior = int(state.get("replan_count", 0) or 0)
-            next_attempt = prior + 1
-            if next_attempt > MAX_REPLANS:
-                return reporter_node_id
             return planner_node_id
         return reporter_node_id
 

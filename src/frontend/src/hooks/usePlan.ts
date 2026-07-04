@@ -77,13 +77,19 @@ export function usePlan() {
   const [plan, setPlan] = useState<Plan>(EMPTY_PLAN);
   const [markdown, setMarkdown] = useState<string>("");
   const mountedRef = useRef(true);
+  // Monotonic request token. A completed fetch only applies its result
+  // when it is still the newest outstanding one, so a stale mount-fetch
+  // can't clobber a fresh plan_updated event that landed first.
+  const latestReqRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
+    const token = ++latestReqRef.current;
     fetch(`${API}/api/plan`)
       .then((r) => (r.ok ? (r.json() as Promise<PlanPayload>) : null))
       .then((data) => {
         if (!mountedRef.current || !data) return;
+        if (token !== latestReqRef.current) return; // superseded
         setPlan(data.plan ?? EMPTY_PLAN);
         setMarkdown(data.markdown ?? "");
       })
@@ -96,21 +102,26 @@ export function usePlan() {
   }, []);
 
   const applyEvent = useCallback((payload: PlanPayload) => {
+    // WebSocket events are the freshest source of truth. Bump the token
+    // so any in-flight fetch that finishes later can't overwrite this.
+    latestReqRef.current += 1;
     setPlan(payload.plan ?? EMPTY_PLAN);
     setMarkdown(payload.markdown ?? "");
   }, []);
 
   const clear = useCallback(() => {
+    latestReqRef.current += 1;
     setPlan(EMPTY_PLAN);
     setMarkdown("");
   }, []);
 
   const refresh = useCallback(async () => {
+    const token = ++latestReqRef.current;
     try {
       const res = await fetch(`${API}/api/plan`);
       if (!res.ok) return;
       const data = (await res.json()) as PlanPayload;
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || token !== latestReqRef.current) return;
       setPlan(data.plan ?? EMPTY_PLAN);
       setMarkdown(data.markdown ?? "");
     } catch {

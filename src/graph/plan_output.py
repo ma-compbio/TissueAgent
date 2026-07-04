@@ -180,17 +180,42 @@ def create_planner_state_update(max_retries: int = 2):
         if getattr(response, "tool_calls", None):
             return {}
         text = (response.content.strip() or "") if isinstance(response.content, str) else ""
-        is_replan = int(state.get("replan_count", 0) or 0) > 0
+        replan_count = int(state.get("replan_count", 0) or 0)
+        is_replan = replan_count > 0
+
+        # planner_retry_count is scoped per (initial-plan | replan) phase. Detect
+        # a phase transition (replan_count changed since the last recorded phase)
+        # and reset the counter so replans don't inherit initial-plan retries.
+        prior_phase = state.get("planner_retry_phase")
+        current_phase = f"replan:{replan_count}" if is_replan else "initial"
+        phase_changed = prior_phase != current_phase
+        prior = 0 if phase_changed else int(state.get("planner_retry_count", 0) or 0)
 
         if is_replan:
             if _parse_and_persist_plan(text) is not None:
-                return {"planner_validation_errors": None}
-            prior = int(state.get("planner_retry_count", 0) or 0)
+                # Success — reset retry counter for the next phase.
+                return {
+                    "planner_validation_errors": None,
+                    "planner_retry_count": 0,
+                    "planner_retry_phase": current_phase,
+                }
             if prior >= max_retries:
-                raise RuntimeError(
+                # Route to reporter with a clean error instead of raising and
+                # crashing the graph.
+                error_msg = (
                     f"Planner failed to produce a valid JSON plan on replan after "
                     f"{max_retries} retries. Last response started with: {text[:120]!r}"
                 )
+                logging.error("planner_state_update: %s", error_msg)
+                response.content = (
+                    "ROUTE: DIRECT\n\n"
+                    f"Planner retries exhausted: {error_msg}"
+                )
+                return {
+                    "planner_validation_errors": None,
+                    "planner_retry_count": 0,
+                    "planner_retry_phase": current_phase,
+                }
             feedback = HumanMessage(
                 content=(
                     "Your response must contain a single fenced ```json``` code block "
@@ -200,6 +225,7 @@ def create_planner_state_update(max_retries: int = 2):
             return {
                 "messages": [response, feedback],
                 "planner_retry_count": prior + 1,
+                "planner_retry_phase": current_phase,
                 "planner_validation_errors": "replan_json_parse_failed",
             }
 
@@ -207,16 +233,27 @@ def create_planner_state_update(max_retries: int = 2):
 
         # DIRECT / CLARIFY — no plan expected
         if "DIRECT" in head or "CLARIFY" in head:
-            return {}
+            return {
+                "planner_retry_count": 0,
+                "planner_retry_phase": current_phase,
+            }
 
         # Invalid format — retry with feedback
         if "PLAN" not in head:
-            prior = int(state.get("planner_retry_count", 0) or 0)
             if prior >= max_retries:
-                raise RuntimeError(
+                error_msg = (
                     f"Planner failed to produce a valid ROUTE after {max_retries} retries. "
                     f"Last response started with: {text[:120]!r}"
                 )
+                logging.error("planner_state_update: %s", error_msg)
+                response.content = (
+                    "ROUTE: DIRECT\n\n"
+                    f"Planner retries exhausted: {error_msg}"
+                )
+                return {
+                    "planner_retry_count": 0,
+                    "planner_retry_phase": current_phase,
+                }
             feedback = HumanMessage(
                 content=(
                     "Your response must begin with exactly one of: "
@@ -227,15 +264,40 @@ def create_planner_state_update(max_retries: int = 2):
             return {
                 "messages": [response, feedback],
                 "planner_retry_count": prior + 1,
+                "planner_retry_phase": current_phase,
             }
 
         # ROUTE: PLAN — parse and persist the JSON block
         if _parse_and_persist_plan(text) is None:
-            raise RuntimeError(
-                "Planner failed to produce a valid JSON plan. "
-                "No fenced JSON block found in the response."
+            if prior >= max_retries:
+                error_msg = (
+                    "Planner failed to produce a valid JSON plan. "
+                    "No fenced JSON block found in the response."
+                )
+                logging.error("planner_state_update: %s", error_msg)
+                response.content = (
+                    "ROUTE: DIRECT\n\n"
+                    f"Planner retries exhausted: {error_msg}"
+                )
+                return {
+                    "planner_retry_count": 0,
+                    "planner_retry_phase": current_phase,
+                }
+            feedback = HumanMessage(
+                content=(
+                    "Your ROUTE: PLAN response must contain a fenced ```json``` block "
+                    "with the plan schema. Please try again."
+                )
             )
-        return {}
+            return {
+                "messages": [response, feedback],
+                "planner_retry_count": prior + 1,
+                "planner_retry_phase": current_phase,
+            }
+        return {
+            "planner_retry_count": 0,
+            "planner_retry_phase": current_phase,
+        }
 
     return planner_state_update
 
@@ -280,7 +342,11 @@ def _apply_assignments_from_json(data: dict) -> PlanDocument | None:
             continue
         step.assigned_agent = (a.get("assigned_agent") or "").strip()
         step.assignment_rationale = (a.get("assignment_rationale") or "").strip()
-        step.skills = list(a.get("skills") or [])
+        # Only overwrite skills when the JSON actually carries the key —
+        # otherwise a retry response that omits skills would wipe prior
+        # assignments on the on-disk plan.
+        if "skills" in a:
+            step.skills = list(a.get("skills") or [])
 
     if missing:
         logging.warning("recruiter: missing assignments for step ids %s", missing)
@@ -332,36 +398,21 @@ def create_recruiter_state_update(valid_agent_ids: set, max_retries: int = 2):
         if getattr(response, "tool_calls", None):
             return {}
         text = (response.content or "") if isinstance(response.content, str) else ""
-        data = _extract_json(text)
-        if data is None:
-            return {}
-
-        doc = _apply_assignments_from_json(data)
-        if doc is None:
-            logging.warning("recruiter_state_update: JSON found but could not apply assignments")
-            return {}
-
-        errors = _validate_assignments(doc, valid_agent_ids)
         prior = int(state.get("recruiter_retry_count", 0) or 0)
 
-        if errors:
-            error_msg = "Validation errors in your assignments:\n" + "\n".join(
-                f"- {e}" for e in errors
-            )
+        def _retry(error_msg: str) -> dict[str, Any]:
             logging.warning("recruiter_state_update: %s", error_msg)
-
             if prior >= max_retries:
+                # Retry limit reached — surface the error via state instead of
+                # raising. The router will treat this as terminal.
                 logging.error(
-                    "recruiter_state_update: retry limit reached (%d), "
-                    "aborting due to invalid assignments",
+                    "recruiter_state_update: retry limit reached (%d), advancing with error",
                     max_retries,
                 )
-                raise RuntimeError(
-                    f"Recruiter failed after {max_retries} retries. "
-                    f"Validation errors:\n" + "\n".join(f"- {e}" for e in errors)
-                )
-
-            # signal retry: include the original response + feedback message.
+                return {
+                    "recruiter_validation_errors": error_msg,
+                    "recruiter_retry_count": prior,
+                }
             feedback = HumanMessage(content=error_msg)
             return {
                 "messages": [response, feedback],
@@ -369,12 +420,35 @@ def create_recruiter_state_update(valid_agent_ids: set, max_retries: int = 2):
                 "recruiter_retry_count": prior + 1,
             }
 
+        data = _extract_json(text)
+        if data is None:
+            return _retry(
+                "No parseable JSON found in your response. Emit a single fenced "
+                "```json``` block containing the assignments schema."
+            )
+
+        doc = _apply_assignments_from_json(data)
+        if doc is None:
+            return _retry(
+                "The recruiter JSON was parsed but no assignments could be applied "
+                "(missing 'assignments' array, or no matching plan on disk). Please "
+                "re-emit the assignments schema."
+            )
+
+        errors = _validate_assignments(doc, valid_agent_ids)
+
+        if errors:
+            error_msg = "Validation errors in your assignments:\n" + "\n".join(
+                f"- {e}" for e in errors
+            )
+            return _retry(error_msg)
+
         plan_store.write(doc)
         _emit_plan_updated(doc)
         logging.info(
             "recruiter_state_update: annotated %d step(s), status=recruited",
             len(doc.steps),
         )
-        return {"recruiter_validation_errors": None}
+        return {"recruiter_validation_errors": None, "recruiter_retry_count": 0}
 
     return recruiter_state_update

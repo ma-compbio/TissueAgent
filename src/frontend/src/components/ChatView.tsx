@@ -248,9 +248,17 @@ export default function ChatView({
     setTraceWidth((w) => Math.min(900, Math.max(280, w - delta)));
   }, []);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages, but only when the user is
+  // already near the bottom — otherwise every streamed token would yank
+  // the viewport away from wherever they scrolled back to read.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = containerRef.current;
+    if (!container) return;
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distanceFromBottom < 200) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -277,9 +285,21 @@ export default function ChatView({
     setSelectedTrace(selectedTrace === toolId ? null : toolId);
   };
 
-  const rawItems = buildDisplayItems(messages);
-  const displayItems = collapseAgentRuns(rawItems, subagentStates);
-  const syntheticTraces = useMemo(() => buildSyntheticTraces(displayItems), [displayItems]);
+  // Memoise the item pipeline so the O(n) transforms don't re-run on
+  // every render (input keystrokes, resize, trace toggle...) — a busy
+  // transcript can otherwise cost noticeable frame time. syntheticTraces
+  // used to depend on displayItems by identity but displayItems was
+  // recomputed each render, so its useMemo never hit; keying it here
+  // makes the memoisation actually stick.
+  const rawItems = useMemo(() => buildDisplayItems(messages), [messages]);
+  const displayItems = useMemo(
+    () => collapseAgentRuns(rawItems, subagentStates),
+    [rawItems, subagentStates],
+  );
+  const syntheticTraces = useMemo(
+    () => buildSyntheticTraces(displayItems),
+    [displayItems],
+  );
 
   const activeTrace = selectedTrace
     ? (liveTraces[selectedTrace] ?? syntheticTraces[selectedTrace] ?? subagentStates[selectedTrace] ?? null)

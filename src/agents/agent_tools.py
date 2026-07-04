@@ -99,32 +99,60 @@ def _glob(pattern: str) -> str:
     return truncate_output("\n".join(matches), MAX_OUTPUT_CHARS)
 
 
+# Cap grep at 10 MB per file. Larger files are skipped rather than pulled
+# into RAM in full — a match on a random .h5ad picked up by **/* would
+# otherwise OOM the worker before the UnicodeDecodeError even fires.
+_GREP_MAX_FILE_BYTES = 10 * 1024 * 1024
+
+
 def _grep(pattern: str, include: str = "**/*") -> str:
     """Search file contents in the workspace for a regex pattern.
 
-    Binary files are skipped.
+    Binary files and files over ~10 MB are skipped. Matching is line-by-line
+    from a streaming read so total memory stays bounded regardless of the
+    corpus.
     """
     hits: list[str] = []
     seen: set[Path] = set()
+    try:
+        compiled = re.compile(pattern)
+    except re.error as exc:
+        return f"Error: invalid regex pattern: {exc}"
+
     for path in sorted(_iter_visible_files(include)):
         if not path.is_file() or path in seen:
             continue
         seen.add(path)
         try:
-            text = path.read_text(encoding="utf-8")
-        except (UnicodeDecodeError, PermissionError):
+            if path.stat().st_size > _GREP_MAX_FILE_BYTES:
+                continue
+        except OSError:
             continue
-        for lineno, line in enumerate(text.splitlines(), 1):
-            if re.search(pattern, line):
-                hits.append(f"{path.relative_to(DATA_DIR)}:{lineno}: {line}")
+        try:
+            with path.open("r", encoding="utf-8") as fh:
+                for lineno, line in enumerate(fh, 1):
+                    if compiled.search(line):
+                        hits.append(
+                            f"{path.relative_to(DATA_DIR)}:{lineno}: {line.rstrip()}"
+                        )
+        except (UnicodeDecodeError, PermissionError, OSError):
+            continue
     if not hits:
         return "No matches found."
     return truncate_output("\n".join(hits), MAX_OUTPUT_CHARS)
 
 
 def _read(file_path: str, offset: int = 1, limit: int | None = None):
-    """Read a workspace file by path relative to DATA_DIR."""
+    """Read a workspace file by path relative to DATA_DIR.
+
+    Line numbers are 1-based: ``offset=1`` returns the file starting at the
+    first line. Passing an offset past the end of the file surfaces a clear
+    error instead of a silent empty string.
+    """
     try:
+        if offset is None or offset < 1:
+            return "Error: offset must be a 1-based line number (>= 1)."
+
         path = _resolve_artifact_path(file_path)
 
         mime, _ = mimetypes.guess_type(str(path))
@@ -141,7 +169,12 @@ def _read(file_path: str, offset: int = 1, limit: int | None = None):
             return f"Cannot read binary file: {file_path}"
 
         lines = text.splitlines(keepends=True)
-        start = max(0, offset - 1)
+        start = offset - 1
+        if start >= len(lines):
+            return (
+                f"Error: offset {offset} is past the end of the file "
+                f"(file has {len(lines)} line(s))."
+            )
         end = start + limit if limit is not None else len(lines)
         selected = "".join(lines[start:end])
         return truncate_output(selected, MAX_OUTPUT_CHARS)

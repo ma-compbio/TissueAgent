@@ -80,7 +80,12 @@ def _invoke_via_transfer_tool(
     task_instructions: str,
     invocation_tools_by_agent: dict[str, StructuredTool],
 ) -> str:
-    """Dispatch ``task_instructions`` to the transfer tool for ``step.assigned_agent``."""
+    """Dispatch ``task_instructions`` to the transfer tool for ``step.assigned_agent``.
+
+    Sub-agents can return multimodal content (list of dict parts) when their last
+    message carries images; the manager tool signature is ``-> str``, so we coerce
+    at the boundary rather than let a list bleed into downstream string handling.
+    """
     if not step.assigned_agent:
         return f"Error: step {step.id} has no assigned_agent."
     tool = invocation_tools_by_agent.get(step.assigned_agent)
@@ -90,7 +95,20 @@ def _invoke_via_transfer_tool(
             f"Error: no transfer tool for assigned_agent '{step.assigned_agent}'. "
             f"Known agents: {known}."
         )
-    return tool.invoke({"prompt": task_instructions})
+    result = tool.invoke({"prompt": task_instructions})
+    if isinstance(result, str):
+        return result
+    if isinstance(result, list):
+        # Flatten multimodal content into a text summary; images are dropped
+        # (the UI has already received them via the streaming channel).
+        parts: list[str] = []
+        for item in result:
+            if isinstance(item, dict) and item.get("type") in ("text", "output_text"):
+                parts.append(str(item.get("text", "")))
+            elif isinstance(item, str):
+                parts.append(item)
+        return "\n".join(parts) if parts else str(result)
+    return str(result)
 
 
 def create_manager_step_tools(
@@ -142,8 +160,21 @@ def create_manager_step_tools(
 
         result = _dispatch(target, args)
 
+        # Advance the cursor by *index* rather than target.id + 1, so a plan
+        # edited mid-run (non-contiguous step ids) still progresses to the
+        # actual next step. When target is the last step, park the cursor one
+        # past the last id — subsequent next_step calls then hit the "plan
+        # complete" branch above.
         doc = plan_store.read()
-        doc.current_step_id = target.id + 1
+        try:
+            idx = next(i for i, s in enumerate(doc.steps) if s.id == target.id)
+        except StopIteration:
+            idx = None
+        if idx is not None and idx + 1 < len(doc.steps):
+            doc.current_step_id = doc.steps[idx + 1].id
+        else:
+            last_id = doc.steps[-1].id if doc.steps else target.id
+            doc.current_step_id = last_id + 1
         plan_store.write(doc)
         _emit_plan_updated(doc)
         return result

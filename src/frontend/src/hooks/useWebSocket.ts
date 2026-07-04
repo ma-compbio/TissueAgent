@@ -105,6 +105,10 @@ const WS_URL =
 export function useWebSocket(): UseWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Buffers messages the caller tried to send while the socket was closed or
+  // still opening. Flushed on onopen. Prevents the "prompt disappears with
+  // just a toast" bug when send() races the initial handshake.
+  const sendQueue = useRef<string[]>([]);
 
   const [messages, setMessages] = useState<SerializedMessage[]>([]);
   const [subagentStates, setSubagentStates] = useState<
@@ -141,8 +145,28 @@ export function useWebSocket(): UseWebSocketReturn {
       setConnectionStatus("connected");
       // Clear any stale error from a previous lost connection.
       setError(null);
+      // A pending reconnect timer would race with the freshly-opened
+      // socket and could open a duplicate; drop it now.
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = undefined;
       clearTimeout(disconnectEscalation.current);
       disconnectEscalation.current = undefined;
+      // Flush anything the caller tried to send before the handshake
+      // finished (React strict mode + slow servers make this common).
+      if (sendQueue.current.length > 0) {
+        const queued = sendQueue.current;
+        sendQueue.current = [];
+        for (const payload of queued) {
+          try {
+            ws.send(payload);
+          } catch {
+            // If a queued flush fails, put it back so the next reconnect
+            // gets a shot at it. Rare — but silently dropping user input is
+            // worse than a small buffer churn.
+            sendQueue.current.push(payload);
+          }
+        }
+      }
     };
 
     ws.onclose = () => {
@@ -171,7 +195,17 @@ export function useWebSocket(): UseWebSocketReturn {
     };
 
     ws.onmessage = (event) => {
-      const data: ServerEvent = JSON.parse(event.data);
+      let data: ServerEvent;
+      try {
+        data = JSON.parse(event.data);
+      } catch (err) {
+        // A single malformed frame must not tear down the socket — that
+        // would leave the whole session unreachable until the user
+        // reloads. Log and drop instead.
+        // eslint-disable-next-line no-console
+        console.warn("Ignoring malformed WebSocket frame", err);
+        return;
+      }
 
       switch (data.type) {
         case "history": {
@@ -179,6 +213,10 @@ export function useWebSocket(): UseWebSocketReturn {
           setMessages(history.messages);
           setSubagentStates(history.subagent_states);
           setLiveTraces({});
+          // A history replay is definitionally a fresh page-load view of
+          // the transcript — any in-flight run indicator is stale.
+          setIsRunning(false);
+          setElapsed(null);
           break;
         }
         case "message": {
@@ -292,17 +330,46 @@ export function useWebSocket(): UseWebSocketReturn {
     return () => {
       clearTimeout(reconnectTimer.current);
       clearTimeout(disconnectEscalation.current);
-      wsRef.current?.close();
+      const sock = wsRef.current;
+      wsRef.current = null;
+      if (sock) {
+        // Detach handlers BEFORE close — otherwise onclose fires after
+        // unmount and schedules another 2s reconnect that then opens a
+        // socket into a dead component (React strict mode makes this
+        // trivially reproducible in dev).
+        sock.onopen = null;
+        sock.onmessage = null;
+        sock.onerror = null;
+        sock.onclose = null;
+        try {
+          sock.close();
+        } catch {
+          // best-effort cleanup
+        }
+      }
     };
   }, [connect]);
 
   const send = useCallback((payload: object) => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      setError("Not connected to server");
+    const serialised = JSON.stringify(payload);
+    const sock = wsRef.current;
+    if (sock && sock.readyState === WebSocket.OPEN) {
+      sock.send(serialised);
       return;
     }
-    wsRef.current.send(JSON.stringify(payload));
-  }, []);
+    // CONNECTING (initial handshake, reconnect) → queue and flush on
+    // open. CLOSING/CLOSED → also queue; the auto-reconnect will drain
+    // it. This turns a "prompt vanished with only a toast" into a
+    // slight, honest delay.
+    sendQueue.current.push(serialised);
+    if (!sock || sock.readyState === WebSocket.CLOSED) {
+      // Nudge the reconnect if we're fully closed — the timer might not
+      // be scheduled if this send happened outside the close path.
+      if (!reconnectTimer.current) {
+        reconnectTimer.current = setTimeout(connect, 100);
+      }
+    }
+  }, [connect]);
 
   const sendMessage = useCallback(
     (text: string, imageIds: string[] = [], pdfIds: string[] = []) => {

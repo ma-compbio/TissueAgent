@@ -179,7 +179,6 @@ def create_coding_agent(
             final_state = agent.invoke(
                 {"messages": [message], "skill_prompt": skill_prompt_text}
             )
-        kernel_client.shutdown_kernels()
         state_queue.put((id, final_state, invocation_id))
         result = final_state["messages"][-1].content
 

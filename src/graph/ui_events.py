@@ -1,9 +1,10 @@
 """UI event queue, sub-agent context tracking, and message logging."""
 
+import logging
 import threading
 import uuid
 from contextlib import contextmanager
-from queue import Queue
+from queue import Full, Queue
 from typing import cast
 
 from langchain_core.messages import BaseMessage
@@ -12,11 +13,20 @@ from graph.message_utils import MessageContent, stringify_content
 from logger import logger
 
 _ui_event_queue: Queue | None = None
+# Guards module-global _ui_event_queue registration so a concurrent session
+# switch can't tear a partially-registered queue out from under a publisher.
+_registration_lock = threading.Lock()
 
 # Thread-local storage for tracking which sub-agent is currently executing. When emit_message() is
 # called from within a sub-agent invocation, this context lets us tag the event so the UI can stream
 # it into a live trace.
 _subagent_context = threading.local()
+
+
+def _get_ui_event_queue() -> Queue | None:
+    """Return the currently registered UI queue (may be ``None``)."""
+    with _registration_lock:
+        return _ui_event_queue
 
 
 def _get_subagent_context() -> tuple[str | None, str | None, int | None]:
@@ -43,36 +53,47 @@ def subagent_invocation(agent_name: str, step_id: int | None = None):
     """
     invocation_id = str(uuid.uuid4())
 
-    if _ui_event_queue is not None:
-        _ui_event_queue.put_nowait(
-            (
-                "subagent_start",
-                {
-                    "invocation_id": invocation_id,
-                    "agent_name": agent_name,
-                },
-            )
-        )
-
+    # Set thread-locals BEFORE any queue.put so a Full queue can't leave us
+    # inside the context without the caller ever seeing invocation_id set.
     _subagent_context.invocation_id = invocation_id
     _subagent_context.agent_name = agent_name
     _subagent_context.step_id = step_id
-    try:
-        yield invocation_id
-    finally:
-        _subagent_context.invocation_id = None
-        _subagent_context.agent_name = None
-        _subagent_context.step_id = None
-        if _ui_event_queue is not None:
-            _ui_event_queue.put_nowait(
+
+    queue = _get_ui_event_queue()
+    if queue is not None:
+        try:
+            queue.put_nowait(
                 (
-                    "subagent_end",
+                    "subagent_start",
                     {
                         "invocation_id": invocation_id,
                         "agent_name": agent_name,
                     },
                 )
             )
+        except Full:
+            logging.debug("UI event queue full; dropping subagent_start event")
+
+    try:
+        yield invocation_id
+    finally:
+        _subagent_context.invocation_id = None
+        _subagent_context.agent_name = None
+        _subagent_context.step_id = None
+        queue = _get_ui_event_queue()
+        if queue is not None:
+            try:
+                queue.put_nowait(
+                    (
+                        "subagent_end",
+                        {
+                            "invocation_id": invocation_id,
+                            "agent_name": agent_name,
+                        },
+                    )
+                )
+            except Full:
+                logging.debug("UI event queue full; dropping subagent_end event")
 
 
 def register_ui_event_queue(event_queue: Queue) -> None:
@@ -83,7 +104,8 @@ def register_ui_event_queue(event_queue: Queue) -> None:
             render new messages in near-real-time.
     """
     global _ui_event_queue
-    _ui_event_queue = event_queue
+    with _registration_lock:
+        _ui_event_queue = event_queue
 
 
 def emit_message(message: BaseMessage) -> None:
@@ -120,21 +142,21 @@ def emit_message(message: BaseMessage) -> None:
 
     full_message = "\n".join(lines)
     logger.info(full_message)
-    if _ui_event_queue is not None:
-        try:
-            inv_id, sa_name, _ = _get_subagent_context()
-            if inv_id is not None:
-                _ui_event_queue.put_nowait(
-                    (
-                        "subagent_message",
-                        {
-                            "invocation_id": inv_id,
-                            "agent_name": sa_name,
-                            "message": message,
-                        },
-                    )
-                )
-            else:
-                _ui_event_queue.put_nowait(("message", message))
-        except Exception:
-            pass
+    queue = _get_ui_event_queue()
+    if queue is None:
+        return
+    inv_id, sa_name, _ = _get_subagent_context()
+    if inv_id is not None:
+        payload = (
+            "subagent_message",
+            {"invocation_id": inv_id, "agent_name": sa_name, "message": message},
+        )
+    else:
+        payload = ("message", message)
+    try:
+        queue.put_nowait(payload)
+    except Full:
+        # A full queue is not fatal, but silently dropping UI updates hid
+        # real backpressure issues in the past. Log at DEBUG so operators
+        # can surface it with the right log level when investigating.
+        logging.debug("UI event queue full; dropping %s event", payload[0])

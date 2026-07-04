@@ -11,6 +11,7 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import docker
 import requests
@@ -130,9 +131,7 @@ class ContainerManager:
             except requests.ConnectionError:
                 pass
             time.sleep(0.5)
-        raise TimeoutError(
-            f"Kernel Gateway did not become healthy within {timeout}s"
-        )
+        raise TimeoutError(f"Kernel Gateway did not become healthy within {timeout}s")
 
     def stop(self) -> None:
         """Stop the container (preserves state for next startup)."""
@@ -151,6 +150,7 @@ class ContainerManager:
 # ---------------------------------------------------------------------------
 # Jupyter wire protocol helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_execute_request(code: str) -> dict:
     """Build a Jupyter execute_request message."""
@@ -185,9 +185,7 @@ class KernelClient:
     def __init__(self, base_url: str = KERNEL_GATEWAY_URL):
         """Initialise the client with the Kernel Gateway base URL."""
         self._base_url = base_url
-        self._ws_base = base_url.replace("http://", "ws://").replace(
-            "https://", "wss://"
-        )
+        self._ws_base = base_url.replace("http://", "ws://").replace("https://", "wss://")
         self._kernels: dict[str, str] = {}  # language -> kernel_id
         self._seeded: set[str] = set()
         # Working directory the next kernel will chdir into when seeded.
@@ -232,7 +230,13 @@ class KernelClient:
             return ExecutionResult(text=f"[ERROR] {e}")
         ws_url = f"{self._ws_base}/api/kernels/{kernel_id}/channels"
 
-        ws = websocket.create_connection(ws_url)
+        try:
+            ws = websocket.create_connection(ws_url, timeout=30)
+        except (websocket.WebSocketException, OSError) as e:
+            logging.error(f"Failed to connect to kernel websocket: {e}")
+            return ExecutionResult(text=f"[ERROR] Kernel websocket unavailable: {e}")
+
+        timed_out = False
         try:
             msg = _make_execute_request(code)
             msg_id = msg["header"]["msg_id"]
@@ -247,6 +251,7 @@ class KernelClient:
                 try:
                     raw = ws.recv()
                 except websocket.WebSocketTimeoutException:
+                    timed_out = True
                     break
                 response = json.loads(raw)
 
@@ -279,6 +284,18 @@ class KernelClient:
                     if response["content"].get("execution_state") == "idle":
                         break
             else:
+                timed_out = True
+
+            if timed_out:
+                # Ask the kernel to abort the runaway execution so it doesn't
+                # keep consuming CPU after we've given up on the result.
+                try:
+                    requests.post(
+                        f"{self._base_url}/api/kernels/{kernel_id}/interrupt",
+                        timeout=5,
+                    )
+                except Exception as interrupt_err:
+                    logging.warning(f"Failed to interrupt kernel {kernel_id}: {interrupt_err}")
                 output_parts.append(
                     f"\n[ERROR] Execution timed out after {EXECUTION_TIMEOUT}s."
                 )
@@ -352,9 +369,7 @@ class KernelClient:
         """Delete all active kernels (for cleanup between agent runs)."""
         for language, kernel_id in list(self._kernels.items()):
             try:
-                requests.delete(
-                    f"{self._base_url}/api/kernels/{kernel_id}", timeout=10
-                )
+                requests.delete(f"{self._base_url}/api/kernels/{kernel_id}", timeout=10)
                 logging.info(f"Shut down {language} kernel: {kernel_id}")
             except Exception as e:
                 logging.warning(f"Error shutting down {language} kernel: {e}")

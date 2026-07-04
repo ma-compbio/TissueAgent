@@ -158,11 +158,13 @@ def harmony_transfer_tool(
         # Optionally preprocess datasets (recommended if inputs are raw)
         if not skip_preprocessing:
             adata_ref = _preprocess_dataset(
-                adata_ref, min_genes, min_cells, target_sum, n_top_genes, "reference"
+                adata_ref, min_genes, min_cells, target_sum, n_top_genes,
+                label="reference",
             )
             adata_spatial = _preprocess_dataset(
-                adata_spatial, min_genes, min_cells, target_sum, n_top_genes, "spatial"
-            )        
+                adata_spatial, min_genes, min_cells, target_sum, n_top_genes,
+                label="spatial",
+            )
         # Find shared genes
         shared_genes = adata_ref.var_names.intersection(adata_spatial.var_names)
         if len(shared_genes) < 50:
@@ -240,10 +242,10 @@ def harmony_transfer_tool(
         # Aggregate statistics for reporting
         cell_type_counts = pd.Series(predicted_labels).value_counts()
 
-        # Write run metadata
-        logs_dir = DATA_DIR / "logs"
-        logs_dir.mkdir(parents=True, exist_ok=True)
-        meta_path = logs_dir / "run_meta.json"
+        # Write run metadata under the tool's own output directory so it lives
+        # inside the project (rather than leaking into DATA_DIR/logs/, which is
+        # shared across projects).
+        meta_path = output_dir_path / "run_meta.json"
         metadata = {
             "status": "success",
             "method": "Harmony integration + MLP classifier",
@@ -305,11 +307,17 @@ def _preprocess_dataset(
     min_cells: int,
     target_sum: float,
     n_top_genes: int,
-    percent_top = (50,100,200)
+    label: str | None = None,
+    percent_top=(50, 100, 200),
 ) -> sc.AnnData:
-    """Preprocess a single dataset: filter, normalize, log transform, select HVGs."""
+    """Preprocess a single dataset: filter, normalize, log transform, select HVGs.
+
+    ``label`` is accepted for logging/UI parity with the call sites but has no
+    effect on the computation.
+    """
+    del label  # kept for API compatibility with callers
     # Calculate QC metrics
-    sc.pp.calculate_qc_metrics(adata,percent_top=percent_top, inplace=True)
+    sc.pp.calculate_qc_metrics(adata, percent_top=percent_top, inplace=True)
     
     # Filter cells
     sc.pp.filter_cells(adata, min_genes=min_genes)

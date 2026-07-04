@@ -26,12 +26,18 @@ import io
 import os
 import re
 import sys
-from datetime import datetime
+import threading
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Sequence
 
 from agents.llm_compat import patch_openai_legacy_api
 from config import DATA_DIR, active_project_outputs
+
+# Two invocations must not chdir at the same time — the process cwd is shared
+# state. The lock is coarse-grained (whole cascade run) because the upstream
+# writes many files with relative paths and we can't interleave.
+_CHDIR_LOCK = threading.Lock()
 
 # The submodule path inside this folder.
 _UPSTREAM_DIR = Path(__file__).resolve().parent / "upstream"
@@ -128,7 +134,7 @@ def run_geneagent_cascade(
     if not genes:
         raise ValueError("gene_list must contain at least one non-empty gene symbol.")
 
-    run_identifier = request_id or datetime.utcnow().strftime("run_%Y%m%d_%H%M%S")
+    run_identifier = request_id or datetime.now(timezone.utc).strftime("run_%Y%m%d_%H%M%S")
     # Per-project: drop runs under the active project's outputs/ so they
     # show up in the user's Files panel and travel with the project.
     run_directory = active_project_outputs() / "gene_agent" / run_identifier
@@ -139,17 +145,21 @@ def run_geneagent_cascade(
     for rel in _UPSTREAM_OUTPUT_DIRS:
         (run_directory / rel).mkdir(parents=True, exist_ok=True)
 
-    prev_cwd = Path.cwd()
     stdout_buffer = io.StringIO()
     raw_result = None
-    try:
-        os.chdir(run_directory)
-        with patch_openai_legacy_api(pinned_model=_PINNED_MODEL):
-            cascade_fn = _import_gene_agent_callable()
-            with contextlib.redirect_stdout(stdout_buffer):
-                raw_result = cascade_fn(run_identifier, ",".join(genes))
-    finally:
-        os.chdir(prev_cwd)
+    # Serialize the chdir + cascade around a process-wide lock. os.chdir is
+    # process-global state, so two concurrent runs would otherwise clobber
+    # each other's working directory mid-run.
+    with _CHDIR_LOCK:
+        prev_cwd = Path.cwd()
+        try:
+            os.chdir(run_directory)
+            with patch_openai_legacy_api(pinned_model=_PINNED_MODEL):
+                cascade_fn = _import_gene_agent_callable()
+                with contextlib.redirect_stdout(stdout_buffer):
+                    raw_result = cascade_fn(run_identifier, ",".join(genes))
+        finally:
+            os.chdir(prev_cwd)
 
     stdout_text = stdout_buffer.getvalue()
     final_response_path = run_directory / _FINAL_RESPONSE_REL

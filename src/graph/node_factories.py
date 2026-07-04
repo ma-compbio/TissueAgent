@@ -84,6 +84,17 @@ def create_agent_node(
         )
         elapsed = time.perf_counter() - t0
         response.name = agent_node_id
+
+        # state_update_fn runs BEFORE emit_message so any mutation of
+        # response.content (e.g. evaluator forcing a REPORT verdict when the
+        # replan limit is hit) is what the UI sees — otherwise the router and
+        # the UI can disagree.
+        extra_update: dict[str, Any] = {}
+        if state_update_fn:
+            maybe_update = state_update_fn(response, state) or {}
+            if maybe_update:
+                extra_update.update(maybe_update)
+
         emit_message(response)
 
         _, subagent_name, step_id = _get_subagent_context()
@@ -93,12 +104,6 @@ def create_agent_node(
             getattr(response, "usage_metadata", None),
             elapsed,
         )
-
-        extra_update: dict[str, Any] = {}
-        if state_update_fn:
-            maybe_update = state_update_fn(response, state) or {}
-            if maybe_update:
-                extra_update.update(maybe_update)
 
         next_node = tool_node_id if getattr(response, "tool_calls", []) else None
         if not next_node and exit_node is not None:
@@ -135,10 +140,23 @@ def create_tool_node(
         result = []
         last_message = cast(AIMessage, state["messages"][-1])
         for tool_call in last_message.tool_calls:
-            tool = tools_by_name[tool_call["name"]]
-            observation = tool.invoke(tool_call["args"])
+            tool_name = tool_call["name"]
+            tool = tools_by_name.get(tool_name)
+            if tool is None:
+                observation = f"Error: unknown tool '{tool_name}'."
+                logging.warning("tool_node: unknown tool %s", tool_name)
+            else:
+                try:
+                    observation = tool.invoke(tool_call["args"])
+                except Exception as exc:
+                    # Return the error as a ToolMessage so the LLM can recover
+                    # from a bad tool call instead of crashing the whole run.
+                    logging.exception("tool_node: %s raised", tool_name)
+                    observation = (
+                        f"Error invoking tool '{tool_name}': {type(exc).__name__}: {exc}"
+                    )
             message = ToolMessage(content=observation, tool_call_id=tool_call["id"])
-            message.name = tool_call["name"]
+            message.name = tool_name
             emit_message(message)
             result.append(message)
         return {"messages": result}

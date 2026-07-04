@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const API = import.meta.env.DEV ? "http://localhost:8000" : "";
 
@@ -40,47 +40,63 @@ export function useModels() {
   // update the worker so the two stay in sync by default.
   const [workerPinned, setWorkerPinned] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  const latestListReqRef = useRef(0);
 
   useEffect(() => {
-    let cancelled = false;
+    mountedRef.current = true;
+    const token = ++latestListReqRef.current;
     fetch(`${API}/api/models/list`)
       .then((r) => (r.ok ? (r.json() as Promise<ListResponse>) : Promise.reject(r)))
       .then((data) => {
-        if (cancelled) return;
+        if (!mountedRef.current || token !== latestListReqRef.current) return;
         setModels(data.models);
         setSelection(data.selection);
         setKeys(data.keys ?? {});
       })
       .catch(() => {
-        if (!cancelled) setError("Failed to load model list");
+        if (mountedRef.current && token === latestListReqRef.current) {
+          setError("Failed to load model list");
+        }
       });
     return () => {
-      cancelled = true;
+      mountedRef.current = false;
     };
   }, []);
 
   const persist = useCallback(async (next: ModelSelection) => {
-    const res = await fetch(`${API}/api/models/set`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(next),
-    });
-    if (!res.ok) {
-      setError("Failed to update model selection");
+    try {
+      const res = await fetch(`${API}/api/models/set`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      if (!res.ok) {
+        if (mountedRef.current) setError("Failed to update model selection");
+        return false;
+      }
+      if (mountedRef.current) setError(null);
+      return true;
+    } catch {
+      if (mountedRef.current) setError("Failed to update model selection");
       return false;
     }
-    setError(null);
-    return true;
   }, []);
 
   const setOrchestration = useCallback(
     async (id: string) => {
       if (!selection) return;
+      const prev = selection;
       const next: ModelSelection = workerPinned
         ? { orchestration: id, worker: selection.worker }
         : { orchestration: id, worker: id };
       setSelection(next);
-      await persist(next);
+      const ok = await persist(next);
+      if (!ok && mountedRef.current) {
+        // Revert the optimistic write when the server rejects it —
+        // otherwise the UI keeps showing a selection that isn't persisted.
+        setSelection(prev);
+      }
     },
     [selection, workerPinned, persist],
   );
@@ -88,13 +104,19 @@ export function useModels() {
   const setWorker = useCallback(
     async (id: string) => {
       if (!selection) return;
+      const prev = selection;
+      const prevPinned = workerPinned;
       const next: ModelSelection = { orchestration: selection.orchestration, worker: id };
       setSelection(next);
       // Once the user touches the worker dropdown, stop auto-syncing.
       setWorkerPinned(true);
-      await persist(next);
+      const ok = await persist(next);
+      if (!ok && mountedRef.current) {
+        setSelection(prev);
+        setWorkerPinned(prevPinned);
+      }
     },
-    [selection, persist],
+    [selection, workerPinned, persist],
   );
 
   const unpinWorker = useCallback(() => {

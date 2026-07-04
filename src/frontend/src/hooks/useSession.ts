@@ -57,8 +57,14 @@ export function useSession() {
         res.headers
           .get("content-disposition")
           ?.match(/filename="(.+)"/)?.[1] ?? fallbackName;
+      // Firefox refuses to trigger a download unless the anchor is in the
+      // DOM. Attach → click → detach, and revoke the object URL *after*
+      // a tick so the download start doesn't race the revoke on some
+      // browsers (Safari in particular).
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     },
     [],
   );

@@ -275,7 +275,14 @@ def run_cell2location_visium_deconvolution(
 ) -> dict[str, str]:
     """Run cell2location to deconvolve Visium spots into cell type abundances."""
     if use_gpu is None:
-        accelerator = "gpu" if sc.settings._default_backend == "pytorch-gpu" else "cpu"
+        # Detect GPU availability directly rather than through a private
+        # scanpy attribute (`sc.settings._default_backend`) that isn't part
+        # of the public API and disappears between releases.
+        try:
+            import torch  # local import — torch is a heavy optional dep here
+            accelerator = "gpu" if torch.cuda.is_available() else "cpu"
+        except Exception:
+            accelerator = "cpu"
     else:
         accelerator = "gpu" if use_gpu else "cpu"
     
@@ -323,15 +330,18 @@ def run_cell2location_visium_deconvolution(
         if hasattr(adata.X, 'data'):  # sparse matrix
             sample = adata.X.data[:1000]
         else:
-            sample = adata.X.flat[:1000]
-        
-        # Check for non-integer values
-        has_floats = not np.allclose(sample, np.round(sample))
-        # Check for negative values
+            sample = np.asarray(adata.X).flat[:1000]
+
+        # For int dtypes np.round is a no-op so np.allclose returns True even
+        # for float-encoded normalized data — check the dtype explicitly and
+        # treat any non-integer array as potentially normalized.
+        if np.issubdtype(sample.dtype, np.integer):
+            has_floats = False
+        else:
+            has_floats = not np.allclose(sample, np.round(sample))
         has_negatives = np.any(sample < 0)
-        # Check if values are in typical normalized range (0-10 for log-norm)
-        max_val = np.max(sample)
-        
+        max_val = np.max(sample) if sample.size else 0
+
         if has_floats or has_negatives or max_val < 20:
             print(f"  WARNING: {name} may not be raw counts:")
             print(f"    - Has non-integer values: {has_floats}")
@@ -368,39 +378,44 @@ def run_cell2location_visium_deconvolution(
     # If dataset has >100,000 cells, perform stratified sampling to maintain cell type distribution
     if adata_ref.n_obs > 100000:
         print(f"Reference dataset is large ({adata_ref.n_obs} cells). Performing stratified sampling...")
-        
+
         # Target sample size
         target_size = 10000
-        
+
+        # Use a seeded local generator so this subsampling step is
+        # reproducible across runs (global np.random state leaks between
+        # unrelated callers).
+        rng = np.random.default_rng(seed=0)
+
         if cell_type_column not in adata_ref.obs.columns:
             print(f"Warning: cell_type_column '{cell_type_column}' not found. Performing random sampling.")
             # Random sampling without stratification
-            sample_indices = np.random.choice(adata_ref.n_obs, size=min(target_size, adata_ref.n_obs), replace=False)
+            sample_indices = rng.choice(adata_ref.n_obs, size=min(target_size, adata_ref.n_obs), replace=False)
             adata_ref = adata_ref[sample_indices].copy()
         else:
             # Get original cell type distribution
             original_dist = adata_ref.obs[cell_type_column].value_counts()
             total_cells = adata_ref.n_obs
-            
+
             print(f"Original cell type distribution ({total_cells} cells):")
             for ct, count in original_dist.head(10).items():
                 print(f"  {ct}: {count} ({100*count/total_cells:.1f}%)")
-            
+
             # Calculate proportional sample size for each cell type
             sampled_indices = []
             actual_samples = {}
-            
+
             for cell_type in original_dist.index:
                 # Calculate target number of cells for this type
                 proportion = original_dist[cell_type] / total_cells
                 n_samples = max(1, int(target_size * proportion))  # At least 1 cell per type
-                
+
                 # Get indices for this cell type
                 ct_indices = np.where(adata_ref.obs[cell_type_column] == cell_type)[0]
-                
+
                 # Sample without replacement (or take all if fewer cells than target)
                 n_to_sample = min(n_samples, len(ct_indices))
-                sampled = np.random.choice(ct_indices, size=n_to_sample, replace=False)
+                sampled = rng.choice(ct_indices, size=n_to_sample, replace=False)
                 sampled_indices.extend(sampled)
                 actual_samples[cell_type] = n_to_sample
             
@@ -471,9 +486,11 @@ def run_cell2location_visium_deconvolution(
     print(f"  Found {n_mt_genes} mitochondrial genes")
     
     if n_mt_genes > 0:
-        # Store MT gene counts in obsm for reference (keeping their counts in the object)
-        adata_vis.obsm['MT'] = adata_vis[:, adata_vis.var['MT_gene'].values].X.toarray()
-        
+        # Store MT gene counts in obsm for reference (keeping their counts in the object).
+        # .X may be dense (ndarray) or sparse; only sparse matrices expose .toarray().
+        mt_matrix = adata_vis[:, adata_vis.var['MT_gene'].values].X
+        adata_vis.obsm['MT'] = mt_matrix.toarray() if hasattr(mt_matrix, "toarray") else np.asarray(mt_matrix)
+
         # Remove MT genes for spatial mapping
         adata_vis = adata_vis[:, ~adata_vis.var['MT_gene'].values].copy()
         print(f"  Removed {n_mt_genes} MT genes, {adata_vis.n_vars} genes remaining")

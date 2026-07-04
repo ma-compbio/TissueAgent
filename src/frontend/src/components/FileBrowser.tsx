@@ -107,12 +107,21 @@ function FileNode({
 }) {
   const qs = new URLSearchParams({ scope });
   if (projectId) qs.set("project_id", projectId);
-  const downloadUrl = `${API}/api/files/download/${entry.path}?${qs}`;
-  const deleteUrl = `${API}/api/files/${entry.path}?${qs}`;
+  // encodeURI (not encodeURIComponent) so path separators survive — but
+  // reserved chars like ? # % inside a filename would otherwise break the
+  // URL. Encode each segment individually.
+  const encodedPath = entry.path
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+  const downloadUrl = `${API}/api/files/download/${encodedPath}?${qs}`;
+  const deleteUrl = `${API}/api/files/${encodedPath}?${qs}`;
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(downloadUrl, "_blank");
+    // rel="noopener noreferrer" via the third arg — window.open leaves the
+    // new tab with access to the opener otherwise.
+    window.open(downloadUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleDelete = async (e: React.MouseEvent) => {

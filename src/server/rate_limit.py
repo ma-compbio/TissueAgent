@@ -117,6 +117,18 @@ class _RetryWrapper(Runnable):
         return getattr(self._inner, name)
 
     def invoke(self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any) -> Any:
+        # Guard against being called from a live event loop — the time.sleep
+        # below would block it and starve every other client. Callers that
+        # need to run under asyncio must use ``ainvoke`` instead.
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            pass
+        else:
+            raise RuntimeError(
+                "_RetryWrapper.invoke() cannot be called from a running event "
+                "loop — use ainvoke() to avoid blocking the loop on time.sleep."
+            )
         for attempt in range(1, self._max_attempts + 1):
             try:
                 return self._inner.invoke(input, config=config, **kwargs)

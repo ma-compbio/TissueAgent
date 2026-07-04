@@ -31,8 +31,19 @@ error rather than silently producing 401s.
 from __future__ import annotations
 
 import os
+import threading
 from contextlib import contextmanager
 from typing import Any, Iterator
+
+# Defined at module scope so its identity is stable and it exists *before*
+# ``patch_openai_legacy_api`` runs. The previous version referenced
+# ``_SENTINEL`` from inside the function body while defining it below the
+# function — only worked because Python resolved the free name lazily.
+_SENTINEL = object()
+
+# Serialize the openai-module monkey-patch so two concurrent external agents
+# can't observe each other's API key or shim while inside the context.
+_PATCH_LOCK = threading.Lock()
 
 
 def _resolve_openai_key() -> str | None:
@@ -154,53 +165,55 @@ def patch_openai_legacy_api(pinned_model: str) -> Iterator[None]:
 
     client = OpenAI(api_key=key)
 
-    # Save originals so we can restore on exit.
-    saved: dict = {}
-    for attr in ("api_type", "api_base", "api_version", "api_key", "ChatCompletion", "Completion"):
-        saved[attr] = getattr(openai, attr, _SENTINEL)
+    # ``openai.api_key`` is a module global; two threads entering this
+    # patch at the same time would race, and the second thread's key could
+    # leak into the first thread's finally-restore. Serialize the whole
+    # patched section so patches nest linearly.
+    with _PATCH_LOCK:
+        # Save originals so we can restore on exit.
+        saved: dict = {}
+        for attr in ("api_type", "api_base", "api_version", "api_key", "ChatCompletion", "Completion"):
+            saved[attr] = getattr(openai, attr, _SENTINEL)
 
-    # Install no-op attribute targets for the Azure config lines.
-    # The legacy module does ``openai.api_type = "azure"`` at import time;
-    # since we'll re-import the legacy module *under* this patch, we just
-    # need to be sure those assignments don't blow up the modern SDK.
-    try:
-        openai.api_type = ""  # type: ignore[attr-defined]
-    except Exception:
-        pass
-    try:
-        openai.api_base = ""  # type: ignore[attr-defined]
-    except Exception:
-        pass
-    try:
-        openai.api_version = ""  # type: ignore[attr-defined]
-    except Exception:
-        pass
-    try:
-        openai.api_key = key  # type: ignore[attr-defined]
-    except Exception:
-        pass
+        # Install no-op attribute targets for the Azure config lines.
+        # The legacy module does ``openai.api_type = "azure"`` at import time;
+        # since we'll re-import the legacy module *under* this patch, we just
+        # need to be sure those assignments don't blow up the modern SDK.
+        try:
+            openai.api_type = ""  # type: ignore[attr-defined]
+        except Exception:
+            pass
+        try:
+            openai.api_base = ""  # type: ignore[attr-defined]
+        except Exception:
+            pass
+        try:
+            openai.api_version = ""  # type: ignore[attr-defined]
+        except Exception:
+            pass
+        try:
+            openai.api_key = key  # type: ignore[attr-defined]
+        except Exception:
+            pass
 
-    # Install the legacy-shaped ChatCompletion / Completion shims.
-    chat_shim = _build_legacy_chat_completion(client, pinned_model)
-    openai.ChatCompletion = chat_shim  # type: ignore[attr-defined]
-    openai.Completion = chat_shim  # type: ignore[attr-defined]
+        # Install the legacy-shaped ChatCompletion / Completion shims.
+        chat_shim = _build_legacy_chat_completion(client, pinned_model)
+        openai.ChatCompletion = chat_shim  # type: ignore[attr-defined]
+        openai.Completion = chat_shim  # type: ignore[attr-defined]
 
-    try:
-        yield
-    finally:
-        # Restore whatever was there before, deleting attributes that
-        # didn't exist originally.
-        for attr, val in saved.items():
-            if val is _SENTINEL:
-                try:
-                    delattr(openai, attr)
-                except AttributeError:
-                    pass
-            else:
-                try:
-                    setattr(openai, attr, val)
-                except Exception:
-                    pass
-
-
-_SENTINEL = object()
+        try:
+            yield
+        finally:
+            # Restore whatever was there before, deleting attributes that
+            # didn't exist originally.
+            for attr, val in saved.items():
+                if val is _SENTINEL:
+                    try:
+                        delattr(openai, attr)
+                    except AttributeError:
+                        pass
+                else:
+                    try:
+                        setattr(openai, attr, val)
+                    except Exception:
+                        pass

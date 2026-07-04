@@ -8,13 +8,14 @@ import asyncio
 import json
 import logging
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
 from typing import Optional
 
 import anthropic
 import openai
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from starlette.websockets import WebSocketState
 from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
 from pathlib import Path
@@ -39,6 +40,29 @@ from server.utils import (
 router = APIRouter()
 
 _executor = ThreadPoolExecutor(max_workers=1)
+
+# Track the current in-flight graph invocation so a WebSocket disconnect can
+# cancel it (best-effort — the underlying compute already started may still
+# run to completion, but we stop touching shared state from the finally block).
+_current_run_future: Future | None = None
+
+
+def _ws_connected(ws: WebSocket) -> bool:
+    """Return True when *ws* is still safe to send on."""
+    return (
+        ws.client_state == WebSocketState.CONNECTED
+        and ws.application_state == WebSocketState.CONNECTED
+    )
+
+
+async def _safe_send_json(ws: WebSocket, payload: dict) -> None:
+    """Send a JSON payload only if the connection is still open."""
+    if not _ws_connected(ws):
+        return
+    try:
+        await ws.send_json(payload)
+    except (WebSocketDisconnect, RuntimeError) as exc:
+        logging.debug("send_json skipped (socket closed): %s", exc)
 
 
 # ---------------------------------------------------------------------------
@@ -149,7 +173,19 @@ async def websocket_chat(ws: WebSocket):
     try:
         while True:
             raw = await ws.receive_text()
-            data = json.loads(raw)
+            try:
+                data = json.loads(raw)
+            except (json.JSONDecodeError, TypeError) as exc:
+                logging.warning("Ignoring malformed frame from client: %s", exc)
+                await _safe_send_json(ws, {
+                    "type": "run_error",
+                    "error_type": "MalformedFrame",
+                    "detail": f"Frame is not valid JSON: {exc}",
+                })
+                continue
+            if not isinstance(data, dict):
+                logging.warning("Ignoring non-object frame from client: %r", data)
+                continue
 
             msg_type = data.get("type")
             if msg_type == "send_message":
@@ -174,6 +210,13 @@ async def websocket_chat(ws: WebSocket):
         logging.info("WebSocket client disconnected")
     except Exception as e:
         logging.error(f"WebSocket error: {e}", exc_info=True)
+    finally:
+        # Best-effort cancel of any in-flight graph invocation so it can't
+        # continue mutating shared session state after the client has gone.
+        global _current_run_future
+        pending = _current_run_future
+        if pending is not None and not pending.done():
+            pending.cancel()
 
 
 async def _handle_set_mode(ws: WebSocket, data: dict):
@@ -238,11 +281,14 @@ async def _handle_user_message(ws: WebSocket, data: dict):
     for pdf in session.uploaded_pdfs:
         if "file_id" not in pdf:
             try:
-                file_id = upload_pdf_to_openai(Path(pdf["path"]))
+                # upload_pdf_to_openai does synchronous HTTP; run it off the
+                # event loop so it doesn't stall every other WebSocket while
+                # a large PDF uploads.
+                file_id = await asyncio.to_thread(upload_pdf_to_openai, Path(pdf["path"]))
                 pdf["file_id"] = file_id
                 pdf["attached_to_conversation"] = False
             except Exception as e:
-                await ws.send_json({
+                await _safe_send_json(ws, {
                     "type": "run_error",
                     "error_type": "PDFUploadError",
                     "detail": f"Failed to upload PDF {pdf['name']}: {e}",
@@ -392,9 +438,20 @@ async def _run_graph(ws: WebSocket, graph_input):
         config,
         **invoke_kwargs,
     )
+    # Expose to the outer handler so a WebSocketDisconnect can cancel us.
+    global _current_run_future
+    _current_run_future = future
 
     try:
         while not future.done():
+            if not _ws_connected(ws):
+                # Client gave up — abandon the run. The underlying compute
+                # already scheduled on the executor can't be forcibly killed,
+                # but marking is_running=False prevents further mutation via
+                # the finally block and any subsequent sends short-circuit.
+                future.cancel()
+                logging.info("WebSocket disconnected mid-run; abandoning invocation.")
+                return
             await _drain_queues(ws)
             await asyncio.sleep(0.05)
 
@@ -461,28 +518,31 @@ async def _run_graph(ws: WebSocket, graph_input):
 
     except GraphRecursionError as e:
         logging.error("GraphRecursionError", exc_info=e)
-        await ws.send_json({
+        await _safe_send_json(ws, {
             "type": "run_error",
             "error_type": "GraphRecursionError",
             "detail": str(e),
         })
     except (anthropic.BadRequestError, openai.BadRequestError) as e:
         logging.error("BadRequestError", exc_info=e)
-        await ws.send_json({
+        await _safe_send_json(ws, {
             "type": "run_error",
             "error_type": "BadRequestError",
             "detail": str(e),
         })
     except Exception as e:
         logging.error("Unexpected error during agent invocation", exc_info=e)
-        await ws.send_json({
+        await _safe_send_json(ws, {
             "type": "run_error",
             "error_type": type(e).__name__,
             "detail": str(e),
         })
     finally:
         session.is_running = False
-        await _drain_queues(ws)
+        if _current_run_future is future:
+            _current_run_future = None
+        if _ws_connected(ws):
+            await _drain_queues(ws)
 
 
 async def _emit_pause(ws: WebSocket, pause_label: str) -> None:
@@ -689,6 +749,8 @@ async def _handle_run_cancelled(ws: WebSocket) -> None:
 
 async def _drain_queues(ws: WebSocket):
     """Drain both event and state queues, sending updates to client."""
+    if not _ws_connected(ws):
+        return
     # Drain UI event queue (now contains typed tuples)
     while not session.ui_event_queue.empty():
         event = session.ui_event_queue.get()

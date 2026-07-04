@@ -21,6 +21,7 @@ A single global :class:`PlanStore` is exposed as :data:`plan_store`.
 
 from __future__ import annotations
 
+import os
 import re
 import threading
 from dataclasses import dataclass, field, asdict
@@ -31,6 +32,17 @@ from typing import Any, Dict, List, Literal, Optional
 import yaml
 
 from config import PLAN_SCRATCH_DIR
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Atomically overwrite *path* with *text*.
+
+    Writes to a sibling ``.tmp`` first, then swaps via ``os.replace`` so a
+    crash mid-write can't leave a truncated plan.md on disk.
+    """
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
 
 
 class PlanEditError(ValueError):
@@ -312,14 +324,14 @@ class PlanStore:
         markdown = doc.to_markdown()
         with self._lock:
             self._ensure_dir()
-            self.path.write_text(markdown, encoding="utf-8")
+            _atomic_write_text(self.path, markdown)
         return markdown
 
     def write_markdown(self, markdown: str) -> None:
         """Persist arbitrary markdown text (used when the user edits)."""
         with self._lock:
             self._ensure_dir()
-            self.path.write_text(markdown, encoding="utf-8")
+            _atomic_write_text(self.path, markdown)
 
     def reset(self) -> None:
         """Drop the current plan.
@@ -358,7 +370,7 @@ class PlanStore:
         normalised = doc.to_markdown()
         with self._lock:
             self._ensure_dir()
-            self.path.write_text(normalised, encoding="utf-8")
+            _atomic_write_text(self.path, normalised)
         return doc
 
 

@@ -8,6 +8,7 @@ import base64
 import json
 import logging
 import mimetypes
+import os
 import re
 import shutil
 import threading
@@ -72,7 +73,8 @@ def file_to_data_url(file_path: Path) -> str:
 def upload_pdf_to_openai(pdf_path: Path) -> str:
     """Upload PDF to OpenAI Files API and return file_id."""
     try:
-        file = openai.files.create(file=open(pdf_path, "rb"), purpose="user_data")
+        with open(pdf_path, "rb") as fh:
+            file = openai.files.create(file=fh, purpose="user_data")
         logging.info(f"Uploaded PDF {pdf_path.name} to OpenAI, file_id: {file.id}")
         return file.id
     except Exception as e:
@@ -729,10 +731,15 @@ def save_session(
     project_dir.mkdir(parents=True, exist_ok=True)
     (project_dir / PROJECT_OUTPUTS_DIRNAME).mkdir(exist_ok=True)
     target_path = project_dir / PROJECT_CHAT_FILENAME
-    target_path.write_text(
+    # Atomic write: rendering to a tmp file next to the target and using
+    # os.replace guarantees a crash mid-write can't leave a truncated
+    # .chat.json that later fails to parse.
+    tmp_path = target_path.with_suffix(target_path.suffix + ".tmp")
+    tmp_path.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2, default=str),
         encoding="utf-8",
     )
+    os.replace(tmp_path, target_path)
     return target_path
 
 

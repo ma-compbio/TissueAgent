@@ -2,12 +2,28 @@
 
 from langchain_core.messages import AIMessage, BaseMessage
 
+# additional_kwargs keys that carry provider-specific data the API rejects on
+# a return trip (e.g. reasoning traces). Everything else — including UI-only
+# payloads like plan_payload / validation_payload — must survive sanitize.
+_STRIP_AI_KWARG_KEYS = frozenset({
+    "reasoning",
+    "reasoning_content",
+    "thinking",
+    "signature",
+    "cache_control",
+    "tool_use_id",
+    "refusal",
+})
+
 
 def sanitize_message(message: BaseMessage) -> BaseMessage:
     """Ensure a message's content is safe to send back to the OpenAI API.
 
     Reasoning models (e.g. GPT-5) may return content lists or additional_kwargs entries with
     non-standard types that the API rejects on subsequent turns. This strips those to plain text.
+
+    Returns a *new* message (via ``model_copy``) rather than mutating the input, since
+    LangGraph passes shared references through the state channel.
     """
     if isinstance(message, AIMessage):
         content = message.content
@@ -20,16 +36,24 @@ def sanitize_message(message: BaseMessage) -> BaseMessage:
                 elif isinstance(item, str):
                     text_parts.append(item)
             content = "\n".join(text_parts).strip()
-        # Rebuild AIMessage without additional_kwargs
-        sanitized = AIMessage(
+        # Preserve additional_kwargs but drop provider-specific keys the API
+        # rejects on the return trip. UI-only keys (plan_payload,
+        # validation_payload, …) are kept intact so downstream serializers can
+        # still see them.
+        original_kwargs = getattr(message, "additional_kwargs", None) or {}
+        filtered_kwargs = {
+            k: v for k, v in original_kwargs.items() if k not in _STRIP_AI_KWARG_KEYS
+        }
+        return AIMessage(
             content=content,
             id=message.id,
             tool_calls=message.tool_calls or [],
             name=getattr(message, "name", None),
+            additional_kwargs=filtered_kwargs,
         )
-        return sanitized
-    elif isinstance(message.content, list):
-        # For non-AI messages (Human/Tool), ensure list items have type
+    if isinstance(message.content, list):
+        # For non-AI messages (Human/Tool), ensure list items have type.
+        # Copy the message so we don't mutate a reference shared elsewhere.
         sanitized_content = []
         for item in message.content:
             if isinstance(item, dict):
@@ -41,7 +65,7 @@ def sanitize_message(message: BaseMessage) -> BaseMessage:
                 sanitized_content.append({"type": "text", "text": item})
             else:
                 sanitized_content.append(item)
-        message.content = sanitized_content
+        return message.model_copy(update={"content": sanitized_content})
     return message
 
 
