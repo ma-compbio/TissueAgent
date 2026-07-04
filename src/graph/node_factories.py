@@ -248,10 +248,33 @@ def _record_step_outputs(step_id: int, found: list[str]) -> None:
     emit_message(message)
 
 
+def _format_progress_line(step_id: int) -> str:
+    """Describe how many plan steps have been dispatched and how many remain.
+
+    Reads the live plan cursor, so the number reflects the state *after* the
+    just-dispatched step has been marked ``running``. "Remaining after this one"
+    counts steps still ``pending``.
+    """
+    doc = plan_store.read()
+    total = len(doc.steps)
+    dispatched_idx = next(
+        (i for i, s in enumerate(doc.steps) if s.id == step_id),
+        None,
+    )
+    if dispatched_idx is None or total == 0:
+        return f"Progress: step {step_id} dispatched"
+    remaining_after = total - (dispatched_idx + 1)
+    return (
+        f"Progress: step {dispatched_idx + 1} of {total} dispatched; "
+        f"{remaining_after} remaining after this one"
+    )
+
+
 def _format_validation_summary(
     step_id: int,
     found: list[str],
     missing: list[str],
+    progress_line: str,
 ) -> str:
     """Format a human-readable validation summary for the UI event payload."""
     lines = [f"--- Artifact Validation (Step {step_id}) ---"]
@@ -261,6 +284,7 @@ def _format_validation_summary(
         lines.append(f"Missing: {', '.join(missing)}")
     status = "PASSED" if not missing else "FAILED"
     lines.append(f"Status: {status}")
+    lines.append(progress_line)
     return "\n".join(lines)
 
 
@@ -268,13 +292,14 @@ def _emit_artifact_validation(
     step_id: int,
     found: list[str],
     missing: list[str],
+    summary: str,
 ) -> None:
-    """Push a UI-only ``artifact_validation`` event.
+    """Push a ``artifact_validation`` UI event with the structured payload.
 
-    The payload is intended for display alongside the step in the plan view. The manager
-    never sees this message — its ``filter_for_manager`` strips events with this name.
+    The summary text is the same one returned to the manager via the tool channel;
+    the ``validation_payload`` carries the parsed fields so future UI components
+    (e.g. a per-step badge in PlanPanel) can render without re-parsing the string.
     """
-    summary = _format_validation_summary(step_id, found, missing)
     verdict = "PASSED" if not missing else "FAILED"
     message = AIMessage(
         content=summary,
@@ -294,23 +319,27 @@ def _emit_artifact_validation(
 def run_heuristic_validation(
     step_id: int,
     expected_artifacts: list[str],
-) -> tuple[list[str], list[str]]:
+) -> tuple[list[str], list[str], str]:
     """Validate expected artifacts, record outputs, and emit a UI event.
 
-    Wraps the three steps the manager's ``next_step``/``retry_step`` need after invoking
+    Wraps the four steps the manager's ``next_step``/``retry_step`` need after invoking
     a sub-agent:
 
     1. Glob/exact-match each expected artifact under ``DATA_DIR``.
     2. Record what was found in ``step.actual_outputs`` (no status write).
-    3. Emit an ``artifact_validation`` UI event for display.
+    3. Format the validation summary (Found/Missing/Status/Progress).
+    4. Emit an ``artifact_validation`` UI event for display.
 
-    Returns ``(found, missing)`` so the caller can also log it if desired. The manager
-    does *not* see this result via the tool channel — it's UI-only.
+    Returns ``(found, missing, summary)``. The summary is the same text the UI event
+    carries and is appended to the manager tool's return value so the manager can
+    factor the verdict into its next decision.
     """
     found, missing = _validate_step_artifacts(expected_artifacts)
     _record_step_outputs(step_id, found)
-    _emit_artifact_validation(step_id, found, missing)
-    return found, missing
+    progress_line = _format_progress_line(step_id)
+    summary = _format_validation_summary(step_id, found, missing, progress_line)
+    _emit_artifact_validation(step_id, found, missing, summary)
+    return found, missing, summary
 
 
 def create_agent_invocation_tool(

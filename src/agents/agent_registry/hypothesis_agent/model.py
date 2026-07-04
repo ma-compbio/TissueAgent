@@ -204,18 +204,9 @@ def create_hypothesis_agent(
         state_queue.put((id, final_state, invocation_id))
         result = final_state["messages"][-1].content
 
-        if step_ctx and step_ctx.expected_artifacts:
-            from graph.node_factories import (
-                _validate_step_artifacts,
-                _update_step_status,
-                _format_validation_summary,
-            )
-
-            found, missing = _validate_step_artifacts(step_ctx.expected_artifacts)
-            _update_step_status(step_ctx.step_id, found, missing)
-            summary = _format_validation_summary(step_ctx.step_id, found, missing)
-            logging.info(summary)
-            result += summary
+        # Artifact validation is owned by the manager's ``next_step`` / ``retry_step``
+        # wrappers (see graph/node_factories.py::run_heuristic_validation). Do not
+        # re-run it here.
 
         return result
 

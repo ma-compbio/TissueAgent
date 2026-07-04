@@ -9,9 +9,10 @@ sub-agent in the agent registry) and add cursor + status bookkeeping on top:
 * ``retry_step`` re-dispatches the most recently dispatched step without advancing the
   cursor; the previous attempt is marked ``failed`` for the UI before re-running.
 
-Artifact validation is run after each invocation but is treated as a UI-only heuristic —
-its result is emitted to the user via the ``artifact_validation`` UI event and is not
-included in the tool's return value to the manager.
+Artifact validation is run after each invocation. Its summary (Found / Missing /
+Status / Progress) is both emitted to the UI via the ``artifact_validation`` event
+and appended to the tool's return value so the manager sees the verdict inline
+alongside the sub-agent's own summary.
 """
 
 from __future__ import annotations
@@ -131,8 +132,8 @@ def create_manager_step_tools(
             if args.expected_artifacts is not None
             else list(step.expected_artifacts)
         )
-        run_heuristic_validation(step.id, expected)
-        return result
+        _, _, validation_summary = run_heuristic_validation(step.id, expected)
+        return f"{result}\n\n{validation_summary}"
 
     def next_step(
         task_instructions: str,

@@ -14,6 +14,8 @@ __marimo__/
 # workspace/: keep the high-level folder skeleton tracked (via .gitkeep),
 # but ignore everything users / agents put inside at runtime — project
 # runs, library uploads, scratch drafts, in-flight plan files.
+projects/
+plan_scratch/
 workspace/**
 !workspace/
 !workspace/library/
