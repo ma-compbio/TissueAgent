@@ -175,27 +175,15 @@ def create_coding_agent(
 
                 skill_prompt_text = format_skill_prompt(step_ctx.skills)
 
-        with subagent_invocation("Coding Agent") as invocation_id:
+        with subagent_invocation(
+            "Coding Agent",
+            step_id=step_ctx.step_id if step_ctx else None,
+        ) as invocation_id:
             final_state = agent.invoke(
                 {"messages": [message], "skill_prompt": skill_prompt_text}
             )
         state_queue.put((id, final_state, invocation_id))
-        result = final_state["messages"][-1].content
-
-        if step_ctx and step_ctx.expected_artifacts:
-            from graph.node_factories import (
-                _validate_step_artifacts,
-                _update_step_status,
-                _format_validation_summary,
-            )
-
-            found, missing = _validate_step_artifacts(step_ctx.expected_artifacts)
-            _update_step_status(step_ctx.step_id, found, missing)
-            summary = _format_validation_summary(step_ctx.step_id, found, missing)
-            logging.info(summary)
-            result += summary
-
-        return result
+        return final_state["messages"][-1].content
 
     tool = StructuredTool.from_function(
         func=agent_invocation_tool,
