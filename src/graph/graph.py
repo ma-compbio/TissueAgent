@@ -29,7 +29,7 @@ from agents.agent_defns import (
     RecruiterAgent,
     ReporterAgent,
 )
-from agents.agent_utils import substitute_shared_prompts
+from agents.agent_utils import substitute_shared_prompts, truncate_output
 from agents.planner_agent.prompt import PlannerReplanPrompt
 from config import MAX_PLANNER_RETRIES, MAX_RECRUITER_RETRIES, MAX_REPLANS
 from agents.manager_agent.tools import create_manager_step_tools
@@ -176,11 +176,7 @@ def create_tissueagent_graph(
         ReporterAgent,
     ]:
         if isinstance(main_agent.prompt, str):
-            prompt_preview = (
-                main_agent.prompt
-                if len(main_agent.prompt) < 600
-                else main_agent.prompt[:600] + "...[truncated]"
-            )
+            prompt_preview = truncate_output(main_agent.prompt, 600)
         else:
             try:
                 prompt_obj = main_agent.prompt(agent_id_descriptions)
@@ -188,9 +184,7 @@ def create_tissueagent_graph(
                 # rather than a string. Render once with an empty state for preview.
                 if callable(prompt_obj):
                     prompt_obj = prompt_obj({"messages": []})
-                prompt_preview = prompt_obj
-                if len(prompt_preview) > 600:
-                    prompt_preview = prompt_preview[:600] + "...[truncated]"
+                prompt_preview = truncate_output(prompt_obj, 600)
             except Exception as e:
                 prompt_preview = f"<Prompt callable: {e}>"
         tool_names = [tool.name for tool in main_agent.tools]
