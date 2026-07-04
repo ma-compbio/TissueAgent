@@ -188,6 +188,30 @@ function collapseAgentRuns(
   return result;
 }
 
+/**
+ * Find the name of the tool call currently in progress for a live trace.
+ * Walks the transcript backwards to the most recent AI message with
+ * ``tool_calls``, and returns the last one — which is the call the agent
+ * has just issued and is waiting on. Returns null if no tool call has
+ * been made yet in this step.
+ */
+function extractCurrentToolCall(trace: SubagentTranscript): string | null {
+  const transcript = trace.transcript;
+  if (!transcript) return null;
+  for (let i = transcript.length - 1; i >= 0; i--) {
+    const msg = transcript[i];
+    if (msg.type === "tool") {
+      // Latest activity is a completed tool result — no call in flight.
+      return null;
+    }
+    if (msg.type === "ai" && msg.tool_calls && msg.tool_calls.length > 0) {
+      const last = msg.tool_calls[msg.tool_calls.length - 1];
+      return last.name;
+    }
+  }
+  return null;
+}
+
 /** Build synthetic SubagentTranscripts from AgentRun items. */
 function buildSyntheticTraces(
   items: DisplayItem[]
@@ -417,11 +441,15 @@ export default function ChatView({
                       {selectedTrace === invId ? "Viewing live trace" : "View live trace"}
                     </span>
                   </div>
-                  {trace.transcript && trace.transcript.length > 0 && (
-                    <div className="subagent-card-output">
-                      Step {trace.transcript.filter((m) => m.type === "ai").length} in progress...
-                    </div>
-                  )}
+                  {(() => {
+                    const currentToolCall = extractCurrentToolCall(trace);
+                    if (!currentToolCall) return null;
+                    return (
+                      <div className="subagent-card-output">
+                        <span className="tool-call-pill">→ {currentToolCall}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ))}

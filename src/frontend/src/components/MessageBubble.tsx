@@ -171,15 +171,22 @@ export function AgentRunCard({
   onSelectTrace: (id: string) => void;
   isSelected: boolean;
 }) {
+  // Planner and recruiter output raw JSON that isn't useful as a preview —
+  // hide the summary for them and let the user open the trace to see it.
+  const suppressSummary =
+    run.agentName === "planner_agent" || run.agentName === "recruiter_agent";
+
   // Summarize: find the last high-level tag content, or list tool call names
   let summary: string | null = null;
-  for (let i = run.messages.length - 1; i >= 0; i--) {
-    const msg = run.messages[i];
-    if (msg.type !== "ai") continue;
-    if (msg.tags?.response) { summary = msg.tags.response; break; }
-    if (msg.tags?.plan) { summary = msg.tags.plan; break; }
-    if (msg.body?.trim()) { summary = msg.body; break; }
-    if (msg.content?.trim()) { summary = msg.content; break; }
+  if (!suppressSummary) {
+    for (let i = run.messages.length - 1; i >= 0; i--) {
+      const msg = run.messages[i];
+      if (msg.type !== "ai") continue;
+      if (msg.tags?.response) { summary = msg.tags.response; break; }
+      if (msg.tags?.plan) { summary = msg.tags.plan; break; }
+      if (msg.body?.trim()) { summary = msg.body; break; }
+      if (msg.content?.trim()) { summary = msg.content; break; }
+    }
   }
 
   return (
