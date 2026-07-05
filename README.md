@@ -123,7 +123,7 @@ Two roots that the agent treats differently:
 3. Start the application (two terminals, both with `conda activate tissueagent`):
    ```bash
    # Terminal 1 — FastAPI backend
-   PYTHONPATH=$(pwd)/src uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
+   PYTHONPATH=$(pwd)/src uvicorn server.main:app --reload --reload-dir src --host 0.0.0.0 --port 8000
 
    # Terminal 2 — React dev server (hot-reload)
    cd src/frontend
@@ -136,7 +136,7 @@ Two roots that the agent treats differently:
 
 ```bash
 conda activate tissueagent
-cd src/frontend && npm run build && cd ../..
+cd src/frontend && npm run build && cd ../.
 PYTHONPATH=$(pwd)/src uvicorn server.main:app --host 0.0.0.0 --port 8000
 ```
 Open **http://localhost:8000**. FastAPI serves the built React app as static files.
@@ -160,7 +160,7 @@ You will need to install the following manually:
    ```bash
    # Terminal 1 — FastAPI backend
    source .venv/bin/activate
-   PYTHONPATH=$(pwd)/src uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
+   PYTHONPATH=$(pwd)/src uvicorn server.main:app --reload --host 0.0.0.0 --reload-dir src --port 8000
 
    # Terminal 2 — React dev server (hot-reload)
    cd src/frontend
@@ -197,7 +197,7 @@ A Nix flake is provided that supplies Python 3.12, uv, Node.js 22, and npm.
    ```bash
    # Terminal 1 — FastAPI backend
    source .venv/bin/activate
-   PYTHONPATH=$(pwd)/src uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
+   PYTHONPATH=$(pwd)/src uvicorn server.main:app --reload --reload-dir src --host 0.0.0.0 --port 8000
 
    # Terminal 2 — React dev server (hot-reload)
    cd src/frontend
