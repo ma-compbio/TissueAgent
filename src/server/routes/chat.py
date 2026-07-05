@@ -79,7 +79,7 @@ def _ensure_project_id() -> str:
       - Assign the project an id (recorded both in session and as a
         ``.project_id`` dotfile inside the active project dir).
       - Re-arm the kernel so the next code execution sees the canonical
-        ``/workspace/project/outputs`` cwd.
+        workspace root (``/workspace``) as its cwd.
 
     Idempotent on subsequent calls — already-minted projects no-op.
     """
@@ -94,9 +94,9 @@ def _ensure_project_id() -> str:
         logging.warning(f"Failed to write .project_id: {e}")
 
     try:
-        outputs = project_outputs_dir(project_id)
+        project_outputs_dir(project_id)  # ensure outputs dir exists
         from server.main import set_kernel_workspace
-        set_kernel_workspace(outputs)
+        set_kernel_workspace(DATA_DIR)
     except Exception as e:
         logging.warning(f"Failed to bind kernel workspace for new project: {e}")
 
@@ -258,9 +258,9 @@ async def _handle_user_message(ws: WebSocket, data: dict):
 
     # Build multimodal content parts.
     # User-uploaded images are saved under the active project's
-    # attachments/ dir (or scratch/attachments/ before a project exists)
-    # by the file upload route; we reference them by workspace-relative
-    # path so that agents can read them via the standard read() tool.
+    # uploads/ dir by the file upload route; we reference them by
+    # workspace-relative path so that agents can read them via the
+    # standard read() tool.
     image_refs = []
     for img in session.pending_images:
         img_path = Path(img["path"])
@@ -565,15 +565,32 @@ async def _set_plan_status_and_emit(
 
     No-op when the plan is empty (status ``"empty"``) — there's nothing to update, and we don't want to fabricate a plan
     document just to carry a status. Set ``only_if_present=False`` to force-write regardless.
+
+    When transitioning to ``"done"``, any lingering ``"running"`` or ``"pending"`` step statuses
+    are flipped to ``"done"`` too. The manager's ``next_step`` only marks a step done when the
+    following step is dispatched, so the final step never receives that flip — without this
+    cleanup its badge would keep pulsing after the run completes.
     """
     from server.plan_store import plan_store as _plan_store, serialize_plan
 
     doc = _plan_store.read()
     if only_if_present and doc.status == "empty":
         return
-    if doc.status == new_status:
-        return  # No change to broadcast.
-    doc.status = new_status  # type: ignore[assignment]
+
+    changed = False
+    if doc.status != new_status:
+        doc.status = new_status  # type: ignore[assignment]
+        changed = True
+
+    if new_status == "done":
+        for step in doc.steps:
+            if step.status in ("running", "pending"):
+                step.status = "done"  # type: ignore[assignment]
+                changed = True
+
+    if not changed:
+        return  # Nothing to broadcast.
+
     _plan_store.write(doc)
     await ws.send_json({
         "type": "plan_updated",
@@ -815,6 +832,26 @@ async def _drain_queues(ws: WebSocket):
                         "agent_name": payload["agent_name"],
                     },
                 })
+
+            elif event_type == "subagent_state":
+                # Per-invocation subagent_state pushed from the manager's
+                # tool_node right after emitting the wrapping ToolMessage,
+                # so the completed sub-agent card appears inline before the
+                # graph run finishes.
+                tool_id = payload["tool_id"]
+                if tool_id in session.subagent_states:
+                    continue
+                agent_name = payload["agent_name"]
+                final_state = payload["final_state"]
+                invocation_id = payload["invocation_id"]
+                session.subagent_states[tool_id] = (
+                    agent_name, final_state, invocation_id,
+                )
+                data = serialize_subagent_state(
+                    tool_id, agent_name, final_state,
+                )
+                data["invocation_id"] = invocation_id
+                await ws.send_json({"type": "subagent_state", "data": data})
         else:
             # Legacy bare-message format (shouldn't happen, but handle safely)
             if session.append_display_message(event):

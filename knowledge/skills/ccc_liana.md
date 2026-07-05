@@ -1,7 +1,7 @@
 ---
 name: ccc-liana
 description: Run LIANA+'s multi-method consensus ligand-receptor inference (rank_aggregate over CellPhoneDB, NATMI, Connectome, CellChat, LogFC, SingleCellSignalR, geometric mean) on a preprocessed AnnData, producing a per-(LR, source, target) ranked table in adata.uns['liana_res']. Designed to slot into the ccc_ensemble plan.
-applies_to: [coding]
+applies_to: [coding_agent]
 tags: [ccc, liana, ligand-receptor]
 status: enable
 ---

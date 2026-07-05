@@ -6,6 +6,7 @@ step-context resolution and artifact validation helpers.
 
 import logging
 import time
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from queue import Queue
@@ -27,7 +28,14 @@ from langgraph.types import Command
 from agents.agent_utils import format_skill_prompt
 from config import DATA_DIR
 from graph.message_utils import sanitize_message, standardize_message_format
-from graph.ui_events import _get_subagent_context, emit_message, subagent_invocation
+from graph.ui_events import (
+    _get_subagent_context,
+    emit_message,
+    emit_subagent_state,
+    pop_completed_subagent,
+    stash_completed_subagent,
+    subagent_invocation,
+)
 from server.plan_store import plan_store, serialize_plan
 from server.usage_tracker import usage_tracker
 
@@ -155,9 +163,28 @@ def create_tool_node(
                     observation = (
                         f"Error invoking tool '{tool_name}': {type(exc).__name__}: {exc}"
                     )
-            message = ToolMessage(content=observation, tool_call_id=tool_call["id"])
+            message = ToolMessage(
+                content=observation,
+                tool_call_id=tool_call["id"],
+                id=f"tool-{uuid.uuid4()}",
+            )
             message.name = tool_name
             emit_message(message)
+
+            # If the tool internally dispatched a sub-agent (via a transfer
+            # tool), pair the just-completed sub-agent state with this
+            # ToolMessage.id and push a subagent_state event now so the UI
+            # can render the completed card inline. Without this, the card
+            # only appears after run_complete — the live trace lingers at
+            # the bottom and the ``artifact_validation`` message that
+            # follows looks like a replacement.
+            completed = pop_completed_subagent()
+            if completed is not None:
+                agent_name, final_state, invocation_id = completed
+                emit_subagent_state(
+                    message.id, agent_name, final_state, invocation_id
+                )
+
             result.append(message)
         return {"messages": result}
 
@@ -402,6 +429,11 @@ def create_agent_invocation_tool(
         ) as invocation_id:
             final_state = agent.invoke({"messages": [message], "skill_prompt": skill_prompt_text})
         state_queue.put((agent_name, final_state, invocation_id))
+        # Hand off to the wrapping tool_node so it can pair the final state
+        # with the ToolMessage.id of the manager tool that called us
+        # (``next_step`` / ``retry_step``) and emit a subagent_state event
+        # mid-run.
+        stash_completed_subagent(agent_name, final_state, invocation_id)
         logging.info(f"Finished invoking agent `{agent_node_id}`")
         return final_state["messages"][-1].content
 

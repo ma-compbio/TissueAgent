@@ -1,7 +1,7 @@
 ---
 name: ccc-data-prep
 description: Preprocess and QC a spatial transcriptomics AnnData so it can be consumed identically by LIANA+, COMMOT, and stLearn in a CCC ensemble. Validates spatial coords, cell-type column, species/gene-symbol convention, and stores both raw counts (for stLearn) and log-normalized .X (for LIANA+/COMMOT).
-applies_to: [coding]
+applies_to: [coding_agent]
 tags: [ccc, ligand-receptor, spatial, preprocessing]
 status: enable
 ---

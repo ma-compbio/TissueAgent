@@ -286,7 +286,7 @@ function BrowserPane({
     (path: string) => {
       // Walk only the current folder for prev/next siblings — feels
       // natural; "next" from a project output shouldn't jump up into
-      // attachments/ and back down.
+      // uploads/ and back down.
       const leaves = collectLeafFiles(visibleEntries);
       const items: PreviewItem[] = leaves.map((leaf) => ({
         path: leaf.path,
@@ -603,7 +603,7 @@ export default function FileBrowser({
       }
       infoText={
         currentProjectId
-          ? "Files for the active project: sidebar uploads land in uploads/, chat attachments in attachments/, agent outputs in outputs/."
+          ? "Files for the active project: user uploads land in uploads/, agent outputs in outputs/."
           : "Draft project — uploads will be moved into this project on first prompt. Starting a new project before then discards them."
       }
       scope="project"

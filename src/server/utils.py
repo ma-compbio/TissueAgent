@@ -43,7 +43,6 @@ from config import (
     LIBRARY_DIR,
     LIBRARY_FILES_DIR,
     PLAN_SCRATCH_DIR,
-    PROJECT_ATTACHMENTS_DIRNAME,
     PROJECT_CHAT_FILENAME,
     PROJECT_OUTPUTS_DIRNAME,
     PROJECT_UPLOADS_DIRNAME,
@@ -328,7 +327,7 @@ def migrate_chat_json_to_dotfile() -> None:
 
 def migrate_scratch_into_active_project() -> None:
     """Drain legacy ``workspace/scratch/{uploads,attachments}/*`` into
-    ``workspace/project/{uploads,attachments}/``.
+    ``workspace/project/uploads/``.
 
     No-op if the old scratch dir doesn't exist. Idempotent.
     """
@@ -338,13 +337,12 @@ def migrate_scratch_into_active_project() -> None:
 
     ACTIVE_PROJECT_DIR.mkdir(parents=True, exist_ok=True)
     moved = 0
-    for sub, dest_name in (("uploads", PROJECT_UPLOADS_DIRNAME),
-                            ("attachments", PROJECT_ATTACHMENTS_DIRNAME)):
+    dst_dir = ACTIVE_PROJECT_DIR / PROJECT_UPLOADS_DIRNAME
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    for sub in ("uploads", "attachments"):
         src_dir = old_root / sub
         if not src_dir.exists():
             continue
-        dst_dir = ACTIVE_PROJECT_DIR / dest_name
-        dst_dir.mkdir(parents=True, exist_ok=True)
         for src in list(src_dir.iterdir()):
             if not src.is_file():
                 continue
@@ -788,13 +786,6 @@ def project_outputs_dir(project_id: str) -> Path:
     return out
 
 
-def project_attachments_dir(project_id: str) -> Path:
-    """Return the per-project attachments directory; creates it if missing."""
-    out = project_dir_for(project_id) / PROJECT_ATTACHMENTS_DIRNAME
-    out.mkdir(parents=True, exist_ok=True)
-    return out
-
-
 def project_uploads_dir(project_id: str) -> Path:
     """Return the per-project sidebar uploads directory; creates it if missing."""
     out = project_dir_for(project_id) / PROJECT_UPLOADS_DIRNAME
@@ -806,7 +797,7 @@ def clear_active_project_dir() -> None:
     """Wipe the active project dir back to a clean empty shell.
 
     Removes ``.project_id``, deletes all children, recreates the canonical
-    three subdirs. The directory itself is preserved (it must always exist).
+    two subdirs. The directory itself is preserved (it must always exist).
     """
     ACTIVE_PROJECT_DIR.mkdir(parents=True, exist_ok=True)
     for child in list(ACTIVE_PROJECT_DIR.iterdir()):
@@ -817,11 +808,7 @@ def clear_active_project_dir() -> None:
                 child.unlink()
         except Exception as e:
             logging.warning(f"Failed to clear active-project entry {child}: {e}")
-    for sub in (
-        PROJECT_UPLOADS_DIRNAME,
-        PROJECT_ATTACHMENTS_DIRNAME,
-        PROJECT_OUTPUTS_DIRNAME,
-    ):
+    for sub in (PROJECT_UPLOADS_DIRNAME, PROJECT_OUTPUTS_DIRNAME):
         (ACTIVE_PROJECT_DIR / sub).mkdir(parents=True, exist_ok=True)
 
 
@@ -841,9 +828,9 @@ class SwitchMissingError(RuntimeError):
 def _force_kernel_restart() -> None:
     """Best-effort kernel teardown around a project switch. Lazily imported."""
     try:
-        from config import active_project_outputs
+        from config import DATA_DIR
         from server.main import set_kernel_workspace
-        set_kernel_workspace(active_project_outputs(), force_restart=True)
+        set_kernel_workspace(DATA_DIR, force_restart=True)
     except Exception as e:
         logging.warning(f"Kernel teardown failed during switch: {e}")
 
@@ -851,9 +838,9 @@ def _force_kernel_restart() -> None:
 def _rearm_kernel() -> None:
     """Post-switch: re-arm the kernel for the (possibly new) contents."""
     try:
-        from config import active_project_outputs
+        from config import DATA_DIR
         from server.main import set_kernel_workspace
-        set_kernel_workspace(active_project_outputs(), force_restart=False)
+        set_kernel_workspace(DATA_DIR, force_restart=False)
     except Exception as e:
         logging.warning(f"Kernel re-arm failed after switch: {e}")
 
@@ -903,11 +890,7 @@ def switch_active_project(new_id: Optional[str]) -> None:
                 if ACTIVE_PROJECT_DIR.exists():
                     shutil.rmtree(ACTIVE_PROJECT_DIR)
                 src.rename(ACTIVE_PROJECT_DIR)
-                for sub in (
-                    PROJECT_UPLOADS_DIRNAME,
-                    PROJECT_ATTACHMENTS_DIRNAME,
-                    PROJECT_OUTPUTS_DIRNAME,
-                ):
+                for sub in (PROJECT_UPLOADS_DIRNAME, PROJECT_OUTPUTS_DIRNAME):
                     (ACTIVE_PROJECT_DIR / sub).mkdir(exist_ok=True)
                 write_active_project_id(new_id)
             else:
@@ -949,11 +932,7 @@ def recover_active_project() -> Optional[str]:
         B.5 only parked exists        → mkdir empty shell, return None
     """
     ACTIVE_PROJECT_DIR.mkdir(parents=True, exist_ok=True)
-    for sub in (
-        PROJECT_UPLOADS_DIRNAME,
-        PROJECT_ATTACHMENTS_DIRNAME,
-        PROJECT_OUTPUTS_DIRNAME,
-    ):
+    for sub in (PROJECT_UPLOADS_DIRNAME, PROJECT_OUTPUTS_DIRNAME):
         (ACTIVE_PROJECT_DIR / sub).mkdir(exist_ok=True)
 
     pid = read_active_project_id()

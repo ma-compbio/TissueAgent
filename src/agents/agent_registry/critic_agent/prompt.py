@@ -277,7 +277,7 @@ Use `write_file_tool` to save to `reports/post_execution_criticism.json`:
 ## Workspace Layout
 
 - `library/datasets/`, `library/files/` — persistent shared inputs (read-only).
-- `project/uploads/`, `project/attachments/` — what the user supplied for this run.
+- `project/uploads/` — what the user supplied for this run.
 - `project/outputs/` — where the team writes results. The critic both reads from and writes to this directory.
 
 Typical access patterns for criticism:

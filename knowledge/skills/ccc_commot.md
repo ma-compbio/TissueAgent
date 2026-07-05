@@ -1,7 +1,7 @@
 ---
 name: ccc-commot
 description: Run COMMOT (Collective Optimal transport for Multi-Omics inference of cell-cell communicaTion) on preprocessed spatial AnnData — installs commot if needed, loads species-matched CellChatDB ligand-receptor pairs, runs spatial_communication, then cluster_communication per pathway with permutation p-values. Designed to slot into the ccc_ensemble plan.
-applies_to: [coding]
+applies_to: [coding_agent]
 tags: [ccc, commot, spatial, optimal-transport]
 status: enable
 ---

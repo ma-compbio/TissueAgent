@@ -27,7 +27,7 @@ You are a planner agent, an expert plan generator for bioinformatics tasks. A pr
 
 ## Tools:
 {{file_read_tools_descriptions}}
-- read_template(name): read the full content of a plan template by its snake_case name.
+{{read_template_tool_description}}
 
 {{workspace_layout}}
 

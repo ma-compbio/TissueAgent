@@ -145,9 +145,9 @@ export default function App() {
     if (!ws.projectSavedEvent) return;
     setCurrentProjectId(ws.projectSavedEvent.project_id);
     fetchSessions();
-    // Project-side files (uploads/, outputs/, attachments/) may have
-    // changed too — bump the refresh key so the sidebar Files panel
-    // re-fetches without the user having to click refresh.
+    // Project-side files (uploads/, outputs/) may have changed too —
+    // bump the refresh key so the sidebar Files panel re-fetches
+    // without the user having to click refresh.
     setFileBrowserRefreshKey((k) => k + 1);
     // Depend only on the event, NOT the whole `session` object. useSession
     // returns a fresh object literal every render, so including `session`

@@ -128,7 +128,7 @@ Learn from these real patterns to guide your generation:
 ## Workspace Layout
 
 - `library/datasets/`, `library/files/` — persistent shared inputs (read-only).
-- `project/uploads/`, `project/attachments/` — what the user supplied for this run.
+- `project/uploads/` — what the user supplied for this run.
 - `project/outputs/` — where this run's artifacts live. Use `OUTPUTS_DIR` (pre-imported in the REPL) to point at it.
 
 Input files (created earlier in this run by other agents, under `OUTPUTS_DIR`):

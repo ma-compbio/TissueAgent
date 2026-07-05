@@ -205,9 +205,8 @@ class KernelClient:
 
         ``force_restart`` is for callers that need a fresh kernel even
         though the *path string* didn't change — e.g. the active-project
-        switch renames the directory on disk under a stable
-        ``/workspace/project/outputs`` path, so equality alone won't
-        trigger a restart.
+        switch renames directories on disk under a stable workspace-root
+        cwd (``/workspace``), so equality alone won't trigger a restart.
         """
         previous = self._workspace
         self._workspace = Path(path)

@@ -25,10 +25,9 @@ ROOT = Path(__file__).parent.parent
 #   workspace/library/files/         — persistent reference files.
 #   workspace/project/               — the ONLY active project. Always
 #       ├── .chat.json                 exists (empty shell pre-mint).
-#       ├── .project_id                Kernel CWD is /workspace/project/outputs.
-#       ├── uploads/
-#       ├── attachments/
-#       └── outputs/
+#       ├── .project_id                Kernel CWD is the workspace root
+#       ├── uploads/                   (/workspace), so paths line up with
+#       └── outputs/                   the workspace file tools.
 #   workspace/notebook/              — process-wide notebook scratch.
 #
 # Parked projects and the in-flight plan store live OUTSIDE workspace
@@ -51,7 +50,6 @@ LIBRARY_FILES_DIR = LIBRARY_DIR / "files"  # persistent reference uploads
 PROJECTS_DIR = ROOT / "projects"
 PROJECT_CHAT_FILENAME = ".chat.json"
 PROJECT_OUTPUTS_DIRNAME = "outputs"
-PROJECT_ATTACHMENTS_DIRNAME = "attachments"
 PROJECT_UPLOADS_DIRNAME = "uploads"
 
 # The active project's stable on-disk home. Always exists (empty shell
@@ -78,7 +76,7 @@ def active_project_outputs() -> Path:
 
 # Back-compat aliases. ``UPLOADS_DIR`` / ``PDF_UPLOADS_DIR`` historically
 # held *chat attachments* (images and PDFs); those now live per-project
-# under ``attachments/``. The aliases keep older import sites compiling
+# under ``uploads/``. The aliases keep older import sites compiling
 # while we migrate.
 UPLOADS_DIR = LIBRARY_FILES_DIR  # legacy alias — prefer LIBRARY_FILES_DIR
 PDF_UPLOADS_DIR = LIBRARY_FILES_DIR  # legacy alias — see above

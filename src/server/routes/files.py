@@ -15,7 +15,6 @@ from config import (
     DATASET_DIR,
     LIBRARY_DIR,
     LIBRARY_FILES_DIR,
-    PROJECT_ATTACHMENTS_DIRNAME,
     PROJECT_CHAT_FILENAME,
     PROJECT_OUTPUTS_DIRNAME,
     PROJECT_UPLOADS_DIRNAME,
@@ -113,14 +112,12 @@ async def upload_files(
 
     results: List[FileInfo] = []
 
-    # Pick the destination dirs. ``project`` target always writes into
+    # Pick the destination dir. ``project`` target always writes into
     # the active project shell — it exists pre-mint as an empty
     # directory, so pre-mint and post-mint look identical.
     if target == "project":
         uploads_dir = ACTIVE_PROJECT_DIR / PROJECT_UPLOADS_DIRNAME
-        attachments_dir = ACTIVE_PROJECT_DIR / PROJECT_ATTACHMENTS_DIRNAME
         uploads_dir.mkdir(parents=True, exist_ok=True)
-        attachments_dir.mkdir(parents=True, exist_ok=True)
 
     for f in files:
         category = _classify_file(f.filename)
@@ -130,15 +127,15 @@ async def upload_files(
             results.append(_save_library(f.filename, content, category))
             continue
 
-        # target == "project". Images/PDFs go to attachments/ so the
-        # multimodal turn payload finds them in a dedicated place;
-        # everything else lands in uploads/.
+        # target == "project". Everything lands in uploads/. Images and
+        # PDFs are also registered on the session so they ride along on
+        # the next multimodal turn.
         if category == "image":
             existing = {img["name"]: img["path"] for img in session.pending_images}
             if f.filename in existing and Path(existing[f.filename]).exists():
                 results.append(FileInfo(name=f.filename, path=existing[f.filename], category="image"))
                 continue
-            target_path = next_available_path(attachments_dir, f.filename)
+            target_path = next_available_path(uploads_dir, f.filename)
             target_path.write_bytes(content)
             session.pending_images.append({"name": f.filename, "path": str(target_path)})
             results.append(FileInfo(name=f.filename, path=str(target_path), category="image"))
@@ -153,7 +150,7 @@ async def upload_files(
                     FileInfo(name=f.filename, path=entry["path"], category="pdf", file_id=entry.get("file_id"))
                 )
                 continue
-            pdf_path = next_available_path(attachments_dir, f.filename)
+            pdf_path = next_available_path(uploads_dir, f.filename)
             pdf_path.write_bytes(content)
             entry = {"name": f.filename, "path": str(pdf_path)}
             try:
@@ -166,10 +163,9 @@ async def upload_files(
             results.append(FileInfo(name=f.filename, path=str(pdf_path), category="pdf", file_id=entry.get("file_id")))
 
         else:
-            # Datasets and general files: drop them into uploads/. Don't
-            # silently dedup here — if the user picks the same filename
-            # twice we want both to survive, with a numeric suffix on
-            # the second.
+            # Datasets and general files. Don't silently dedup here — if
+            # the user picks the same filename twice we want both to
+            # survive, with a numeric suffix on the second.
             target_path = next_available_path(uploads_dir, f.filename)
             target_path.write_bytes(content)
             if category == "dataset":
@@ -245,15 +241,15 @@ async def browse_files(scope: str = "library", project_id: str | None = None):
     Args:
         scope: ``library`` returns the persistent library tree
             (datasets + files). ``project`` returns the active (or
-            named) project, with ``attachments/`` and ``outputs/``
-            stacked as two top-level directories. ``all`` returns the
-            whole workspace tree (legacy / debug).
+            named) project, with ``uploads/`` and ``outputs/`` stacked
+            as two top-level directories. ``all`` returns the whole
+            workspace tree (legacy / debug).
         project_id: When ``scope=project`` and the active project should
             be overridden, name it explicitly.
 
     The returned paths are **relative to the scope root** (which for
     ``project`` is the project folder itself, so paths look like
-    ``attachments/foo.png`` or ``outputs/bar.csv``). The download and
+    ``uploads/foo.png`` or ``outputs/bar.csv``). The download and
     delete endpoints honor the same ``scope`` and resolve relative to
     that root.
     """
@@ -274,11 +270,7 @@ async def browse_files(scope: str = "library", project_id: str | None = None):
 
         root = ACTIVE_PROJECT_DIR
         children: list[dict] = []
-        for name in (
-            PROJECT_UPLOADS_DIRNAME,
-            PROJECT_ATTACHMENTS_DIRNAME,
-            PROJECT_OUTPUTS_DIRNAME,
-        ):
+        for name in (PROJECT_UPLOADS_DIRNAME, PROJECT_OUTPUTS_DIRNAME):
             sub = root / name
             if not sub.exists():
                 continue
@@ -299,7 +291,7 @@ def _resolve_scoped_path(scope: str, file_path: str, project_id: str | None) -> 
     """Resolve *file_path* under *scope*, guarding against traversal.
 
     For ``scope=project`` the root is the active project folder, so
-    incoming paths look like ``attachments/foo.png`` or
+    incoming paths look like ``uploads/foo.png`` or
     ``outputs/bar.csv``. The project's ``.chat.json`` and ``.project_id``
     are intentionally *not* reachable through this resolver — those are
     internal persistence files, not user-facing artifacts.

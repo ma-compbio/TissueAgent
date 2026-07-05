@@ -1,7 +1,7 @@
 ---
 name: ccc-stlearn
 description: Run stLearn's spatial cell-cell interaction pipeline on preprocessed AnnData — installs stlearn if needed, loads connectomeDB2020 LR pairs, runs st.tl.cci.run (LR hotspot test with adj_pvals) followed by st.tl.cci.run_cci (cell-type-pair CCI permutation), exposing per-LR significance in adata.uns['lr_summary'] and per-(LR, sender, receiver) results in adata.uns['per_lr_cci_*']. Designed to slot into the ccc_ensemble plan.
-applies_to: [coding]
+applies_to: [coding_agent]
 tags: [ccc, stlearn, spatial, ligand-receptor]
 status: enable
 ---

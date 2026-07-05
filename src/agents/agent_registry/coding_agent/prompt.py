@@ -2,25 +2,28 @@
 
 from pathlib import Path
 
+from agents.agent_utils import substitute_shared_prompts
+
 _DIR = Path(__file__).parent
 
 
-def _read(filename: str) -> str:
-    return (_DIR / filename).read_text()
+def _render(filename: str) -> str:
+    """Read a coding-agent prompt file and substitute shared prompt blocks."""
+    return substitute_shared_prompts((_DIR / filename).read_text())
 
 
 def CodingAgentPrompt(sandbox_enabled: bool = True) -> str:
     """Build the coding agent system prompt.
 
-    When ``sandbox_enabled`` is False the no-sandbox variant is used, which adds an explicit file-access policy
-    restricting the agent to /workspace.
+    When ``sandbox_enabled`` is False the no-sandbox variant is used, which adds an explicit
+    file-access policy restricting the agent to the workspace root.
     """
-    template_file = (
+    filename = (
         "coding_agent_prompt.txt"
         if sandbox_enabled
         else "coding_agent_prompt_no_sandbox.txt"
     )
-    return _read(template_file)
+    return _render(filename)
 
 
-CodingAgentDescription = _read("coding_agent_description.txt").strip()
+CodingAgentDescription = (_DIR / "coding_agent_description.txt").read_text().strip()

@@ -34,7 +34,7 @@ After analyzing the PDF and saving outputs, you **must** output a `<response>` b
 ## Workspace Layout
 
 - `library/datasets/`, `library/files/` — persistent shared inputs (read-only).
-- `project/uploads/`, `project/attachments/` — what the user supplied for this run (PDFs you analyze typically arrive via `attachments/`).
+- `project/uploads/` — what the user supplied for this run (this is where PDFs you analyze arrive).
 - `project/outputs/` — where your summaries are saved. Use paths like `briefs/paper_summary.txt`; the write tool anchors them under `outputs/` automatically.
 
 ## Workflow

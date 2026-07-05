@@ -103,8 +103,8 @@ def set_kernel_workspace(path: Path, *, force_restart: bool = False) -> None:
     Called by the chat handler when a project is minted/loaded and by the
     active-project switch protocol. Pass ``force_restart=True`` when the
     on-disk contents of *path* changed but the path string itself didn't
-    (e.g. the active-project rename swap — kernel cwd remains
-    ``/workspace/project/outputs`` across switches).
+    (e.g. the active-project rename swap — kernel cwd remains the workspace
+    root, ``/workspace``, across switches).
 
     No-op when the kernel client isn't initialized yet (e.g. very early
     in startup), to keep the boot path simple.

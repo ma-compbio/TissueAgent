@@ -3812,6 +3812,7 @@ code, pre, .num {
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow-y: auto;
   font-size: var(--text-sm);
 }
 

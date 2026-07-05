@@ -54,12 +54,10 @@ TissueAgent/
 │   ├── projects/                        # one folder per project — UI section "Projects"
 │   │   └── <project_id>/                #   id = timestamp (e.g. 2026-06-07_19-42-10)
 │   │       ├── chat.json                #     saved conversation (drives the project list)
-│   │       ├── uploads/                 #     sidebar uploads for this run
-│   │       ├── attachments/             #     chat-attached images/PDFs (multimodal payloads)
+│   │       ├── uploads/                 #     everything the user uploads for this run (sidebar files, images, PDFs)
 │   │       └── outputs/                 #     agent's working directory (kernel cwd)
 │   ├── scratch/                         # pre-project draft (wiped on reset / new project)
-│   │   ├── uploads/                     #   surfaced in UI as "Project files — Unsaved"
-│   │   └── attachments/                 #   migrated into projects/<id>/ on first prompt
+│   │   └── uploads/                     #   surfaced in UI as "Project files — Unsaved"; migrated into projects/<id>/ on first prompt
 │   ├── plan_scratch/                    # ephemeral plan markdown (in-flight only)
 │   └── notebook/                        # process-wide notebook scratch
 ├── demo/                                # notebooks, sample inputs, expected outputs
@@ -78,11 +76,10 @@ TissueAgent/
 | --- | --- | --- |
 | **Library → Datasets** | `workspace/library/datasets/` | persistent; shared across all projects |
 | **Library → Files** | `workspace/library/files/` | persistent; shared across all projects |
-| **Project files → uploads/** | `workspace/projects/<id>/uploads/` | tied to the project; deleted with it |
-| **Project files → attachments/** | `workspace/projects/<id>/attachments/` | tied to the project; multimodal turn payloads |
+| **Project files → uploads/** | `workspace/projects/<id>/uploads/` | tied to the project; holds every user upload (sidebar files, chat images, PDFs) |
 | **Project files → outputs/** | `workspace/projects/<id>/outputs/` | tied to the project; kernel cwd during a run |
 | Project list (sidebar) | `workspace/projects/*/chat.json` | one row per saved project |
-| "Unsaved" draft (no project yet) | `workspace/scratch/{uploads,attachments}/` | wiped on every server boot AND on new project |
+| "Unsaved" draft (no project yet) | `workspace/scratch/uploads/` | wiped on every server boot AND on new project |
 
 Two roots that the agent treats differently:
 

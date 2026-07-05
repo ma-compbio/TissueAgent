@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from agents.agent_utils import substitute_shared_prompts
 from server.plan_store import PlanDocument, plan_store
 
 _DIR = Path(__file__).parent
-_TEMPLATE = (_DIR / "prompt.txt").read_text()
+_TEMPLATE = substitute_shared_prompts((_DIR / "prompt.txt").read_text())
 
 ManagerDescription = """
 Coordinate the Executor Team composed of expert agents to execute each step in the Plan.

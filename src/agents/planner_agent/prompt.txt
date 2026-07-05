@@ -30,7 +30,7 @@ You are a planner agent, an expert plan generator for bioinformatics tasks. Your
 
 ## Tools:
 {{file_read_tools_descriptions}}
-{{file_write_tool_description}}
+{{read_template_tool_description}}
 
 {{workspace_layout}}
 

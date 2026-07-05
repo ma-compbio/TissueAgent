@@ -57,7 +57,7 @@ def sandbox(tmp_path, monkeypatch):
     for d in (active_project_dir, projects_dir, plan_scratch_dir, library_dir, notebook_dir):
         d.mkdir(parents=True, exist_ok=True)
     # Canonical subdirs the active project always has.
-    for sub in ("uploads", "attachments", "outputs"):
+    for sub in ("uploads", "outputs"):
         (active_project_dir / sub).mkdir(exist_ok=True)
 
     # Patch every module that imported these names directly.
@@ -123,7 +123,6 @@ def _make_parked(projects_dir: Path, pid: str, file_relpath: str, content: str) 
     base = projects_dir / pid
     (base / "outputs").mkdir(parents=True, exist_ok=True)
     (base / "uploads").mkdir(exist_ok=True)
-    (base / "attachments").mkdir(exist_ok=True)
     (base / ".project_id").write_text(pid)
     target = base / file_relpath
     target.parent.mkdir(parents=True, exist_ok=True)
