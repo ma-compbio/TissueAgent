@@ -12,6 +12,7 @@ from pathlib import Path
 
 import yaml
 
+
 def substitute_shared_prompts(text: str) -> str:
     """Replace ``{{<stem>}}`` placeholders with the contents of ``shared_prompts/<stem>.txt``.
 
@@ -21,8 +22,7 @@ def substitute_shared_prompts(text: str) -> str:
     pick it up automatically.
     """
     shared_prompts_dir = Path(__file__).parent / "shared_prompts"
-    shared_prompts = 
-     {p.stem: p.read_text().rstrip() for p in _SHARED_PROMPTS_DIR.glob("*.txt")}
+    shared_prompts = {p.stem: p.read_text().rstrip() for p in shared_prompts_dir.glob("*.txt")}
     for name, content in shared_prompts.items():
         text = text.replace(f"{{{{{name}}}}}", content)
     return text
