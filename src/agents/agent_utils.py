@@ -12,17 +12,6 @@ from pathlib import Path
 
 import yaml
 
-_SHARED_PROMPTS_DIR = Path(__file__).parent / "shared_prompts"
-
-
-def _load_shared_prompts() -> dict[str, str]:
-    """Load every ``.txt`` file under ``shared_prompts/`` keyed by stem."""
-    return {p.stem: p.read_text().rstrip() for p in _SHARED_PROMPTS_DIR.glob("*.txt")}
-
-
-_SHARED_PROMPT_CACHE: dict[str, str] | None = None
-
-
 def substitute_shared_prompts(text: str) -> str:
     """Replace ``{{<stem>}}`` placeholders with the contents of ``shared_prompts/<stem>.txt``.
 
@@ -31,10 +20,10 @@ def substitute_shared_prompts(text: str) -> str:
     file into ``src/agents/shared_prompts/``; any prompt that references ``{{<stem>}}`` will then
     pick it up automatically.
     """
-    global _SHARED_PROMPT_CACHE
-    if _SHARED_PROMPT_CACHE is None:
-        _SHARED_PROMPT_CACHE = _load_shared_prompts()
-    for name, content in _SHARED_PROMPT_CACHE.items():
+    shared_prompts_dir = Path(__file__).parent / "shared_prompts"
+    shared_prompts = 
+     {p.stem: p.read_text().rstrip() for p in _SHARED_PROMPTS_DIR.glob("*.txt")}
+    for name, content in shared_prompts.items():
         text = text.replace(f"{{{{{name}}}}}", content)
     return text
 

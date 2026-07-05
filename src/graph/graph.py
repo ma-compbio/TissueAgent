@@ -349,7 +349,7 @@ def create_tissueagent_graph(
         manager_prompt,
         manager_tool_node_id,
         evaluator_node_id,
-        message_filter_fn=filter_for_manager,
+        message_filter_fn=filter_for_manager(manager_node_id),
     )
 
     ### Evaluator node

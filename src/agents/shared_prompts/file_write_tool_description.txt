@@ -1,0 +1,1 @@
+- read_template(name): read the full content of a plan template by its snake_case name.

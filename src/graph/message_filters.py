@@ -4,7 +4,9 @@ These are pure functions that project message lists without mutating graph state
 context windows focused on relevant information.
 """
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from collections.abc import Callable
+
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 
 
 def _last_index_of_final(messages: list[BaseMessage], agent_name: str) -> int | None:
@@ -90,22 +92,44 @@ def filter_for_execution_phase(messages: list[BaseMessage]) -> list[BaseMessage]
     return result
 
 
-def filter_for_manager(messages: list[BaseMessage]) -> list[BaseMessage]:
-    """Strict manager filter: keep only the user's original HumanMessages.
+def filter_for_manager(
+    manager_agent_name: str,
+) -> Callable[[list[BaseMessage]], list[BaseMessage]]:
+    """Build a filter that shows the manager only its own tool-call history.
 
-    Under the manager-judgment model, the manager's *entire* context is rebuilt each turn
-    from the (state-aware) system prompt: agent registry, current cursor, the assigned
-    agent for the current step, and the final outputs of all accepted prior steps. Nothing
-    else in the message history is load-bearing for the next decision.
+    The manager's situational context (plan + assignments + user request) is baked
+    into its system prompt via :class:`agents.manager_agent.prompt.ManagerPrompt`, so
+    the message channel only needs to carry the manager's own dispatch trail: each
+    ``next_step`` / ``retry_step`` AIMessage and the ToolMessage it received back.
+    From that trail the manager derives which steps have been dispatched and what
+    the most recent sub-agent returned.
 
-    This filter therefore drops:
+    The returned filter drops:
 
-    * Planner / recruiter / evaluator AIMessages (already encoded in plan_store + prompt).
-    * Prior manager tool-call AIMessages and their paired ToolMessages (the cursor state
-      and the new step output are already injected into the next prompt).
-    * ``plan_updated`` and ``artifact_validation`` UI-only events (not for the LLM).
+    * HumanMessages (the user request is in the system prompt).
+    * Planner / recruiter / evaluator AIMessages and their paired ToolMessages.
+    * ``plan_updated`` / ``artifact_validation`` UI-only events.
 
-    Keeping at least one HumanMessage satisfies provider APIs that require a non-empty
-    user turn and gives the LLM the original user ask as additional grounding.
+    On turn 1 the manager has no AIMessages yet, so the filter would return an
+    empty list — provider APIs reject that. In that case only, a synthetic
+    ``HumanMessage("Proceed.")`` is injected. On turn 2+ the real manager
+    AIMessages exist, so no synthetic message is added.
     """
-    return [msg for msg in messages if isinstance(msg, HumanMessage)]
+
+    def _filter(messages: list[BaseMessage]) -> list[BaseMessage]:
+        kept: list[BaseMessage] = []
+        kept_tool_call_ids: set[str] = set()
+        for msg in messages:
+            if isinstance(msg, AIMessage) and getattr(msg, "name", "") == manager_agent_name:
+                kept.append(msg)
+                for tc in getattr(msg, "tool_calls", []) or []:
+                    tc_id = tc.get("id") if isinstance(tc, dict) else getattr(tc, "id", None)
+                    if tc_id:
+                        kept_tool_call_ids.add(tc_id)
+            elif isinstance(msg, ToolMessage) and msg.tool_call_id in kept_tool_call_ids:
+                kept.append(msg)
+        if not kept:
+            kept.append(HumanMessage(content="Proceed."))
+        return kept
+
+    return _filter
