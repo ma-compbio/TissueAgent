@@ -6,8 +6,13 @@ protocol.
 
 from __future__ import annotations
 
+import atexit
 import json
 import logging
+import os
+import shutil
+import subprocess
+import sys
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -145,6 +150,114 @@ class ContainerManager:
             logging.info(f"Container '{DOCKER_CONTAINER_NAME}' stopped.")
         except Exception as e:
             logging.warning(f"Error stopping container: {e}")
+
+
+def _gateway_reachable(timeout: float = 2.0) -> bool:
+    """Return True if a Kernel Gateway already answers at the configured URL."""
+    try:
+        resp = requests.get(f"{KERNEL_GATEWAY_URL}/api/kernelspecs", timeout=timeout)
+        return resp.status_code == 200
+    except requests.RequestException:
+        return False
+
+
+class LocalKernelGateway:
+    """Runs a Jupyter Kernel Gateway as a local subprocess (no Docker).
+
+    Used when the Docker sandbox is disabled (the default). Mirrors
+    :class:`ContainerManager`'s ``ensure_running()`` / ``stop()`` interface so
+    the server lifespan can manage either backend uniformly. Code executes on
+    the host in the server's own Python environment — fast, but NOT isolated;
+    for isolation, enable the Docker sandbox instead.
+
+    If a gateway is already listening (e.g. one started by hand), this adopts
+    it rather than spawning a duplicate, and leaves it running on ``stop()``.
+    """
+
+    def __init__(self) -> None:
+        self._proc: subprocess.Popen | None = None
+        self._adopted_external = False
+
+    @staticmethod
+    def _find_jupyter() -> str:
+        """Locate the ``jupyter`` executable, preferring the current venv."""
+        # sys.executable's dir holds the venv's console scripts on both
+        # POSIX (bin/) and Windows (Scripts/).
+        exe_dir = Path(sys.executable).parent
+        for name in ("jupyter", "jupyter.exe"):
+            candidate = exe_dir / name
+            if candidate.exists():
+                return str(candidate)
+        found = shutil.which("jupyter")
+        if found:
+            return found
+        raise KernelUnavailableError(KERNEL_GATEWAY_URL)
+
+    def ensure_running(self) -> None:
+        """Start a local Kernel Gateway if one isn't already reachable."""
+        if _gateway_reachable():
+            logging.info(
+                "Adopting existing Kernel Gateway at %s.", KERNEL_GATEWAY_URL
+            )
+            self._adopted_external = True
+            return
+
+        jupyter = self._find_jupyter()
+        # Root the kernel at the agent-visible workspace so relative paths in
+        # executed code line up with the server's file tools.
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        cmd = [
+            jupyter,
+            "kernelgateway",
+            f"--KernelGatewayApp.ip={KERNEL_GATEWAY_HOST}",
+            f"--KernelGatewayApp.port={KERNEL_GATEWAY_PORT}",
+            "--KernelGatewayApp.allow_origin=*",
+        ]
+        logging.info("Starting local Kernel Gateway: %s", " ".join(cmd))
+        self._proc = subprocess.Popen(
+            cmd,
+            cwd=str(DATA_DIR.resolve()),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            # New process group so we can signal the gateway without hitting
+            # the parent server on POSIX.
+            start_new_session=(os.name != "nt"),
+        )
+        # Ensure the child is reaped even on a hard server exit.
+        atexit.register(self.stop)
+        self._wait_for_healthy()
+
+    def _wait_for_healthy(self, timeout: float = 30) -> None:
+        """Poll the Kernel Gateway until it responds, or the process dies."""
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if self._proc is not None and self._proc.poll() is not None:
+                raise KernelUnavailableError(KERNEL_GATEWAY_URL)
+            if _gateway_reachable():
+                logging.info("Local Kernel Gateway is healthy.")
+                return
+            time.sleep(0.5)
+        self.stop()
+        raise TimeoutError(
+            f"Local Kernel Gateway did not become healthy within {timeout}s"
+        )
+
+    def stop(self) -> None:
+        """Terminate the spawned gateway (no-op for an adopted external one)."""
+        if self._adopted_external or self._proc is None:
+            return
+        proc, self._proc = self._proc, None
+        if proc.poll() is not None:
+            return
+        try:
+            proc.terminate()
+            try:
+                proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+            logging.info("Local Kernel Gateway stopped.")
+        except Exception as e:
+            logging.warning(f"Error stopping local Kernel Gateway: {e}")
 
 
 # ---------------------------------------------------------------------------

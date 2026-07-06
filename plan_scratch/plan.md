@@ -2,33 +2,36 @@
 
 ```yaml
 status: recruited
-user_request: Create a spatial scatterplot from dataset_lohoff_et_al_seqfish.h5ad,
-  using colormap.yaml to color cells by cell type, with inverted y-axis, matching
-  the style of Fig2b as closely as possible.
+user_request: Generate a spatial scatterplot from dataset_lohoff_et_al_seqfish.h5ad
+  where each point is a cell located at its spatial coordinates, colored by cell type
+  using colormap.yaml, with an inverted y-axis and overall styling closely matching
+  Fig2b.png.
 current_step_id: 2
 provenance:
   template_names: []
-  justification: No existing template targets basic spatial plotting with a provided
-    colormap and a reference image; the plan was written from scratch for this visualization-only
-    task.
+  justification: None of the existing templates (which focus on cell annotation, deconvolution,
+    ligand-receptor analysis, enrichment, etc.) are specific to generating a spatial
+    scatterplot from an existing annotated dataset. The plan was therefore written
+    from scratch following the simple plotting example structure.
 ```
 
-## Step 1 — Prepare data and generate spatial scatterplot
+## Step 1 — Configure and generate spatial scatterplot
 
 ```yaml
-status: done
+status: running
 assigned_agent: coding_agent
-assigned_rationale: This step involves programmatically loading an h5ad spatial transcriptomics
-  file, reading a YAML colormap, and generating a customized matplotlib/scanpy-style
-  spatial plot; the coding_agent is best suited for implementing data handling and
-  plotting logic, and no specialized CCC or annotation/deconvolution skills are required.
+assigned_rationale: This step requires loading an AnnData .h5ad file, reading a YAML
+  colormap, and generating a customized spatial scatterplot, which falls squarely
+  under the coding_agent’s expertise in spatial transcriptomics data handling and
+  plotting; no specialized annotation or deconvolution skills are needed.
 skills: []
 expected_artifacts:
-- figures/spatial_scatter_celltype_colormap.png
-- configs/spatial_scatter_plot_config.json
+- tables/lohoff_seqfish_plot_config.tsv
+- configs/lohoff_seqfish_colormap_config.json
+- figures/lohoff_seqfish_spatial_scatter.png
 actual_outputs: []
 ```
 
-**Description:** Load dataset_lohoff_et_al_seqfish.h5ad and colormap.yaml; identify the spatial coordinate fields (x,y) and per-cell cell-type annotations; map cell types to colors based on the colormap; invert the y-axis; and render a high-resolution scatterplot whose visual style (point size, alpha, background, aspect ratio, margins) closely matches Fig2b.jpg. Save the final figure and a small config file documenting the plotting parameters and colormap used.
+**Description:** Load dataset_lohoff_et_al_seqfish.h5ad and identify the spatial coordinate fields and the cell-type annotation field. Load colormap.yaml and map each cell type to its specified color. Using Fig2b.png as a visual reference, configure point size, alpha, aspect ratio, background, axis limits, and labels, ensuring the y-axis is inverted. Render and save a high-resolution spatial scatterplot where each point is a cell at its spatial location, colored by its cell type according to the colormap.
 
-**Reasoning:** All tasks—data loading, mapping cell types to colors, axis inversion, and plotting—are tightly coupled and simple enough to perform in one consolidated step while still producing the required figure and a reproducible configuration.
+**Reasoning:** All required actions (data inspection, colormap application, axis inversion, and visual tuning to match the reference) are tightly coupled and culminate in a single figure, so combining them into one step avoids unnecessary fragmentation while still producing all necessary artifacts.

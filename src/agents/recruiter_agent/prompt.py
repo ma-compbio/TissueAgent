@@ -35,27 +35,72 @@ class SkillMeta:
     path: Path = field(default_factory=Path)
 
 
+# Subdirectories under the skill registry that are NOT skills — archives,
+# examples, or asset folders — and must not be scanned for skill markdown.
+_SKILL_DIR_IGNORE = {"cached_skills"}
+
+
+def _skill_md_in_dir(d: Path) -> Path | None:
+    """Return the skill's markdown file inside a skill folder, or ``None``.
+
+    A folder-based skill keeps its markdown alongside ``scripts/`` and
+    ``references/``. Prefer ``SKILL.md``, then ``<dirname>.md`` (the renamed
+    convention), then a single ``*.md`` at the folder root as a fallback.
+    """
+    for candidate in (d / "SKILL.md", d / f"{d.name}.md"):
+        if candidate.is_file():
+            return candidate
+    md_files = [p for p in d.glob("*.md") if p.name.lower() != "readme.md"]
+    return md_files[0] if len(md_files) == 1 else None
+
+
+def _skill_from_file(p: Path) -> SkillMeta | None:
+    """Parse one skill markdown file into a :class:`SkillMeta`, if enabled."""
+    fm = parse_yaml_frontmatter(p.read_text())
+    if fm is None:
+        return None
+    status = str(fm.get("status", "enable")).strip().lower()
+    if status != "enable":
+        return None
+    name = fm.get("name", p.stem)
+    return SkillMeta(
+        name=name,
+        description=(fm.get("description") or "").strip(),
+        applies_to=list(fm.get("applies_to") or []),
+        status=status,
+        path=p,
+    )
+
+
 def _parse_skills() -> dict[str, SkillMeta]:
-    """Scan ``*.md`` files (except README) in the skill registry and return enabled skills."""
-    skills: dict[str, SkillMeta] = {}
-    for p in sorted(_SKILL_REGISTRY.glob("*.md")):
-        if p.name.lower() == "readme.md":
-            continue
-        fm = parse_yaml_frontmatter(p.read_text())
-        if fm is None:
-            continue
-        status = str(fm.get("status", "enable")).strip().lower()
-        if status != "enable":
-            continue
-        name = fm.get("name", p.stem)
-        skills[name] = SkillMeta(
-            name=name,
-            description=(fm.get("description") or "").strip(),
-            applies_to=list(fm.get("applies_to") or []),
-            status=status,
-            path=p,
-        )
-    return skills
+    """Scan the skill registry and return enabled skills.
+
+    Discovers both layouts:
+      * **flat** — a top-level ``<name>.md`` file (except ``README.md``);
+      * **folder** — a ``<name>/`` directory holding its skill markdown
+        (``SKILL.md`` or ``<name>.md``) next to ``scripts/`` / ``references/``.
+    Archive/asset folders in ``_SKILL_DIR_IGNORE`` (e.g. ``cached_skills``) are
+    skipped. When a name is defined by both a folder and a flat file, the
+    folder wins (it carries the bundled assets).
+    """
+    flat: dict[str, SkillMeta] = {}
+    folder: dict[str, SkillMeta] = {}
+    for entry in sorted(_SKILL_REGISTRY.iterdir()):
+        if entry.is_dir():
+            if entry.name in _SKILL_DIR_IGNORE:
+                continue
+            md = _skill_md_in_dir(entry)
+            if md is None:
+                continue
+            meta = _skill_from_file(md)
+            if meta is not None:
+                folder[meta.name] = meta
+        elif entry.suffix == ".md" and entry.name.lower() != "readme.md":
+            meta = _skill_from_file(entry)
+            if meta is not None:
+                flat[meta.name] = meta
+    # Folder skills take precedence over a flat file of the same name.
+    return {**flat, **folder}
 
 
 _SKILL_CACHE: dict[str, SkillMeta] | None = None

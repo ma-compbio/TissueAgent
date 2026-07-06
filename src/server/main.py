@@ -22,7 +22,12 @@ from langgraph.checkpoint.memory import MemorySaver
 
 import agent_settings
 import models as model_registry
-from agents.agent_registry.coding_agent.sandbox import ContainerManager, KernelClient
+from config import KERNEL_GATEWAY_URL
+from agents.agent_registry.coding_agent.sandbox import (
+    ContainerManager,
+    KernelClient,
+    LocalKernelGateway,
+)
 from graph.graph import create_tissueagent_graph
 from graph.ui_events import register_ui_event_queue
 from server.rate_limit import with_header_retry
@@ -128,16 +133,29 @@ async def lifespan(app: FastAPI):
     if recovered_pid is not None:
         session.project_id = recovered_pid
 
-    # Start the Docker sandbox only when sandbox_enabled is set at startup.
-    container_mgr: ContainerManager | None = None
-    if agent_settings.get_sandbox_enabled():
-        container_mgr = ContainerManager()
-        container_mgr.ensure_running()
-        logging.info("Docker sandbox started.")
-    else:
-        logging.info(
-            "Docker sandbox disabled at startup — expecting a local Jupyter Kernel Gateway at %s.",
-            "KERNEL_GATEWAY_URL",
+    # Provide a code-execution backend. With the Docker sandbox enabled we
+    # start (or reuse) the container; otherwise we auto-start a local Jupyter
+    # Kernel Gateway so code execution works without a manual third process.
+    # Both managers expose ``.stop()`` for shutdown. Best-effort: a failure
+    # here must not prevent the server from booting — the coding agent will
+    # surface a clear KernelUnavailableError on first use instead.
+    code_backend: ContainerManager | LocalKernelGateway | None = None
+    try:
+        if agent_settings.get_sandbox_enabled():
+            code_backend = ContainerManager()
+            code_backend.ensure_running()
+            logging.info("Docker sandbox started.")
+        else:
+            code_backend = LocalKernelGateway()
+            code_backend.ensure_running()
+            logging.info("Local Kernel Gateway ready at %s.", KERNEL_GATEWAY_URL)
+    except Exception as e:
+        code_backend = None
+        logging.warning(
+            "Could not start a code backend at startup (%s). Code execution "
+            "will fail until a Kernel Gateway is available at %s.",
+            e,
+            KERNEL_GATEWAY_URL,
         )
 
     kernel_client = KernelClient()
@@ -153,9 +171,9 @@ async def lifespan(app: FastAPI):
     logging.info("TissueAgent graph compiled and ready.")
     yield
 
-    # Shutdown: stop the sandbox container if it was started
-    if container_mgr is not None:
-        container_mgr.stop()
+    # Shutdown: stop whichever code backend we started.
+    if code_backend is not None:
+        code_backend.stop()
 
 
 app = FastAPI(

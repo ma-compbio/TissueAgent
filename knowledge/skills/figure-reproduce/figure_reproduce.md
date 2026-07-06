@@ -1,7 +1,7 @@
 ---
 name: figure-reproduce
 description: Reproduce a target figure from a dataset — regenerate a published/reference plot (e.g. a scatter, line/bar chart, heatmap, UMAP, dotplot, violin, or spatial map from a paper) using the coding agent and matching its panels, layout, and color encoding. Use when the user asks to "reproduce", "recreate", "replicate", or "remake" a figure, or to match a figure from a paper/notebook. Covers self-evaluation of the result and a bounded reflect-and-retry repair loop when the first attempt is off.
-applies_to: [coding]
+applies_to: [coding_agent]
 status: enable
 ---
 
@@ -202,7 +202,9 @@ stochastic embeddings and figure-duplication traps): `references/debugging-playb
   `references/reflect-and-retry.md` (the bounded self-repair loop + fix categories),
   `references/debugging-playbook.md` (symptom → fix taxonomy),
   `references/domain-recipes.md` (concrete per-plot recipes).
-- Driven by the coding agent (`coding`) tools: `python`, `r`, `search_documentation`.
+- Driven by the coding agent (`coding_agent`) tools: `python`, `r`, `search_documentation`.
 - Target extraction from papers: the `pdf_reader` agent, or `scripts/extract_pdf_figure.py`.
+- Related plan template: `spatial_scatter` (`knowledge/plans/spatial_scatter.md`) — a
+  concrete figure recipe with coords/color/checks.
 - External plotting APIs (searchable via `search_documentation`): matplotlib,
   seaborn, pandas `.plot`, scanpy `sc.pl.*`, squidpy `sq.pl.*`.
