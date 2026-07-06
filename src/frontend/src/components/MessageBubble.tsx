@@ -5,6 +5,30 @@ import remarkGfm from "remark-gfm";
 import type { SerializedMessage, SubagentTranscript } from "../types/messages";
 import AgentAvatar from "./AgentAvatar";
 
+const API = import.meta.env.DEV ? "http://localhost:8000" : "";
+
+/** Resolve a markdown image src into a loadable URL.
+ *
+ * The reporter embeds figures as project-relative paths (e.g.
+ * `outputs/figures/umap.png`). Rewrite those to the file-download endpoint;
+ * pass through absolute/http/data URLs untouched. Returns null when the src
+ * can't be resolved to a project-relative path (renders nothing).
+ */
+function resolveFigureSrc(
+  src: string | undefined,
+  projectId: string,
+): string | null {
+  if (!src) return null;
+  if (/^(https?:|data:)/i.test(src)) return src;
+  // Normalize: strip leading slashes and a stray "project/" prefix.
+  let rel = src.replace(/^\/+/, "").replace(/^project\//, "");
+  if (!rel.startsWith("outputs/")) return null;
+  if (!projectId) return null;
+  return `${API}/api/files/download/${rel}?scope=project&project_id=${encodeURIComponent(
+    projectId,
+  )}&inline=1`;
+}
+
 export interface AgentRun {
   agentName: string;
   avatar: string;
@@ -151,11 +175,38 @@ export function extractFinalResponse(messages: SerializedMessage[]): string | nu
 }
 
 /** Full-width box showing the reporter's final answer, rendered in markdown. */
-export function FinalAnswerBox({ content }: { content: string }) {
+export function FinalAnswerBox({
+  content,
+  projectId = "",
+}: {
+  content: string;
+  projectId?: string;
+}) {
   return (
     <div className="final-answer-box">
       <div className="final-answer-body">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            img: ({ src, alt }) => {
+              const url = resolveFigureSrc(src as string | undefined, projectId);
+              if (!url) return null;
+              return (
+                <img
+                  src={url}
+                  alt={alt ?? "figure"}
+                  className="final-figure"
+                  loading="lazy"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              );
+            },
+          }}
+        >
+          {content}
+        </ReactMarkdown>
       </div>
     </div>
   );

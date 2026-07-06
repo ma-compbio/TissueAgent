@@ -548,6 +548,58 @@ def message_to_serializable(message):
     return {"type": message.type, "data": data}
 
 
+def _scrub_base64_images(obj):
+    """Recursively replace inline base64 image data with a lightweight marker.
+
+    The coding agent's multimodal tool results carry plots as
+    ``{"type": "image_url", "image_url": {"url": "data:image/png;base64,..."}}``
+    parts. Persisting those inline would bloat ``.chat.json`` by megabytes per
+    plot. The pixels are re-derivable from disk (via ``trace_image_paths`` /
+    the project's ``outputs/``), so we drop the base64 payload here, keeping
+    the structural part so message shape stays valid on reload. Mutates and
+    returns ``obj``.
+    """
+    if isinstance(obj, dict):
+        url = obj.get("url")
+        if isinstance(url, str) and url.startswith("data:") and ";base64," in url:
+            obj["url"] = "[stripped-inline-image]"
+            return obj
+        for v in obj.values():
+            _scrub_base64_images(v)
+    elif isinstance(obj, list):
+        for item in obj:
+            _scrub_base64_images(item)
+    return obj
+
+
+def _strip_images_from_subagent_states(subagent_states: Dict) -> Dict:
+    """Return a copy of subagent_states with inline images stripped for saving.
+
+    Sub-agent transcripts (the coding agent especially) can carry multimodal
+    tool results with base64 plots. Those states are persisted via
+    ``json.dumps(default=str)`` — which renders each message as an opaque repr,
+    so a JSON-level scrub can't reach the base64. Instead we collapse each
+    transcript's message content to text here, before dump. The plots remain
+    on disk (referenced by ``trace_image_paths``); the trace re-renders from
+    there on reload.
+    """
+    cleaned: Dict = {}
+    for tool_id, entry in subagent_states.items():
+        try:
+            entry = tuple(entry)
+            state = entry[1]
+            if isinstance(state, dict) and isinstance(state.get("messages"), list):
+                state = {
+                    **state,
+                    "messages": strip_images_for_display(state["messages"]),
+                }
+                entry = (entry[0], state, *entry[2:])
+        except Exception as e:
+            logging.warning(f"Could not strip images from subagent state {tool_id}: {e}")
+        cleaned[tool_id] = entry
+    return cleaned
+
+
 _TITLE_MAX_LEN = 60
 
 
@@ -774,8 +826,11 @@ def save_session(
         # Prefer an explicitly supplied title (e.g. an LLM-summarized one)
         # so it isn't clobbered by the cheap first-line fallback on re-save.
         "title": (title.strip() if title and title.strip() else derive_session_title(messages)),
-        "messages": [message_to_serializable(m) for m in messages],
-        "subagent_states": subagent_states,
+        # Strip inline base64 plots from persisted messages — they can be
+        # megabytes each (a single coding-agent tool result balloons the file)
+        # and are re-derivable from disk. See _scrub_base64_images.
+        "messages": [_scrub_base64_images(message_to_serializable(m)) for m in messages],
+        "subagent_states": _strip_images_from_subagent_states(subagent_states),
         "uploaded_pdfs": uploaded_pdfs,
         "replan_count": replan_count,
         "replan_history": replan_history,

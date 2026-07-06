@@ -23,6 +23,10 @@ export interface SerializedMessage {
   // Tool message fields
   tool_call_id?: string | null;
   status?: string | null;
+
+  // Coding-agent plot references: project-relative paths (e.g.
+  // "outputs/figures/_trace/<id>.png") loaded from the file-download API.
+  image_paths?: string[];
 }
 
 export interface SubagentTranscript {

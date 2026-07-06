@@ -7,6 +7,7 @@ traces and sub-agent states.
 import asyncio
 import json
 import logging
+import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
@@ -45,6 +46,19 @@ _executor = ThreadPoolExecutor(max_workers=1)
 # cancel it (best-effort — the underlying compute already started may still
 # run to completion, but we stop touching shared state from the finally block).
 _current_run_future: Future | None = None
+
+# Set when the user clicks Stop. The graph runs on a thread we can't forcibly
+# kill once ``invoke`` has started, so this signals the async run loop to break
+# out immediately: the UI stops, ``is_running`` clears, and the orphaned worker
+# thread finishes silently with its output discarded. Cleared at the start of
+# every run.
+_cancel_requested = threading.Event()
+
+# The background task running the current graph invocation. Kept so the receive
+# loop can observe / clean it up. ``_run_graph`` is launched as a task (rather
+# than awaited inline) so the receive loop stays free to process a cancel frame
+# while a run is in flight.
+_current_run_task: "asyncio.Task | None" = None
 
 
 def _ws_connected(ws: WebSocket) -> bool:
@@ -243,7 +257,10 @@ async def websocket_chat(ws: WebSocket):
     finally:
         # Best-effort cancel of any in-flight graph invocation so it can't
         # continue mutating shared session state after the client has gone.
+        # Signal the run loop (which polls _cancel_requested and _ws_connected)
+        # and nudge the worker future.
         global _current_run_future
+        _cancel_requested.set()
         pending = _current_run_future
         if pending is not None and not pending.done():
             pending.cancel()
@@ -380,7 +397,9 @@ async def _handle_user_message(ws: WebSocket, data: dict):
     ensure_graph_current()
 
     # First invocation of this turn: pass the current message state in.
-    await _run_graph(ws, graph_input=session.agent_state)
+    # Launched as a background task so the receive loop can still handle a
+    # Stop (run_cancelled) frame while the run streams.
+    _launch_run(ws, graph_input=session.agent_state)
 
 
 # ---------------------------------------------------------------------------
@@ -422,6 +441,30 @@ def _pending_interrupt_nodes() -> list[str]:
     ]
 
 
+def _launch_run(ws: WebSocket, graph_input) -> None:
+    """Run the graph as a background task so the receive loop stays responsive.
+
+    ``_run_graph`` is long-lived; awaiting it inline would block the WebSocket
+    receive loop, so a ``run_cancelled`` frame couldn't be read until the run
+    finished — making a Stop button useless. Launching it as a task lets the
+    loop keep reading frames (Stop, mode changes) while the run streams.
+    """
+    global _current_run_task
+
+    def _on_done(task: "asyncio.Task") -> None:
+        global _current_run_task
+        if _current_run_task is task:
+            _current_run_task = None
+        # Surface (but don't crash on) any error the detached task raised.
+        if not task.cancelled():
+            exc = task.exception()
+            if exc is not None:
+                logging.error("Background run task failed", exc_info=exc)
+
+    _current_run_task = asyncio.create_task(_run_graph(ws, graph_input))
+    _current_run_task.add_done_callback(_on_done)
+
+
 async def _run_graph(ws: WebSocket, graph_input):
     """Invoke or resume the graph, then process the outcome.
 
@@ -451,6 +494,7 @@ async def _run_graph(ws: WebSocket, graph_input):
     rendered_prefix = len(session.agent_state["messages"])
 
     session.is_running = True
+    _cancel_requested.clear()
     start_time = time.perf_counter()
 
     # On a resume (graph_input is None), the plan's on-disk status may
@@ -483,6 +527,18 @@ async def _run_graph(ws: WebSocket, graph_input):
                 # the finally block and any subsequent sends short-circuit.
                 future.cancel()
                 logging.info("WebSocket disconnected mid-run; abandoning invocation.")
+                return
+            if _cancel_requested.is_set():
+                # User clicked Stop. We can't kill the worker thread, but we
+                # stop streaming its output and abandon the run now. The
+                # orphaned thread finishes in the background; its result is
+                # discarded because _handle_run_cancelled mints a fresh
+                # thread_id for the next turn. Drain what's already queued so
+                # partial output isn't lost, then bail before run_complete.
+                # (_handle_run_cancelled owns plan reset + the run_cancelled ack.)
+                future.cancel()
+                logging.info("Run cancelled by user; abandoning invocation.")
+                await _drain_queues(ws)
                 return
             await _drain_queues(ws)
             await asyncio.sleep(0.05)
@@ -664,7 +720,7 @@ async def _handle_resume(ws: WebSocket, expected_pause: str) -> None:
         return
     session.paused_at = None
     # Resume with input=None — LangGraph reads the checkpoint and proceeds.
-    await _run_graph(ws, graph_input=None)
+    _launch_run(ws, graph_input=None)
 
 
 async def _handle_plan_edited(ws: WebSocket, data: dict) -> None:
@@ -712,7 +768,7 @@ async def _apply_user_plan_edit_and_resume(
     })
 
     session.paused_at = None
-    await _run_graph(ws, graph_input=None)
+    _launch_run(ws, graph_input=None)
 
 
 async def _handle_plan_feedback(ws: WebSocket, data: dict) -> None:
@@ -770,14 +826,20 @@ async def _rewind_to_planner_with_feedback(ws: WebSocket, text: str) -> None:
     session.paused_at = None
     session.gates_fired = set()
 
-    await _run_graph(ws, graph_input=session.agent_state)
+    _launch_run(ws, graph_input=session.agent_state)
 
 
 async def _handle_run_cancelled(ws: WebSocket) -> None:
-    """Cancel an in-progress copilot run.
+    """Stop the current run, whether it's actively executing or copilot-paused.
 
-    The checkpointer thread is abandoned (a fresh one is generated for the next turn). The on-disk plan is wiped so the
-    UI doesn't keep showing a stale review prompt.
+    For an in-flight run: signals the async run loop to break out immediately
+    (``_cancel_requested``) and cancels the worker future best-effort — the
+    thread can't be force-killed, so it finishes silently and its output is
+    discarded. For a copilot pause: just tears down the paused state.
+
+    In both cases the checkpointer thread is abandoned (a fresh one is minted
+    for the next turn) and the on-disk plan is wiped so the UI doesn't keep
+    showing a stale review prompt.
     """
     if session.paused_at is None and not session.is_running:
         # Nothing to cancel — still acknowledge so the UI clears state.
@@ -786,6 +848,12 @@ async def _handle_run_cancelled(ws: WebSocket) -> None:
 
     from server.plan_store import plan_store as _plan_store
     from server.session_manager import _new_thread_id
+
+    # Signal the running loop to abandon streaming, and nudge the worker
+    # future (only cancels if it hasn't started — otherwise it runs on).
+    _cancel_requested.set()
+    if _current_run_future is not None and not _current_run_future.done():
+        _current_run_future.cancel()
 
     _plan_store.reset()
     session.paused_at = None

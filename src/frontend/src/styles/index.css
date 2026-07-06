@@ -1551,7 +1551,8 @@ code, pre, .num {
    background, only the icon is visible. The send button gets the
    filled accent treatment when ready to fire. */
 .chat-attach-button,
-.chat-send-button {
+.chat-send-button,
+.chat-stop-button {
   position: absolute;
   bottom: 8px;
   width: 30px;
@@ -1569,6 +1570,23 @@ code, pre, .num {
     background 160ms ease-out,
     color 160ms ease-out,
     opacity 160ms ease-out;
+}
+
+/* Stop button: sits where Send does, filled so it reads as an active,
+   interruptible state. Uses a muted danger tone to signal "halt". */
+.chat-stop-button {
+  right: 10px;
+  background: var(--error-text);
+  color: white;
+}
+
+.chat-stop-button:hover {
+  background: color-mix(in oklch, var(--error-text) 85%, black);
+}
+
+.chat-stop-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .chat-attach-button {
@@ -1689,7 +1707,9 @@ code, pre, .num {
 .chat-attach-button:hover .chat-button-tooltip,
 .chat-attach-button:focus-visible .chat-button-tooltip,
 .chat-send-button:hover .chat-button-tooltip,
-.chat-send-button:focus-visible .chat-button-tooltip {
+.chat-send-button:focus-visible .chat-button-tooltip,
+.chat-stop-button:hover .chat-button-tooltip,
+.chat-stop-button:focus-visible .chat-button-tooltip {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
@@ -1701,7 +1721,9 @@ code, pre, .num {
 
 /* Override the X-axis transform for the right-anchored variant. */
 .chat-send-button:hover .chat-button-tooltip-right,
-.chat-send-button:focus-visible .chat-button-tooltip-right {
+.chat-send-button:focus-visible .chat-button-tooltip-right,
+.chat-stop-button:hover .chat-button-tooltip-right,
+.chat-stop-button:focus-visible .chat-button-tooltip-right {
   transform: translateY(0);
 }
 
@@ -2006,6 +2028,15 @@ code, pre, .num {
 }
 
 .final-answer-body > * { margin-top: 0; }
+.final-figure {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.6em 0;
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: 0.5rem;
+  background: #fff;
+}
 .final-answer-body p { margin: 0 0 0.6em; }
 .final-answer-body p:last-child { margin-bottom: 0; }
 .final-answer-body ul,
@@ -2203,6 +2234,22 @@ code, pre, .num {
 
 .trace-output-block {
   margin-bottom: 0.4rem;
+}
+
+/* Coding-agent plot images rendered inline in the trace. */
+.trace-images {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.trace-image {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: 0.4rem;
+  background: #fff;
 }
 
 .trace-output {

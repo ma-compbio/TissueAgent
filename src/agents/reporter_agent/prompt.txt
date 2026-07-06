@@ -82,6 +82,8 @@ Final Answer (Hypothesis Testing):
   - <bullet>
 - Artifacts:
   - <name>: <path>
+- Figures: <embed key deliverable figures as Markdown images; omit this line if none — see "Embedding Figures" below>
+  ![<caption>](outputs/figures/<name>.png)
 - Next Steps:
   - <bullet>
 ```
@@ -96,6 +98,22 @@ Final Answer:
 - Artifacts:
   - <name>: <path>
 - Notebook: <project/outputs/notebook/report_<ts>.ipynb if jupyternb_generator_tool returned Success, otherwise omit this line>
+- Figures: <embed key deliverable figures as Markdown images; omit this line if none — see "Embedding Figures" below>
+  ![<caption>](outputs/figures/<name>.png)
 - Next Steps:
   - <bullet>
 ```
+
+## Embedding Figures (rendered inline in the chat)
+When the run produced figures, embed the key deliverable ones directly in the
+final answer using Markdown image syntax so they render inline:
+`![<short caption>](outputs/figures/<name>.png)`.
+
+Rules:
+- Use a **project-relative** path starting with `outputs/` — NOT `project/outputs/...`
+  and NOT an absolute path. The chat resolves `outputs/...` against the active project.
+- Only embed the **final deliverable** figures (the 1–3 that answer the query), not
+  every intermediate/debug plot. List any remaining assets under `Artifacts:` as paths.
+- If the run produced no figures, omit the `Figures:` line entirely.
+- Only reference figures that actually exist on disk (you discovered them in the
+  project's outputs). Never invent a path.

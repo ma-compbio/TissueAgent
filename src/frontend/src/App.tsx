@@ -374,7 +374,9 @@ export default function App() {
               isRunning={ws.isRunning}
               elapsed={ws.elapsed}
               enableDebug={true}
+              projectId={session.currentProjectId}
               onSendMessage={ws.sendMessage}
+              onCancelRun={ws.cancelRun}
               onUploadFiles={handleUploadToProject}
             />
           </div>

@@ -46,6 +46,14 @@ def serialize_message(message: BaseMessage, *, strip_images: bool = True) -> Dic
         "content": content_text,
     }
 
+    # Trace plot references: project-relative paths to images spilled by the
+    # coding agent. Carried in additional_kwargs (not content) so they survive
+    # the image-stripping above; the frontend loads pixels from the file API.
+    extra = getattr(message, "additional_kwargs", None) or {}
+    trace_image_paths = extra.get("trace_image_paths")
+    if trace_image_paths:
+        result["image_paths"] = list(trace_image_paths)
+
     if isinstance(message, HumanMessage):
         result["avatar"] = USER_AVATAR
         result["label"] = "You"

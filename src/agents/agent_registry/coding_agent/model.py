@@ -92,11 +92,31 @@ def create_coding_agent(
             parts.append({"type": "image_url", "image_url": {"url": data_uri}})
         return parts
 
+    def _emit_output(prefix: str, result: ExecutionResult) -> None:
+        """Emit a code-output message to the UI trace.
+
+        Carries any inline plots as project-relative file *paths* (in
+        ``additional_kwargs``), not base64 — the pixels are spilled to disk
+        and the frontend loads them from ``/api/files/download``. Keeping the
+        content text-only preserves ``should_hide_message`` (these stay hidden
+        from the main chat) and keeps the persisted ``.chat.json`` small.
+        """
+        msg = HumanMessage(prefix + result.text)
+        if result.images:
+            from agents.agent_registry.coding_agent.image_spill import (
+                spill_images_to_disk,
+            )
+
+            paths = spill_images_to_disk(result.images)
+            if paths:
+                msg.additional_kwargs["trace_image_paths"] = paths
+        emit_message(msg)
+
     def python(code: str) -> str | list:
         logging.info(f"python tool executing:\n{code}")
         result = kernel_client.execute(code, language="python")
         logging.info(f"python tool output:\n{result.text}")
-        emit_message(HumanMessage("Python Output:\n" + result.text))
+        _emit_output("Python Output:\n", result)
         return _format_execution_result(result)
 
     python_tool = StructuredTool.from_function(
@@ -113,7 +133,7 @@ def create_coding_agent(
         logging.info(f"r tool executing:\n{code}")
         result = kernel_client.execute(code, language="r")
         logging.info(f"r tool output:\n{result.text}")
-        emit_message(HumanMessage("R Output:\n" + result.text))
+        _emit_output("R Output:\n", result)
         return _format_execution_result(result)
 
     r_tool = StructuredTool.from_function(

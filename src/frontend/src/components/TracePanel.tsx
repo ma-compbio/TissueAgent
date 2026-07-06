@@ -6,6 +6,8 @@ import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { SubagentTranscript, SerializedMessage, ToolCall } from "../types/messages";
 import AgentAvatar from "./AgentAvatar";
 
+const API = import.meta.env.DEV ? "http://localhost:8000" : "";
+
 const CODE_TOOLS: Record<string, string> = {
   python: "python",
   r: "r",
@@ -13,10 +15,44 @@ const CODE_TOOLS: Record<string, string> = {
 
 interface Props {
   state: SubagentTranscript;
+  /** Active project id — required to resolve project-scoped image URLs. */
+  projectId: string;
   onClose: () => void;
 }
 
 const CODE_PREVIEW_LINES = 12;
+
+/** Render coding-agent plot images from their project-relative paths. */
+function TraceImages({
+  paths,
+  projectId,
+}: {
+  paths: string[];
+  projectId: string;
+}) {
+  if (!paths.length) return null;
+  return (
+    <div className="trace-images">
+      {paths.map((p, i) => {
+        const url = `${API}/api/files/download/${p}?scope=project&project_id=${encodeURIComponent(
+          projectId,
+        )}&inline=1`;
+        return (
+          <img
+            key={i}
+            src={url}
+            alt="plot output"
+            className="trace-image"
+            loading="lazy"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 function Markdown({ children }: { children: string }) {
   return (
@@ -91,16 +127,24 @@ function TraceStep({
   msg,
   prev,
   toolCallMap,
+  projectId,
 }: {
   msg: SerializedMessage;
   prev: SerializedMessage | null;
   toolCallMap: Map<string, ToolCall>;
+  projectId: string;
 }) {
   const [toolExpanded, setToolExpanded] = useState(false);
+  const images = msg.image_paths ?? [];
 
   // Code execution output (HumanMessage after an <execute> AI message)
   if (isCodeOutput(msg, prev)) {
-    return <OutputBlock text={msg.content || "<no output>"} />;
+    return (
+      <>
+        <OutputBlock text={msg.content || "<no output>"} />
+        <TraceImages paths={images} projectId={projectId} />
+      </>
+    );
   }
 
   // Regular human messages in trace (shouldn't normally appear; skip)
@@ -192,6 +236,7 @@ function TraceStep({
             <div className="trace-tool-output">
               <span className="trace-step-label">output</span>
               <pre className="trace-tool-content">{msg.content || "<empty>"}</pre>
+              <TraceImages paths={images} projectId={projectId} />
             </div>
           </div>
         )}
@@ -202,7 +247,7 @@ function TraceStep({
   return null;
 }
 
-export default function TracePanel({ state, onClose }: Props) {
+export default function TracePanel({ state, projectId, onClose }: Props) {
   const transcript = state.transcript || [];
 
   // Build a map from tool_call_id -> ToolCall for quick lookup when rendering tool messages
@@ -240,6 +285,7 @@ export default function TracePanel({ state, onClose }: Props) {
               msg={msg}
               prev={i > 0 ? transcript[i - 1] : null}
               toolCallMap={toolCallMap}
+              projectId={projectId}
             />
           ))
         )}

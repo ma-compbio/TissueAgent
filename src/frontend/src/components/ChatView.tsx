@@ -24,7 +24,11 @@ interface Props {
   isRunning: boolean;
   elapsed: number | null;
   enableDebug: boolean;
+  /** Active project id — used to build file-download URLs for trace plots. */
+  projectId: string;
   onSendMessage: (text: string) => void;
+  /** Stop the in-flight run. Surfaced as the Stop button while running. */
+  onCancelRun: () => void;
   /** Called when the user picks files via the chat-input "+" button.
    *  The handler routes to the active project's ``uploads/`` directory
    *  (minting the project if none is active). */
@@ -238,7 +242,9 @@ export default function ChatView({
   isRunning,
   elapsed,
   enableDebug,
+  projectId,
   onSendMessage,
+  onCancelRun,
   onUploadFiles,
 }: Props) {
   const [input, setInput] = useState("");
@@ -357,7 +363,9 @@ export default function ChatView({
                       onSelectTrace={handleSelectTrace}
                       isSelected={selectedTrace === item.run.syntheticId}
                     />
-                    {finalResponse && <FinalAnswerBox content={finalResponse} />}
+                    {finalResponse && (
+                      <FinalAnswerBox content={finalResponse} projectId={projectId} />
+                    )}
                   </div>
                 );
               }
@@ -517,33 +525,51 @@ export default function ChatView({
                 Upload files to this project
               </span>
             </button>
-            <button
-              type="submit"
-              className="chat-send-button"
-              disabled={isRunning || !input.trim()}
-              aria-label="Send message"
-            >
-              <svg
-                viewBox="0 0 16 16"
-                width="16"
-                height="16"
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {isRunning ? (
+              <button
+                type="button"
+                className="chat-stop-button"
+                onClick={onCancelRun}
+                aria-label="Stop the running agent"
               >
-                <path d="M8 13V3M3.5 7.5L8 3l4.5 4.5" />
-              </svg>
-              <span className="chat-button-tooltip chat-button-tooltip-right" role="tooltip">
-                {isRunning
-                  ? "Agent is running"
-                  : input.trim()
-                    ? "Send message"
-                    : "Type a message to send"}
-              </span>
-            </button>
+                <svg
+                  viewBox="0 0 16 16"
+                  width="14"
+                  height="14"
+                  aria-hidden="true"
+                  fill="currentColor"
+                >
+                  <rect x="3" y="3" width="10" height="10" rx="1.5" />
+                </svg>
+                <span className="chat-button-tooltip chat-button-tooltip-right" role="tooltip">
+                  Stop the agent
+                </span>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="chat-send-button"
+                disabled={!input.trim()}
+                aria-label="Send message"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M8 13V3M3.5 7.5L8 3l4.5 4.5" />
+                </svg>
+                <span className="chat-button-tooltip chat-button-tooltip-right" role="tooltip">
+                  {input.trim() ? "Send message" : "Type a message to send"}
+                </span>
+              </button>
+            )}
           </form>
           </div>
         </div>
@@ -555,6 +581,7 @@ export default function ChatView({
           <div className="chat-column-right" style={{ width: traceWidth, minWidth: 280 }}>
             <TracePanel
               state={activeTrace}
+              projectId={projectId}
               onClose={() => setSelectedTrace(null)}
             />
           </div>
