@@ -114,13 +114,16 @@ non-spatial methods.
 
 ## Code Template
 
+Inputs (`sc_count`, `sc_meta`, `spatial_count`, `spatial_location`) are prepared
+by the Python bridge (Workflow step 1) under `outputs/card_input/`:
+`sc_count`/`spatial_count` are genes × cells|spots (raw counts); `sc_meta` has
+rows = cells with `cellType` + `sampleInfo` columns; `spatial_location` has
+`x`,`y` with rownames = spot IDs.
+
+**Step 2a — build the CARD object**
+
 ```r
 library(CARD)
-
-# Inputs prepared by the Python bridge (step 1) under outputs/card_input/.
-# sc_count / spatial_count: genes x cells|spots (raw counts).
-# sc_meta: rows=cells, has cellType + sampleInfo columns.
-# spatial_location: x,y with rownames = spot IDs.
 
 CARD_obj <- createCARDObject(
   sc_count         = sc_count,
@@ -133,13 +136,24 @@ CARD_obj <- createCARDObject(
   minCountGene     = 100,
   minCountSpot     = 5
 )
+```
 
+**Step 2b — run deconvolution**
+
+```r
 CARD_obj <- CARD_deconvolution(CARD_object = CARD_obj)
+```
 
-prop <- CARD_obj@Proportion_CARD          # spots x cell types
+**Step 3 — export proportions (spots × cell types)**
+
+```r
+prop <- CARD_obj@Proportion_CARD
 write.csv(prop, "outputs/tables/card_proportions.csv")
+```
 
-# Spatial proportion maps for a few cell types
+**Step 4 — spatial proportion maps for a few cell types**
+
+```r
 p <- CARD.visualize.prop(
   proportion       = CARD_obj@Proportion_CARD,
   spatial_location = CARD_obj@spatial_location,
@@ -148,10 +162,13 @@ p <- CARD.visualize.prop(
   NumCols          = 4, pointSize = 3.0
 )
 ggplot2::ggsave("outputs/figures/card_proportions.png", p, width = 12, height = 4, dpi = 150)
+```
 
-# (Optional) high-resolution imputation
-# CARD_obj <- CARD.imputation(CARD_obj, NumGrids = 2000, ineibor = 10, exclude = NULL)
-# refined <- CARD_obj@refined_prop
+**Step 5 (optional) — high-resolution imputation**
+
+```r
+CARD_obj <- CARD.imputation(CARD_obj, NumGrids = 2000, ineibor = 10, exclude = NULL)
+refined <- CARD_obj@refined_prop
 ```
 
 ## Common Issues

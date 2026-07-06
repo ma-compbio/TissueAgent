@@ -100,24 +100,35 @@ that mapping to (a) transfer cell-type labels / proportions to spots and
 
 ## Code Template
 
+**Step 0 — install + load inputs**
+
 ```python
 import scanpy as sc, tangram as tg
 
 adata_sc = sc.read_h5ad("uploads/reference.h5ad")     # cells x genes, .obs[ct_col]
 adata_sp = sc.read_h5ad("uploads/spatial.h5ad")       # spots x genes, .obsm["spatial"]
 ct_col = "cell_type"
+```
 
-# 1) Training genes: top DE markers per cell type from the reference
+**Step 1 — pick training genes (top DE markers per cell type)**
+
+```python
 sc.tl.rank_genes_groups(adata_sc, groupby=ct_col, use_raw=False)
 markers = list(set(
     sc.get.rank_genes_groups_df(adata_sc, group=None)
       .groupby("group").head(100)["names"]
 ))
+```
 
-# 2) Align + intersect onto shared genes
+**Step 2 — preprocess: align + intersect onto shared genes**
+
+```python
 tg.pp_adatas(adata_sc, adata_sp, genes=markers)
+```
 
-# 3) Map — cluster mode for per-spot composition on Visium
+**Step 3 — map (cluster mode for per-spot composition on Visium)**
+
+```python
 device = "cuda:0"   # fall back to "cpu" if no GPU
 ad_map = tg.map_cells_to_space(
     adata_sc, adata_sp,
@@ -127,18 +138,25 @@ ad_map = tg.map_cells_to_space(
     num_epochs=1000,
     device=device,
 )
+```
 
-# 4) Per-spot cell-type predictions
-tg.project_cell_annotations(ad_map, adata_sp, annotation=ct_col)
+**Step 4 — project per-spot cell-type predictions and export**
+
+```python
 import pandas as pd
+
+tg.project_cell_annotations(ad_map, adata_sp, annotation=ct_col)
 pred = pd.DataFrame(
     adata_sp.obsm["tangram_ct_pred"],
     index=adata_sp.obs_names,
 )
 pred.to_csv("outputs/tables/tangram_ct_pred.csv")
+```
 
-# 5) (optional) impute genes onto space
-# ad_ge = tg.project_genes(ad_map, adata_sc)
+**Step 5 (optional) — impute genes onto space**
+
+```python
+ad_ge = tg.project_genes(ad_map, adata_sc)
 ```
 
 ## Common Issues

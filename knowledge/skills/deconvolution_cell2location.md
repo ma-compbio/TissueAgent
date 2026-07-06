@@ -66,12 +66,21 @@ Written to `<output_subdir>/` under the project's `outputs/`. The tool returns a
 
 ## Code Template
 
+The deconvolution itself is run by `cell2location_visium_deconvolution_tool`
+(see Workflow). The steps below are the post-run reading + plotting of its outputs.
+
+**Step 1 — load the tool's outputs**
+
 ```python
 import scanpy as sc, pandas as pd, matplotlib.pyplot as plt
 
 adata = sc.read_h5ad("cell2location_results/visium_with_cell2location.h5ad")
 ab = pd.read_csv("cell2location_results/q05_cell_abundance_w_sf.csv", index_col=0)
+```
 
+**Step 2 — plot per-spot abundance for a few cell types**
+
+```python
 fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 for ax, ct in zip(axes.flat, ab.columns[:6]):
     adata.obs[ct] = ab[ct].values
