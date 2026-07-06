@@ -22,7 +22,7 @@ from langgraph.checkpoint.memory import MemorySaver
 
 import agent_settings
 import models as model_registry
-from config import KERNEL_GATEWAY_URL
+from config import ACTIVE_PROJECT_DIR, KERNEL_GATEWAY_URL, PROJECT_CHAT_FILENAME
 from agents.agent_registry.coding_agent.sandbox import (
     ContainerManager,
     KernelClient,
@@ -55,6 +55,7 @@ from server.utils import (
     migrate_projects_out_of_workspace,
     migrate_scratch_into_active_project,
     recover_active_project,
+    rehydrate_session_from_chat,
     reset_data_directories,
 )
 
@@ -132,6 +133,20 @@ async def lifespan(app: FastAPI):
     recovered_pid = recover_active_project()
     if recovered_pid is not None:
         session.project_id = recovered_pid
+        # Rehydrate the conversation + traces from the active project's chat
+        # file so a page refresh after a server restart replays history
+        # instead of showing a blank view. Best-effort: a missing/corrupt
+        # chat file must not block startup.
+        chat_path = ACTIVE_PROJECT_DIR / PROJECT_CHAT_FILENAME
+        if chat_path.exists():
+            try:
+                rehydrate_session_from_chat(chat_path)
+            except Exception as e:
+                logging.warning(
+                    "Failed to rehydrate active project %s at startup: %s",
+                    recovered_pid,
+                    e,
+                )
 
     # Provide a code-execution backend. With the Docker sandbox enabled we
     # start (or reuse) the container; otherwise we auto-start a local Jupyter

@@ -36,10 +36,10 @@ from server.utils import (
     build_session_markdown,
     derive_session_title,
     list_project_chat_files,
-    load_session,
     project_dir_for,
     read_active_project_id,
     read_session_title,
+    rehydrate_session_from_chat,
     save_session,
     session_option_label,
     switch_active_project,
@@ -296,31 +296,10 @@ async def load_selected_session(filename: str):
         raise HTTPException(status_code=404, detail="Project chat file missing.")
 
     try:
-        data = load_session(chat_path)
+        rehydrate_session_from_chat(chat_path)
     except Exception as e:
         logging.error("Failed to load session", exc_info=e)
         raise HTTPException(status_code=500, detail="Failed to load project file.")
-
-    session.agent_state["messages"] = data["messages"]
-    session.agent_state["replan_count"] = data["replan_count"]
-    session.agent_state["replan_history"] = data["replan_history"]
-    session.agent_state["recruiter_retry_count"] = data.get("recruiter_retry_count", 0)
-    session.subagent_states = data["subagent_states"]
-    session.pending_subagent_states.clear()
-    session.uploaded_pdfs = data["uploaded_pdfs"]
-    session.pending_images = []
-    session.mode = data["mode"]  # type: ignore[assignment]
-    session.ensure_display_state()
-    session.project_title = data.get("title", "") or ""
-    # A loaded project already has its title; don't re-summarize it.
-    session.project_title_generated = bool(session.project_title.strip())
-
-    from server.plan_store import plan_store
-    plan_markdown = data.get("plan_markdown", "") or ""
-    if plan_markdown.strip():
-        plan_store.write_markdown(plan_markdown)
-    else:
-        plan_store.reset()
 
     return {
         "status": "loaded",

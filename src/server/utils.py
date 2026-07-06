@@ -1080,6 +1080,42 @@ def load_session(path: Path) -> Dict[str, Any]:
     }
 
 
+def rehydrate_session_from_chat(chat_path: Path) -> Dict[str, Any]:
+    """Load a project's ``.chat.json`` and apply it to the in-memory session.
+
+    Shared by the ``/load`` route and startup recovery so both restore the
+    conversation, sub-agent traces, mode, title, and plan identically — a
+    page refresh after a server restart then replays the active project's
+    history instead of a blank view. Returns the loaded session dict.
+    """
+    from server.plan_store import plan_store
+    from server.session_manager import session
+
+    data = load_session(chat_path)
+
+    session.agent_state["messages"] = data["messages"]
+    session.agent_state["replan_count"] = data["replan_count"]
+    session.agent_state["replan_history"] = data["replan_history"]
+    session.agent_state["recruiter_retry_count"] = data.get("recruiter_retry_count", 0)
+    session.subagent_states = data["subagent_states"]
+    session.pending_subagent_states.clear()
+    session.uploaded_pdfs = data["uploaded_pdfs"]
+    session.pending_images = []
+    session.mode = data["mode"]  # type: ignore[assignment]
+    session.ensure_display_state()
+    session.project_title = data.get("title", "") or ""
+    # A loaded project already has its title; don't re-summarize it.
+    session.project_title_generated = bool(session.project_title.strip())
+
+    plan_markdown = data.get("plan_markdown", "") or ""
+    if plan_markdown.strip():
+        plan_store.write_markdown(plan_markdown)
+    else:
+        plan_store.reset()
+
+    return data
+
+
 def read_session_title(path: Path) -> str:
     """Cheap title lookup without parsing the whole message list.
 
