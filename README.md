@@ -259,8 +259,25 @@ Flags:
 - `--docker` — force the Docker sandbox on.
 - `--quiet` / `-q` — suppress the streaming trace; print only the final answer.
 - `--model <id>` — override the model for both roles (e.g. `--model gpt-5.1`).
+- `--dataset <path>` — stage a reference dataset into `library/datasets/` before the
+  run; the agent reads it at `library/datasets/<name>`. Repeatable.
+- `--attach <path>` — stage a per-run file into the project's `uploads/`; the agent
+  reads it at `uploads/<name>`. Repeatable.
+- `--json` — emit a JSON object to stdout (`answer`, `project_id`, `elapsed`,
+  `artifacts`, `staged`) instead of plain text. Useful for scripting.
 - Pass `-` (or pipe via stdin) to read the prompt from stdin:
   `echo "long prompt" | tissueagent -`
+
+Examples:
+
+```bash
+# Stage a dataset and run an analysis, capturing structured output:
+tissueagent --json --dataset ./my_sample.h5ad \
+  "Summarize the cell types in library/datasets/my_sample.h5ad"
+
+# Attach a per-run file the agent should read:
+tissueagent --attach ./markers.csv "Interpret the genes in uploads/markers.csv"
+```
 
 Set your API credentials first (see [LLM credentials](#llm-credentials)). Runs are
 saved as projects, so a CLI run also shows up in the web UI's project list.

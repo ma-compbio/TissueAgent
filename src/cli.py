@@ -23,7 +23,19 @@ import logging
 import sys
 import threading
 import time
+from pathlib import Path
 from queue import Empty
+
+# Make the app importable regardless of how the CLI was launched. The code
+# lives under ``src/`` (imported as top-level modules) and the ``knowledge``
+# package sits at the repo root. The server relies on being launched from the
+# repo root with ``PYTHONPATH=src``; the installed console script has neither,
+# so we add both roots here before importing anything app-level.
+_SRC_ROOT = Path(__file__).resolve().parent
+_REPO_ROOT = _SRC_ROOT.parent
+for _p in (str(_SRC_ROOT), str(_REPO_ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
@@ -56,6 +68,31 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         "--model",
         default=None,
         help="Model id to use for both roles (e.g. 'gpt-5.1'). Defaults to the configured selection.",
+    )
+    p.add_argument(
+        "--dataset",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help=(
+            "Stage a reference dataset into library/datasets/ before the run; "
+            "the agent can read it at 'library/datasets/<name>'. Repeatable."
+        ),
+    )
+    p.add_argument(
+        "--attach",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help=(
+            "Stage a per-run file into the project's uploads/ before the run; "
+            "the agent can read it at 'uploads/<name>'. Repeatable."
+        ),
+    )
+    p.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit a JSON object to stdout (answer, project_id, elapsed, artifacts) instead of plain text.",
     )
     return p
 
@@ -108,6 +145,37 @@ def _drain_trace(queue, stop_event: threading.Event, quiet: bool) -> None:
                     _print_msg(payload, prefix="")
         except Exception as e:  # never let trace printing crash the run
             logging.debug("Trace print error: %s", e)
+
+
+def _stage_files(datasets: list[str], attachments: list[str]) -> list[str]:
+    """Copy --dataset / --attach files into the workspace; return ref paths.
+
+    Datasets go to ``library/datasets/`` (read-only reference), attachments to
+    the active project's ``uploads/``. Both live under DATA_DIR so the kernel
+    and file tools can reach them. Returns workspace-relative paths (e.g.
+    ``library/datasets/foo.h5ad``, ``uploads/bar.csv``) for the prompt.
+    """
+    import shutil
+
+    from config import DATASET_DIR, ACTIVE_PROJECT_DIR, PROJECT_UPLOADS_DIRNAME
+
+    refs: list[str] = []
+
+    def _copy(src_str: str, dest_dir: Path, rel_prefix: str) -> None:
+        src = Path(src_str).expanduser()
+        if not src.is_file():
+            raise FileNotFoundError(f"file not found: {src}")
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest = dest_dir / src.name
+        shutil.copy2(src, dest)
+        refs.append(f"{rel_prefix}/{src.name}")
+
+    for d in datasets:
+        _copy(d, DATASET_DIR, "library/datasets")
+    uploads_dir = ACTIVE_PROJECT_DIR / PROJECT_UPLOADS_DIRNAME
+    for a in attachments:
+        _copy(a, uploads_dir, "uploads")
+    return refs
 
 
 def _bootstrap(args: argparse.Namespace):
@@ -164,8 +232,26 @@ def _bootstrap(args: argparse.Namespace):
     return session, code_backend
 
 
-def run(prompt: str, args: argparse.Namespace) -> str:
-    """Run the pipeline on *prompt* and return the final answer text."""
+def _collect_artifacts() -> list[str]:
+    """Return workspace-relative paths of files written to the project outputs."""
+    from config import ACTIVE_PROJECT_DIR, PROJECT_OUTPUTS_DIRNAME
+
+    out_dir = ACTIVE_PROJECT_DIR / PROJECT_OUTPUTS_DIRNAME
+    if not out_dir.is_dir():
+        return []
+    return sorted(
+        f"{PROJECT_OUTPUTS_DIRNAME}/{p.relative_to(out_dir)}"
+        for p in out_dir.rglob("*")
+        if p.is_file()
+    )
+
+
+def run(prompt: str, args: argparse.Namespace) -> dict:
+    """Run the pipeline on *prompt*; return a result dict.
+
+    Keys: ``answer`` (str), ``project_id`` (str|None), ``elapsed`` (float),
+    ``artifacts`` (list[str]), ``staged`` (list[str] of input refs).
+    """
     from langchain_core.messages import HumanMessage
 
     from config import RECURSION_LIMIT
@@ -175,18 +261,32 @@ def run(prompt: str, args: argparse.Namespace) -> str:
     session, code_backend = _bootstrap(args)
 
     try:
-        # Mint a project so outputs land under a real project dir (kernel cwd,
-        # file tools, and persistence all key off this).
+        # Each CLI invocation is a fresh project: wipe the active shell (so a
+        # prior run's outputs don't leak into this run's artifact list) and
+        # mint a new id. Outputs land under this project dir — kernel cwd, file
+        # tools, and persistence all key off it.
         try:
-            from server.utils import write_active_project_id, read_active_project_id
+            from server.utils import write_active_project_id, clear_active_project_dir
             from datetime import datetime
 
-            if not read_active_project_id():
-                project_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                write_active_project_id(project_id)
-                session.project_id = project_id
+            clear_active_project_dir()
+            project_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            write_active_project_id(project_id)
+            session.project_id = project_id
         except Exception as e:
             logging.warning("Could not mint a project id: %s", e)
+
+        # Stage --dataset / --attach files (after the project exists) and tell
+        # the agent where to find them by appending a reference line.
+        staged: list[str] = []
+        if args.dataset or args.attach:
+            try:
+                staged = _stage_files(args.dataset, args.attach)
+            except FileNotFoundError as e:
+                raise SystemExit(f"error: {e}")
+            if staged:
+                listing = ", ".join(staged)
+                prompt = f"{prompt}\n\n[Staged input files (readable via the read tool / code): {listing}]"
 
         session.thread_id = _new_thread_id()
         user_message = HumanMessage(content=prompt)
@@ -201,7 +301,7 @@ def run(prompt: str, args: argparse.Namespace) -> str:
         stop_event = threading.Event()
         tracer = threading.Thread(
             target=_drain_trace,
-            args=(session.ui_event_queue, stop_event, args.quiet),
+            args=(session.ui_event_queue, stop_event, args.quiet or args.json),
             daemon=True,
         )
         tracer.start()
@@ -239,9 +339,16 @@ def run(prompt: str, args: argparse.Namespace) -> str:
         except Exception as e:
             logging.warning("Could not persist session: %s", e)
 
-        if not args.quiet:
+        if not (args.quiet or args.json):
             print(f"\n--- done in {elapsed:.1f}s ---", flush=True)
-        return answer
+
+        return {
+            "answer": answer.strip(),
+            "project_id": session.project_id,
+            "elapsed": round(elapsed, 2),
+            "artifacts": _collect_artifacts(),
+            "staged": staged,
+        }
     finally:
         if code_backend is not None:
             try:
@@ -254,8 +361,9 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_arg_parser().parse_args(argv)
 
     # Keep the default log stream on stderr so stdout carries the answer cleanly.
+    # --json implies quiet logging so stdout stays pure JSON.
     logging.basicConfig(
-        level=logging.WARNING if args.quiet else logging.INFO,
+        level=logging.WARNING if (args.quiet or args.json) else logging.INFO,
         format="%(levelname)s | %(message)s",
         stream=sys.stderr,
     )
@@ -266,13 +374,22 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        answer = run(prompt, args)
+        result = run(prompt, args)
     except KeyboardInterrupt:
         print("\ninterrupted", file=sys.stderr)
         return 130
+    except SystemExit as e:  # staging/validation errors carry a message
+        print(str(e), file=sys.stderr)
+        return 2
 
-    print("\n=== Final Answer ===\n" if not args.quiet else "", end="")
-    print(answer.strip())
+    if args.json:
+        import json
+
+        print(json.dumps(result, indent=2))
+    else:
+        if not args.quiet:
+            print("\n=== Final Answer ===\n", end="")
+        print(result["answer"])
     return 0
 
 
