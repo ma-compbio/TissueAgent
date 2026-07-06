@@ -1,5 +1,5 @@
 ---
-name: cell-type-deconvolution
+name: cell2location-deconvolution
 description: Estimate per-spot cell type composition on spot-based spatial data (10x Visium, Slide-seq, ST) by mapping a scRNA-seq reference with cell2location. Use when the user asks to deconvolve spots, infer cell type proportions/abundances, or "annotate cell types" on multi-cell spatial spots.
 applies_to: [spot_agent, single_cell_agent, coding_agent]
 status: enable
@@ -93,4 +93,8 @@ plt.tight_layout(); plt.savefig("celltype_abundance.png", dpi=150)
 - Implementation: `spot_agent/tools_impl/cell2location_visium_deconvolution_tool.py`.
 - Reference retrieval (agent `single_cell_agent`): `query_cellxgene_census_live_tool` and `retrieve_cellxgene_single_cell_tool` (`src/agents/agent_registry/single_cell_agent/tools.py`).
 - Related skill: [[cell-type-annotation]] for single-cell-resolution platforms.
+- Alternative methods: [[card-deconvolution]] — CARD (R), a spatially-aware
+  (CAR-prior) deconvolution via the coding agent's `r` tool; and
+  [[tangram-deconvolution]] — Tangram (Python/torch), scRNA-seq→spatial mapping.
+  Consider these when the user names CARD/Tangram or wants an alternative method.
 - External: cell2location docs (RegressionModel → Cell2location two-stage mapping); CZI CELLxGENE Census.

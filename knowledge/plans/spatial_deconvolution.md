@@ -22,7 +22,7 @@ description: >
 (If no reference) find + download a matched CELLxGENE reference → cell2location deconvolution to estimate per-spot cell type abundances (2–3 steps total)
 
 ## Details
-- Apply the `cell-type-deconvolution` skill.
+- Apply the `cell2location-deconvolution` skill.
 - **Reference step (only if no reference is provided), agent `single_cell_agent`:**
   - `query_cellxgene_census_live_tool` — filter CELLxGENE Census to match the spatial sample (species, tissue), `include_cell_type_counts=True`; pick the best match.
   - `retrieve_cellxgene_single_cell_tool` — download the chosen `dataset_id` to `outputs/datasets/<filename>`.

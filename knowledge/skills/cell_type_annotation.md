@@ -12,7 +12,7 @@ status: enable
 The data has **single-cell resolution** — each observation is one cell (MERFISH, Xenium, CosMx, seqFISH, or any scRNA-seq-like spatial object). You want **one cell type label per cell**, learned by transferring labels from an annotated scRNA-seq reference.
 
 - Use this skill when the user says "annotate cell types", "label transfer", "predict cell types per cell", or "map reference annotations onto my spatial cells".
-- **Do not** use it for spot-based platforms (10x Visium, Slide-seq, ST) where each spot is a mixture of cells — those need per-spot **deconvolution**, not a single label. See [[cell-type-deconvolution]].
+- **Do not** use it for spot-based platforms (10x Visium, Slide-seq, ST) where each spot is a mixture of cells — those need per-spot **deconvolution**, not a single label. See [[cell2location-deconvolution]].
 
 This codebase implements annotation with one method: **Harmony batch correction + an MLP classifier** trained in the integrated PCA space. There is no marker-based or ontology-LLM annotation tool here — do not promise those.
 
@@ -94,5 +94,5 @@ print(f"{low.sum()} cells below 0.5 confidence")
 - Internal tool: `harmony_transfer_tool` (`src/agents/agent_registry/cell_annotater_agent/tools.py`).
 - Implementation: `cell_annotater_agent/tools_impl/harmony_transfer.py` (Harmony integration + `MLPClassifier`; MyGene.info gene mapping).
 - Reference retrieval (agent `single_cell_agent`): `query_cellxgene_census_live_tool` and `retrieve_cellxgene_single_cell_tool` (`src/agents/agent_registry/single_cell_agent/tools.py`).
-- Related skill: [[cell-type-deconvolution]] for spot-based platforms.
+- Related skill: [[cell2location-deconvolution]] for spot-based platforms.
 - External: scanpy `sc.external.pp.harmony_integrate`; MyGene.info querymany; CZI CELLxGENE Census.
