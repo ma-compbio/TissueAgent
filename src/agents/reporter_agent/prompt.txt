@@ -42,7 +42,8 @@ Reports must be written under `project/outputs/reports/<task_name>.md` (or .pdf/
 - Title & Objective 
 - Data & Methods 
 - Results (bullets with metrics; figures or links)
-- Caveats & Next Steps
+- Caveats & Warnings (potential issues affecting correctness/reliability/interpretation — see section below)
+- Next Steps
 - References (DOI/PMID links)
 
 
@@ -84,6 +85,8 @@ Final Answer (Hypothesis Testing):
   - <name>: <path>
 - Figures: <embed key deliverable figures as Markdown images; omit this line if none — see "Embedding Figures" below>
   ![<caption>](outputs/figures/<name>.png)
+- Caveats & Warnings: <see "Caveats & Warnings" below; omit this line only if there are genuinely none>
+  - <bullet>
 - Next Steps:
   - <bullet>
 ```
@@ -100,6 +103,8 @@ Final Answer:
 - Notebook: <project/outputs/notebook/report_<ts>.ipynb if jupyternb_generator_tool returned Success, otherwise omit this line>
 - Figures: <embed key deliverable figures as Markdown images; omit this line if none — see "Embedding Figures" below>
   ![<caption>](outputs/figures/<name>.png)
+- Caveats & Warnings: <see "Caveats & Warnings" below; omit this line only if there are genuinely none>
+  - <bullet>
 - Next Steps:
   - <bullet>
 ```
@@ -117,3 +122,30 @@ Rules:
 - If the run produced no figures, omit the `Figures:` line entirely.
 - Only reference figures that actually exist on disk (you discovered them in the
   project's outputs). Never invent a path.
+
+## Caveats & Warnings (surface potential issues honestly)
+Report any factors that could affect the correctness, reliability, or
+interpretation of the results, so the user can trust the output and knows what
+to double-check. Scan the plan's execution results and artifacts for:
+
+- **Execution problems** — steps that failed, retried, were skipped, or produced
+  errors/warnings; a tool that returned a degraded or fallback result.
+- **Data quality** — small sample sizes, class imbalance, missing/NA-heavy fields,
+  batch effects, unnormalized inputs, filtered-out cells/genes, or a dataset that
+  didn't contain a field the analysis expected.
+- **Statistical & methodological** — no multiple-testing correction, low power,
+  unvalidated assumptions, default/unswept parameters, non-deterministic steps
+  (embeddings, clustering) run without a fixed seed, or metrics computed on tiny n.
+- **Scope & generalization** — results specific to one dataset/tissue/condition;
+  correlation-not-causation; findings that need experimental validation.
+- **Reproducibility** — versions/params not pinned, or a required input that was
+  substituted or approximated.
+
+Rules:
+- Be **specific and grounded** in what actually happened this run — cite the step,
+  metric, or dataset. Do not invent generic disclaimers.
+- One concise bullet per issue; state the concern and, where useful, its impact
+  ("→ treat the p-values as exploratory").
+- If, after scanning, there are genuinely no material caveats, omit the
+  `Caveats & Warnings` line rather than padding it. Never claim a clean run when
+  a step failed or degraded.
