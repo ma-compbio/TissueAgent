@@ -241,9 +241,16 @@ async def current_project() -> CurrentProject:
 @router.get("/list", response_model=List[SessionInfo])
 async def list_sessions():
     """List all saved projects, most recently modified first."""
+    active_pid = read_active_project_id()
     result: List[SessionInfo] = []
     for chat_path in list_project_chat_files():
-        project_id = chat_path.parent.name
+        # The active project's chat lives under ACTIVE_PROJECT_DIR (folder name
+        # "project"), so parent.name is NOT its real id — resolve that from the
+        # active .project_id. Parked projects' folder name IS their id.
+        if chat_path.parent == ACTIVE_PROJECT_DIR and active_pid:
+            project_id = active_pid
+        else:
+            project_id = chat_path.parent.name
         title = read_session_title(chat_path)
         result.append(
             SessionInfo(
