@@ -234,6 +234,37 @@ uv sync
 
 See `demo/` for examples on how to invoke TissueAgent from a notebook.
 
+#### CLI
+
+TissueAgent ships a command-line entry point that runs the full
+planner → recruiter → manager → evaluator → reporter pipeline on a single
+prompt (always **autopilot** — copilot pauses are a web-UI feature). It streams
+the agent trace to stderr and prints the final answer to stdout.
+
+After `pip install -e .`, the `tissueagent` console script is available:
+
+```bash
+tissueagent "Summarize the cell types in library/datasets/overall_merfish.h5ad"
+```
+
+Or run the module directly without installing (from the repo root):
+
+```bash
+PYTHONPATH=$(pwd)/src python -m cli "your prompt here"
+```
+
+Flags:
+
+- `--no-docker` — use a local Jupyter Kernel Gateway instead of the Docker sandbox.
+- `--docker` — force the Docker sandbox on.
+- `--quiet` / `-q` — suppress the streaming trace; print only the final answer.
+- `--model <id>` — override the model for both roles (e.g. `--model gpt-5.1`).
+- Pass `-` (or pipe via stdin) to read the prompt from stdin:
+  `echo "long prompt" | tissueagent -`
+
+Set your API credentials first (see [LLM credentials](#llm-credentials)). Runs are
+saved as projects, so a CLI run also shows up in the web UI's project list.
+
 > [!TIP]
 > All agents use GPT-5 by default. To save API tokens, models with lower reasoning capabilities can be used. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
 

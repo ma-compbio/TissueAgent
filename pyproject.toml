@@ -66,6 +66,22 @@ dependencies = [
     "websocket-client>=1.7.0",
 ]
 
+[project.scripts]
+tissueagent = "cli:main"
+
+[tool.setuptools]
+# Code lives under src/ and is imported as top-level modules (the repo runs
+# with PYTHONPATH=src). Point package discovery at src so `pip install -e .`
+# exposes them and the `tissueagent` console script can import `cli`.
+package-dir = { "" = "src" }
+# Top-level single-file modules under src/ (not packages) that ship too.
+py-modules = ["cli", "config", "models", "agent_settings", "api_keys", "logger"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["agents*", "graph*", "server*", "eval_registry*"]
+exclude = ["frontend*"]
+
 [tool.ruff]
 line-length = 100
 force-exclude = true

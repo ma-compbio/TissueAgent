@@ -60,6 +60,13 @@ _cancel_requested = threading.Event()
 # while a run is in flight.
 _current_run_task: "asyncio.Task | None" = None
 
+# Monotonic run id. Each run captures its own id; a cancelled/orphaned run whose
+# id no longer matches ``_run_generation`` must NOT mutate shared session state
+# (is_running, queues, run_complete) — otherwise, after Stop → new run, the old
+# run's cleanup would clobber the new run's ``is_running`` and wedge the session
+# so no further runs can start.
+_run_generation: int = 0
+
 
 def _ws_connected(ws: WebSocket) -> bool:
     """Return True when *ws* is still safe to send on."""
@@ -493,6 +500,12 @@ async def _run_graph(ws: WebSocket, graph_input):
     # still tracks every message produced so far in this turn.
     rendered_prefix = len(session.agent_state["messages"])
 
+    # Claim this run's identity. The finally block only tears down shared state
+    # if we're still the current run — see _run_generation.
+    global _run_generation
+    _run_generation += 1
+    my_run_id = _run_generation
+
     session.is_running = True
     _cancel_requested.clear()
     start_time = time.perf_counter()
@@ -542,6 +555,12 @@ async def _run_graph(ws: WebSocket, graph_input):
                 return
             await _drain_queues(ws)
             await asyncio.sleep(0.05)
+
+        # The worker finished. If Stop landed in the same tick (or a new run
+        # superseded us), don't emit run_complete or mutate state — bail.
+        if _cancel_requested.is_set() or my_run_id != _run_generation:
+            logging.info("Run finished but was cancelled/superseded; discarding result.")
+            return
 
         result = future.result()
         # Mirror back so the rest of the codebase can keep reading
@@ -626,11 +645,15 @@ async def _run_graph(ws: WebSocket, graph_input):
             "detail": str(e),
         })
     finally:
-        session.is_running = False
-        if _current_run_future is future:
-            _current_run_future = None
-        if _ws_connected(ws):
-            await _drain_queues(ws)
+        # Only tear down shared state if we're still the current run. A run
+        # that was Stopped (and possibly superseded by a new run) must not
+        # clobber is_running or drain onto the new run's stream.
+        if my_run_id == _run_generation:
+            session.is_running = False
+            if _current_run_future is future:
+                _current_run_future = None
+            if _ws_connected(ws):
+                await _drain_queues(ws)
 
 
 async def _emit_pause(ws: WebSocket, pause_label: str) -> None:
