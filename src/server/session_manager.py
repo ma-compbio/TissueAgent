@@ -74,6 +74,9 @@ class SessionState:
         # session or post-clear).
         self.project_id: Optional[str] = None
         self.project_title: str = ""
+        # True once an LLM-summarized title has been generated for the
+        # current project, so we don't re-summarize on every save.
+        self.project_title_generated: bool = False
 
         # Core conversation state
         self.agent_state: Dict[str, Any] = {

@@ -647,6 +647,63 @@ def derive_session_title(messages: Sequence[BaseMessage]) -> str:
     return ""
 
 
+# Cap for LLM-generated titles. A summarized label should be short; if the
+# model returns something longer we ellipsise it like the fallback path.
+_LLM_TITLE_MAX_LEN = 48
+
+
+async def generate_session_title(messages: Sequence[BaseMessage]) -> str:
+    """Generate a concise, LLM-summarized title from the first user message.
+
+    Sends the opening prompt to the cheaper ``worker`` model and asks for a
+    short (3–6 word) label. Falls back to :func:`derive_session_title` on any
+    error, empty input, or empty model output — the caller always gets a
+    usable string (possibly empty if there's no user text at all).
+    """
+    # Extract the first non-empty user prompt.
+    prompt_text = ""
+    for m in messages:
+        if isinstance(m, HumanMessage):
+            candidate = stringify_chat_content(m.content).strip()
+            if candidate:
+                prompt_text = candidate
+                break
+
+    fallback = derive_session_title(messages)
+    if not prompt_text:
+        return fallback
+
+    try:
+        from langchain_core.messages import SystemMessage
+
+        from models import build_chat_model, get_model_id
+
+        # Keep the prompt bounded so a huge first message can't blow up cost.
+        # No temperature/max_tokens overrides: reasoning models (e.g. GPT-5)
+        # reject or mishandle them, and the prompt + post-processing already
+        # constrain the output. build_chat_model handles provider defaults.
+        snippet = prompt_text[:2000]
+        model = build_chat_model(get_model_id("worker"))
+        system = SystemMessage(content=(
+            "You write concise titles for a saved conversation. Given the user's "
+            "first message, reply with a 3–6 word title in Title Case that captures "
+            "the task. No quotes, no trailing punctuation, no preamble — output only "
+            "the title."
+        ))
+        response = await model.ainvoke([system, HumanMessage(content=snippet)])
+        title = stringify_chat_content(response.content).strip()
+        # Strip stray wrapping quotes and take the first line only.
+        title = title.splitlines()[0].strip().strip('"').strip("'").strip()
+        if not title:
+            return fallback
+        if len(title) > _LLM_TITLE_MAX_LEN:
+            title = title[: _LLM_TITLE_MAX_LEN - 1].rstrip() + "…"
+        return title
+    except Exception as e:
+        logging.warning(f"LLM title generation failed, using fallback: {e}")
+        return fallback
+
+
 def format_session_label(session_path: Path) -> str:
     """Format a session path into a human-readable timestamp label."""
     stem = session_path.stem
@@ -679,6 +736,7 @@ def save_session(
     plan_markdown: str = "",
     prompts_snapshot: Optional[Dict[str, str]] = None,
     project_id: Optional[str] = None,
+    title: Optional[str] = None,
 ) -> Path:
     """Save a chat session to a timestamped JSON file.
 
@@ -713,7 +771,9 @@ def save_session(
 
     payload = {
         "saved_at": saved_at,
-        "title": derive_session_title(messages),
+        # Prefer an explicitly supplied title (e.g. an LLM-summarized one)
+        # so it isn't clobbered by the cheap first-line fallback on re-save.
+        "title": (title.strip() if title and title.strip() else derive_session_title(messages)),
         "messages": [message_to_serializable(m) for m in messages],
         "subagent_states": subagent_states,
         "uploaded_pdfs": uploaded_pdfs,
@@ -914,6 +974,7 @@ def switch_active_project(new_id: Optional[str]) -> None:
             session.project_id = new_id
             if new_id is None:
                 session.project_title = ""
+                session.project_title_generated = False
         except Exception:
             pass
 

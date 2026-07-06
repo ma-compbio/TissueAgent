@@ -123,8 +123,12 @@ def _persist_project(notify_ws: Optional[WebSocket] = None) -> None:
             plan_markdown=plan_store.read_markdown(),
             prompts_snapshot=collect_prompts_snapshot(),
             project_id=session.project_id,
+            # Preserve an already-generated (LLM) title across re-saves;
+            # otherwise fall back to the cheap first-line derivation.
+            title=session.project_title if session.project_title_generated else None,
         )
-        session.project_title = derive_session_title(messages)
+        if not session.project_title_generated:
+            session.project_title = derive_session_title(messages)
     except Exception as e:
         # Auto-save must never break the run. Log + continue.
         logging.warning(f"Auto-save failed: {e}")
@@ -146,6 +150,32 @@ async def _broadcast_project_saved(ws: WebSocket) -> None:
             "title": session.project_title,
         },
     })
+
+
+async def _ensure_llm_title(ws: WebSocket) -> None:
+    """Generate an LLM-summarized project title once, then persist + broadcast.
+
+    No-op if there's no active project or a title was already generated. The
+    generation is best-effort: failures fall back to the first-line title and
+    never interrupt the run.
+    """
+    if not session.project_id or session.project_title_generated:
+        return
+    messages = session.agent_state.get("messages", [])
+    if not messages:
+        return
+    try:
+        from server.utils import generate_session_title
+
+        title = await generate_session_title(messages)
+        # Mark generated even if empty, so we don't retry every message.
+        session.project_title_generated = True
+        if title:
+            session.project_title = title
+            _persist_project()
+            await _broadcast_project_saved(ws)
+    except Exception as e:
+        logging.warning(f"Title generation step failed: {e}")
 
 
 @router.websocket("/ws/chat")
@@ -339,6 +369,8 @@ async def _handle_user_message(ws: WebSocket, data: dict):
         _ensure_project_id()
         _persist_project()
         await _broadcast_project_saved(ws)
+        # Summarize the first prompt into a concise project title (once).
+        await _ensure_llm_title(ws)
     except Exception as e:
         logging.warning(f"Auto-save (pre-run) failed: {e}")
 

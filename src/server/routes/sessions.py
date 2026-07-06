@@ -312,6 +312,8 @@ async def load_selected_session(filename: str):
     session.mode = data["mode"]  # type: ignore[assignment]
     session.ensure_display_state()
     session.project_title = data.get("title", "") or ""
+    # A loaded project already has its title; don't re-summarize it.
+    session.project_title_generated = bool(session.project_title.strip())
 
     from server.plan_store import plan_store
     plan_markdown = data.get("plan_markdown", "") or ""
