@@ -30,8 +30,9 @@ that mapping to (a) transfer cell-type labels / proportions to spots and
 
 ## Prerequisites
 
-- Install once per kernel session: `pip install tangram-sc`, then
-  `import tangram as tg`. Runs on the **Python kernel** (no R/Docker needed,
+- Tangram (`tangram-sc`) **is pre-installed** (in `pyproject.toml` and the Docker
+  image), so just `import tangram as tg`. If missing on a custom env,
+  `pip install tangram-sc`. Runs on the **Python kernel** (no R/Docker needed,
   unlike [[card-deconvolution]]).
 - **GPU strongly recommended** (`device="cuda:0"`); CPU works but is slow,
   especially `mode="cells"`/`"constrained"` with many cells/epochs.
@@ -73,9 +74,9 @@ that mapping to (a) transfer cell-type labels / proportions to spots and
 
 ## Workflow
 
-0. **Install + import** (once per kernel session):
+0. **Import** (`tangram-sc` is pre-installed; `pip install tangram-sc` only if a
+   custom env lacks it):
    ```python
-   # pip install tangram-sc   (run via the shell/first cell if not present)
    import scanpy as sc, tangram as tg
    ```
 1. **Load** `adata_sc` (reference) and `adata_sp` (spatial); confirm the
@@ -100,7 +101,7 @@ that mapping to (a) transfer cell-type labels / proportions to spots and
 
 ## Code Template
 
-**Step 0 — install + load inputs**
+**Step 0 — import + load inputs** (`tangram-sc` is pre-installed)
 
 ```python
 import scanpy as sc, tangram as tg

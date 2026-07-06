@@ -32,9 +32,10 @@ non-spatial methods.
   only in the **Docker sandbox** (`docker/Dockerfile`, `FROM r-base` + IRkernel).
   A local Kernel Gateway typically has **Python only** — enable the Docker
   sandbox in Settings before running CARD, or the `r` tool will have no R kernel.
-- CARD is **not pre-installed** in the image. Install it once per kernel session
-  (see Workflow step 0). Installing from GitHub pulls compilation deps; if it
-  fails, record it as an obstacle rather than silently switching methods.
+- CARD **is pre-installed in the Docker image** (`docker/Dockerfile`), so just
+  `library(CARD)`. If it's somehow missing (custom/older image), fall back to the
+  install shown in Workflow step 0; if that install fails, record it as an
+  obstacle rather than silently switching methods.
 
 ## Input
 
@@ -87,10 +88,11 @@ non-spatial methods.
 
 ## Workflow
 
-0. **Environment + install (once per kernel session).** Confirm the R kernel is
-   reachable (Docker sandbox on). Install CARD:
+0. **Environment.** Confirm the R kernel is reachable (Docker sandbox on) and
+   load CARD — it's pre-installed in the image:
    ```r
    if (!requireNamespace("CARD", quietly = TRUE)) {
+     # Fallback only if the image doesn't already ship CARD.
      install.packages(c("remotes"), repos = "https://cloud.r-project.org")
      remotes::install_github("YMa-lab/CARD")
    }
