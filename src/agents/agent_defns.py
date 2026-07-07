@@ -25,6 +25,7 @@ from agents.agent_registry.critic_agent.prompt import (
     CriticAgentDescription,
     CriticAgentPrompt,
 )
+from agents.agent_registry.cellvoyager_agent import agent_definition as CellVoyagerAgentDef
 from agents.agent_registry.critic_agent.tools import CriticTools
 from agents.agent_registry.gene_agent import agent_definition as GeneAgentDef
 from agents.agent_registry.hypothesis_agent.prompt import HypothesisAgentDescription
@@ -202,6 +203,14 @@ AgentDefns: list[ReActAgent | CustomAgent] = [
         prompt=GeneAgentDef.prompt,
         tools=GeneAgentDef.tools,
         model_ctor=GeneAgentDef.model_ctor,
+    ),
+    ReActAgent(
+        id=CellVoyagerAgentDef.id,
+        name=CellVoyagerAgentDef.name,
+        description=CellVoyagerAgentDef.description,
+        prompt=CellVoyagerAgentDef.prompt,
+        tools=CellVoyagerAgentDef.tools,
+        model_ctor=CellVoyagerAgentDef.model_ctor,
     ),
     ReActAgent(
         id="cell_annotator",
