@@ -190,14 +190,16 @@ def _flush_active_session_to_disk() -> None:
 
 @router.post("/clear")
 async def clear_current_session():
-    """Wipe the current in-memory session.
+    """Start a new project: park the current one, reset to a clean slate.
 
-    Clears chat history, sub-agent traces, file metadata, the on-disk
-    plan, and the LangGraph thread state. The on-disk project file (if
-    any) is left alone — this is "start a new project", not "delete the
-    current one". Refuses while the agent is running; the caller should
-    cancel an in-flight run first. Returns the cleared mode so the client
-    can update its toggle if it cares (mode itself is preserved, since it's a user preference).
+    "Start a new project" must (1) preserve the current conversation +
+    outputs as a standalone project in the list, and (2) leave the session
+    ready to mint a *fresh* project on the next prompt. So we flush the
+    in-memory state to disk, then ``switch_active_project(None)`` to park
+    ``workspace/project/`` → ``projects/<old_id>/`` and recreate an empty
+    active shell (which also clears ``session.project_id``). Without the
+    park + id-clear, the next prompt would reuse the old id and overwrite
+    the just-saved project in place. Refuses while the agent is running.
     """
     if session.is_running:
         raise HTTPException(
@@ -208,7 +210,27 @@ async def clear_current_session():
             ),
         )
 
+    # 1. Flush the current project's in-memory state (esp. subagent traces)
+    #    to its .chat.json so the parked copy is complete.
+    _flush_active_session_to_disk()
+
+    # 2. Park the current project (→ projects/<old_id>/) and stand up a fresh
+    #    empty active shell. Only meaningful when a project is actually active
+    #    with a saved conversation; a blank shell has nothing to park.
+    had_project = bool(session.project_id and session.agent_state.get("messages"))
+    if had_project:
+        try:
+            switch_active_project(None)
+        except Exception as e:
+            logging.warning(f"Park-on-new-project failed: {e}")
+
+    # 3. Wipe the in-memory session and plan for the fresh start.
     session.reset()
+    # switch_active_project(None) clears session.project_id; ensure it's None
+    # even on the no-project path so the next prompt mints a new one.
+    session.project_id = None
+    session.project_title = ""
+    session.project_title_generated = False
 
     from server.plan_store import plan_store
     plan_store.reset()

@@ -190,6 +190,9 @@ export default function App() {
     if (result !== true) return result;
     ws.reconnect();
     await planHook.refresh();
+    // Refresh the project list so the just-parked conversation shows up as a
+    // standalone project (the server parked it on clear).
+    await session.fetchSessions();
     setFileBrowserRefreshKey((k) => k + 1);
     return true;
   }, [session, ws, planHook]);
