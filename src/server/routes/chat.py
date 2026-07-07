@@ -994,18 +994,44 @@ async def _drain_queues(ws: WebSocket):
         session.pending_subagent_states.append((agent_name, final_state, invocation_id))
 
 
+# Manager tools that dispatch a sub-agent internally (via _invoke_via_transfer_tool),
+# so their ToolMessage is the anchor a dispatched sub-agent state links to. The
+# manager's OTHER tools (read, glob, plan_updated) don't dispatch — skip those.
+_DISPATCHING_MANAGER_TOOLS = {"next_step", "retry_step"}
+
+
 def _link_subagent_states(rendered_prefix: int) -> list[str]:
-    """Link tool message IDs to pending sub-agent states after agent completion."""
+    """Link tool message IDs to pending sub-agent states after agent completion.
+
+    A sub-agent is anchored to either a ``*_transfer_tool`` ToolMessage (direct
+    dispatch) or a manager ``next_step``/``retry_step`` ToolMessage (the manager
+    wraps its dispatch inside these — see ``manager_agent.tools``). Without the
+    latter, sub-agents launched by the manager are never linked into
+    ``session.subagent_states`` and their trace cards vanish on save/reload.
+
+    Non-dispatching manager tools (``read``/``glob``/``plan_updated``) are skipped.
+    A dispatching tool that did NOT actually run a sub-agent (e.g. ``next_step``
+    that only reported "plan complete") is skipped too — it leaves ``pending``
+    untouched, so we only consume a pending state when one exists.
+    """
     new_messages = session.agent_state["messages"][rendered_prefix:]
     pending = session.pending_subagent_states
     linked: list[str] = []
 
+    non_dispatch_manager = {
+        t.name for t in ManagerTools if t.name not in _DISPATCHING_MANAGER_TOOLS
+    }
+
     for message in new_messages:
         if not isinstance(message, ToolMessage):
             continue
-        if message.name in {t.name for t in ManagerTools}:
+        name = str(message.name or "")
+        # Skip the manager's non-dispatching tools entirely.
+        if name in non_dispatch_manager:
             continue
-        if not str(message.name or "").endswith("_transfer_tool"):
+        is_dispatcher = name in _DISPATCHING_MANAGER_TOOLS
+        is_transfer = name.endswith("_transfer_tool")
+        if not (is_dispatcher or is_transfer):
             continue
 
         tool_id = message.id
@@ -1015,8 +1041,15 @@ def _link_subagent_states(rendered_prefix: int) -> list[str]:
         if getattr(message, "status", None) == "error":
             session.subagent_states[tool_id] = (message.name, message.content, None)
         elif not pending:
-            logging.error(f"No agent state found for message {message}")
-            session.subagent_states[tool_id] = ("agent not found", None, None)
+            # A dispatching tool with no pending state didn't actually run a
+            # sub-agent this time (e.g. next_step hit "plan complete"). For a
+            # transfer tool this is unexpected; log it, but don't fabricate a
+            # bogus card for a next_step that simply advanced the cursor.
+            if is_transfer:
+                logging.error(f"No agent state found for message {message}")
+                session.subagent_states[tool_id] = ("agent not found", None, None)
+                linked.append(tool_id)
+            continue
         else:
             agent_name, final_state, invocation_id = pending.popleft()
             session.subagent_states[tool_id] = (agent_name, final_state, invocation_id)

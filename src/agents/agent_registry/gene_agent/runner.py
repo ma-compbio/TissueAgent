@@ -33,6 +33,7 @@ from typing import Sequence
 
 from agents.llm_compat import patch_openai_legacy_api
 from config import DATA_DIR, active_project_outputs
+from logger import logger
 
 # Two invocations must not chdir at the same time — the process cwd is shared
 # state. The lock is coarse-grained (whole cascade run) because the upstream
@@ -56,6 +57,85 @@ _UPSTREAM_OUTPUT_DIRS = [
     "Outputs/GPT-4",
     "Verification Reports/Cascade",
 ]
+
+# The cascade verifies every derived claim against NCBI *sequentially*, so runtime
+# scales with the number of genes (a ~40-gene list took ~1 hour). Cap the input to
+# keep runs interactive; callers should pre-rank and pass the most significant
+# genes. This is a safety net — the plan/coding step is expected to trim first.
+_MAX_GENES = 10
+
+
+class _ProgressTee(io.TextIOBase):
+    """A stdout replacement that captures the cascade output *and* streams progress.
+
+    The upstream ``GeneAgent`` cascade ``print()``s section markers and per-claim
+    lines but only returns at the very end, so a caller redirecting stdout into a
+    plain buffer sees nothing for the (many-minute) duration of the run. This tee:
+
+    * accumulates every write into ``buffer`` (used for the tool's return value), and
+    * for each *completed* line, emits a concise ``logger.info`` progress message so
+      the run is visibly proceeding in the UI/log stream.
+
+    It translates the cascade's noisy markers into a running tally: after each
+    ``=====Topic Claim=====`` / ``=====Analysis Claim=====`` header the following
+    lines are verified claims, so we count them (``verifying N…``). Upstream code is
+    left untouched — this only observes its stdout.
+    """
+
+    # Section markers the cascade prints (see upstream/main_cascade.py).
+    _PHASES = {
+        "=====Summary=====": "initial GPT draft written",
+        "=====Topic Claim=====": "process-name claims generated — verifying",
+        "=====Updated Topic=====": "process name revised from verification",
+        "=====Analysis Claim=====": "analysis claims generated — verifying",
+        "====Final Update====": "final verified narrative written",
+    }
+
+    def __init__(self, tag: str) -> None:
+        super().__init__()
+        self.buffer = io.StringIO()
+        self._tag = tag
+        self._pending = ""
+        # Which verification loop we're in and how many claims we've seen there.
+        self._phase: str | None = None
+        self._claim_count = 0
+
+    def write(self, s: str) -> int:  # type: ignore[override]
+        self.buffer.write(s)
+        self._pending += s
+        while "\n" in self._pending:
+            line, self._pending = self._pending.split("\n", 1)
+            self._emit_line(line.strip())
+        return len(s)
+
+    def _emit_line(self, line: str) -> None:
+        if not line:
+            return
+        phase_msg = self._PHASES.get(line)
+        if phase_msg is not None:
+            if line in ("=====Topic Claim=====", "=====Analysis Claim====="):
+                self._phase = line
+                self._claim_count = 0
+            else:
+                self._phase = None
+            logger.info("GeneAgent[%s]: %s", self._tag, phase_msg)
+            return
+        # Inside a verification loop, each "Original_claim..."/claim line that the
+        # cascade prints marks one more verified claim. Count the claim headers
+        # (lines the cascade prints right before its verification result).
+        if self._phase and line.startswith("Claim") is False and len(line) > 3:
+            # Heuristic: the cascade prints the claim string then its result; count
+            # transitions to avoid double-counting by only ticking on claim-looking
+            # lines (sentence-like, not the verification JSON/dict result).
+            if line[0].isalpha() and line.endswith((".", "?", "!")):
+                self._claim_count += 1
+                logger.info(
+                    "GeneAgent[%s]: verifying claim %d…", self._tag, self._claim_count
+                )
+
+    def getvalue(self) -> str:
+        """Return everything written so far (mirrors ``io.StringIO.getvalue``)."""
+        return self.buffer.getvalue()
 
 
 def _ensure_upstream_on_path() -> None:
@@ -119,6 +199,9 @@ def run_geneagent_cascade(
 
     Args:
         gene_list: Iterable of gene symbols (case-insensitive; blanks ignored).
+            Order matters: only the first ``_MAX_GENES`` are used (the cascade is
+            slow and scales with gene count), so pass the most significant genes
+            first (e.g. ranked by adjusted P / effect size).
         request_id: Optional identifier recorded with the run artifacts.
             Defaults to a UTC timestamp.
 
@@ -130,9 +213,27 @@ def run_geneagent_cascade(
         RuntimeError: if the upstream submodule is missing or
             ``OPENAI_API_KEY`` is unavailable.
     """
-    genes = [g.strip() for g in gene_list if g and g.strip()]
+    # Dedup while preserving order (first occurrence wins), dropping blanks.
+    seen: set[str] = set()
+    genes: list[str] = []
+    for g in gene_list:
+        g = g.strip()
+        if g and g not in seen:
+            seen.add(g)
+            genes.append(g)
     if not genes:
         raise ValueError("gene_list must contain at least one non-empty gene symbol.")
+
+    # Cap to keep the sequential per-claim verification interactive.
+    if len(genes) > _MAX_GENES:
+        logger.warning(
+            "GeneAgent: gene_list had %d genes; using the first %d (pass genes "
+            "pre-ranked by significance). Dropped: %s",
+            len(genes),
+            _MAX_GENES,
+            ", ".join(genes[_MAX_GENES:]),
+        )
+        genes = genes[:_MAX_GENES]
 
     run_identifier = request_id or datetime.now(timezone.utc).strftime("run_%Y%m%d_%H%M%S")
     # Per-project: drop runs under the active project's outputs/ so they
@@ -145,8 +246,17 @@ def run_geneagent_cascade(
     for rel in _UPSTREAM_OUTPUT_DIRS:
         (run_directory / rel).mkdir(parents=True, exist_ok=True)
 
-    stdout_buffer = io.StringIO()
+    # The cascade streams progress through this tee (captures for the return
+    # value *and* logs live markers), so the run is visibly proceeding instead
+    # of appearing hung during its many-minute per-claim verification loops.
+    stdout_buffer = _ProgressTee(run_identifier)
     raw_result = None
+    logger.info(
+        "GeneAgent[%s]: starting cascade for %d genes (this can take several "
+        "minutes — it verifies each claim against NCBI sequentially).",
+        run_identifier,
+        len(genes),
+    )
     # Serialize the chdir + cascade around a process-wide lock. os.chdir is
     # process-global state, so two concurrent runs would otherwise clobber
     # each other's working directory mid-run.
@@ -161,6 +271,7 @@ def run_geneagent_cascade(
         finally:
             os.chdir(prev_cwd)
 
+    logger.info("GeneAgent[%s]: cascade finished.", run_identifier)
     stdout_text = stdout_buffer.getvalue()
     final_response_path = run_directory / _FINAL_RESPONSE_REL
     verification_path = run_directory / _VERIFICATION_REL

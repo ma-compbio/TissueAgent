@@ -19,7 +19,7 @@ from agents.agent_registry.hypothesis_agent.prompt import (
     HypothesisAgentPrompt,
     HypothesisAgentDescription,
 )
-from graph.ui_events import emit_message, subagent_invocation
+from graph.ui_events import emit_message, stash_completed_subagent, subagent_invocation
 
 from config import DATA_DIR, LIBRARY_DIR, PDF_UPLOADS_DIR, active_project_outputs
 
@@ -202,6 +202,10 @@ def create_hypothesis_agent(
             )
 
         state_queue.put((id, final_state, invocation_id))
+        # Emit the finished card inline (see coding_agent/model.py): pair with
+        # the dispatching ToolMessage.id via the wrapping tool_node so the live
+        # trace flips to the completed card immediately, not at run_complete.
+        stash_completed_subagent(id, final_state, invocation_id)
         result = final_state["messages"][-1].content
 
         # Artifact validation is owned by the manager's ``next_step`` / ``retry_step``

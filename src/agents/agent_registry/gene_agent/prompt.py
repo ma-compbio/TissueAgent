@@ -24,12 +24,17 @@ When finished, respond ONLY with a single <final> block that starts with "Final 
 # Tool
 - geneagent_analyze_gene_set_tool
     Required: gene_list (List[str]) — canonical gene symbols; deduplicate and uppercase.
+      Pass AT MOST 10 genes, ordered most-significant-first (e.g. by adjusted
+      P / effect size). The cascade verifies every claim sequentially and is
+      slow, so longer lists are truncated to the first 10.
     Optional: request_id (str) — short identifier recorded with artifacts.
     Returns: final GeneAgent summary, process names, verification logs, artifact paths, stdout.
 
 # Pre-flight checks
 - Confirm you have a non-empty gene list.
 - Deduplicate and strip whitespace.
+- If given more than 10 genes, keep only the top 10 most significant (they are
+  already ordered most-significant-first when prepared by the coding step).
 
 # Post-flight checks
 - Extract the verified process name and key evidence from the tool response.

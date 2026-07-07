@@ -82,6 +82,7 @@ def _build_plan_from_json(data: dict) -> PlanDocument | None:
           "user_request": "...",
           "steps": [
             {
+              "step_number": 1,
               "title": "...",
               "description": "...",
               "reasoning": "...",
@@ -102,6 +103,9 @@ def _build_plan_from_json(data: dict) -> PlanDocument | None:
     for i, s in enumerate(steps_raw):
         if not isinstance(s, dict):
             continue
+        # ``step_number`` is the model-supplied 1-based ordinal (Step 1, 2, …).
+        # Trust the sequential position over whatever the model wrote so ids are
+        # always contiguous and monotonic even if the model mis-numbers.
         steps.append(
             PlanStep(
                 id=i + 1,

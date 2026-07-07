@@ -23,7 +23,7 @@ from agents.agent_registry.coding_agent.prompt import CodingAgentPrompt
 from config import DATA_DIR, ROOT
 from agents.agent_tools import file_read_write_tools
 from graph.node_factories import AgentState, create_agent_node, create_tool_node
-from graph.ui_events import emit_message, subagent_invocation
+from graph.ui_events import emit_message, stash_completed_subagent, subagent_invocation
 
 
 def create_coding_agent(
@@ -203,6 +203,11 @@ def create_coding_agent(
                 {"messages": [message], "skill_prompt": skill_prompt_text}
             )
         state_queue.put((id, final_state, invocation_id))
+        # Hand off to the wrapping tool_node so it pairs this final state with
+        # the dispatching ToolMessage.id and emits a subagent_state event
+        # inline — otherwise the live-trace card lingers until run_complete
+        # instead of flipping to the finished card when the agent is done.
+        stash_completed_subagent(id, final_state, invocation_id)
         return final_state["messages"][-1].content
 
     tool = StructuredTool.from_function(

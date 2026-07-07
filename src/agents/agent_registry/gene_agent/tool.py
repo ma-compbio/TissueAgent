@@ -14,7 +14,10 @@ GeneAgentTools: list[StructuredTool] = [
         description=(
             "Runs the NCBI GeneAgent cascade to propose and verify "
             "biological process names for a gene set. "
-            "Arguments: gene_list (List[str]), optional request_id (str). "
+            "Arguments: gene_list (List[str], at most 10 canonical symbols, "
+            "passed most-significant-first — the cascade verifies each claim "
+            "sequentially and is slow, so longer lists are truncated to the "
+            "first 10), optional request_id (str). "
             "Returns the final summary, extracted process names, "
             "verification log text, and artifact paths."
         ),

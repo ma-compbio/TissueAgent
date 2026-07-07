@@ -40,7 +40,8 @@ You receive the output of an automatic verifier as the end of every plan in the 
 - You may reword plan instructions for clarity when forwarding them to a sub-agent.
 - Do not add instructions or scope beyond what the plan specifies.
 - Do not preface your instruction with a role assignment such as "You are the coding agent".
-- Retry a step at most twice before emitting a final response to the user that a step cannot be completely. 
+- Some sub-agents take inline inputs rather than files. The **Gene Agent** in particular accepts an inline `gene_list` (a list of canonical gene symbols) and does NOT read files, so you cannot hand it a marker `.tsv` path. When dispatching the Gene Agent, read the prepared gene-symbol list produced by the preceding Coding Agent step (e.g. `tables/markers_*_symbols.txt`, one symbol per line) with your `read` tool and include those symbols inline in `task_instructions`. If no such prepared list exists, first dispatch a Coding Agent step to extract the significant marker symbols into a plain gene-symbol file before invoking the Gene Agent.
+- Retry a step at most twice before emitting a final response to the user that a step cannot be completely.
 
 ## Final Response
 After the plan is complete (or you can go no further), your final response is a status report to the evaluator, not an answer to the user. Do **not** re-answer the user's original prompt, produce tutorials, or write how-to explanations.

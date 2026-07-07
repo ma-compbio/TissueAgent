@@ -157,9 +157,11 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ws.projectSavedEvent]);
 
-  // On first connect, recover the active project id from the server so
-  // a refresh keeps the right row highlighted in the sidebar.
+  // On first mount, load the saved-project list AND recover the active
+  // project id, so the sidebar shows past projects immediately on
+  // startup/refresh — not only after the first run's project_saved event.
   useEffect(() => {
+    session.fetchSessions();
     session.fetchCurrentProject();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
