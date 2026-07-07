@@ -12,6 +12,8 @@
 import { useEffect } from "react";
 import type { SessionInfo } from "../types/messages";
 
+const API = import.meta.env.DEV ? "http://localhost:8000" : "";
+
 interface Props {
   sessions: SessionInfo[];
   currentProjectId: string;
@@ -53,6 +55,19 @@ export default function ProjectsPanel({
     );
     if (!confirmed) return;
     await onDelete(filename);
+  };
+
+  const handleDownload = (e: React.MouseEvent, filename: string) => {
+    e.stopPropagation();
+    // Navigate to the download endpoint; the browser saves the zip. Using a
+    // hidden anchor avoids replacing the SPA's current location.
+    const url = `${API}/api/sessions/${encodeURIComponent(filename)}/download`;
+    const a = document.createElement("a");
+    a.href = url;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   return (
@@ -137,6 +152,38 @@ export default function ProjectsPanel({
                 </span>
                 <span className="project-row-meta">
                   <span className="project-row-time">{displayTime}</span>
+                  <span
+                    className="project-row-download"
+                    role="button"
+                    aria-label="Download project"
+                    title="Download project (chat + files)"
+                    tabIndex={0}
+                    onClick={(e) => handleDownload(e, s.filename)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDownload(
+                          e as unknown as React.MouseEvent,
+                          s.filename,
+                        );
+                      }
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 16 16"
+                      width="12"
+                      height="12"
+                      aria-hidden="true"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10" />
+                    </svg>
+                  </span>
                   <span
                     className="project-row-delete"
                     role="button"

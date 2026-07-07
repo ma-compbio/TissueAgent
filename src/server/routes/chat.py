@@ -534,12 +534,48 @@ async def _run_graph(ws: WebSocket, graph_input):
     try:
         while not future.done():
             if not _ws_connected(ws):
-                # Client gave up — abandon the run. The underlying compute
-                # already scheduled on the executor can't be forcibly killed,
-                # but marking is_running=False prevents further mutation via
-                # the finally block and any subsequent sends short-circuit.
-                future.cancel()
-                logging.info("WebSocket disconnected mid-run; abandoning invocation.")
+                # Client gave up (tab closed / refresh / network blip). The
+                # worker thread already running on the executor can't be
+                # forcibly killed and will finish regardless, so rather than
+                # discarding a run that may be seconds from done — and losing
+                # its whole transcript — wait briefly for it to complete and
+                # persist the result to disk. Persistence needs no socket; the
+                # user can reopen the project and find the finished trace.
+                logging.info(
+                    "WebSocket disconnected mid-run; attempting to salvage + "
+                    "persist the result."
+                )
+                try:
+                    # Bounded wait: don't block the event loop indefinitely on
+                    # a run that might still be minutes from finishing.
+                    result = await asyncio.get_event_loop().run_in_executor(
+                        None, lambda: future.result(timeout=120)
+                    )
+                except Exception:
+                    result = None
+                if (
+                    isinstance(result, dict)
+                    and "messages" in result
+                    and my_run_id == _run_generation
+                    and not _cancel_requested.is_set()
+                ):
+                    session.agent_state = result
+                    try:
+                        # Link sub-agent transcripts so the persisted project
+                        # shows the completed cards, then save.
+                        _link_subagent_states(rendered_prefix)
+                    except Exception as e:
+                        logging.warning(f"Salvage link failed: {e}")
+                    try:
+                        _persist_project()
+                        logging.info("Salvaged disconnected run persisted to disk.")
+                    except Exception as e:
+                        logging.warning(f"Salvage persist failed: {e}")
+                else:
+                    logging.info(
+                        "Disconnected run not salvageable (still running, "
+                        "cancelled, or superseded); abandoning invocation."
+                    )
                 return
             if _cancel_requested.is_set():
                 # User clicked Stop. We can't kill the worker thread, but we

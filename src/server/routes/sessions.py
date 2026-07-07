@@ -11,14 +11,18 @@ is the new projects layout.
 """
 
 import logging
+import re
 import shutil
+import tempfile
+import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import List, Literal
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
+from starlette.background import BackgroundTask
 
 from config import (
     ACTIVE_PROJECT_DIR,
@@ -139,6 +143,44 @@ def _saved_at_str(path: Path) -> str:
         return datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
     except OSError:
         return ""
+
+
+def _flush_active_session_to_disk() -> None:
+    """Persist the in-memory session to its project's ``.chat.json``.
+
+    Called before parking/switching/deleting so the outgoing project's file
+    reflects the latest in-memory state — crucially ``subagent_states``, which
+    ``switch_active_project`` would otherwise strand: it parks by *renaming the
+    folder*, so whatever stale ``.chat.json`` is on disk becomes the parked
+    copy. Without this flush, sub-agent traces linked after the last auto-save
+    are lost on switch. Best-effort: never raises (a failed flush must not block
+    the switch itself).
+    """
+    if not session.project_id:
+        return
+    messages = session.agent_state.get("messages", [])
+    if not messages:
+        return
+    try:
+        from server.plan_store import plan_store
+        from server.utils import collect_prompts_snapshot
+
+        save_session(
+            messages=messages,
+            subagent_states=session.subagent_states,
+            uploaded_pdfs=session.uploaded_pdfs,
+            replan_count=session.agent_state.get("replan_count", 0),
+            replan_history=session.agent_state.get("replan_history", []),
+            recruiter_retry_count=session.agent_state.get("recruiter_retry_count", 0),
+            mode=session.mode,
+            plan_markdown=plan_store.read_markdown(),
+            prompts_snapshot=collect_prompts_snapshot(),
+            project_id=session.project_id,
+            # Keep an already-generated (LLM) title; don't clobber on re-save.
+            title=session.project_title if session.project_title_generated else None,
+        )
+    except Exception as e:
+        logging.warning(f"Pre-switch flush failed for {session.project_id}: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -287,6 +329,11 @@ async def load_selected_session(filename: str):
     if read_active_project_id() != project_id and not (PROJECTS_DIR / project_id).exists():
         raise HTTPException(status_code=404, detail="Project not found.")
 
+    # Flush the outgoing project's in-memory state (esp. subagent traces) to its
+    # .chat.json BEFORE parking — switch_active_project parks by renaming the
+    # folder, so an unsaved in-memory delta would be stranded/lost otherwise.
+    _flush_active_session_to_disk()
+
     try:
         switch_active_project(project_id)
     except SwitchCollisionError as e:
@@ -409,4 +456,61 @@ async def export_session_markdown():
         content=body,
         media_type="text/markdown",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _slugify(text: str, fallback: str) -> str:
+    """A filesystem/download-safe slug from a project title."""
+    slug = re.sub(r"[^a-zA-Z0-9._-]+", "_", (text or "").strip()).strip("_")
+    return slug[:80] or fallback
+
+
+@router.get("/{filename}/download")
+async def download_project(filename: str):
+    """Download a whole project (chat + uploads + outputs) as a single zip.
+
+    Bundles everything on disk for the project: the ``chat.json`` transcript,
+    the ``uploads/`` inputs, and the ``outputs/`` the agent produced (tables,
+    figures, reports, gene_agent artifacts, …). Works for both the active
+    project and any parked one — ``_project_dir_safe`` resolves + sandboxes the id.
+    """
+    project_dir = _project_dir_safe(filename)
+    if not project_dir.exists() or not project_dir.is_dir():
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    project_id = _normalize_project_id(filename)
+
+    # Name the download after the project's title when we have one.
+    title = ""
+    chat_path = project_dir / PROJECT_CHAT_FILENAME
+    if chat_path.exists():
+        try:
+            title = read_session_title(chat_path)
+        except Exception:
+            title = ""
+    slug = _slugify(title, fallback=project_id)
+    zip_name = f"{slug}.zip"
+
+    # Build the archive in a temp file, then stream it and delete afterwards.
+    tmp = tempfile.NamedTemporaryFile(prefix="project_", suffix=".zip", delete=False)
+    tmp_path = Path(tmp.name)
+    tmp.close()
+    try:
+        with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for path in sorted(project_dir.rglob("*")):
+                if path.is_file():
+                    # Store under a top-level folder named for the project so the
+                    # archive extracts into one tidy directory.
+                    arcname = Path(slug) / path.relative_to(project_dir)
+                    zf.write(path, arcname.as_posix())
+    except OSError as e:
+        tmp_path.unlink(missing_ok=True)
+        logging.warning(f"Project download zip failed for {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to build project archive.")
+
+    return FileResponse(
+        path=str(tmp_path),
+        media_type="application/zip",
+        filename=zip_name,
+        background=BackgroundTask(lambda: tmp_path.unlink(missing_ok=True)),
     )

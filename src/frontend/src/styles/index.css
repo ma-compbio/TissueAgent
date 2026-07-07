@@ -3149,7 +3149,8 @@ code, pre, .num {
   letter-spacing: 0.04em;
 }
 
-.project-row-delete {
+.project-row-delete,
+.project-row-download {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3166,13 +3167,24 @@ code, pre, .num {
 }
 
 .project-row:hover .project-row-delete,
-.project-row:focus-within .project-row-delete {
+.project-row:focus-within .project-row-delete,
+.project-row:hover .project-row-download,
+.project-row:focus-within .project-row-download {
   opacity: 1;
 }
 
 .project-row-delete:hover {
   color: var(--error-text, #b91c1c);
   background: color-mix(in oklch, var(--error-text, #b91c1c) 10%, transparent);
+}
+
+.project-row-download:hover {
+  color: var(--live-accent-strong, #2563eb);
+  background: color-mix(
+    in oklch,
+    var(--live-accent-strong, #2563eb) 12%,
+    transparent
+  );
 }
 
 /* ---- Top-bar icon buttons ----
