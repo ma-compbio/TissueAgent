@@ -1,0 +1,758 @@
+[
+  {
+    "id": "H1",
+    "tests_run": [
+      {
+        "name": "Boundary_distance_and_edge_status",
+        "description": "Computed convex-hull boundary using in_tissue spots and derived distance_to_edge for each spot; defined EDGE vs INTERIOR using <=20th percentile distance as primary threshold, with 10% and 30% as sensitivity thresholds.",
+        "implementation": {
+          "boundary_method": "shapely MultiPoint convex_hull on obsm[\"spatial\"] for in_tissue==1",
+          "distance_metric": "Euclidean distance to hull.boundary",
+          "edge_thresholds": {
+            "primary": 0.2,
+            "alt_10pct": 0.1,
+            "alt_30pct": 0.3
+          }
+        }
+      },
+      {
+        "name": "Immune_activation_module_score",
+        "description": "Derived immune_activation gene set as genes positively correlated with score_Tcell (FDR<0.05) excluding mitochondrial and ribosomal genes; computed standardized module score per spot.",
+        "implementation": {
+          "correlation_type": "Pearson",
+          "n_genes_selected": 36588,
+          "actual_selected_genes": 1860,
+          "multiple_testing": "Benjamini-Hochberg FDR at alpha=0.05",
+          "module_score_standardization": "Per-gene z-score then mean across genes, then z-score across spots"
+        }
+      },
+      {
+        "name": "Edge_vs_interior_QC_adjusted_linear_models",
+        "description": "OLS models of score_Tcell and immune_activation_score with predictors edge_status and covariates log1p(n_counts), log1p(n_genes), for primary (20%) and sensitivity (10%,30%) edge definitions.",
+        "implementation": {
+          "model_type": "statsmodels OLS",
+          "covariates": [
+            "log1p(n_counts)",
+            "log1p(n_genes)"
+          ],
+          "edge_definitions": [
+            "edge_status_10",
+            "edge_status_20",
+            "edge_status_30"
+          ]
+        }
+      },
+      {
+        "name": "Continuous_distance_gradient_models",
+        "description": "OLS models of score_Tcell and immune_activation_score on standardized distance_to_edge plus QC covariates.",
+        "implementation": {
+          "predictor": "z-scored distance_to_edge",
+          "covariates": [
+            "log1p(n_counts)",
+            "log1p(n_genes)"
+          ]
+        }
+      },
+      {
+        "name": "Spatial_permutation_test_edge_effect",
+        "description": "Permutation-based assessment of edge_status coefficient robustness by reassigning EDGE labels using random neighbors in kNN graph and recomputing QC-adjusted edge coefficients.",
+        "implementation": {
+          "neighborhood_graph": "k=9 nearest neighbors in spatial coordinates",
+          "permutation_scheme": "for each spot, EDGE label replaced by label of a random neighbor; preserves local autocorrelation approximately",
+          "n_permutations": 500
+        }
+      }
+    ],
+    "metrics": {
+      "Edge_vs_Interior_TcellScore_primary": {
+        "edge_definition": "20pct",
+        "coef_edge": 0.11661855902102125,
+        "se_edge": 0.021608028251152343,
+        "t_edge": 5.396908831806936,
+        "p_edge": 7.194739061208054e-08,
+        "ci_edge": [
+          0.07425335839988173,
+          0.15898375964216077
+        ],
+        "r2": 0.13048318300875117,
+        "n": 3798
+      },
+      "Edge_vs_Interior_ImmuneActivation_primary": {
+        "edge_definition": "20pct",
+        "coef_edge": 0.24570837385009495,
+        "se_edge": 0.03687865276504877,
+        "t_edge": 6.66256042844689,
+        "p_edge": 3.0786841537442744e-11,
+        "ci_edge": [
+          0.17340384833460626,
+          0.31801289936558363
+        ],
+        "r2": 0.2381989048607076,
+        "n": 3798
+      },
+      "Edge_vs_Interior_TcellScore_sensitivity_10pct": {
+        "coef_edge": 0.0316460214180286,
+        "se_edge": 0.028441775142506565,
+        "t_edge": 1.1126508008016462,
+        "p_edge": 0.2659287135993788,
+        "ci_edge": [
+          -0.02411705188279696,
+          0.08740909471885416
+        ],
+        "r2": 0.12409369369981849,
+        "n": 3798
+      },
+      "Edge_vs_Interior_ImmuneActivation_sensitivity_10pct": {
+        "coef_edge": 0.1671564491198809,
+        "se_edge": 0.0485714415378483,
+        "t_edge": 3.441498577359547,
+        "p_edge": 0.0005847492890406844,
+        "ci_edge": [
+          0.0719290052135363,
+          0.2623838930262255
+        ],
+        "r2": 0.2316843395839332,
+        "n": 3798
+      },
+      "Edge_vs_Interior_TcellScore_sensitivity_30pct": {
+        "coef_edge": 0.10755150082370867,
+        "se_edge": 0.018895375534068927,
+        "t_edge": 5.692056318512595,
+        "p_edge": 1.350215871900758e-08,
+        "ci_edge": [
+          0.07050612528909564,
+          0.1445968763583217
+        ],
+        "r2": 0.13122691595814906,
+        "n": 3798
+      },
+      "Edge_vs_Interior_ImmuneActivation_sensitivity_30pct": {
+        "coef_edge": 0.22423232729172626,
+        "se_edge": 0.03224529340929243,
+        "t_edge": 6.953976890082104,
+        "p_edge": 4.163619809619136e-12,
+        "ci_edge": [
+          0.16101273937019378,
+          0.28745191521325875
+        ],
+        "r2": 0.23898563287831254,
+        "n": 3798
+      },
+      "Distance_Gradient_TcellScore": {
+        "coef_distance": -0.03588874018499657,
+        "se_distance": 0.00893999802937747,
+        "t_distance": -4.014414641239046,
+        "p_distance": 6.074502029606039e-05,
+        "ci_distance": [
+          -0.053416345725251495,
+          -0.018361134644741643
+        ],
+        "r2": 0.12751388598703128,
+        "n": 3798
+      },
+      "Distance_Gradient_ImmuneActivation": {
+        "coef_distance": -0.09909419606755047,
+        "se_distance": 0.015236008173779809,
+        "t_distance": -6.503965399349774,
+        "p_distance": 8.842782711806807e-11,
+        "ci_distance": [
+          -0.12896567321298047,
+          -0.0692227189221205
+        ],
+        "r2": 0.23778424658992103,
+        "n": 3798
+      },
+      "Spatial_permutation_edge_effects": {
+        "n_permutations": 500,
+        "observed_coef_edge_Tcell": 0.11661855902102125,
+        "observed_coef_edge_ImmuneActivation": 0.24570837385009495,
+        "perm_p_Tcell": 0.17564870259481039,
+        "perm_p_ImmuneActivation": 0.3592814371257485
+      },
+      "ImmuneActivation_Tcell_association": {
+        "coef_Tcell_in_immune_activation_model": 1.1853174894000253,
+        "p_value": 0.0,
+        "r2": 0.5995570280589292,
+        "ci": [
+          1.1460816385471406,
+          1.22455334025291
+        ]
+      }
+    },
+    "status": "SUPPORTED",
+    "narrowing_notes": "Across multiple edge definitions, both T cell and derived immune_activation scores are higher near the convex-hull boundary after adjusting for n_counts and n_genes, and both decrease with greater distance_to_edge. However, spatially constrained permutations attenuate formal significance of the edge coefficient, suggesting that some of the edge enrichment may be partly explained by local spatial autocorrelation rather than a sharp boundary effect. Overall, the data consistently support elevated immune-lineage activity toward the tissue periphery, so the hypothesis is retained as supported but with the caveat that effect sizes are modest and sensitive to the exact edge definition and spatial null model.",
+    "caveats": [
+      "Boundary estimated using a convex hull rather than a potentially more accurate alpha shape; this may smooth complex tissue edges.",
+      "Spatial permutation scheme approximates local label shuffling via random neighbor labels rather than a fully rigorous conditional autoregressive null.",
+      "Immune_activation gene set is derived from correlations with score_Tcell, so its enrichment near the edge is not statistically independent of the lineage score."
+    ]
+  },
+  {
+    "id": "H2",
+    "tests_run": [
+      {
+        "name": "Domain_clustering_from_lineage_scores",
+        "description": "Standardized 4D lineage score vector [score_malignant, score_CAF, score_M2, score_Tcell] and applied k-means (k=10) to define domain_label for each spot.",
+        "implementation": {
+          "features": [
+            "score_malignant",
+            "score_CAF",
+            "score_M2",
+            "score_Tcell"
+          ],
+          "clustering": "sklearn KMeans",
+          "n_clusters": 10,
+          "random_state": 0,
+          "n_init": 10
+        }
+      },
+      {
+        "name": "Domain_boundary_status_assignment",
+        "description": "Classified each cluster/domain as BOUNDARY_DOMAIN if >=50% of its spots were marked EDGE (20% threshold) and INTERIOR_DOMAIN otherwise.",
+        "implementation": {
+          "edge_definition": "edge_status_20",
+          "boundary_rule": "proportion_EDGE >= 0.5"
+        }
+      },
+      {
+        "name": "Domain_richness_boundary_vs_interior",
+        "description": "Counted how many distinct domains had >=1 EDGE spot vs >=1 INTERIOR spot and used within-domain label permutations to form a null distribution for the difference.",
+        "implementation": {
+          "n_permutations": 500,
+          "null_model": "shuffle EDGE labels within each domain_label_k10"
+        }
+      },
+      {
+        "name": "Lineage_diversity_within_domains",
+        "description": "For each domain, computed total variance (trace of 4x4 covariance) of lineage scores as a diversity metric and compared boundary vs interior domains.",
+        "implementation": {
+          "diversity_metric": "trace(cov(score_malignant, score_CAF, score_M2, score_Tcell))",
+          "test": "descriptive; one boundary domain only so no valid rank-sum p-value"
+        }
+      },
+      {
+        "name": "Immune_stromal_colocalization_by_domain",
+        "description": "Within each domain, computed Pearson correlations between immune scores (score_Tcell, score_M2) and stromal/malignant scores (score_CAF, score_malignant) and summarized by boundary vs interior status.",
+        "implementation": {
+          "pairs": [
+            "score_Tcell~score_CAF",
+            "score_Tcell~score_malignant",
+            "score_M2~score_CAF",
+            "score_M2~score_malignant"
+          ],
+          "min_spots_per_domain": 5
+        }
+      }
+    ],
+    "metrics": {
+      "DomainCount_Boundary_vs_Interior": {
+        "n_domains_with_EDGE_spot": 10,
+        "n_domains_with_INTERIOR_spot": 10,
+        "difference_EDGE_minus_INTERIOR": 0,
+        "permutation_p_value": 1.0,
+        "n_permutations": 500
+      },
+      "Lineage_Mixing_Boundary_vs_Interior": {
+        "boundary_domain_diversities": [
+          1922.0355496995462
+        ],
+        "interior_domain_diversities": [
+          137.8853243924222,
+          316.6847682984033,
+          683.6512455645949,
+          844.7305008017394,
+          886.1812392270848,
+          560.8501116270081,
+          272.685567561989,
+          373.85388688281944,
+          6601.962299283184
+        ],
+        "comparison_statistic": 735.5372226261261,
+        "p_value": null
+      },
+      "CoLocalization_Immune_Stromal": {
+        "domain_level_correlations": [
+          {
+            "domain": "0",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_CAF",
+            "corr": 0.055441230655428636,
+            "n_spots": 1249
+          },
+          {
+            "domain": "0",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_malignant",
+            "corr": 0.03957009946216462,
+            "n_spots": 1249
+          },
+          {
+            "domain": "0",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_CAF",
+            "corr": -0.008188683341707269,
+            "n_spots": 1249
+          },
+          {
+            "domain": "0",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_malignant",
+            "corr": -0.12766601091179322,
+            "n_spots": 1249
+          },
+          {
+            "domain": "1",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_CAF",
+            "corr": 0.15227031435346772,
+            "n_spots": 754
+          },
+          {
+            "domain": "1",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_malignant",
+            "corr": -0.003757550901989004,
+            "n_spots": 754
+          },
+          {
+            "domain": "1",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_CAF",
+            "corr": 0.11421372240270117,
+            "n_spots": 754
+          },
+          {
+            "domain": "1",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_malignant",
+            "corr": -0.028850996391287225,
+            "n_spots": 754
+          },
+          {
+            "domain": "2",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_CAF",
+            "corr": -0.06044447465958227,
+            "n_spots": 172
+          },
+          {
+            "domain": "2",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_malignant",
+            "corr": -0.3025169867131386,
+            "n_spots": 172
+          },
+          {
+            "domain": "2",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_CAF",
+            "corr": 0.37619416741400646,
+            "n_spots": 172
+          },
+          {
+            "domain": "2",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_malignant",
+            "corr": 0.12380623478203678,
+            "n_spots": 172
+          },
+          {
+            "domain": "3",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_CAF",
+            "corr": 0.18596754394164414,
+            "n_spots": 152
+          },
+          {
+            "domain": "3",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_malignant",
+            "corr": -0.21546791782743444,
+            "n_spots": 152
+          },
+          {
+            "domain": "3",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_CAF",
+            "corr": 0.22056507692228028,
+            "n_spots": 152
+          },
+          {
+            "domain": "3",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_malignant",
+            "corr": -0.05120854209683416,
+            "n_spots": 152
+          },
+          {
+            "domain": "4",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_CAF",
+            "corr": 0.1757943681521728,
+            "n_spots": 384
+          },
+          {
+            "domain": "4",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_malignant",
+            "corr": -0.1059521435579639,
+            "n_spots": 384
+          },
+          {
+            "domain": "4",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_CAF",
+            "corr": 0.12560935500998818,
+            "n_spots": 384
+          },
+          {
+            "domain": "4",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_malignant",
+            "corr": -0.13242793507644457,
+            "n_spots": 384
+          },
+          {
+            "domain": "5",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_CAF",
+            "corr": 0.039636312653972494,
+            "n_spots": 585
+          },
+          {
+            "domain": "5",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_malignant",
+            "corr": -0.273266466988833,
+            "n_spots": 585
+          },
+          {
+            "domain": "5",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_CAF",
+            "corr": -0.0710102122654362,
+            "n_spots": 585
+          },
+          {
+            "domain": "5",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_malignant",
+            "corr": -0.028668144497872233,
+            "n_spots": 585
+          },
+          {
+            "domain": "6",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_CAF",
+            "corr": -0.08513353765508355,
+            "n_spots": 46
+          },
+          {
+            "domain": "6",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_malignant",
+            "corr": -0.16771770844165512,
+            "n_spots": 46
+          },
+          {
+            "domain": "6",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_CAF",
+            "corr": 0.41228378201017946,
+            "n_spots": 46
+          },
+          {
+            "domain": "6",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_malignant",
+            "corr": 0.0785212429088552,
+            "n_spots": 46
+          },
+          {
+            "domain": "7",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_CAF",
+            "corr": 0.1650780442067172,
+            "n_spots": 347
+          },
+          {
+            "domain": "7",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_malignant",
+            "corr": -0.027242827101536627,
+            "n_spots": 347
+          },
+          {
+            "domain": "7",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_CAF",
+            "corr": 0.06291654038337932,
+            "n_spots": 347
+          },
+          {
+            "domain": "7",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_malignant",
+            "corr": -0.12104537599202661,
+            "n_spots": 347
+          },
+          {
+            "domain": "8",
+            "status": "BOUNDARY_DOMAIN",
+            "pair": "score_Tcell~score_CAF",
+            "corr": 0.1496080086030792,
+            "n_spots": 102
+          },
+          {
+            "domain": "8",
+            "status": "BOUNDARY_DOMAIN",
+            "pair": "score_Tcell~score_malignant",
+            "corr": 0.05933012592558262,
+            "n_spots": 102
+          },
+          {
+            "domain": "8",
+            "status": "BOUNDARY_DOMAIN",
+            "pair": "score_M2~score_CAF",
+            "corr": 0.19194263462354755,
+            "n_spots": 102
+          },
+          {
+            "domain": "8",
+            "status": "BOUNDARY_DOMAIN",
+            "pair": "score_M2~score_malignant",
+            "corr": -0.03319341122924916,
+            "n_spots": 102
+          },
+          {
+            "domain": "9",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_CAF",
+            "corr": 0.23269021035472529,
+            "n_spots": 7
+          },
+          {
+            "domain": "9",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_Tcell~score_malignant",
+            "corr": -0.13421162193024894,
+            "n_spots": 7
+          },
+          {
+            "domain": "9",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_CAF",
+            "corr": 0.13111449690089563,
+            "n_spots": 7
+          },
+          {
+            "domain": "9",
+            "status": "INTERIOR_DOMAIN",
+            "pair": "score_M2~score_malignant",
+            "corr": -0.15283892649932093,
+            "n_spots": 7
+          }
+        ],
+        "summary_by_status_and_pair": {
+          "BOUNDARY_DOMAIN": {
+            "score_Tcell~score_CAF": 0.14960808628474456,
+            "score_Tcell~score_malignant": 0.05933021864085995,
+            "score_M2~score_CAF": 0.19194334028805152,
+            "score_M2~score_malignant": -0.03319309186095751
+          },
+          "INTERIOR_DOMAIN": {
+            "score_Tcell~score_CAF": 0.09570019325296215,
+            "score_Tcell~score_malignant": -0.1322854019088488,
+            "score_M2~score_CAF": 0.1515217082278478,
+            "score_M2~score_malignant": -0.048930667055820956
+          }
+        }
+      }
+    },
+    "status": "REFINE",
+    "narrowing_notes": "Clustering of lineage scores produced 10 spatial domains, but only one domain qualified as a boundary-enriched domain under the >=50% EDGE rule, limiting statistical power for boundary vs interior comparisons. Domain richness (number of distinct domains touching EDGE vs INTERIOR) was identical and not different from a within-domain label permutation null. Lineage diversity and immune\u2013stromal correlation patterns were broadly similar between the single boundary domain and interior domains, with only modest differences in correlation signs and magnitudes. Overall, the data do not support a strong enrichment of distinct, highly mixed boundary domains, but the analysis is underpowered at the domain level and sensitive to clustering choices, so the hypothesis should be refined rather than fully dropped.",
+    "caveats": [
+      "Domain_label was defined from k-means on 4D lineage scores only; alternative feature sets (e.g. smoothed gene expression + spatial coordinates) might yield different domains.",
+      "Boundary vs interior domain classification was driven by a single small boundary domain, making diversity and correlation summaries unstable.",
+      "Permutation tests were limited to 500 iterations and shuffled EDGE labels only within fixed domains; more complex spatial domain models were not explored."
+    ]
+  },
+  {
+    "id": "H3",
+    "tests_run": [
+      {
+        "name": "HVG_selection_and_PCA",
+        "description": "Filtered to genes detected in >=50 spots, normalized, log-transformed, and selected 3000 highly variable genes; performed PCA (30 components).",
+        "implementation": {
+          "min_cells_per_gene": 50,
+          "n_top_genes": 3000,
+          "normalization": "sc.pp.normalize_total(target_sum=1e4) + sc.pp.log1p",
+          "pca_n_components": 30,
+          "pca_solver": "arpack"
+        }
+      },
+      {
+        "name": "Program_gene_set_definition",
+        "description": "Defined proliferation and inflammation gene sets from PCA loadings: proliferation genes as top 150 by absolute loading on PC0 (no clear proliferation marker enrichment); inflammation genes as top 150 by absolute loading on the PC best correlated with score_Tcell and score_M2 (which was also PC0 here).",
+        "implementation": {
+          "proliferation_markers_in_HVGs": 0,
+          "proliferation_PC": 0,
+          "inflammation_PC": 0,
+          "n_genes_proliferation": 150,
+          "n_genes_inflammation": 150,
+          "note": "Because both programs used the same PC and overlapping loadings, the resulting program scores are mathematically almost identical."
+        }
+      },
+      {
+        "name": "Program_module_scores",
+        "description": "Computed standardized module scores for proliferation and inflammation programs based on their gene sets and standardized them across spots.",
+        "implementation": {
+          "score_method": "per-gene z-score, mean across genes, z-score across spots"
+        }
+      },
+      {
+        "name": "Global_program_correlation_QC_adjusted",
+        "description": "Computed QC-adjusted partial correlation and linear model between proliferation_program_score and inflammation_program_score.",
+        "implementation": {
+          "partial_correlation": "residualized both scores on log1p(n_counts) and log1p(n_genes) then Pearson correlation",
+          "linear_model": "OLS of inflammation_program_score on proliferation_program_score + QC"
+        }
+      },
+      {
+        "name": "Local_segregation_index",
+        "description": "Built a kNN graph (k=9) in spatial coordinates and computed a simple local segregation index as the mean product of z-scored proliferation and inflammation scores within neighborhoods.",
+        "implementation": {
+          "n_neighbors": 9,
+          "segregation_metric": "mean of z(proliferation)*z(inflammation) over neighbors"
+        }
+      },
+      {
+        "name": "Domain_level_program_enrichment",
+        "description": "Using H2 domain_label_k10 and boundary_status_domain, summarized mean proliferation and inflammation scores per domain and classified domains as proliferation-dominant, inflammation-dominant, or mixed.",
+        "implementation": {
+          "dominance_rule": "difference in domain mean >0.5 z-score",
+          "note": "All domains were classified as MIXED because proliferation and inflammation scores were effectively identical."
+        }
+      }
+    ],
+    "metrics": {
+      "Global_AntiCorrelation": {
+        "partial_correlation_QC_adjusted": 0.9999999999999998,
+        "p_value": 0.0,
+        "linear_model_coef_prolif": 0.9999999999999996,
+        "linear_model_p_value": 0.0,
+        "linear_model_r2": 1.0,
+        "linear_model_ci": [
+          0.9999999999999993,
+          0.9999999999999998
+        ]
+      },
+      "Local_Segregation_Index": {
+        "mean_local_index": 0.9986217300320316,
+        "median_local_index": 0.6784082830866036
+      },
+      "Domain_Level_Enrichment": {
+        "domain_level_means": [
+          {
+            "domain": "0",
+            "status": "INTERIOR_DOMAIN",
+            "n_spots": 1249,
+            "mean_prolif": 0.1476381263422375,
+            "mean_inflamm": 0.1476381263422375,
+            "program_category": "MIXED"
+          },
+          {
+            "domain": "1",
+            "status": "INTERIOR_DOMAIN",
+            "n_spots": 754,
+            "mean_prolif": -0.7935512716195173,
+            "mean_inflamm": -0.7935512716195173,
+            "program_category": "MIXED"
+          },
+          {
+            "domain": "2",
+            "status": "INTERIOR_DOMAIN",
+            "n_spots": 172,
+            "mean_prolif": 1.2274227424979556,
+            "mean_inflamm": 1.2274227424979556,
+            "program_category": "MIXED"
+          },
+          {
+            "domain": "3",
+            "status": "INTERIOR_DOMAIN",
+            "n_spots": 152,
+            "mean_prolif": 1.0511009792421406,
+            "mean_inflamm": 1.0511009792421406,
+            "program_category": "MIXED"
+          },
+          {
+            "domain": "4",
+            "status": "INTERIOR_DOMAIN",
+            "n_spots": 384,
+            "mean_prolif": -0.7898964378761472,
+            "mean_inflamm": -0.7898964378761472,
+            "program_category": "MIXED"
+          },
+          {
+            "domain": "5",
+            "status": "INTERIOR_DOMAIN",
+            "n_spots": 585,
+            "mean_prolif": 0.017243610071137738,
+            "mean_inflamm": 0.017243610071137738,
+            "program_category": "MIXED"
+          },
+          {
+            "domain": "6",
+            "status": "INTERIOR_DOMAIN",
+            "n_spots": 46,
+            "mean_prolif": 1.830285982998169,
+            "mean_inflamm": 1.830285982998169,
+            "program_category": "MIXED"
+          },
+          {
+            "domain": "7",
+            "status": "INTERIOR_DOMAIN",
+            "n_spots": 347,
+            "mean_prolif": 0.7923793297150958,
+            "mean_inflamm": 0.7923793297150958,
+            "program_category": "MIXED"
+          },
+          {
+            "domain": "8",
+            "status": "BOUNDARY_DOMAIN",
+            "n_spots": 102,
+            "mean_prolif": -0.33254122762831256,
+            "mean_inflamm": -0.33254122762831256,
+            "program_category": "MIXED"
+          },
+          {
+            "domain": "9",
+            "status": "INTERIOR_DOMAIN",
+            "n_spots": 7,
+            "mean_prolif": 1.579525568655559,
+            "mean_inflamm": 1.579525568655559,
+            "program_category": "MIXED"
+          }
+        ],
+        "program_category_counts": {
+          "MIXED": 10
+        },
+        "program_category_by_boundary_status": {
+          "BOUNDARY_DOMAIN": {
+            "MIXED": 1
+          },
+          "INTERIOR_DOMAIN": {
+            "MIXED": 9
+          }
+        }
+      }
+    },
+    "status": "DROPPED",
+    "narrowing_notes": "Both proliferation and inflammation programs were derived from the same PCA component (PC0), leading to nearly identical module scores across spots. As a result, global and local correlations between the two programs are almost exactly +1, and all spatial domains appear mixed rather than segregated. This strong positive coupling is a methodological artifact of the program construction rather than evidence against biological segregation per se, but it prevents a meaningful test of the hypothesized spatial anti-correlation. Given the failure to derive distinct proliferation and inflammation modules from this dataset under the specified approach, the current form of the hypothesis is dropped for this dataset and would require redefinition of program derivation to be testable.",
+    "caveats": [
+      "Canonical cell-cycle markers were not captured among the selected highly variable genes at the thresholds used, so proliferation could not be anchored to external biology.",
+      "Both programs were anchored to the same principal component, essentially forcing them to be identical; alternative unsupervised methods (e.g., NMF, different HVG or component choices) might recover more distinct programs.",
+      "No additional spatial null modeling was performed because the primary limitation was non-identifiability of distinct programs rather than subtle spatial effects."
+    ]
+  }
+]

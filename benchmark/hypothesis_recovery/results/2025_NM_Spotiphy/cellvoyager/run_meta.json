@@ -1,0 +1,10 @@
+{
+  "created_utc": "2026-07-11T05:54:49.655445+00:00",
+  "arm": "cellvoyager",
+  "mode": "live",
+  "fixture_id": "2025_NM_Spotiphy",
+  "h5ad": "/home/mingqiam/TissueAgent/benchmark/hypothesis_recovery/2025_NM_Spotiphy/_download/Xenium_FAD_1.h5ad",
+  "returncode": 0,
+  "n_hypotheses": 2,
+  "upstream_run_directory": "/home/mingqiam/TissueAgent/workspace/cellvoyager_agent/cv_20260711_054706"
+}

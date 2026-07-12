@@ -1,0 +1,8 @@
+{
+  "created_utc": "2026-07-11T05:43:07.837262+00:00",
+  "arm": "tissueagent",
+  "mode": "live",
+  "fixture_id": "2025_NM_Spotiphy",
+  "h5ad": "/home/mingqiam/TissueAgent/benchmark/hypothesis_recovery/2025_NM_Spotiphy/_download/Xenium_FAD_1.h5ad",
+  "no_docker": true
+}

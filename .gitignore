@@ -51,3 +51,9 @@ AGENTS.md
 COPILOT_PLAN.md
 COPILOT_QA.md
 .impeccable.md
+
+# Hypothesis-recovery benchmark bulky artifacts
+benchmark/hypothesis_recovery/**/_download/
+benchmark/hypothesis_recovery/**/dataset.h5ad
+benchmark/hypothesis_recovery/**/runs/
+workspace/cellvoyager_agent/

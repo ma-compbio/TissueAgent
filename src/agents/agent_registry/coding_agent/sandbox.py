@@ -214,11 +214,13 @@ class LocalKernelGateway:
             "--KernelGatewayApp.allow_origin=*",
         ]
         logging.info("Starting local Kernel Gateway: %s", " ".join(cmd))
+        log_path = DATA_DIR / "kernel_gateway.log"
+        log_f = open(log_path, "ab", buffering=0)
         self._proc = subprocess.Popen(
             cmd,
             cwd=str(DATA_DIR.resolve()),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=log_f,
+            stderr=log_f,
             # New process group so we can signal the gateway without hitting
             # the parent server on POSIX.
             start_new_session=(os.name != "nt"),

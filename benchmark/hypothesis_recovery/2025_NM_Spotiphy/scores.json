@@ -1,0 +1,297 @@
+{
+  "fixture_id": "2025_NM_Spotiphy",
+  "scored_utc": "2026-07-11T15:44:05.990925+00:00",
+  "scorer": "heuristic_v1",
+  "scorer_note": "Automatic keyword/jaccard matching for triage; expert audit required for manuscript numbers.",
+  "arms": {
+    "tissueagent": {
+      "arm": "tissueagent",
+      "run_dir": "benchmark/hypothesis_recovery/2025_NM_Spotiphy/runs/tissueagent/ta_20260711_131129",
+      "n_hypotheses": 3,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.0,
+      "recovery_rate_including_related": 0.0,
+      "claims_recovered": [],
+      "claims_related": [],
+      "claims_missed": [
+        "GC1",
+        "GC2",
+        "GC3"
+      ],
+      "mean_quality_scores": {
+        "derivable": 4.0,
+        "novel": 4.667,
+        "feasible": 4.0,
+        "specific": 4.0,
+        "falsifiable": 4.0
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 1.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": null,
+          "statement": "",
+          "best_claim_id": "GC1",
+          "recovery": "miss",
+          "match_score": 0.0,
+          "evidence": [
+            "jaccard=0.000"
+          ],
+          "quality_scores": {
+            "derivable": 4.0,
+            "novel": 5.0,
+            "feasible": 4.0,
+            "specific": 4.0,
+            "falsifiable": 4.0
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "PENDING"
+        },
+        {
+          "hypothesis_id": null,
+          "statement": "",
+          "best_claim_id": "GC1",
+          "recovery": "miss",
+          "match_score": 0.0,
+          "evidence": [
+            "jaccard=0.000"
+          ],
+          "quality_scores": {
+            "derivable": 4.0,
+            "novel": 4.0,
+            "feasible": 4.0,
+            "specific": 4.0,
+            "falsifiable": 4.0
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "PENDING"
+        },
+        {
+          "hypothesis_id": null,
+          "statement": "",
+          "best_claim_id": "GC1",
+          "recovery": "miss",
+          "match_score": 0.0,
+          "evidence": [
+            "jaccard=0.000"
+          ],
+          "quality_scores": {
+            "derivable": 4.0,
+            "novel": 5.0,
+            "feasible": 4.0,
+            "specific": 4.0,
+            "falsifiable": 4.0
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "PENDING"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": null,
+          "label": "miss",
+          "score": 0.0
+        },
+        "GC2": {
+          "hypothesis_id": null,
+          "label": "miss",
+          "score": 0.0
+        },
+        "GC3": {
+          "hypothesis_id": null,
+          "label": "miss",
+          "score": 0.0
+        }
+      }
+    },
+    "cellvoyager": {
+      "arm": "cellvoyager",
+      "run_dir": "benchmark/hypothesis_recovery/2025_NM_Spotiphy/runs/cellvoyager/cv_20260711_054706",
+      "n_hypotheses": 2,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.0,
+      "recovery_rate_including_related": 1.0,
+      "claims_recovered": [],
+      "claims_related": [
+        "GC1",
+        "GC2",
+        "GC3"
+      ],
+      "claims_missed": [],
+      "mean_quality_scores": {
+        "derivable": null,
+        "novel": null,
+        "feasible": null,
+        "specific": null,
+        "falsifiable": null
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 0.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "CV1",
+          "statement": "# Analysis\n\n**Hypothesis**: Spatial proximity affects gene expression profiles related to Alzheimer's disease in specific cell types within the mouse brain.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.2554,
+          "evidence": [
+            "keywords=['spatial domains', 'brain']",
+            "jaccard=0.179"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        },
+        {
+          "hypothesis_id": "CV2",
+          "statement": "# Analysis Plan\n\n**Hypothesis**: Spatial proximity affects gene expression profiles related to Alzheimer's disease in specific cell types within the mouse brain.\n\n## Steps:\n- Assess spatial distribution of different cell types using centroid coordinates to identify spatial clustering or regional spe",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.3075,
+          "evidence": [
+            "keywords=['regional specification', 'spatial domains', 'brain']",
+            "jaccard=0.100"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "CV2",
+          "label": "related",
+          "score": 0.30749999999999994
+        },
+        "GC2": {
+          "hypothesis_id": "CV2",
+          "label": "related",
+          "score": 0.15776315789473683
+        },
+        "GC3": {
+          "hypothesis_id": "CV1",
+          "label": "related",
+          "score": 0.22
+        }
+      }
+    },
+    "tissueagent_cellvoyager": {
+      "arm": "tissueagent_cellvoyager",
+      "run_dir": "benchmark/hypothesis_recovery/2025_NM_Spotiphy/runs/tissueagent_cellvoyager/tacv_20260711_134547",
+      "n_hypotheses": 3,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.3333,
+      "recovery_rate_including_related": 1.0,
+      "claims_recovered": [
+        "GC2"
+      ],
+      "claims_related": [
+        "GC1",
+        "GC3"
+      ],
+      "claims_missed": [],
+      "mean_quality_scores": {
+        "derivable": 0.75,
+        "novel": 0.792,
+        "feasible": 0.775,
+        "specific": 0.783,
+        "falsifiable": 0.892
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 1.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "H1",
+          "statement": "Among astrocytes, those located within a short Euclidean distance (e.g. within the first distance bin) of microglia-enriched pathological foci exhibit higher scores for a neuroinflammatory gene program than astrocytes located farther away in the same cortical/hippocampal strata.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.298,
+          "evidence": [
+            "keywords=['astrocyte']",
+            "cell_types=['astrocyte', 'astro']",
+            "jaccard=0.023"
+          ],
+          "quality_scores": {
+            "derivable": 0.825,
+            "novel": 0.75,
+            "feasible": 0.825,
+            "specific": 0.775,
+            "falsifiable": 0.9,
+            "robustness": 0.7
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": null
+        },
+        {
+          "hypothesis_id": "H2",
+          "statement": "At interfaces between microglia-enriched pathological domains and adjacent relatively microglia-poor tissue, inhibitory neurons form a denser band than in nearby interior regions on either side of the interface, suggesting preferential placement of inhibition at pathological boundaries.",
+          "best_claim_id": "GC2",
+          "recovery": "related",
+          "match_score": 0.2238,
+          "evidence": [
+            "keywords=['microglia']",
+            "cell_types=['microglia', 'micro']",
+            "jaccard=0.045"
+          ],
+          "quality_scores": {
+            "derivable": 0.75,
+            "novel": 0.8,
+            "feasible": 0.75,
+            "specific": 0.7749999999999999,
+            "falsifiable": 0.875,
+            "robustness": 0.6
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": null
+        },
+        {
+          "hypothesis_id": "H3",
+          "statement": "Immune-lineage cells (microglia and other immune-like cells in the panel) exhibit a spatial gradient of activation state with respect to putative vascular structures, such that cells closer to vessel-associated markers have higher activation program scores than those farther away, independent of bro",
+          "best_claim_id": "GC2",
+          "recovery": "partial",
+          "match_score": 0.3606,
+          "evidence": [
+            "keywords=['disease-associated microglia', 'microglia', 'regional']",
+            "cell_types=['microglia', 'micro']",
+            "jaccard=0.038"
+          ],
+          "quality_scores": {
+            "derivable": 0.675,
+            "novel": 0.825,
+            "feasible": 0.75,
+            "specific": 0.8,
+            "falsifiable": 0.9,
+            "robustness": 0.65
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": null
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "H1",
+          "label": "related",
+          "score": 0.29796511627906974
+        },
+        "GC2": {
+          "hypothesis_id": "H3",
+          "label": "partial",
+          "score": 0.3606410256410256
+        },
+        "GC3": {
+          "hypothesis_id": "H2",
+          "label": "related",
+          "score": 0.1325
+        }
+      }
+    }
+  }
+}
