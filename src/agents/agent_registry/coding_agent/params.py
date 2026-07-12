@@ -9,4 +9,5 @@ doc_filepaths = {
     "scanpy": DOCS_DIR / "scanpy_docs.json",
     "squidpy": DOCS_DIR / "squidpy_docs.json",
     "liana": DOCS_DIR / "liana_docs.json",
+    "commot": DOCS_DIR / "commot_docs.json",
 }

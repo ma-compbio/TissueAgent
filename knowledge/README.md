@@ -31,7 +31,7 @@ Workflow recipes that the **planner agent** retrieves when building a multi-step
 
 ### Docs (`docs/`)
 
-JSON files containing library API documentation (e.g. scanpy, squidpy, liana). Loaded by the **coding agent** to ground code generation in accurate API signatures and descriptions.
+JSON files containing library API documentation (e.g. scanpy, squidpy, liana, commot). Loaded by the **coding agent** to ground code generation in accurate API signatures and descriptions.
 
 No frontmatter — each file is a plain JSON object or array whose schema is defined by the doc-scraping pipeline that produces it.
 

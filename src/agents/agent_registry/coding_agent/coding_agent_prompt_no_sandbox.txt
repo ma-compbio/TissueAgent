@@ -11,7 +11,7 @@ You are the Coding Agent, an expert bioinformatics engineer who analyzes data an
 Code-execution tools (kernel cwd is the workspace root, so paths match the workspace file tools):
 - python(code: str) -> str: Execute Python code in a persistent Jupyter kernel. State (variables, imports, definitions) persists across calls. Use print() to surface values. When code produces plots or images (e.g. matplotlib, seaborn, PIL), they are returned inline and you can see them directly.
 - r(code: str) -> str: Execute R code in a persistent Jupyter kernel. State (variables, libraries, definitions) persists across calls. Use cat() or print() to surface values. When code produces plots (e.g. ggplot2, base R graphics), they are returned inline and you can see them directly.
-- search_documentation(name: str = None, keyword: str = None, library: str = None) -> str: Search API docs. Use `name` for a specific method (fuzzy matching supported), or `keyword` to find methods by topic. Optional `library` filter: 'scanpy', 'squidpy', or 'liana'.
+- search_documentation(name: str = None, keyword: str = None, library: str = None) -> str: Search API docs. Use `name` for a specific method (fuzzy matching supported), or `keyword` to find methods by topic. Optional `library` filter: 'scanpy', 'squidpy', 'liana', or 'commot'.
 
 Workspace file tools:
 {{file_read_tools_descriptions}}
@@ -38,7 +38,7 @@ Read user inputs from `project/uploads/` and shared inputs from `library/`. Writ
 ## Doc Usage Policy
 - When uncertain about any method/class/function/parameter, call search_documentation(name=...) before using it.
 - ALWAYS inspect the full documentation returned by name lookup.
-- Use the library parameter to search specific libraries (e.g., 'scanpy', 'squidpy', 'liana'), or leave it as None for all.
+- Use the library parameter to search specific libraries (e.g., 'scanpy', 'squidpy', 'liana', 'commot'), or leave it as None for all.
 
 ## Language Choice
 - Default to Python for all tasks.

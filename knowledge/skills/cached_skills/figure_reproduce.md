@@ -61,7 +61,7 @@ previously produced figure — so the output matches the target's content and ap
    and caption. Identify plot type, panels, and the color/encoding to match.
 2. **Inspect the dataset** with the `python` tool — load the `.h5ad`, print `.shape`, `.obs.columns`,
    `.obsm.keys()`, and candidate color columns / genes. Confirm every field the figure needs exists.
-3. **Find the plotting API** with `search_documentation` (scanpy / squidpy / liana) — e.g.
+3. **Find the plotting API** with `search_documentation` (scanpy / squidpy / liana / commot) — e.g.
    `sc.pl.spatial`, `sc.pl.umap`, `sc.pl.dotplot`, `sc.pl.heatmap` — to match the target's plot kind.
 4. **Render a first pass** with `python`, saving to `outputs/figures/`. The tool returns the image
    inline; **visually compare** it to the target.

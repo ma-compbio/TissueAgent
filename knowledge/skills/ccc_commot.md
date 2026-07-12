@@ -16,9 +16,9 @@ Don't use it on non-spatial single-cell data (it requires `obsm['spatial']`).
 
 ## Input
 
-- `ccc_prepped.h5ad` from [[ccc-data-prep]] — `.X` = log1p-normalized, `obsm['spatial']` set, `obs['_ccc_cell_type']` populated, `layers['counts']` preserved.
-- `dis_thr` (distance threshold for spatial communication, **in units of `obsm['spatial']`** — typically pixels for Visium HiRes or microns for Xenium). Default 500 for Visium; for Xenium use ~150–200 µm. Confirm units with the user before running.
-- Species — `"human"` or `"mouse"`.
+- `ccc_prepped.h5ad` from [[ccc-data-prep]] — `.X` = log1p-normalized (unscaled, min≥0), `obsm['spatial']` set, `obs['_ccc_cell_type']` populated, `layers['counts']` preserved, `var_names` = gene symbols matching CellChatDB (not Ensembl IDs — COMMOT will silently return empty signal otherwise).
+- `dis_thr` (distance threshold for spatial communication, **in units of `obsm['spatial']`** — typically pixels for Visium HiRes or microns for Xenium). Default 500 for Visium; for Xenium use ~150–200 µm. Confirm units with the user before running. If the user can't say, sample 2000 spots, compute pairwise Euclidean distance, and start at the 95th percentile.
+- Species — `"human"` or `"mouse"`. Other species require ortholog mapping upstream.
 
 ## Output
 
@@ -35,6 +35,46 @@ Additional disk outputs:
 
 - `commot_cluster_results.csv` — flat aggregation over all pathways, columns `[pathway, ligand, receptor, source, target, strength, pvalue]`, where each pathway row is expanded to its constituent LR pairs (from the loaded `df_ligrec`) — the aggregation step (plan step 5) consumes this CSV.
 - `logs/ccc_commot.json` — `{n_lr_pairs_loaded, n_lr_pairs_after_filter, n_pathways, dis_thr, species}`.
+
+## API cheatsheet
+
+Signatures of the five functions used below — verified against COMMOT 0.0.3 docs. See `search_documentation(library='commot', name=...)` for full parameter descriptions.
+
+```python
+ct.pp.ligand_receptor_database(
+    database='CellChat',      # or 'CellPhoneDB_v4.0'
+    species='mouse',          # or 'human' — only these two are first-class
+    heteromeric_delimiter='_',
+    signaling_type='Secreted Signaling',  # or 'Cell-Cell Contact', 'ECM-Receptor', or None for all
+)  # -> DataFrame with INTEGER column names [0,1,2,3] = ligand, receptor, pathway, category
+
+ct.pp.filter_lr_database(
+    df_ligrec, adata,
+    heteromeric=True, heteromeric_delimiter='_', heteromeric_rule='min',
+    filter_criteria='min_cell_pct', min_cell=100, min_cell_pct=0.05,
+)  # -> DataFrame RENAMED to columns ['ligand', 'receptor', 'pathway']
+
+ct.tl.spatial_communication(
+    adata, database_name, df_ligrec, dis_thr,     # dis_thr REQUIRED-scalar — see gotcha
+    heteromeric=True, heteromeric_rule='min', heteromeric_delimiter='_',
+    pathway_sum=True,                              # REQUIRED for -sum-sender/-sum-receiver aggregates
+    cost_type='euc', cot_eps_p=0.1, cot_rho=10.0, cot_nitermax=10000,
+    cot_weights=(0.25,0.25,0.25,0.25), copy=False,
+)  # -> writes adata.obsp['commot-<db>-<L>-<R>'], adata.obsm['commot-<db>-sum-{sender,receiver}']
+
+ct.tl.cluster_communication(
+    adata, database_name, pathway_name=None, lr_pair=None,   # exactly one of these two
+    clustering='_ccc_cell_type', n_permutations=500, random_seed=1,
+)  # LABEL permutation — fast, USE THIS. Writes adata.uns['commot_cluster-<clustering>-<db>-<key>']
+
+ct.tl.cluster_communication_spatial_permutation(
+    adata, df_ligrec, database_name, dis_thr, clustering,
+    heteromeric=True, heteromeric_rule='min',
+    perm_type='within_cluster', n_permutations=100, cot_nitermax=100,
+)  # LOCATION permutation — recomputes OT per permutation, ~100x slower.
+   # Only use when the user explicitly asks for a spatially-conservative null.
+   # Writes adata.uns['commot_cluster_spatial_permutation-<db>-<clustering>-<L>-<R>'] (different prefix!)
+```
 
 ## Success Criteria
 
@@ -123,12 +163,18 @@ print("COMMOT done; pathways:", len(pathways))
 
 ## Common Issues
 
+- **`dis_thr=None` crashes.** `spatial_communication` and `cluster_communication_spatial_permutation` accept `dis_thr=None` per the signature, but internally `CellCommunication.__init__` only assigns `self.cutoff` on the scalar/dict branch. Passing `None` produces `AttributeError: 'CellCommunication' object has no attribute 'cutoff'` at the first OT call. **Always pass a positive scalar.** If the user hasn't given one, sample ~2000 spots and use the 95th-percentile pairwise Euclidean distance as a starting point.
 - **`dis_thr` in wrong units → all signal is zero (too small) or saturated (too large).** Confirm coord units (pixels vs µm) before running; default 500 is Visium-pixel-scale.
+- **`var_names` must be gene symbols, not Ensembl IDs.** The `ccc-data-prep` skill guarantees this, but if you ever handle a raw AnnData, `filter_lr_database` will return ~0 pairs against Ensembl IDs with no error.
+- **Small targeted panels leave few LR pairs after filtering.** Xenium/MERSCOPE panels of a few hundred genes typically drop from ~1200 CellChatDB pairs to 10–30 after `filter_lr_database`. That's expected — don't loosen `min_cell_pct` to hunt for more pairs unless the biology actually warrants it.
+- **`cluster_communication` vs `cluster_communication_spatial_permutation`.** The permutation-suffixed variant recomputes the OT for every permutation and is roughly two orders of magnitude slower. Use plain `cluster_communication` (label permutation) by default. Only reach for the spatial-permutation variant when the user explicitly needs a spatial null (they want to rule out that observed strengths could arise from cluster-adjacency alone).
+- **`commot.__version__` doesn't exist.** If you need a version, use `importlib.metadata.version('commot')` — the module has no `__version__` attribute.
 - **Pathway naming with `/` or spaces.** COMMOT keys pathways verbatim; if the name contains punctuation, the join in plan step 5 must use the exact string. Don't normalize the name.
 - **`pathway_sum=True` is required** for the `commot-cellchat-sum-receiver` / `-sum-sender` aggregates the ensemble plots use.
 - **Memory.** For >50k spots the spot×spot sparse matrices blow up. Subsample first or run per-section.
 - **CellChatDB species coverage.** Only human and mouse are first-class. For other species use ortholog-mapping before this skill.
 - **Schema drift between COMMOT versions.** The `adata.uns[...]` dict keys (`communication_matrix`, `communication_pvalue`) have varied across releases. After the first `cluster_communication` call, `print(list(adata.uns[key].keys()))` and adapt the loop if names differ.
+- **Two uns key prefixes.** `cluster_communication` writes under `commot_cluster-<clustering>-<db>-<key>`. `cluster_communication_spatial_permutation` writes under `commot_cluster_spatial_permutation-<db>-<clustering>-<L>-<R>`. Flat-aggregation code that iterates `adata.uns` must handle both prefixes if you use the spatial variant.
 
 ## References
 
