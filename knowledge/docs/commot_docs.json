@@ -1,0 +1,465 @@
+[
+  {
+    "method": "commot.pp.ligand_receptor_database",
+    "keywords": [
+      "cellchat",
+      "cellphonedb",
+      "commot",
+      "database",
+      "heteromeric",
+      "ligand",
+      "ligand_receptor_database",
+      "lr",
+      "pathway",
+      "pp",
+      "preprocessing",
+      "receptor",
+      "signaling"
+    ],
+    "signature": "ligand_receptor_database(database='CellChat', species='mouse', heteromeric_delimiter='_', signaling_type='Secreted Signaling')",
+    "description": "Extract ligand-receptor pairs from a bundled LR database (CellChatDB or CellPhoneDB v4.0). Returned DataFrame has INTEGER column names [0, 1, 2, 3] mapping to ligand, receptor, pathway_name, category. Heteromeric complexes are already joined with `heteromeric_delimiter` (e.g. 'Tgfbr1_Tgfbr2').",
+    "params": [
+      {
+        "name": "database",
+        "type": "str",
+        "desc": "Which LR database to load. 'CellChat' for CellChatDB (Jin 2021), 'CellPhoneDB_v4.0' for CellPhoneDB v4.0 (Efremova 2020). Default: 'CellChat'."
+      },
+      {
+        "name": "species",
+        "type": "str",
+        "desc": "'mouse' or 'human'. Only these two are first-class; for other species map orthologs first. Default: 'mouse'."
+      },
+      {
+        "name": "heteromeric_delimiter",
+        "type": "str",
+        "desc": "Character used to join heteromeric complex components in ligand/receptor strings (e.g. '_' -> 'Tgfbr1_Tgfbr2'). Must match the delimiter passed to downstream calls. Default: '_'."
+      },
+      {
+        "name": "signaling_type",
+        "type": "str or None",
+        "desc": "Category of signaling. For CellChatDB: 'Secreted Signaling', 'Cell-Cell Contact', or 'ECM-Receptor'. For CellPhoneDB_v4.0: 'Secreted Signaling' or 'Cell-Cell Contact'. Pass None to return ALL pairs. Default: 'Secreted Signaling' — call this three times and concat/dedupe to match LIANA's `consensus` resource breadth."
+      },
+      {
+        "name": "return",
+        "type": "pandas.DataFrame",
+        "desc": "DataFrame with INTEGER column names 0..3 = ligand, receptor, pathway, category. Rename with df.columns = ['ligand','receptor','pathway','category'] before manual inspection — filter_lr_database will rename to the first three itself."
+      }
+    ],
+    "misc": "Edge cases: (1) column names are integers, not strings — indexing by 'ligand'/'receptor' fails until filter_lr_database renames them. (2) Category column is dropped by filter_lr_database. (3) Small targeted panels (~350 genes) leave only 10-30 pairs after filtering; that is expected."
+  },
+  {
+    "method": "commot.pp.filter_lr_database",
+    "keywords": [
+      "commot",
+      "filter",
+      "filter_lr_database",
+      "expression",
+      "heteromeric",
+      "ligand",
+      "min_cell",
+      "min_cell_pct",
+      "pp",
+      "preprocessing",
+      "receptor"
+    ],
+    "signature": "filter_lr_database(df_ligrec, adata, heteromeric=True, heteromeric_delimiter='_', heteromeric_rule='min', filter_criteria='min_cell_pct', min_cell=100, min_cell_pct=0.05)",
+    "description": "Drop LR pairs whose ligand or receptor is under-expressed in `adata`. Returns a DataFrame RENAMED to columns ['ligand', 'receptor', 'pathway'] (category column from `ligand_receptor_database` is dropped). Expects unscaled expression (minimum 0), i.e. counts or log1p — not z-scored.",
+    "params": [
+      {
+        "name": "df_ligrec",
+        "type": "pandas.DataFrame",
+        "desc": "Output of `ligand_receptor_database`. Integer column names are fine — this function renames the first three columns to 'ligand', 'receptor', 'pathway'."
+      },
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Gene-expression AnnData. `adata.var_names` must be gene symbols matching the LR database. Unscaled data (minimum 0) is expected."
+      },
+      {
+        "name": "heteromeric",
+        "type": "bool",
+        "desc": "Whether LR names encode heteromeric complexes joined by `heteromeric_delimiter`. Set True for CellChatDB. Default: True."
+      },
+      {
+        "name": "heteromeric_delimiter",
+        "type": "str",
+        "desc": "Delimiter used in heteromeric names (must match `ligand_receptor_database`). Default: '_'."
+      },
+      {
+        "name": "heteromeric_rule",
+        "type": "str",
+        "desc": "How to quantify a heteromeric complex: 'min' (minimum component expression) or 'ave' (mean). CellChat convention is 'min'. Default: 'min'."
+      },
+      {
+        "name": "filter_criteria",
+        "type": "str",
+        "desc": "'min_cell_pct' (use min_cell_pct fraction) or 'min_cell' (use min_cell absolute count). Default: 'min_cell_pct'."
+      },
+      {
+        "name": "min_cell",
+        "type": "int",
+        "desc": "When filter_criteria='min_cell', keep LR pairs where both ligand and receptor are detected in >= min_cell cells. Default: 100."
+      },
+      {
+        "name": "min_cell_pct",
+        "type": "float",
+        "desc": "When filter_criteria='min_cell_pct', keep LR pairs where both are detected in >= this fraction of cells. Default: 0.05."
+      },
+      {
+        "name": "return",
+        "type": "pandas.DataFrame",
+        "desc": "Filtered DataFrame with columns ['ligand', 'receptor', 'pathway']. Downstream tl.* functions expect exactly this shape."
+      }
+    ],
+    "misc": "Edge cases: (1) Passing scaled/PCA data (negatives) silently misfilters — use counts or log1p. (2) If var_names are Ensembl IDs the overlap will be ~0; convert to gene symbols first. (3) With targeted panels, expect a large drop (e.g. 1209 -> 23 pairs is normal). (4) The 'category' column of the input is dropped; keep a copy if you need it."
+  },
+  {
+    "method": "commot.tl.spatial_communication",
+    "keywords": [
+      "cell-cell communication",
+      "ccc",
+      "collective optimal transport",
+      "commot",
+      "communication",
+      "cot",
+      "dis_thr",
+      "heteromeric",
+      "optimal transport",
+      "pathway_sum",
+      "spatial",
+      "spatial_communication",
+      "tl",
+      "tools"
+    ],
+    "signature": "spatial_communication(adata, database_name=None, df_ligrec=None, pathway_sum=False, heteromeric=False, heteromeric_rule='min', heteromeric_delimiter='_', dis_thr=None, cost_scale=None, cost_type='euc', cot_eps_p=0.1, cot_eps_mu=None, cot_eps_nu=None, cot_rho=10.0, cot_nitermax=10000, cot_weights=(0.25, 0.25, 0.25, 0.25), smooth=False, smth_eta=None, smth_nu=None, smth_kernel='exp', copy=False)",
+    "description": "Infer spot-to-spot signaling for each LR pair via collective optimal transport. Writes one sparse spot x spot matrix per LR pair to `adata.obsp['commot-<database>-<L>-<R>']` and, when `pathway_sum=True`, per-spot sender/receiver totals to `adata.obsm['commot-<database>-sum-sender' / '-sum-receiver']`. Uses `.obsp['spatial_distance']` if present, else builds Euclidean distance from `.obsm['spatial']`.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Expression matrix of shape n_obs x n_var. Must have `.obsm['spatial']` or `.obsp['spatial_distance']`. `.var_names` must be gene symbols aligned to `df_ligrec`."
+      },
+      {
+        "name": "database_name",
+        "type": "str",
+        "desc": "Identifier baked into every output key (e.g. 'cellchat'). Choose consistently — downstream `cluster_communication` uses the same string."
+      },
+      {
+        "name": "df_ligrec",
+        "type": "pandas.DataFrame",
+        "desc": "Filtered LR table with columns ['ligand', 'receptor', 'pathway'] (typically from `filter_lr_database`)."
+      },
+      {
+        "name": "pathway_sum",
+        "type": "bool",
+        "desc": "If True, additionally sum communication across LR pairs per pathway. Required for `commot-<db>-sum-sender/-sum-receiver` aggregates used by most downstream plots. Default: False."
+      },
+      {
+        "name": "heteromeric",
+        "type": "bool",
+        "desc": "Whether LR names encode heteromeric complexes. Must match how `df_ligrec` was built. Default: False."
+      },
+      {
+        "name": "heteromeric_rule",
+        "type": "str",
+        "desc": "'min' or 'ave' for aggregating complex components. Default: 'min'."
+      },
+      {
+        "name": "heteromeric_delimiter",
+        "type": "str",
+        "desc": "Character separating complex components in names. Default: '_'."
+      },
+      {
+        "name": "dis_thr",
+        "type": "float",
+        "desc": "Spatial distance threshold beyond which coupling is forbidden. UNITS ARE THE UNITS OF `.obsm['spatial']` (pixels for Visium HiRes, um for Xenium/CosMx). Common values: 500 for Visium HiRes, 150-200 um for Xenium. **Must be a positive scalar or dict; passing None raises `AttributeError: 'CellCommunication' object has no attribute 'cutoff'` at run time** — the None branch never assigns self.cutoff."
+      },
+      {
+        "name": "cost_scale",
+        "type": "dict, optional",
+        "desc": "Per-pair weight override: cost_scale[('ligA','recA')] = w. Default None (uniform)."
+      },
+      {
+        "name": "cost_type",
+        "type": "str",
+        "desc": "'euc' (Euclidean) or 'euc_square'. Squared distance concentrates signal more locally. Default: 'euc'."
+      },
+      {
+        "name": "cot_eps_p",
+        "type": "float",
+        "desc": "Entropy regularization on the transport plan. Larger -> smoother, smaller -> sparser. Default: 0.1."
+      },
+      {
+        "name": "cot_eps_mu",
+        "type": "float, optional",
+        "desc": "Entropy regularization for untransported source (unmatched ligand). Default: None (uses cot_eps_p)."
+      },
+      {
+        "name": "cot_eps_nu",
+        "type": "float, optional",
+        "desc": "Entropy regularization for untransported target (unmatched receptor). Default: None (uses cot_eps_p)."
+      },
+      {
+        "name": "cot_rho",
+        "type": "float",
+        "desc": "Penalty for unbalanced mass (unmatched ligand/receptor). Default: 10.0."
+      },
+      {
+        "name": "cot_nitermax",
+        "type": "int",
+        "desc": "Max OT iterations. Default: 10000. Lowering (e.g. 200) trades small accuracy loss for speed."
+      },
+      {
+        "name": "cot_weights",
+        "type": "tuple of 4 floats",
+        "desc": "Sum-to-one weights for the four collective-OT setups: (all-L to all-R, each-L to all-R, all-L to each-R, each-L to each-R). Default: (0.25, 0.25, 0.25, 0.25)."
+      },
+      {
+        "name": "smooth",
+        "type": "bool",
+        "desc": "Spatially smooth expression before OT to catch broader trends. Default: False."
+      },
+      {
+        "name": "smth_eta",
+        "type": "float",
+        "desc": "Smoothing kernel bandwidth (only if smooth=True)."
+      },
+      {
+        "name": "smth_nu",
+        "type": "float",
+        "desc": "Smoothing kernel sharpness (only if smooth=True)."
+      },
+      {
+        "name": "smth_kernel",
+        "type": "str",
+        "desc": "'exp' (exponential) or 'lorentz'. Default: 'exp'."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "Return a modified copy instead of mutating in place. Default: False."
+      },
+      {
+        "name": "return",
+        "type": "AnnData or None",
+        "desc": "None (mutates adata) unless copy=True. Adds `.obsp['commot-<db>-<L>-<R>']` for each pair, `.obsm['commot-<db>-sum-sender/-sum-receiver']` if pathway_sum=True, and metadata in `.uns`."
+      }
+    ],
+    "misc": "Edge cases: (1) dis_thr=None crashes — see param note; always pass a scalar. (2) `.var_names` must be gene symbols matching df_ligrec; Ensembl IDs silently produce empty signal. (3) `.X` should be unscaled (counts or log1p); scaled data breaks the OT source/sink construction. (4) Memory scales as O(n_spots^2 x n_pairs); >50k spots requires subsampling or per-section runs. (5) For >10k spots, lowering cot_nitermax to ~200 gives a large speedup with minor accuracy loss."
+  },
+  {
+    "method": "commot.tl.cluster_communication",
+    "keywords": [
+      "aggregation",
+      "cluster",
+      "cluster_communication",
+      "commot",
+      "label permutation",
+      "pvalue",
+      "pathway",
+      "permutation",
+      "tl",
+      "tools"
+    ],
+    "signature": "cluster_communication(adata, database_name=None, pathway_name=None, lr_pair=None, clustering=None, n_permutations=100, random_seed=1, copy=False)",
+    "description": "Aggregate the spot-level communication produced by `spatial_communication` to a cluster x cluster matrix, and compute a p-value per cluster pair via LABEL permutation (shuffle cluster labels; keep positions fixed). Fast — reuses the cached spot-level OT plan. Writes results to `adata.uns['commot_cluster-<clustering>-<database>-<lr_or_pathway>']`.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "AnnData already processed by `spatial_communication`. Must contain the corresponding `.obsp['commot-<database_name>-*']` matrices."
+      },
+      {
+        "name": "database_name",
+        "type": "str",
+        "desc": "Must match the `database_name` used in `spatial_communication`."
+      },
+      {
+        "name": "pathway_name",
+        "type": "str, optional",
+        "desc": "Summarize over all LR pairs in the given pathway (requires spatial_communication was run with pathway_sum=True). Mutually exclusive with lr_pair."
+      },
+      {
+        "name": "lr_pair",
+        "type": "tuple(str, str), optional",
+        "desc": "(ligand, receptor) for a single-pair analysis. Mutually exclusive with pathway_name. If both are None, aggregation is across all LR pairs."
+      },
+      {
+        "name": "clustering",
+        "type": "str",
+        "desc": "Column name in `adata.obs` holding cluster labels (e.g. cell types). Baked into the output uns key."
+      },
+      {
+        "name": "n_permutations",
+        "type": "int",
+        "desc": "Number of label permutations for the p-value. Default 100; 500-1000 recommended for stable p-values."
+      },
+      {
+        "name": "random_seed",
+        "type": "int",
+        "desc": "Seed for reproducible permutations. Default: 1."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "Return copy vs mutate in place. Default: False."
+      },
+      {
+        "name": "return",
+        "type": "AnnData or None",
+        "desc": "None (mutates adata) unless copy=True. Adds `adata.uns['commot_cluster-<clustering>-<database>-<pathway_or_lr>']` — a dict with `communication_matrix` (cluster x cluster strength) and `communication_pvalue`. Note: uns key schema has drifted across releases; print `list(adata.uns[key].keys())` after the first call."
+      }
+    ],
+    "misc": "Edge cases: (1) Fails if `spatial_communication` was never run or `database_name` mismatches. (2) Label permutation preserves each spot's position but shuffles cluster labels; it can OVER-ESTIMATE strength for spatially adjacent clusters (which is exactly what `cluster_communication_spatial_permutation` addresses at ~100x cost). (3) Pathway aggregation requires `pathway_sum=True` in the upstream call. (4) uns dict keys ('communication_matrix', 'communication_pvalue') have varied across releases — inspect the dict once and adapt."
+  },
+  {
+    "method": "commot.tl.cluster_communication_spatial_permutation",
+    "keywords": [
+      "cluster",
+      "cluster_communication_spatial_permutation",
+      "commot",
+      "location permutation",
+      "permutation",
+      "pvalue",
+      "spatial",
+      "spatial null",
+      "tl",
+      "tools"
+    ],
+    "signature": "cluster_communication_spatial_permutation(adata, df_ligrec=None, database_name=None, heteromeric=False, heteromeric_rule='min', heteromeric_delimiter='_', dis_thr=None, cost_scale=None, cost_type='euc', cot_eps_p=0.1, cot_eps_mu=None, cot_eps_nu=None, cot_rho=10.0, cot_nitermax=100, cot_weights=(0.25, 0.25, 0.25, 0.25), smooth=False, smth_eta=None, smth_nu=None, smth_kernel='exp', clustering=None, perm_type='within_cluster', n_permutations=100, random_seed=1, verbose=True, copy=False)",
+    "description": "Cluster-level CCC with p-values from LOCATION permutation (shuffle spot positions; recompute the full spot-level OT each permutation). Corrects the neighbor-inflation bias of `cluster_communication`'s label-permutation p-values but is orders of magnitude slower — 100 permutations recomputes the OT 100 times. Prefer `cluster_communication` unless the spatial null is essential.",
+    "params": [
+      {
+        "name": "adata",
+        "type": "AnnData",
+        "desc": "Expression matrix with `.obsm['spatial']` (or `.obsp['spatial_distance']`) and cluster labels in `.obs[clustering]`."
+      },
+      {
+        "name": "df_ligrec",
+        "type": "pandas.DataFrame",
+        "desc": "Filtered LR table with columns ['ligand', 'receptor', 'pathway'] (from `filter_lr_database`)."
+      },
+      {
+        "name": "database_name",
+        "type": "str",
+        "desc": "Identifier baked into output keys."
+      },
+      {
+        "name": "heteromeric",
+        "type": "bool",
+        "desc": "Whether LR names encode heteromeric complexes. Default: False."
+      },
+      {
+        "name": "heteromeric_rule",
+        "type": "str",
+        "desc": "'min' or 'ave' aggregation for complexes. Default: 'min'."
+      },
+      {
+        "name": "heteromeric_delimiter",
+        "type": "str",
+        "desc": "Complex-component delimiter. Default: '_'."
+      },
+      {
+        "name": "dis_thr",
+        "type": "float",
+        "desc": "Spatial distance threshold (units of `.obsm['spatial']`). **Must be a positive scalar; passing None triggers `AttributeError: 'CellCommunication' object has no attribute 'cutoff'`.** Same failure mode as `spatial_communication`."
+      },
+      {
+        "name": "cost_scale",
+        "type": "dict, optional",
+        "desc": "Per-pair weight override. Default: None."
+      },
+      {
+        "name": "cost_type",
+        "type": "str",
+        "desc": "'euc' or 'euc_square'. Default: 'euc'."
+      },
+      {
+        "name": "cot_eps_p",
+        "type": "float",
+        "desc": "Entropy regularization on transport plan. Default: 0.1."
+      },
+      {
+        "name": "cot_eps_mu",
+        "type": "float, optional",
+        "desc": "Entropy reg for unmatched source. Default: None."
+      },
+      {
+        "name": "cot_eps_nu",
+        "type": "float, optional",
+        "desc": "Entropy reg for unmatched target. Default: None."
+      },
+      {
+        "name": "cot_rho",
+        "type": "float",
+        "desc": "Unbalanced-mass penalty. Default: 10.0."
+      },
+      {
+        "name": "cot_nitermax",
+        "type": "int",
+        "desc": "Max OT iterations per permutation. Default: 100 (lower than spatial_communication's 10000 to keep the O(n_permutations) cost manageable)."
+      },
+      {
+        "name": "cot_weights",
+        "type": "tuple of 4 floats",
+        "desc": "Weights for the four collective-OT setups. Default: (0.25, 0.25, 0.25, 0.25)."
+      },
+      {
+        "name": "smooth",
+        "type": "bool",
+        "desc": "Smooth expression before OT. Default: False."
+      },
+      {
+        "name": "smth_eta",
+        "type": "float",
+        "desc": "Smoothing kernel bandwidth."
+      },
+      {
+        "name": "smth_nu",
+        "type": "float",
+        "desc": "Smoothing kernel sharpness."
+      },
+      {
+        "name": "smth_kernel",
+        "type": "str",
+        "desc": "'exp' or 'lorentz'. Default: 'exp'."
+      },
+      {
+        "name": "clustering",
+        "type": "str",
+        "desc": "Column in `.obs` holding cluster labels."
+      },
+      {
+        "name": "perm_type",
+        "type": "str",
+        "desc": "'within_cluster' (permute spot positions within each cluster — preserves cluster composition) or 'all_cell' (globally permute). Default: 'within_cluster'."
+      },
+      {
+        "name": "n_permutations",
+        "type": "int",
+        "desc": "Number of location permutations. Default: 100. Each recomputes the full spot-level OT — cost is roughly n_permutations x spatial_communication runtime."
+      },
+      {
+        "name": "random_seed",
+        "type": "int",
+        "desc": "Seed for reproducibility. Default: 1."
+      },
+      {
+        "name": "verbose",
+        "type": "bool",
+        "desc": "Print per-permutation progress. Default: True."
+      },
+      {
+        "name": "copy",
+        "type": "bool",
+        "desc": "Return copy vs mutate in place. Default: False."
+      },
+      {
+        "name": "return",
+        "type": "AnnData or None",
+        "desc": "None (mutates adata) unless copy=True. Writes `adata.uns['commot_cluster_spatial_permutation-<database>-<clustering>-<L>-<R>']` per LR pair (note different key prefix from `cluster_communication`)."
+      }
+    ],
+    "misc": "Edge cases: (1) dis_thr=None -> same crash as spatial_communication. (2) Does NOT reuse output of a prior spatial_communication call — it recomputes the OT internally for each permutation (that's the whole point). (3) Only use when you specifically need a spatially-conservative null; otherwise cluster_communication is ~100x faster. (4) The uns key prefix is `commot_cluster_spatial_permutation-...`, distinct from `commot_cluster-...` produced by `cluster_communication` — flat-aggregation code must handle both."
+  }
+]

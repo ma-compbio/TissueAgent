@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -130,21 +131,31 @@ class RetrievalIndex(ABC):
     def search_by_keyword(
         self, keyword: str, *, library: str | None = None
     ) -> list[dict[str, Any]]:
-        """Find entries whose keywords contain the query as a substring."""
+        """Find entries whose name or keywords contain all query tokens.
+
+        The query is split on whitespace, ``_``, and ``.``; every token must
+        appear as a case-insensitive substring in the entry's name or one of
+        its keywords. This lets multi-token queries like ``rank_aggregate``
+        match entries even when the underlying keyword list stores the tokens
+        separately (e.g. ``["rank", "aggregate"]``).
+        """
         if not keyword:
             return []
-        q = keyword.lower().strip()
+        tokens = [t for t in re.split(r"[\s_.]+", keyword.lower().strip()) if t]
+        if not tokens:
+            return []
         candidates = self._candidate_indices(library)
         results: list[dict[str, Any]] = []
         for i in candidates:
-            kws = self._get_keywords(self._entries[i])
-            for kw in kws:
-                if q in kw.lower():
-                    results.append(
-                        {
-                            "entry": self._entries[i],
-                            "library": self._library_mapping[i],
-                        }
-                    )
-                    break
+            entry = self._entries[i]
+            haystack = self._get_name(entry).lower() + " " + " ".join(
+                kw.lower() for kw in self._get_keywords(entry)
+            )
+            if all(t in haystack for t in tokens):
+                results.append(
+                    {
+                        "entry": entry,
+                        "library": self._library_mapping[i],
+                    }
+                )
         return results

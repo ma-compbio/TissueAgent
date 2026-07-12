@@ -58,7 +58,7 @@ def create_coding_agent(
         Provide exactly one of `name` or `keyword`:
         - name: Look up a specific method by name (supports fuzzy matching).
         - keyword: Find methods related to a topic.
-        - library: Optional filter ('scanpy', 'squidpy', or 'liana').
+        - library: Optional filter ('scanpy', 'squidpy', 'liana', or 'commot').
         """
         if name and keyword:
             return "Error: provide either 'name' or 'keyword', not both."
@@ -77,7 +77,7 @@ def create_coding_agent(
             "Search API documentation for spatial transcriptomics libraries."
             " Use `name` for a specific method (fuzzy matching supported),"
             " or `keyword` to find methods by topic."
-            " Optional `library` filter: 'scanpy', 'squidpy', or 'liana'."
+            " Optional `library` filter: 'scanpy', 'squidpy', 'liana', or 'commot'."
         ),
     )
 
