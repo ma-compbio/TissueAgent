@@ -1,0 +1,61 @@
+# Methods note — Retrospective hypothesis-recovery benchmark
+
+**Purpose.** Address Reviewer #1 Comment #7 by evaluating whether TissueAgent’s
+Hypothesis Agent (and, as a baseline, CellVoyager) can recover author-reported
+spatial biology findings when given only a dataset and limited background.
+
+## Protocol
+
+1. **Curation.** Select published ST studies with available data and clear
+   biological claims. For each study, write:
+   - `background.md` — tissue, technology, annotation availability, constraints;
+     **author findings withheld**
+   - `gold_claims.json` — 1–3 scorer-only gold claims (never staged to agents)
+2. **Dual-arm execution** on identical inputs:
+   - **TissueAgent** — withheld-background 3-phase pipeline
+     (explore → draft → test/narrow), plan template
+     `knowledge/plans/hypothesis_recovery_withheld.md`
+   - **CellVoyager** — `cellvoyager_analyze_dataset_tool` /
+     `run_cellvoyager_analysis` with the same `.h5ad` and background text
+3. **Scoring** (report all four):
+   - **Hypothesis recovery** — exact / partial / related / miss vs gold claims
+   - **Expert scores** — derivable, novel, feasible, specific, falsifiable (1–10)
+   - **Testability** — presence of an executable test plan supported by the data
+   - **Execution success** — whether the test plan was run to statistical results
+
+Automatic keyword/jaccard matching (`demo/score_hypothesis_recovery.py`) is for
+triage; manuscript numbers should be expert-audited.
+
+## Reproducibility
+
+```bash
+PYTHONPATH=src python demo/run_hypothesis_recovery.py \
+  --fixture farah_heart_merfish --arm tissueagent --live
+
+PYTHONPATH=src python demo/run_hypothesis_recovery.py \
+  --fixture farah_heart_merfish --arm cellvoyager --num-analyses 1 --model gpt-4o
+
+# Or batch (full dual-arm, no subsample):
+PYTHONPATH=src python demo/run_recovery_batch.py \
+  --fixtures 2026_NC_Renoir,2023_NC_SpaCET,2025_NM_Spotiphy,farah_heart_merfish \
+  --ta-live --cv-repeats 2 --model gpt-4o --no-docker
+
+PYTHONPATH=src python demo/score_hypothesis_recovery.py --all --aggregate
+```
+
+**Rebuttal policy:** always use the full AnnData listed in each fixture's
+`dataset_manifest.json`. Do **not** subsample cells/spots for Nature Methods
+revision runs. CellVoyager timeout is 4 hours to accommodate full-size ST.
+
+Artifacts live under `benchmark/hypothesis_recovery/<fixture>/runs/{tissueagent,cellvoyager}/`.
+
+## Fixture status
+
+| Fixture | Dataset (FULL) | Dual-arm |
+|---------|----------------|----------|
+| `farah_heart_merfish` | 228,635 × 238 MERFISH | TA live + CV×2 |
+| `2026_NC_Renoir` | TNBC Visium CID44971 | TA live + CV×3 |
+| `2025_NM_Spotiphy` | Xenium FAD 104,831 × 247 | TA live + CV×2 |
+| `2023_NC_SpaCET` | 10x Visium breast 3,798 × 36,601 | TA live + CV×2 |
+
+See `results/REVISION_RESULTS.md` for scored tables. Kidney atlas is stretch only.

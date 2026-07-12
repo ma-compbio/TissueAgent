@@ -1,0 +1,305 @@
+{
+  "fixture_id": "farah_heart_merfish",
+  "scored_utc": "2026-07-11T15:44:06.039842+00:00",
+  "scorer": "heuristic_v1",
+  "scorer_note": "Automatic keyword/jaccard matching for triage; expert audit required for manuscript numbers.",
+  "arms": {
+    "tissueagent": {
+      "arm": "tissueagent",
+      "run_dir": "benchmark/hypothesis_recovery/farah_heart_merfish/runs/tissueagent/ta_20260711_142003",
+      "n_hypotheses": 3,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.0,
+      "recovery_rate_including_related": 0.0,
+      "claims_recovered": [],
+      "claims_related": [],
+      "claims_missed": [
+        "GC1",
+        "GC2",
+        "GC3"
+      ],
+      "mean_quality_scores": {
+        "derivable": null,
+        "novel": null,
+        "feasible": null,
+        "specific": null,
+        "falsifiable": null
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 1.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": null,
+          "statement": "",
+          "best_claim_id": "GC1",
+          "recovery": "miss",
+          "match_score": 0.0,
+          "evidence": [
+            "jaccard=0.000"
+          ],
+          "quality_scores": {
+            "derivable_from_data": 5,
+            "novelty": 3,
+            "feasibility": 4,
+            "specificity": 3,
+            "falsifiability": 3,
+            "biological_plausibility": 4,
+            "non_circularity": 3,
+            "potential_impact": 3,
+            "overall_quality": 3.5
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": null
+        },
+        {
+          "hypothesis_id": null,
+          "statement": "",
+          "best_claim_id": "GC1",
+          "recovery": "miss",
+          "match_score": 0.0,
+          "evidence": [
+            "jaccard=0.000"
+          ],
+          "quality_scores": {
+            "derivable_from_data": 5,
+            "novelty": 4,
+            "feasibility": 4,
+            "specificity": 3,
+            "falsifiability": 4,
+            "biological_plausibility": 4,
+            "non_circularity": 4,
+            "potential_impact": 4,
+            "overall_quality": 4.0
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": null
+        },
+        {
+          "hypothesis_id": null,
+          "statement": "",
+          "best_claim_id": "GC1",
+          "recovery": "miss",
+          "match_score": 0.0,
+          "evidence": [
+            "jaccard=0.000"
+          ],
+          "quality_scores": {
+            "derivable_from_data": 5,
+            "novelty": 4,
+            "feasibility": 4,
+            "specificity": 4,
+            "falsifiability": 4,
+            "biological_plausibility": 5,
+            "non_circularity": 4,
+            "potential_impact": 4,
+            "overall_quality": 4.5
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": null
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": null,
+          "label": "miss",
+          "score": 0.0
+        },
+        "GC2": {
+          "hypothesis_id": null,
+          "label": "miss",
+          "score": 0.0
+        },
+        "GC3": {
+          "hypothesis_id": null,
+          "label": "miss",
+          "score": 0.0
+        }
+      }
+    },
+    "cellvoyager": {
+      "arm": "cellvoyager",
+      "run_dir": "benchmark/hypothesis_recovery/farah_heart_merfish/runs/cellvoyager/cv_20260711_063017",
+      "n_hypotheses": 2,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.0,
+      "recovery_rate_including_related": 0.3333,
+      "claims_recovered": [],
+      "claims_related": [
+        "GC1"
+      ],
+      "claims_missed": [
+        "GC2",
+        "GC3"
+      ],
+      "mean_quality_scores": {
+        "derivable": null,
+        "novel": null,
+        "feasible": null,
+        "specific": null,
+        "falsifiable": null
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 0.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "CV1",
+          "statement": "# Analysis\n\n**Hypothesis**: Spatial organization of transcription factor expression in the developing human heart is correlated with functional regions and may reveal novel insights into cardiac development.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.1452,
+          "evidence": [
+            "keywords=['spatial niches']",
+            "jaccard=0.128"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        },
+        {
+          "hypothesis_id": "CV2",
+          "statement": "# Analysis Plan\n\n**Hypothesis**: Spatial organization of transcription factor expression in the developing human heart is correlated with functional regions and may reveal novel insights into cardiac development.\n\n## Steps:\n- Identify distinct spatial regions using clustering methods like Leiden on ",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.1156,
+          "evidence": [
+            "keywords=['spatial niches']",
+            "jaccard=0.062"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "CV1",
+          "label": "related",
+          "score": 0.14519230769230768
+        },
+        "GC2": {
+          "hypothesis_id": "CV1",
+          "label": "miss",
+          "score": 0.032926829268292684
+        },
+        "GC3": {
+          "hypothesis_id": "CV2",
+          "label": "miss",
+          "score": 0.027272727272727275
+        }
+      }
+    },
+    "tissueagent_cellvoyager": {
+      "arm": "tissueagent_cellvoyager",
+      "run_dir": "benchmark/hypothesis_recovery/farah_heart_merfish/runs/tissueagent_cellvoyager/tacv_20260711_150708",
+      "n_hypotheses": 3,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.0,
+      "recovery_rate_including_related": 0.3333,
+      "claims_recovered": [],
+      "claims_related": [
+        "GC1"
+      ],
+      "claims_missed": [
+        "GC2",
+        "GC3"
+      ],
+      "mean_quality_scores": {
+        "derivable": 4.0,
+        "novel": 3.333,
+        "feasible": 4.0,
+        "specific": 4.333,
+        "falsifiable": 5.0
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 1.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "H1",
+          "statement": "Within the ventricular myocardium of the developing human heart, cardiomyocyte populations that are transcriptionally more mature/contractile will be preferentially located toward the compact outer myocardial wall, while less mature or more proliferative cardiomyocyte populations will be enriched to",
+          "best_claim_id": "GC1",
+          "recovery": "miss",
+          "match_score": 0.0321,
+          "evidence": [
+            "jaccard=0.071"
+          ],
+          "quality_scores": {
+            "derivable": 4,
+            "novel": 3,
+            "feasible": 4,
+            "specific": 4,
+            "falsifiable": 5,
+            "robustness": 4
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": null
+        },
+        {
+          "hypothesis_id": "H2",
+          "statement": "In the developing human heart, proliferative non-myocyte cell populations (such as cycling fibroblasts and progenitor-like stromal cells) preferentially occupy perivascular and perivalvular niches, forming spatial halos around endothelial/valve structures beyond what would be expected from overall s",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.1202,
+          "evidence": [
+            "keywords=['spatial niches']",
+            "jaccard=0.073"
+          ],
+          "quality_scores": {
+            "derivable": 4,
+            "novel": 3,
+            "feasible": 4,
+            "specific": 4,
+            "falsifiable": 5,
+            "robustness": 4
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": null
+        },
+        {
+          "hypothesis_id": "H3",
+          "statement": "At the interface between myocardial cardiomyocyte layers and outer epicardial or stromal layers in the developing human heart, there exists a spatially restricted interaction zone characterized by a localized peak of cardiomyocyte\u2013epicardial/stromal adjacency that exceeds both adjacent myocardial an",
+          "best_claim_id": "GC1",
+          "recovery": "miss",
+          "match_score": 0.0766,
+          "evidence": [
+            "jaccard=0.170"
+          ],
+          "quality_scores": {
+            "derivable": 4,
+            "novel": 4,
+            "feasible": 4,
+            "specific": 5,
+            "falsifiable": 5,
+            "robustness": 4
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": null
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "H2",
+          "label": "related",
+          "score": 0.12022727272727272
+        },
+        "GC2": {
+          "hypothesis_id": "H2",
+          "label": "miss",
+          "score": 0.0509433962264151
+        },
+        "GC3": {
+          "hypothesis_id": "H2",
+          "label": "miss",
+          "score": 0.04821428571428571
+        }
+      }
+    }
+  }
+}

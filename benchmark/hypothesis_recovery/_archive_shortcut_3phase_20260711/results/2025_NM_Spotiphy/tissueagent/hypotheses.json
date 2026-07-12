@@ -1,0 +1,118 @@
+{
+  "paper_context": "# Limited Background \u2014 Spotiphy mouse-brain spatial study context\n\n**Tissue:** Mouse brain (wild-type and/or Alzheimer\u2019s disease model), depending on\nthe provided AnnData file.\n\n**Technology:** Spatial transcriptomics and/or imaging-based spatial profiling\n(Visium / Xenium / CosMx). The object may be spot-level or near-single-cell.\n\n**Annotations available:** cell-type or region labels may be present in `.obs`\n(column names to be discovered by inventory). Spatial coordinates in\n`.obsm[\"spatial\"]` when available.\n\n**Scope of study (intentionally vague):** the dataset is used to study spatial\norganization of cell types and regional specification in the mouse brain,\nincluding disease-associated states when an AD model is present.\n**Specific findings \u2014 including which cell types show regional specification,\nwhich disease-associated microglia / astrocyte programs the authors reported,\nand which spatial domains they highlighted \u2014 are withheld from you.**\nDiscover structure by exploring the data directly.\n\n**Constraints:**\n- Use only this dataset; no external atlases beyond genes present in the object.\n- Do not relabel author-provided cell types if present.\n- Treat spatial coordinates as unitless if uncalibrated.\n",
+  "dataset_info": {
+    "n_obs": 104831,
+    "n_vars": 247,
+    "obs_columns": [
+      "cell_id",
+      "x_centroid",
+      "y_centroid",
+      "transcript_counts",
+      "control_probe_counts",
+      "control_codeword_counts",
+      "total_counts",
+      "cell_area",
+      "nucleus_area",
+      "cell_type"
+    ],
+    "raw_inventory": {
+      "field": "value",
+      "n_obs": "104831",
+      "n_vars": "247",
+      "obs_columns": "cell_id,x_centroid,y_centroid,transcript_counts,control_probe_counts,control_codeword_counts,total_counts,cell_area,nucleus_area,cell_type",
+      "spatial_key": "spatial",
+      "top_cell_type_counts": "Oligo:25226, Astro:17390, Microglia:9853, L2/3 IT CTX:7731, Pvalb:4951"
+    }
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "grounded_in": [
+        "OBSERVATION 2"
+      ],
+      "statement": "Immune cell neighborhoods containing mutually enriched Macrophage\u2013B cell pairs form multicellular immune hubs with increased immune cell diversity and more strongly shared activation programs across immune cell types than immune neighborhoods lacking such Macrophage\u2013B cell adjacency.",
+      "mechanism": "Direct spatial coupling between Macrophages and B cells promotes reciprocal signaling and recruitment of additional immune populations, creating localized immune hubs where multiple immune cell types are co-activated and share common transcriptional programs. In contrast, immune regions without Macrophage\u2013B cell contact should display weaker coordination of activation states across immune cell types.",
+      "test_plan": [
+        "1. Use spatial coordinates (x_centroid, y_centroid) to construct a k-nearest-neighbor or radius-based neighbor graph over all cells.",
+        "2. Identify Macrophage and BCell cells using the existing 'cell_type' annotation.",
+        "3. Define 'Mac-B hubs' as local neighborhoods centered on Macrophage\u2013BCell neighbor pairs (e.g., mutual or bidirectional nearest neighbors), expanding to include all cells within a fixed radius or k-hop neighborhood around the pair.",
+        "4. Define control immune neighborhoods by selecting immune\u2013immune pairs that do not involve BCell or Macrophage, or immune neighborhoods centered on Macrophage cells that lack nearby BCells, matched for overall cell count and spatial extent.",
+        "5. For each neighborhood, quantify immune cell diversity using a compositional metric such as Shannon entropy over immune-related cell types (e.g., Macrophage, Microglia, BCell, TCell if present).",
+        "6. Derive unsupervised expression programs (e.g., via PCA, NMF, or similar factorization) on the 247 measured features using all immune cells, and compute program scores for each immune cell.",
+        "7. Within each neighborhood, compute cross\u2013cell-type coordination by calculating pairwise correlations of program scores between different immune cell types (e.g., average correlation across all Macrophage\u2013BCell, Macrophage\u2013Microglia, BCell\u2013Microglia pairs).",
+        "8. Statistically compare immune diversity and cross\u2013cell-type program coordination between Mac-B hubs and matched control immune neighborhoods using non-parametric tests and spatial permutation or label-shuffling to account for spatial autocorrelation.",
+        "9. Optionally, assess whether non-immune cell types (e.g., Astro, neurons) within Mac-B hubs also show distinct expression-program shifts compared to similar cells outside such hubs."
+      ],
+      "predicted_outcome": "Macrophage\u2013B cell\u2013anchored neighborhoods will show significantly higher immune cell-type diversity and stronger cross\u2013cell-type correlation of expression-program scores than control immune neighborhoods, supporting the presence of specialized immune hubs organized around Macrophage\u2013B cell contact.",
+      "quality_scores": {
+        "derivable": 8,
+        "novel": 7,
+        "feasible": 8,
+        "specific": 8,
+        "falsifiable": 8
+      },
+      "status": "REFINE",
+      "narrowing_notes": "Only one mutually adjacent Macrophage\u2013BCell pair and a single Mac\u2013B hub were detected, limiting power for neighborhood-level comparisons. Immune diversity and program coordination in this hub are comparable to, but not dramatically distinct from, control Macrophage-centered immune neighborhoods. Future refinements should relax the mutual-neighbor requirement and/or enlarge the spatial search radius to capture additional Macrophage\u2013BCell constellations."
+    },
+    {
+      "id": "H2",
+      "grounded_in": [
+        "OBSERVATION 3"
+      ],
+      "statement": "Highly clustered hippocampal neuronal populations such as dentate gyrus (DG) and CA neurons are embedded within spatial domains that exhibit sharper spatial gradients in both cell-type composition and dominant expression programs at their boundaries than domains dominated by more intermingled astrocytes.",
+      "mechanism": "DG and CA neurons form anatomically compact layers, creating well-defined structural domains with distinct microenvironments. This laminar organization should produce abrupt transitions in both surrounding cell-type composition and local transcriptional programs at domain edges. In contrast, astrocytes tile multiple regions and intermix with diverse cell types, leading to more gradual spatial transitions in composition and gene expression around astrocyte-rich areas.",
+      "test_plan": [
+        "1. Use 'cell_type' annotations to identify DG and CA hippocampal neurons and astrocytes.",
+        "2. Construct a spatial neighbor graph (e.g., k-nearest neighbors) using x_centroid and y_centroid.",
+        "3. For each DG and CA neuron, compute its local same-type neighbor fraction and use this to classify neurons as 'core' (high same-type neighbor fraction) or 'boundary' (intermediate same-type fraction).",
+        "4. Similarly, identify large astrocyte-rich regions by finding astrocytes with many astrocyte neighbors, and classify astrocytes into 'core' and 'boundary' based on same-type neighbor fraction.",
+        "5. For each core region (DG, CA, Astro), compute distances from each surrounding cell to the nearest core cell and bin cells into distance shells (e.g., increasing radii).",
+        "6. Within each distance bin, quantify cell-type composition (relative abundance of each cell_type and composition entropy) and summarize expression-program structure by scoring cells on a set of unsupervised expression programs derived from all cells (e.g., PCA or NMF on the 247 features).",
+        "7. For each domain type (DG, CA, Astro), characterize how composition entropy and program distributions change as a function of distance from the core (e.g., fitting smooth curves or linear models).",
+        "8. Compare the steepness of these gradients between DG/CA domains and astrocyte-dominated domains, testing whether DG/CA boundaries show more abrupt changes (steeper slopes) in composition and program scores than astrocyte boundaries, using bootstrapping or mixed-effects models.",
+        "9. Perform spatial permutation tests (e.g., shuffling cell-type labels within local regions) to confirm that observed gradient differences are not explained by generic spatial autocorrelation alone."
+      ],
+      "predicted_outcome": "DG and CA neuron domains will display significantly steeper spatial gradients in both cell-type composition and dominant expression-program scores at their boundaries than astrocyte-rich domains, indicating more sharply compartmentalized hippocampal microenvironments relative to the broadly intermingled astrocyte network.",
+      "quality_scores": {
+        "derivable": 8,
+        "novel": 7,
+        "feasible": 7,
+        "specific": 8,
+        "falsifiable": 8
+      },
+      "status": "REFINE",
+      "narrowing_notes": "Distance-to-core profiles could be computed for DG, CA and Astro domains, but the resulting gradients do not match the original prediction: Astro-centered regions show entropy and program-score gradients that are at least as steep as, and in PC1 substantially steeper than, those around DG/CA neuron cores. This suggests that simple distance-to-core metrics do not isolate sharp hippocampal laminar boundaries in this Xenium field. A refined test should focus on anatomically restricted hippocampal slabs and/or multi-dimensional program gradients rather than a single global PC, and incorporate explicit DG\u2013CA anatomical localization instead of treating all DG/CA cells as a single core."
+    },
+    {
+      "id": "H3",
+      "grounded_in": [
+        "OBSERVATION 2",
+        "OBSERVATION 3"
+      ],
+      "statement": "In cortical regions, local neighborhoods with strong cross-type spatial coupling between L5 IT CTX and L5 PT CTX projection neurons exhibit greater convergence of their transcriptional states than neighborhoods where each projection neuron type is more spatially segregated from the other.",
+      "mechanism": "Where L5 IT CTX and L5 PT CTX neurons are densely intermingled and strongly co-localized, they are likely exposed to similar microenvironmental signals and may form shared local circuits, driving convergence in activity-dependent transcriptional programs. In regions where these projection neuron types occupy more separate spatial niches, they should maintain more distinct transcriptional states.",
+      "test_plan": [
+        "1. Use 'cell_type' annotations to subset L5 IT CTX and L5 PT CTX neurons from the full dataset.",
+        "2. Construct a spatial neighbor graph on all cells using x_centroid and y_centroid.",
+        "3. Partition the tissue into local analysis windows (e.g., sliding circular windows or spatial tiles) that contain sufficient numbers of both L5 IT CTX and L5 PT CTX neurons.",
+        "4. Within each window, quantify cross-type spatial coupling between L5 IT CTX and L5 PT CTX neurons using metrics such as the fraction of neighbors of each type that are the other type, or a mutual enrichment score derived from the local kNN graph.",
+        "5. Derive unsupervised expression programs (e.g., PCA or NMF components) using all L5 IT CTX and L5 PT CTX neurons jointly across the 247 measured features.",
+        "6. For each window, compute average program-score profiles separately for L5 IT CTX and L5 PT CTX neurons, and quantify transcriptomic divergence between the two types in that window (e.g., Euclidean distance or 1 \u2212 correlation between their mean program vectors).",
+        "7. Across windows, test whether transcriptomic divergence between L5 IT CTX and L5 PT CTX decreases as cross-type spatial coupling increases, using correlation analysis (e.g., Spearman correlation) between the coupling metric and the divergence metric.",
+        "8. Establish a null distribution by shuffling cell-type labels within each window or by spatially permuting cell positions, recomputing the coupling and divergence metrics, and comparing the observed correlation to the null.",
+        "9. As an internal control, repeat the analysis for a neuron pair that does not show strong cross-type neighbor enrichment (e.g., L2/3 IT CTX vs Pvalb), and test whether any coupling\u2013convergence relationship is weaker or absent for this control pair."
+      ],
+      "predicted_outcome": "Windows with higher local cross-type spatial coupling between L5 IT CTX and L5 PT CTX neurons will show smaller transcriptomic distances between their expression-program profiles, with a significant negative correlation between coupling and divergence that is stronger than for control neuron pairs.",
+      "quality_scores": {
+        "derivable": 8,
+        "novel": 8,
+        "feasible": 7,
+        "specific": 8,
+        "falsifiable": 8
+      },
+      "status": "REFINE",
+      "narrowing_notes": "In 9 cortical windows with sufficient L5 IT CTX and L5 PT CTX neurons, cross-type neighbor coupling shows a modest negative association with transcriptomic divergence (Spearman rho\u2248-0.43 for Euclidean distance, p\u22480.244), but the relationship is not statistically compelling and is essentially absent when using 1\u2212correlation as the divergence metric. This suggests that any coupling\u2013convergence trend is weak in this field of view. A refined test should increase the number of windows (e.g., by adaptive windowing within cortex), stratify by cortical layer/region, and include a null model based on spatially permuted neuron positions."
+    }
+  ],
+  "generation_approach": "System-level hypotheses derived from exploratory OBSERVATION entries, focusing on spatial organization, cell-type composition, and shared expression programs, without using withheld paper claims."
+}

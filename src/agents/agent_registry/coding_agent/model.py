@@ -199,8 +199,11 @@ def create_coding_agent(
             "Coding Agent",
             step_id=step_ctx.step_id if step_ctx else None,
         ) as invocation_id:
+            from config import RECURSION_LIMIT
+
             final_state = agent.invoke(
-                {"messages": [message], "skill_prompt": skill_prompt_text}
+                {"messages": [message], "skill_prompt": skill_prompt_text},
+                config={"recursion_limit": RECURSION_LIMIT},
             )
         state_queue.put((id, final_state, invocation_id))
         # Hand off to the wrapping tool_node so it pairs this final state with

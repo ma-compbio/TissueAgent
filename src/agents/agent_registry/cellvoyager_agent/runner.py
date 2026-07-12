@@ -123,6 +123,56 @@ def _parse_notebook_for_findings(notebook_path: Path) -> list[dict]:
     return findings
 
 
+def _resolve_h5ad_path(h5ad_path: str) -> Path:
+    """Resolve agent-supplied h5ad paths to a real host file.
+
+    Agents often pass container-style or workspace-relative paths
+    (``/mnt/data/...``, ``/workspace/...``, ``library/datasets/foo.h5ad``).
+    CellVoyager runs on the host via conda, so those must be mapped onto
+    :data:`config.DATA_DIR`.
+    """
+    from config import DATA_DIR, DATASET_DIR
+
+    raw = Path(h5ad_path)
+    candidates: list[Path] = []
+    if raw.is_absolute():
+        candidates.append(raw)
+        # Strip common container / mount prefixes → DATA_DIR-relative.
+        for prefix in ("/mnt/data", "/workspace", "/data"):
+            try:
+                rel = raw.relative_to(prefix)
+            except ValueError:
+                continue
+            candidates.append(DATA_DIR / rel)
+            break
+    else:
+        candidates.append(Path.cwd() / raw)
+        candidates.append(DATA_DIR / raw)
+        if str(raw).startswith("library/datasets/"):
+            candidates.append(DATA_DIR / raw)
+        candidates.append(DATASET_DIR / raw.name)
+
+    # Always try the basename under the curated dataset dir.
+    candidates.append(DATASET_DIR / raw.name)
+
+    seen: set[str] = set()
+    for c in candidates:
+        key = str(c)
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            resolved = c.resolve()
+        except OSError:
+            continue
+        if resolved.is_file():
+            return resolved
+
+    raise FileNotFoundError(
+        f"h5ad file not found: {h5ad_path}. Tried: {[str(c) for c in candidates]}"
+    )
+
+
 def run_cellvoyager_analysis(
     h5ad_path: str,
     background_text: str,
@@ -135,7 +185,9 @@ def run_cellvoyager_analysis(
     """Run CellVoyager on a single dataset + background-text pair.
 
     Args:
-        h5ad_path: Absolute path to the AnnData file.
+        h5ad_path: Path to the AnnData file (absolute host path preferred;
+            workspace-relative and ``/mnt/data`` / ``/workspace`` prefixes are
+            resolved automatically).
         background_text: Biological context the agent should see. In a
             recovery-benchmark run this is the LIMITED background with the
             target claim withheld.
@@ -161,11 +213,19 @@ def run_cellvoyager_analysis(
     _check_isolated_env()
     _check_api_keys()
 
-    h5ad_path_p = Path(h5ad_path).resolve()
-    if not h5ad_path_p.is_file():
-        raise FileNotFoundError(f"h5ad file not found: {h5ad_path_p}")
+    h5ad_path_p = _resolve_h5ad_path(h5ad_path)
     if not background_text.strip():
         raise ValueError("background_text must be non-empty.")
+
+    # Upstream defaults to Claude; fall back to gpt-4o when only OpenAI is configured
+    # (matches the CellVoyager-alone benchmark arm).
+    if not model_name:
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            model_name = None  # upstream default (claude-sonnet-4-6)
+        elif os.environ.get("OPENAI_API_KEY"):
+            model_name = "gpt-4o"
+        else:
+            model_name = "gpt-4o"
 
     run_identifier = request_id or datetime.now(timezone.utc).strftime(
         "run_%Y%m%d_%H%M%S"
@@ -202,7 +262,7 @@ def run_cellvoyager_analysis(
         text=True,
         env={**os.environ},
         check=False,
-        timeout=3600,  # 60 min hard cap; CellVoyager on 228k-cell data needs margin
+        timeout=14400,  # 4h hard cap for full-size ST (Nature Methods rebuttal: no subsample)
     )
 
     stdout_tail = "\n".join(proc.stdout.splitlines()[-50:])
@@ -220,13 +280,69 @@ def run_cellvoyager_analysis(
             h["source_notebook"] = nb.name
             findings.append(h)
 
-    return {
+    result = {
         "request_id": run_identifier,
         "run_directory": str(run_dir.resolve()),
-        "model_used": model_name or _DEFAULT_MODEL,
+        "model_used": model_name or "claude-sonnet-4-6",
         "notebook_path": notebook_path,
         "hypotheses": findings,
         "stdout_tail": stdout_tail,
         "stderr_tail": stderr_tail,
         "returncode": proc.returncode,
     }
+
+    # Materialize findings into the active TissueAgent project so manager
+    # heuristic validation can see workspace-relative artifacts.
+    try:
+        from config import active_project_outputs
+
+        out = active_project_outputs()
+        hyp_dir = out / "hypotheses"
+        hyp_dir.mkdir(parents=True, exist_ok=True)
+        suggestions = []
+        for i, h in enumerate(findings, start=1):
+            suggestions.append(
+                {
+                    "id": f"CV{i}",
+                    "statement": (h.get("header") or "").strip(),
+                    "code_excerpt": (h.get("code_excerpt") or "")[:4000],
+                    "source_notebook": h.get("source_notebook"),
+                }
+            )
+        suggestion_path = hyp_dir / "cellvoyager_suggestions.json"
+        suggestion_path.write_text(
+            json.dumps(
+                {
+                    "returncode": proc.returncode,
+                    "upstream_run_directory": str(run_dir.resolve()),
+                    "notebook_path": notebook_path,
+                    "suggestions": suggestions,
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        log_path = hyp_dir / "exploration_log.md"
+        lines = [
+            "",
+            "## OBSERVATION_CV — CellVoyager submodule proposals",
+            "",
+            f"CellVoyager run `{run_identifier}` (returncode={proc.returncode}).",
+            "Treat the following as candidate analysis directions to synthesize "
+            "with TissueAgent observations.",
+            "",
+        ]
+        if not suggestions:
+            lines.append("- (No parseable hypotheses; see upstream run_directory.)")
+        for s in suggestions:
+            lines.append(f"- **{s['id']}**: {(s['statement'] or '(no header)')[:500]}")
+        lines.append("")
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+        result["staged_suggestions_path"] = str(suggestion_path)
+        result["staged_exploration_log"] = str(log_path)
+    except Exception as e:
+        result["staging_error"] = str(e)
+
+    return result

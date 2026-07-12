@@ -1,0 +1,189 @@
+{
+  "fixture_id": "2025_NM_Spotiphy",
+  "scored_utc": "2026-07-11T06:36:40.211990+00:00",
+  "scorer": "heuristic_v1",
+  "scorer_note": "Automatic keyword/jaccard matching for triage; expert audit required for manuscript numbers.",
+  "arms": {
+    "tissueagent": {
+      "arm": "tissueagent",
+      "run_dir": "benchmark/hypothesis_recovery/2025_NM_Spotiphy/runs/tissueagent/ta_20260711_052657",
+      "n_hypotheses": 3,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.3333,
+      "recovery_rate_including_related": 1.0,
+      "claims_recovered": [
+        "GC1"
+      ],
+      "claims_related": [
+        "GC2",
+        "GC3"
+      ],
+      "claims_missed": [],
+      "mean_quality_scores": {
+        "derivable": 8.0,
+        "novel": 7.333,
+        "feasible": 7.333,
+        "specific": 8.0,
+        "falsifiable": 8.0
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 1.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "H1",
+          "statement": "Immune cell neighborhoods containing mutually enriched Macrophage\u2013B cell pairs form multicellular immune hubs with increased immune cell diversity and more strongly shared activation programs across immune cell types than immune neighborhoods lacking such Macrophage\u2013B cell adjacency.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.1091,
+          "evidence": [
+            "keywords=['spatial domains']",
+            "jaccard=0.048"
+          ],
+          "quality_scores": {
+            "derivable": 8,
+            "novel": 7,
+            "feasible": 8,
+            "specific": 8,
+            "falsifiable": 8
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "REFINE"
+        },
+        {
+          "hypothesis_id": "H2",
+          "statement": "Highly clustered hippocampal neuronal populations such as dentate gyrus (DG) and CA neurons are embedded within spatial domains that exhibit sharper spatial gradients in both cell-type composition and dominant expression programs at their boundaries than domains dominated by more intermingled astroc",
+          "best_claim_id": "GC1",
+          "recovery": "partial",
+          "match_score": 0.3956,
+          "evidence": [
+            "keywords=['astrocyte', 'spatial domains']",
+            "cell_types=['astrocyte', 'astro']",
+            "jaccard=0.046"
+          ],
+          "quality_scores": {
+            "derivable": 8,
+            "novel": 7,
+            "feasible": 7,
+            "specific": 8,
+            "falsifiable": 8
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "REFINE"
+        },
+        {
+          "hypothesis_id": "H3",
+          "statement": "In cortical regions, local neighborhoods with strong cross-type spatial coupling between L5 IT CTX and L5 PT CTX projection neurons exhibit greater convergence of their transcriptional states than neighborhoods where each projection neuron type is more spatially segregated from the other.",
+          "best_claim_id": "GC3",
+          "recovery": "related",
+          "match_score": 0.19,
+          "evidence": [
+            "keywords=['spatial domains', 'transcriptomic profiles']",
+            "jaccard=0.033"
+          ],
+          "quality_scores": {
+            "derivable": 8,
+            "novel": 8,
+            "feasible": 7,
+            "specific": 8,
+            "falsifiable": 8
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "REFINE"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "H2",
+          "label": "partial",
+          "score": 0.39561068702290075
+        },
+        "GC2": {
+          "hypothesis_id": "H3",
+          "label": "related",
+          "score": 0.0814207650273224
+        },
+        "GC3": {
+          "hypothesis_id": "H2",
+          "label": "related",
+          "score": 0.2867307692307692
+        }
+      }
+    },
+    "cellvoyager": {
+      "arm": "cellvoyager",
+      "run_dir": "benchmark/hypothesis_recovery/2025_NM_Spotiphy/runs/cellvoyager/cv_20260711_054706",
+      "n_hypotheses": 2,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.0,
+      "recovery_rate_including_related": 1.0,
+      "claims_recovered": [],
+      "claims_related": [
+        "GC1",
+        "GC2",
+        "GC3"
+      ],
+      "claims_missed": [],
+      "mean_quality_scores": {
+        "derivable": null,
+        "novel": null,
+        "feasible": null,
+        "specific": null,
+        "falsifiable": null
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 0.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "CV1",
+          "statement": "# Analysis\n\n**Hypothesis**: Spatial proximity affects gene expression profiles related to Alzheimer's disease in specific cell types within the mouse brain.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.2554,
+          "evidence": [
+            "keywords=['spatial domains', 'brain']",
+            "jaccard=0.179"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        },
+        {
+          "hypothesis_id": "CV2",
+          "statement": "# Analysis Plan\n\n**Hypothesis**: Spatial proximity affects gene expression profiles related to Alzheimer's disease in specific cell types within the mouse brain.\n\n## Steps:\n- Assess spatial distribution of different cell types using centroid coordinates to identify spatial clustering or regional spe",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.3075,
+          "evidence": [
+            "keywords=['regional specification', 'spatial domains', 'brain']",
+            "jaccard=0.100"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "CV2",
+          "label": "related",
+          "score": 0.30749999999999994
+        },
+        "GC2": {
+          "hypothesis_id": "CV2",
+          "label": "related",
+          "score": 0.15776315789473683
+        },
+        "GC3": {
+          "hypothesis_id": "CV1",
+          "label": "related",
+          "score": 0.22
+        }
+      }
+    }
+  }
+}

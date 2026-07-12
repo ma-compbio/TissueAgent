@@ -1,0 +1,228 @@
+{
+  "hypotheses": [
+    {
+      "id": "HYP_001",
+      "statement": "High T-cell score regions form spatially clustered \u2018immune rims\u2019 that preferentially border, rather than overlap with, malignant-score-rich tumor cores.",
+      "rationale": "The exploration log (DATASET_OVERVIEW) indicates that each spot has both spatial coordinates and continuous scores for malignant and T-cell enrichment, and OBSERVATION_CV / CV1\u2013CV2 emphasize that spatially structured variation in these phenotypes may underlie tissue heterogeneity. A plausible spatial pattern in a tumor microenvironment is that T-cell\u2013enriched regions accumulate around, but do not fully penetrate, malignant cores, forming \u2018immune rims\u2019 at tumor borders.",
+      "grounded_in_observations": [
+        "DATASET_OVERVIEW",
+        "OBSERVATION_CV",
+        "CV1",
+        "CV2"
+      ],
+      "test_plan": {
+        "subsets": [
+          {
+            "name": "in_tissue",
+            "definition": "All spots with obs['in_tissue'] == 1; all analyses restricted to this set."
+          },
+          {
+            "name": "MAL_CORE",
+            "definition": "Within in_tissue spots, define malignant-core spots as those with score_malignant in the top quartile (e.g., >= 75th percentile) of the in_tissue distribution."
+          },
+          {
+            "name": "RIM",
+            "definition": "Spots that are not MAL_CORE but are direct spatial neighbors (in a fixed-radius or k-NN graph built from obsm['spatial']) of at least one MAL_CORE spot."
+          },
+          {
+            "name": "FAR",
+            "definition": "All remaining in_tissue spots that are neither MAL_CORE nor RIM (no immediate spatial adjacency to MAL_CORE in the chosen neighborhood graph)."
+          }
+        ],
+        "analysis_steps": [
+          "1. Restrict AnnData to in_tissue spots only (obs['in_tissue'] == 1), without subsampling.",
+          "2. Compute score_malignant quartiles and label MAL_CORE as the top-quartile malignant spots.",
+          "3. Build a spatial neighbor graph on obsm['spatial'] (e.g., k-nearest neighbors with fixed k or fixed-radius graph).",
+          "4. Using this graph, label RIM spots as non\u2013MAL_CORE neighbors of any MAL_CORE spot; label remaining spots as FAR.",
+          "5. For each group (MAL_CORE, RIM, FAR), extract the distribution of score_Tcell.",
+          "6. Perform a global comparison of score_Tcell across the three groups using a non-parametric test (e.g., Kruskal\u2013Wallis).",
+          "7. If the global test is significant, perform pairwise comparisons of score_Tcell (e.g., RIM vs MAL_CORE, RIM vs FAR) using Wilcoxon rank-sum tests with multiple-testing correction (FDR).",
+          "8. Compute effect sizes for pairwise contrasts (e.g., difference in means divided by pooled standard deviation of score_Tcell).",
+          "9. As a complementary check of \u2018rim\u2019 structure, compute for each MAL_CORE spot the mean score_Tcell among its spatial neighbors and compare this to the global mean score_Tcell using a one-sample test or permutation-based null (shuffling neighbor relationships or T-cell scores)."
+        ],
+        "metrics": [
+          {
+            "name": "groupwise_Tcell_distributions",
+            "description": "Distributions (mean, median, variance) of score_Tcell in MAL_CORE, RIM, and FAR."
+          },
+          {
+            "name": "global_group_effect_pvalue",
+            "description": "P-value from Kruskal\u2013Wallis test comparing score_Tcell across MAL_CORE, RIM, FAR."
+          },
+          {
+            "name": "pairwise_Tcell_pvalues",
+            "description": "Adjusted p-values (e.g., FDR) for RIM vs MAL_CORE and RIM vs FAR comparisons."
+          },
+          {
+            "name": "effect_sizes",
+            "description": "Standardized effect sizes (e.g., Cohen\u2019s d or mean difference / pooled SD) for RIM vs MAL_CORE and RIM vs FAR."
+          },
+          {
+            "name": "neighbor_Tcell_enrichment",
+            "description": "Difference between mean neighbor score_Tcell around MAL_CORE spots and the global mean score_Tcell, with empirical p-value estimated by permutation of T-cell scores or neighbor labels."
+          }
+        ],
+        "decision_criteria": {
+          "SUPPORTED": "Classify as SUPPORTED if: (a) the global Kruskal\u2013Wallis test for score_Tcell across MAL_CORE, RIM, and FAR is significant (adjusted p < 0.05); AND (b) RIM has significantly higher score_Tcell than MAL_CORE (FDR-adjusted p < 0.05) with a standardized effect size \u2265 0.3; AND (c) RIM is not substantially depleted in T cells relative to FAR (difference in means with |effect size| < 0.2 or non-significant FDR-adjusted p \u2265 0.05); AND (d) mean neighbor score_Tcell around MAL_CORE spots is significantly higher than the global mean under a permutation-based null (empirical p < 0.05). Together, these support a rim-like enrichment of T cells around, but not within, malignant cores.",
+          "REFINE": "Classify as REFINE if only part of the pattern holds, e.g., global differences in score_Tcell across MAL_CORE, RIM, FAR are significant but the specific RIM > MAL_CORE and RIM \u2248 FAR relationships are weak or inconsistent, or if neighbor-based enrichment is not clearly supported. This would motivate revising neighborhood definitions (e.g., radius or k) or malignant-core thresholds.",
+          "DROPPED": "Classify as DROPPED if score_Tcell distributions do not differ meaningfully across MAL_CORE, RIM, and FAR (global p \u2265 0.05) and no robust evidence for higher T-cell scores near malignant cores is observed (neighbor enrichment test non-significant and effect sizes small). In this case, there is no clear \u2018immune rim\u2019 pattern in the current dataset."
+        }
+      },
+      "notes": "This hypothesis operationalizes the idea of an \u2018immune rim\u2019 using only the provided malignant and T-cell scores plus spatial coordinates, without assuming any prior knowledge of true tumor boundaries. Specific quantile thresholds (e.g., top quartile) and neighbor definitions (k, radius) can be tuned but should be fixed before inspecting results for an unbiased test.",
+      "quality_scores": {
+        "derivable": 3.5,
+        "novel": 4.0,
+        "feasible": 4.5,
+        "specific": 4.5,
+        "falsifiable": 5.0,
+        "robustness": 4.0,
+        "overall_robustness": 4.0
+      },
+      "status": "PENDING_TEST"
+    },
+    {
+      "id": "HYP_002",
+      "statement": "Spatially coherent regions with concurrently high cancer-associated fibroblast and M2-like myeloid scores act as immunosuppressive niches characterized by locally reduced T-cell scores.",
+      "rationale": "The dataset contains precomputed scores for putative cancer-associated fibroblasts (score_CAF), M2-like myeloid cells (score_M2), and T cells (score_Tcell), all with spatial coordinates (DATASET_OVERVIEW). OBSERVATION_CV / CV1\u2013CV2 stress that spatial variability in such phenotypes may be central to tissue heterogeneity. A biologically plausible configuration is that regions with both high CAF and high M2 signatures form stromal or myeloid-rich \u2018niches\u2019 that locally suppress T-cell presence or activity, leading to lower T-cell scores in and around these regions.",
+      "grounded_in_observations": [
+        "DATASET_OVERVIEW",
+        "OBSERVATION_CV",
+        "CV1",
+        "CV2"
+      ],
+      "test_plan": {
+        "subsets": [
+          {
+            "name": "in_tissue",
+            "definition": "All spots with obs['in_tissue'] == 1."
+          },
+          {
+            "name": "CAF_high",
+            "definition": "Spots in the top quartile of score_CAF among in_tissue spots."
+          },
+          {
+            "name": "M2_high",
+            "definition": "Spots in the top quartile of score_M2 among in_tissue spots."
+          },
+          {
+            "name": "CAF_M2_niche",
+            "definition": "Spots that are simultaneously CAF_high and M2_high, representing candidate immunosuppressive niche centers."
+          },
+          {
+            "name": "CAF_M2_background",
+            "definition": "Spots that are not CAF_M2_niche (i.e., not concurrently high in both score_CAF and score_M2), serving as background for comparison."
+          }
+        ],
+        "analysis_steps": [
+          "1. Restrict to in_tissue spots and compute quartiles for score_CAF and score_M2.",
+          "2. Label CAF_high and M2_high based on top-quartile thresholds; define CAF_M2_niche as their intersection.",
+          "3. Build a spatial neighbor graph (k-NN or radius-based) using obsm['spatial'] for all in_tissue spots.",
+          "4. For each CAF_M2_niche spot, compute the mean score_Tcell among its spatial neighbors (including or excluding the center, defined a priori).",
+          "5. For a control group, sample an equal number of CAF_M2_background spots (without subsampling the dataset overall) and compute the mean neighbor score_Tcell around each control spot using the same neighborhood definition.",
+          "6. Compare the distributions of neighbor mean score_Tcell between CAF_M2_niche and CAF_M2_background using a non-parametric test (e.g., Wilcoxon rank-sum) and compute standardized effect sizes.",
+          "7. Assess spatial coherence of CAF_M2_niche spots by calculating, for each such spot, the fraction of its neighbors that are also CAF_M2_niche, and compare this to a null distribution obtained by randomly permuting the CAF_M2_niche labels across in_tissue spots (many iterations).",
+          "8. Optionally, repeat the T-cell comparison stratified by malignant burden (e.g., low vs high score_malignant) to see if the association between CAF/M2 niches and low T-cell scores holds independently of malignant score."
+        ],
+        "metrics": [
+          {
+            "name": "neighbor_Tcell_niche_vs_background",
+            "description": "Distribution of mean neighbor score_Tcell for CAF_M2_niche spots vs CAF_M2_background controls."
+          },
+          {
+            "name": "Tcell_difference_pvalue",
+            "description": "P-value (with FDR correction if multiple comparisons) for the difference in neighbor mean score_Tcell between niche and background spots."
+          },
+          {
+            "name": "Tcell_effect_size",
+            "description": "Standardized effect size (e.g., Cohen\u2019s d) for the niche vs background comparison in neighbor mean score_Tcell."
+          },
+          {
+            "name": "CAF_M2_spatial_coherence",
+            "description": "Observed fraction of neighbors of CAF_M2_niche spots that are also CAF_M2_niche, compared with a null distribution from random label permutations; summarized by an empirical p-value."
+          }
+        ],
+        "decision_criteria": {
+          "SUPPORTED": "Classify as SUPPORTED if: (a) neighbor mean score_Tcell around CAF_M2_niche spots is significantly lower than around CAF_M2_background controls (FDR-adjusted p < 0.05) with a standardized effect size \u2265 0.3; AND (b) CAF_M2_niche labels exhibit significant spatial coherence, i.e., the observed fraction of niche\u2013niche neighbor pairs is greater than expected under random labeling with an empirical permutation p < 0.05. These findings together support the presence of spatially coherent CAF/M2-enriched niches associated with local T-cell depletion.",
+          "REFINE": "Classify as REFINE if either (a) CAF_M2_niche spots show spatial coherence but T-cell depletion around them is weak or inconsistent (e.g., small effect size or marginal p-values), or (b) T-cell depletion is evident but CAF_M2_niche labels are not strongly clustered spatially. This would motivate revisiting thresholds (e.g., different quantiles) or neighborhood scales.",
+          "DROPPED": "Classify as DROPPED if there is no meaningful difference in neighbor mean score_Tcell between CAF_M2_niche and background controls (FDR-adjusted p \u2265 0.05 and effect sizes small), and if CAF_M2_niche spots do not show spatial coherence beyond random expectation (permutation p \u2265 0.05). In this scenario, the dataset does not support distinct CAF/M2-defined immunosuppressive niches."
+        }
+      },
+      "notes": "This hypothesis uses only precomputed CAF, M2, and T-cell scores and spatial information. It does not assume a particular molecular mechanism for immunosuppression, only that regions jointly high in CAF and M2 scores are spatially coherent and locally T-cell poor.",
+      "quality_scores": {
+        "derivable": 3.0,
+        "novel": 4.5,
+        "feasible": 4.5,
+        "specific": 4.5,
+        "falsifiable": 5.0,
+        "robustness": 3.5,
+        "overall_robustness": 3.5
+      },
+      "status": "PENDING_TEST"
+    },
+    {
+      "id": "HYP_003",
+      "statement": "Unsupervised transcriptomic clusters define spatially coherent tumor microenvironment \u2018ecosystem\u2019 states with distinct malignant, fibroblast, myeloid, and T-cell score profiles.",
+      "rationale": "OBSERVATION_CV / CV2\u2013CV3 suggest using PCA, neighborhood graphs, and Leiden clustering on the full gene expression matrix to reveal structure, and the dataset overview indicates that each spot has associated malignant, CAF, M2, and T-cell scores. A natural synthesis is that unsupervised expression clusters correspond to recurrent tumor microenvironment \u2018ecosystems\u2019 that are both spatially coherent and differentiated by combinations of these four scores (e.g., malignant-dominant, immune-infiltrated, stroma-dominant).",
+      "grounded_in_observations": [
+        "DATASET_OVERVIEW",
+        "OBSERVATION_CV",
+        "CV1",
+        "CV2",
+        "CV3"
+      ],
+      "test_plan": {
+        "subsets": [
+          {
+            "name": "in_tissue",
+            "definition": "All spots with obs['in_tissue'] == 1; used for clustering and downstream analyses."
+          }
+        ],
+        "analysis_steps": [
+          "1. On in_tissue spots only (no subsampling), perform standard preprocessing (e.g., library-size normalization, log1p transform) on the gene expression matrix.",
+          "2. Run PCA on the expression matrix to obtain a low-dimensional representation, following CV3-style dimensionality reduction.",
+          "3. Construct a k-NN graph in PCA space and apply Leiden clustering at one or more pre-specified resolutions (e.g., 0.4, 0.6, 0.8), selecting a primary resolution (e.g., 0.5\u20130.6) before inspecting the score distributions.",
+          "4. For the chosen clustering resolution, compute for each cluster: mean and variance of score_malignant, score_CAF, score_M2, and score_Tcell, and record cluster sizes.",
+          "5. For each score (malignant, CAF, M2, Tcell), test whether its distribution differs across clusters using a global test (e.g., ANOVA or Kruskal\u2013Wallis), followed by pairwise post-hoc tests with multiple-testing correction to identify cluster pairs with significantly different mean scores.",
+          "6. Evaluate spatial coherence of each cluster by overlapping cluster labels with a spatial neighbor graph (k-NN or radius-based on obsm['spatial']) and computing, for each cluster, the fraction of spatial edges that connect spots within the same cluster.",
+          "7. Generate a null distribution of within-cluster edge fractions by randomly permuting cluster labels across in_tissue spots many times, recomputing the within-cluster edge fraction each time.",
+          "8. For clusters of sufficient size (e.g., containing \u2265 5% of in_tissue spots), compute empirical p-values for observed spatial coherence relative to the permutation-based null.",
+          "9. Optionally, perform differential expression analysis between clusters with contrasting score profiles (e.g., high-malignant/low-T-cell vs low-malignant/high-T-cell), using logistic regression or other suitable models, to characterize the underlying gene programs of each ecosystem."
+        ],
+        "metrics": [
+          {
+            "name": "cluster_score_profiles",
+            "description": "Per-cluster means and variances of score_malignant, score_CAF, score_M2, and score_Tcell, plus cluster sizes."
+          },
+          {
+            "name": "score_cluster_effects",
+            "description": "P-values from global tests (ANOVA/Kruskal\u2013Wallis) assessing whether each score differs across clusters, with FDR-adjusted pairwise p-values for key contrasts."
+          },
+          {
+            "name": "spatial_coherence_per_cluster",
+            "description": "For each cluster, the observed fraction of spatial neighbor edges that connect spots within the same cluster, along with an empirical p-value from label-permutation nulls."
+          },
+          {
+            "name": "ecosystem_contrasts_DE",
+            "description": "Results of differential expression comparisons between clusters with distinct score profiles, summarized by number of significantly different features (FDR-adjusted p < 0.05) and overall expression pattern differences (optional)."
+          }
+        ],
+        "decision_criteria": {
+          "SUPPORTED": "Classify as SUPPORTED if: (a) for at least two of the four scores (score_malignant, score_CAF, score_M2, score_Tcell), global tests indicate significant differences across clusters (FDR-adjusted p < 0.05), with at least one pair of clusters differing by \u2265 0.5 SD in mean score; AND (b) at least two sizable clusters (each containing \u2265 5% of in_tissue spots) exhibit significantly higher within-cluster spatial edge fractions than expected under random label permutations (empirical p < 0.05). Optional DE results that reveal distinct gene expression programs between such clusters would further strengthen the ecosystem interpretation but are not strictly required for SUPPORT classification.",
+          "REFINE": "Classify as REFINE if unsupervised clusters clearly differ in score profiles (criterion (a) met) but show weak or no spatial coherence beyond random expectation, OR if spatial coherence is strong but score differences are modest or limited to a single score dimension. This would suggest that the clustering or resolution may need adjustment, or that ecosystems are defined more by location than by the combination of the four scores.",
+          "DROPPED": "Classify as DROPPED if cluster labels fail to explain significant variation in the four scores (global tests non-significant after correction) and no clusters show spatial coherence beyond what is expected by random label permutations. In that case, the dataset does not support a model where unsupervised transcriptomic clusters define distinct, spatially coherent ecosystem states with clearly different malignant, stromal, and immune score profiles."
+        }
+      },
+      "notes": "This hypothesis explicitly connects CV2\u2013CV3\u2019s suggestion of PCA + Leiden clustering to the available phenotypic scores and spatial coordinates. It remains agnostic about the optimal clustering resolution or the exact number of ecosystem types, focusing instead on whether any reasonable clustering yields spatially coherent groups with distinct malignant/stromal/immune profiles.",
+      "quality_scores": {
+        "derivable": 4.5,
+        "novel": 4.5,
+        "feasible": 4.0,
+        "specific": 4.0,
+        "falsifiable": 4.5,
+        "robustness": 4.0,
+        "overall_robustness": 4.0
+      },
+      "status": "PENDING_TEST"
+    }
+  ]
+}

@@ -73,14 +73,26 @@ _kernel_client: KernelClient | None = None
 _settings_revision: int | None = None
 
 
-def _compile_graph(kernel_client: KernelClient) -> None:
+def _compile_graph(
+    kernel_client: KernelClient,
+    domain_agents: list | None = None,
+) -> None:
     """(Re)compile the agent graph using the currently-selected models.
 
     Compiles with an in-memory checkpointer so copilot mode can pause via ``interrupt_before`` and
     resume by invoking with ``input=None`` against the same ``thread_id``. Autopilot ignores both -
     it never passes ``interrupt_before`` and never resumes - so the checkpointer is effectively no-op overhead for autopilot runs.
+
+    Args:
+        kernel_client: Shared Jupyter kernel client for the coding agent.
+        domain_agents: Optional recruitable-agent list override (benchmark ablations).
     """
-    graph = create_tissueagent_graph(session.state_queue, _bind_retry, kernel_client=kernel_client)
+    graph = create_tissueagent_graph(
+        session.state_queue,
+        _bind_retry,
+        domain_agents=domain_agents,
+        kernel_client=kernel_client,
+    )
     session.agent = graph.compile(checkpointer=MemorySaver())
     session.model_revision = model_registry.get_revision()
     global _settings_revision

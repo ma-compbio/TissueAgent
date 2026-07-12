@@ -1,0 +1,191 @@
+{
+  "fixture_id": "farah_heart_merfish",
+  "scored_utc": "2026-07-11T06:36:40.247917+00:00",
+  "scorer": "heuristic_v1",
+  "scorer_note": "Automatic keyword/jaccard matching for triage; expert audit required for manuscript numbers.",
+  "arms": {
+    "tissueagent": {
+      "arm": "tissueagent",
+      "run_dir": "benchmark/hypothesis_recovery/farah_heart_merfish/runs/tissueagent/ta_20260711_055449",
+      "n_hypotheses": 3,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.3333,
+      "recovery_rate_including_related": 0.6667,
+      "claims_recovered": [
+        "GC2"
+      ],
+      "claims_related": [
+        "GC1"
+      ],
+      "claims_missed": [
+        "GC3"
+      ],
+      "mean_quality_scores": {
+        "derivable": 9.0,
+        "novel": 8.667,
+        "feasible": 7.667,
+        "specific": 9.0,
+        "falsifiable": 9.0
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 1.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "H1",
+          "statement": "Within ventricular myocardium, proliferating ventricular cardiomyocytes preferentially occupy spatial boundary zones between compact cardiomyocytes and ventricular fibroblasts, forming pro-growth microdomains with distinct developmental signaling activity compared to proliferating cardiomyocytes in ",
+          "best_claim_id": "GC2",
+          "recovery": "related",
+          "match_score": 0.1068,
+          "evidence": [
+            "keywords=['fibro-lymphatic']",
+            "jaccard=0.082"
+          ],
+          "quality_scores": {
+            "derivable": 9,
+            "novel": 8,
+            "feasible": 8,
+            "specific": 9,
+            "falsifiable": 9
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "SUPPORTED"
+        },
+        {
+          "hypothesis_id": "H2",
+          "statement": "Lymphatic\u2013fibroblast microdomains defined by co-localized lymphatic endothelial cells and adventitial/valve fibroblasts constitute specialized extracellular-matrix remodeling and immune-modulatory niches, exhibiting distinct gene-expression programs in both lineages compared to lymphatic endothelial",
+          "best_claim_id": "GC2",
+          "recovery": "partial",
+          "match_score": 0.4708,
+          "evidence": [
+            "keywords=['adfibro', 'lec', 'fibro-lymphatic']",
+            "cell_types=['adfibro', 'lec']",
+            "jaccard=0.135"
+          ],
+          "quality_scores": {
+            "derivable": 9,
+            "novel": 9,
+            "feasible": 7,
+            "specific": 9,
+            "falsifiable": 9
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "SUPPORTED"
+        },
+        {
+          "hypothesis_id": "H3",
+          "statement": "Multilineage hub regions, such as epicardial and valve/vascular zones where multiple cell types intermingle, act as high-diversity signaling centers with elevated ligand\u2013receptor interaction potential compared to more homogeneous myocardial or endothelial territories.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.1032,
+          "evidence": [
+            "keywords=['spatial niches']",
+            "jaccard=0.035"
+          ],
+          "quality_scores": {
+            "derivable": 9,
+            "novel": 9,
+            "feasible": 8,
+            "specific": 9,
+            "falsifiable": 9
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "SUPPORTED"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "H1",
+          "label": "related",
+          "score": 0.10315217391304347
+        },
+        "GC2": {
+          "hypothesis_id": "H2",
+          "label": "partial",
+          "score": 0.47081081081081083
+        },
+        "GC3": {
+          "hypothesis_id": "H2",
+          "label": "miss",
+          "score": 0.046153846153846156
+        }
+      }
+    },
+    "cellvoyager": {
+      "arm": "cellvoyager",
+      "run_dir": "benchmark/hypothesis_recovery/farah_heart_merfish/runs/cellvoyager/cv_20260711_063017",
+      "n_hypotheses": 2,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.0,
+      "recovery_rate_including_related": 0.3333,
+      "claims_recovered": [],
+      "claims_related": [
+        "GC1"
+      ],
+      "claims_missed": [
+        "GC2",
+        "GC3"
+      ],
+      "mean_quality_scores": {
+        "derivable": null,
+        "novel": null,
+        "feasible": null,
+        "specific": null,
+        "falsifiable": null
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 0.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "CV1",
+          "statement": "# Analysis\n\n**Hypothesis**: Spatial organization of transcription factor expression in the developing human heart is correlated with functional regions and may reveal novel insights into cardiac development.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.1452,
+          "evidence": [
+            "keywords=['spatial niches']",
+            "jaccard=0.128"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        },
+        {
+          "hypothesis_id": "CV2",
+          "statement": "# Analysis Plan\n\n**Hypothesis**: Spatial organization of transcription factor expression in the developing human heart is correlated with functional regions and may reveal novel insights into cardiac development.\n\n## Steps:\n- Identify distinct spatial regions using clustering methods like Leiden on ",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.1156,
+          "evidence": [
+            "keywords=['spatial niches']",
+            "jaccard=0.062"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "CV1",
+          "label": "related",
+          "score": 0.14519230769230768
+        },
+        "GC2": {
+          "hypothesis_id": "CV1",
+          "label": "miss",
+          "score": 0.032926829268292684
+        },
+        "GC3": {
+          "hypothesis_id": "CV2",
+          "label": "miss",
+          "score": 0.027272727272727275
+        }
+      }
+    }
+  }
+}

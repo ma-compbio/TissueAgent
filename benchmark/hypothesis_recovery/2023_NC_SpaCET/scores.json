@@ -1,0 +1,305 @@
+{
+  "fixture_id": "2023_NC_SpaCET",
+  "scored_utc": "2026-07-11T15:44:05.976184+00:00",
+  "scorer": "heuristic_v1",
+  "scorer_note": "Automatic keyword/jaccard matching for triage; expert audit required for manuscript numbers.",
+  "arms": {
+    "tissueagent": {
+      "arm": "tissueagent",
+      "run_dir": "benchmark/hypothesis_recovery/2023_NC_SpaCET/runs/tissueagent/ta_20260711_085556",
+      "n_hypotheses": 3,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.0,
+      "recovery_rate_including_related": 1.0,
+      "claims_recovered": [],
+      "claims_related": [
+        "GC1",
+        "GC2",
+        "GC3"
+      ],
+      "claims_missed": [],
+      "mean_quality_scores": {
+        "derivable": 3.233,
+        "novel": 4.0,
+        "feasible": 3.733,
+        "specific": 3.933,
+        "falsifiable": 4.167
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 1.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "H1",
+          "statement": "In this single human tumor section, spatial spots located near the outer tissue boundary show higher T cell lineage scores and related immune-activation module scores than interior spots, even after accounting for variation in total counts and detected genes.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.2359,
+          "evidence": [
+            "keywords=['immune', 'cell density']",
+            "cell_types=['t cell']",
+            "jaccard=0.102"
+          ],
+          "quality_scores": {
+            "derivable": 3.5,
+            "novel": 3.8,
+            "feasible": 4.2,
+            "specific": 4.0,
+            "falsifiable": 4.2
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "PENDING_TEST"
+        },
+        {
+          "hypothesis_id": "H2",
+          "statement": "Tissue regions near the tumor boundary exhibit greater diversity of transcriptomic domains and stronger co-localization of immune and stromal lineage scores than interior regions, when domains are defined in an unsupervised manner from spatially smoothed expression patterns.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.2014,
+          "evidence": [
+            "keywords=['immune', 'stromal']",
+            "jaccard=0.136"
+          ],
+          "quality_scores": {
+            "derivable": 3.2,
+            "novel": 4.0,
+            "feasible": 3.0,
+            "specific": 3.5,
+            "falsifiable": 3.8
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "PENDING_TEST"
+        },
+        {
+          "hypothesis_id": "H3",
+          "statement": "Within this tumor section, spots with high proliferation-associated gene expression programs are spatially segregated from spots with high inflammation-associated programs, such that local neighborhoods tend to be dominated by one program or the other rather than a balanced mixture.",
+          "best_claim_id": "GC3",
+          "recovery": "related",
+          "match_score": 0.2141,
+          "evidence": [
+            "keywords=['m2', 'colocalized spots']",
+            "jaccard=0.087"
+          ],
+          "quality_scores": {
+            "derivable": 3.0,
+            "novel": 4.2,
+            "feasible": 4.0,
+            "specific": 4.3,
+            "falsifiable": 4.5
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "PENDING_TEST"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "H1",
+          "label": "related",
+          "score": 0.23591836734693877
+        },
+        "GC2": {
+          "hypothesis_id": "H2",
+          "label": "related",
+          "score": 0.13035714285714284
+        },
+        "GC3": {
+          "hypothesis_id": "H3",
+          "label": "related",
+          "score": 0.21413043478260868
+        }
+      }
+    },
+    "cellvoyager": {
+      "arm": "cellvoyager",
+      "run_dir": "benchmark/hypothesis_recovery/2023_NC_SpaCET/runs/cellvoyager/cv_20260711_052437",
+      "n_hypotheses": 2,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.0,
+      "recovery_rate_including_related": 0.6667,
+      "claims_recovered": [],
+      "claims_related": [
+        "GC1",
+        "GC3"
+      ],
+      "claims_missed": [
+        "GC2"
+      ],
+      "mean_quality_scores": {
+        "derivable": null,
+        "novel": null,
+        "feasible": null,
+        "specific": null,
+        "falsifiable": null
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 0.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "CV1",
+          "statement": "# Analysis\n\n**Hypothesis**: Exploring the spatial distribution of gene expression profiles across different cell types might reveal critical insights into tumor microenvironment heterogeneity.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.1431,
+          "evidence": [
+            "keywords=['cell density']",
+            "cell_types=['t cell']",
+            "jaccard=0.051"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        },
+        {
+          "hypothesis_id": "CV2",
+          "statement": "# Analysis Plan\n\n**Hypothesis**: Exploring the spatial distribution of gene expression profiles across different cell types might reveal critical insights into tumor microenvironment heterogeneity.\n\n## Steps:\n- Perform spatially informed neighborhood graph construction using spatial coordinates to i",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.1425,
+          "evidence": [
+            "keywords=['cell density']",
+            "cell_types=['t cell']",
+            "jaccard=0.050"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "CV1",
+          "label": "related",
+          "score": 0.14307692307692307
+        },
+        "GC2": {
+          "hypothesis_id": "CV1",
+          "label": "miss",
+          "score": 0.05454545454545455
+        },
+        "GC3": {
+          "hypothesis_id": "CV2",
+          "label": "related",
+          "score": 0.09298780487804878
+        }
+      }
+    },
+    "tissueagent_cellvoyager": {
+      "arm": "tissueagent_cellvoyager",
+      "run_dir": "benchmark/hypothesis_recovery/2023_NC_SpaCET/runs/tissueagent_cellvoyager/tacv_20260711_100905",
+      "n_hypotheses": 3,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.0,
+      "recovery_rate_including_related": 1.0,
+      "claims_recovered": [],
+      "claims_related": [
+        "GC1",
+        "GC2",
+        "GC3"
+      ],
+      "claims_missed": [],
+      "mean_quality_scores": {
+        "derivable": 3.667,
+        "novel": 4.333,
+        "feasible": 4.333,
+        "specific": 4.333,
+        "falsifiable": 4.833
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 1.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "HYP_001",
+          "statement": "High T-cell score regions form spatially clustered \u2018immune rims\u2019 that preferentially border, rather than overlap with, malignant-score-rich tumor cores.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.2543,
+          "evidence": [
+            "keywords=['immune', 'cell density']",
+            "cell_types=['malignant']",
+            "jaccard=0.143"
+          ],
+          "quality_scores": {
+            "derivable": 3.5,
+            "novel": 4.0,
+            "feasible": 4.5,
+            "specific": 4.5,
+            "falsifiable": 5.0,
+            "robustness": 4.0,
+            "overall_robustness": 4.0
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "PENDING_TEST"
+        },
+        {
+          "hypothesis_id": "HYP_002",
+          "statement": "Spatially coherent regions with concurrently high cancer-associated fibroblast and M2-like myeloid scores act as immunosuppressive niches characterized by locally reduced T-cell scores.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.1765,
+          "evidence": [
+            "keywords=['cancer cell abundance', 'cell density']",
+            "jaccard=0.081"
+          ],
+          "quality_scores": {
+            "derivable": 3.0,
+            "novel": 4.5,
+            "feasible": 4.5,
+            "specific": 4.5,
+            "falsifiable": 5.0,
+            "robustness": 3.5,
+            "overall_robustness": 3.5
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "PENDING_TEST"
+        },
+        {
+          "hypothesis_id": "HYP_003",
+          "statement": "Unsupervised transcriptomic clusters define spatially coherent tumor microenvironment \u2018ecosystem\u2019 states with distinct malignant, fibroblast, myeloid, and T-cell score profiles.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.1862,
+          "evidence": [
+            "keywords=['cell density']",
+            "cell_types=['malignant']",
+            "jaccard=0.147"
+          ],
+          "quality_scores": {
+            "derivable": 4.5,
+            "novel": 4.5,
+            "feasible": 4.0,
+            "specific": 4.0,
+            "falsifiable": 4.5,
+            "robustness": 4.0,
+            "overall_robustness": 4.0
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "PENDING_TEST"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "HYP_001",
+          "label": "related",
+          "score": 0.2542857142857143
+        },
+        "GC2": {
+          "hypothesis_id": "HYP_001",
+          "label": "related",
+          "score": 0.1784090909090909
+        },
+        "GC3": {
+          "hypothesis_id": "HYP_003",
+          "label": "related",
+          "score": 0.09966216216216216
+        }
+      }
+    }
+  }
+}

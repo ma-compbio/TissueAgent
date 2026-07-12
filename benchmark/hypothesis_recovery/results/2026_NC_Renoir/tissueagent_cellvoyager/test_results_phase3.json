@@ -1,0 +1,299 @@
+[
+  {
+    "id": "H1",
+    "tests_run": [
+      "Linear regression of IFN, antigen-presentation, and checkpoint module scores on immune_adjacent indicator with QC and spatial covariates",
+      "Wilcoxon rank-sum tests comparing module scores in immune-adjacent vs immune-distant tumor spots",
+      "Permutation tests (n=1000) for mean differences between immune-adjacent and immune-distant tumor spots",
+      "Linear and Spearman association between immune-neighbor count and module scores"
+    ],
+    "key_results": {
+      "group_sizes": {
+        "tumor_qc_total": 526,
+        "immune_adjacent_qc": 63,
+        "immune_distant_qc": 463
+      },
+      "linear_models": [
+        {
+          "program": "H1_IFN_score",
+          "coef_immune_adjacent": 0.03304397020180707,
+          "pval": 0.2885401179316471,
+          "pval_adj_fdr": 0.2885401179316471,
+          "significant_fdr_0.05": false
+        },
+        {
+          "program": "H1_AP_score",
+          "coef_immune_adjacent": 0.08193335352101896,
+          "pval": 0.08175304542546635,
+          "pval_adj_fdr": 0.16350327143128152,
+          "significant_fdr_0.05": false
+        },
+        {
+          "program": "H1_Checkpoint_score",
+          "coef_immune_adjacent": 0.02196780794324801,
+          "pval": 0.10900218095418766,
+          "pval_adj_fdr": 0.16350327143128152,
+          "significant_fdr_0.05": false
+        }
+      ],
+      "wilcoxon": [
+        {
+          "program": "H1_IFN_score",
+          "mean_adjacent": 0.39184449173770275,
+          "mean_distant": 0.44821097286737327,
+          "cohen_d_adj_minus_dist": -0.15337158077397273,
+          "u_stat": 13300.0,
+          "pval_wilcoxon": 0.25660122578661215
+        },
+        {
+          "program": "H1_AP_score",
+          "mean_adjacent": 0.6883252840142473,
+          "mean_distant": 0.7229323742218299,
+          "cohen_d_adj_minus_dist": -0.06378360850733028,
+          "u_stat": 14096.0,
+          "pval_wilcoxon": 0.6663477746609099
+        },
+        {
+          "program": "H1_Checkpoint_score",
+          "mean_adjacent": 0.011654020931244517,
+          "mean_distant": 0.0030862398504554224,
+          "cohen_d_adj_minus_dist": 0.0780269672402243,
+          "u_stat": 14383.0,
+          "pval_wilcoxon": 0.8590443055931003
+        }
+      ],
+      "permutation": [
+        {
+          "program": "H1_IFN_score",
+          "obs_mean_diff_adj_minus_dist": -0.05636648112967052,
+          "pval_permutation": 0.25274725274725274
+        },
+        {
+          "program": "H1_AP_score",
+          "obs_mean_diff_adj_minus_dist": -0.03460709020758257,
+          "pval_permutation": 0.6423576423576424
+        },
+        {
+          "program": "H1_Checkpoint_score",
+          "obs_mean_diff_adj_minus_dist": 0.008567781080789094,
+          "pval_permutation": 0.5654345654345654
+        }
+      ],
+      "neighbor_association": [
+        {
+          "program": "H1_IFN_score",
+          "coef_neighbor_count": 0.015962986455456213,
+          "pval_neighbor_count": 0.34996099970815153,
+          "spearman_rho_neighbor_count": -0.047465902471559324,
+          "spearman_p_neighbor_count": 0.27719662203703876
+        },
+        {
+          "program": "H1_AP_score",
+          "coef_neighbor_count": 0.042712821010701466,
+          "pval_neighbor_count": 0.09809872348857064,
+          "spearman_rho_neighbor_count": -0.016548949046903048,
+          "spearman_p_neighbor_count": 0.7049344204107337
+        },
+        {
+          "program": "H1_Checkpoint_score",
+          "coef_neighbor_count": 0.016018142363219558,
+          "pval_neighbor_count": 0.032950497519906814,
+          "spearman_rho_neighbor_count": -0.001967941218768667,
+          "spearman_p_neighbor_count": 0.9640859554423076
+        }
+      ]
+    },
+    "status": "DROPPED",
+    "narrowing_notes": "Tumor spots with immune-classified neighbors did not show significantly higher interferon, antigen-presentation, or checkpoint module scores after QC and covariate adjustment; effect sizes were small and permutation and Wilcoxon tests were non-significant after FDR, so localized immune adjacency is not a major determinant of these programs in this dataset."
+  },
+  {
+    "id": "H2",
+    "tests_run": [
+      "Linear regression of EMT, G2M, and E2F module scores on continuous distance_to_nontumor with QC and spatial covariates",
+      "Spearman correlations between distance_to_nontumor and module scores (raw and QC-residual-based)",
+      "Kruskal\u2013Wallis tests across edge/intermediate/core distance tertiles",
+      "Pairwise Wilcoxon tests comparing edge vs core module scores with BH FDR control"
+    ],
+    "key_results": {
+      "linear_models_distance": [
+        {
+          "program": "H2_EMT_score",
+          "coef_distance_to_nontumor": 0.00021830422673083534,
+          "pval": 6.1084207776942524e-12,
+          "n_obs": 526,
+          "pval_adj_fdr_family": 6.1084207776942524e-12,
+          "significant_fdr_0.05_family": true
+        },
+        {
+          "program": "H2_G2M_score",
+          "coef_distance_to_nontumor": -3.530946701759179e-05,
+          "pval": 0.060564457313677676,
+          "n_obs": 526,
+          "pval_adj_fdr_family": 0.060564457313677676,
+          "significant_fdr_0.05_family": false
+        },
+        {
+          "program": "H2_E2F_score",
+          "coef_distance_to_nontumor": -3.884577267744438e-05,
+          "pval": 0.042870805156305494,
+          "n_obs": 526,
+          "pval_adj_fdr_family": 0.060564457313677676,
+          "significant_fdr_0.05_family": false
+        }
+      ],
+      "spearman": [
+        {
+          "program": "H2_EMT_score",
+          "rho_raw": 0.663998295772009,
+          "pval_raw": 3.6507412463339326e-68,
+          "rho_resid": -0.025949557648170914,
+          "pval_resid": 0.552626360978363
+        },
+        {
+          "program": "H2_G2M_score",
+          "rho_raw": -0.4461064409626816,
+          "pval_raw": 4.360430660996364e-27,
+          "rho_resid": 0.00803568159856053,
+          "pval_resid": 0.8541229800821817
+        },
+        {
+          "program": "H2_E2F_score",
+          "rho_raw": -0.49847870910633946,
+          "pval_raw": 2.178840729244023e-34,
+          "rho_resid": -0.0014101810351378524,
+          "pval_resid": 0.9742606105194301
+        }
+      ],
+      "kw_tertiles": [
+        {
+          "program": "H2_EMT_score",
+          "kw_stat": 212.81546265080607,
+          "pval_kw": 6.133515308170579e-47
+        },
+        {
+          "program": "H2_G2M_score",
+          "kw_stat": 91.83350093332068,
+          "pval_kw": 1.1444811534563241e-20
+        },
+        {
+          "program": "H2_E2F_score",
+          "kw_stat": 113.23997415389874,
+          "pval_kw": 2.5718879700458335e-25
+        }
+      ],
+      "wilcoxon_edge_vs_core": [
+        {
+          "program": "H2_EMT_score",
+          "u_stat_edge_vs_core": 2287.0,
+          "pval_edge_vs_core": 4.3121709501571933e-44,
+          "median_edge": 0.20545587792657644,
+          "median_core": 0.7285809438121181,
+          "median_diff_edge_minus_core": -0.5231250658855418,
+          "pval_edge_vs_core_fdr": 1.293651285047158e-43,
+          "significant_fdr_0.05": true
+        },
+        {
+          "program": "H2_G2M_score",
+          "u_stat_edge_vs_core": 25077.0,
+          "pval_edge_vs_core": 5.154313757342874e-22,
+          "median_edge": 0.09567924050690449,
+          "median_core": -0.04490815131213606,
+          "median_diff_edge_minus_core": 0.14058739181904056,
+          "pval_edge_vs_core_fdr": 5.154313757342874e-22,
+          "significant_fdr_0.05": true
+        },
+        {
+          "program": "H2_E2F_score",
+          "u_stat_edge_vs_core": 25839.0,
+          "pval_edge_vs_core": 1.7464351577532022e-25,
+          "median_edge": 0.04724764425768596,
+          "median_core": -0.1299568053336449,
+          "median_diff_edge_minus_core": 0.17720444959133086,
+          "pval_edge_vs_core_fdr": 2.6196527366298032e-25,
+          "significant_fdr_0.05": true
+        }
+      ],
+      "group_sizes": {
+        "tumor_qc_total_with_distance": 526,
+        "edge": 179,
+        "intermediate": 177,
+        "core": 176
+      },
+      "distance_tertiles": {
+        "q33": 478.17360864020924,
+        "q66": 2965.991402549913
+      }
+    },
+    "status": "REFINE",
+    "narrowing_notes": "Distance-to-non-tumor gradients were strong and highly significant: EMT module scores increased with greater distance from non-tumor tissue, while proliferation (G2M/E2F) scores decreased with distance and were highest at the tumor edge. This supports opposing spatial gradients but in the opposite direction from the pre-registered expectation (edge more EMT-like, core more proliferative), suggesting that the tumor in this sample has a proliferative rim and more mesenchymal core; the hypothesis should be refined to allow tumor- and sample-specific gradient orientations."
+  },
+  {
+    "id": "H3",
+    "tests_run": [
+      "Linear regression of ECM and CAF module scores on peritumoral indicator with QC and spatial covariates",
+      "Wilcoxon rank-sum tests comparing ECM/CAF scores between peritumoral and distant stromal spots with BH FDR",
+      "Global Moran's I for ECM and CAF module scores using a 6-NN spatial graph with permutation-based p-values"
+    ],
+    "key_results": {
+      "linear_models": [
+        {
+          "program": "H3_ECM_score",
+          "coef_peritumoral": -0.4187372585119995,
+          "pval": 6.731003918576237e-07,
+          "n_obs": 222,
+          "pval_adj_fdr": 6.731003918576237e-07,
+          "significant_fdr_0.05": true
+        },
+        {
+          "program": "H3_CAF_score",
+          "coef_peritumoral": -0.49731000986120516,
+          "pval": 1.6134865430585128e-09,
+          "n_obs": 222,
+          "pval_adj_fdr": 3.2269730861170256e-09,
+          "significant_fdr_0.05": true
+        }
+      ],
+      "wilcoxon_peri_vs_dist": [
+        {
+          "program": "H3_ECM_score",
+          "u_stat": 645.0,
+          "pval_wilcoxon": 0.002032737597536479,
+          "mean_peritumoral": 0.29084965406770125,
+          "mean_distant": 0.495631477064466,
+          "cohen_d_peri_minus_dist": -0.6550374857071312,
+          "pval_wilcoxon_fdr": 0.002032737597536479,
+          "significant_fdr_0.05": true
+        },
+        {
+          "program": "H3_CAF_score",
+          "u_stat": 463.0,
+          "pval_wilcoxon": 5.875436585621151e-06,
+          "mean_peritumoral": 0.4940593506761427,
+          "mean_distant": 0.8110996944519551,
+          "cohen_d_peri_minus_dist": -1.0873575438256249,
+          "pval_wilcoxon_fdr": 1.1750873171242302e-05,
+          "significant_fdr_0.05": true
+        }
+      ],
+      "global_morans_I": [
+        {
+          "program": "H3_ECM_score",
+          "morans_I": 0.6603993830741351,
+          "pval_perm": 0.000999000999000999
+        },
+        {
+          "program": "H3_CAF_score",
+          "morans_I": 0.574194111962936,
+          "pval_perm": 0.000999000999000999
+        }
+      ],
+      "group_sizes": {
+        "stromal_qc_total": 222,
+        "peritumoral_qc": 44,
+        "distant_qc": 47
+      }
+    },
+    "status": "REFINE",
+    "narrowing_notes": "CAF/ECM module scores were strongly and significantly *lower* in peritumoral stromal spots than in distant stroma after adjusting for QC and array-edge covariates, with moderate-to-large negative effect sizes, while global Moran's I indicated robust spatial clustering of ECM/CAF activity. This contradicts the simple peritumoral > distant stroma expectation and instead points to ECM-rich niches in more distal stromal regions; the hypothesis should be refined to focus on non-monotonic or region-specific ECM patterns rather than a uniform peritumoral enrichment."
+  }
+]

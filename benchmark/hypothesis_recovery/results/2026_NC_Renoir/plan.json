@@ -1,0 +1,122 @@
+{
+  "status": "recruited",
+  "user_request": "Recover biologically grounded spatial hypotheses from a withheld-background spatial transcriptomics dataset and test them to assign SUPPORT/REFINE/DROPPED statuses, following the specified protocol.",
+  "provenance": {
+    "template_names": [
+      "hypothesis_recovery_withheld"
+    ],
+    "justification": "The plan directly adapts the hypothesis_recovery_withheld template: Steps 1\u20132 implement the Coding Agent\u2019s dataset inventory and exploration with exploration_log.md and data_inventory.tsv; Step 3 corresponds to the Hypothesis Agent drafting observation-grounded hypotheses; Step 4 mirrors the Critic Agent\u2019s pre-review with preliminary quality scoring; Step 5 produces finalized hypotheses.json and hypothesis_brief.md with explicit quality_scores; Step 6 executes each test_plan on the full dataset and writes test_results_phase3.json with SUPPORT/REFINE/DROPPED statuses. CellVoyager-related branching from the template is omitted per the user\u2019s constraint."
+  },
+  "steps": [
+    {
+      "id": 1,
+      "title": "Inventory dataset and read limited background",
+      "description": "Load the full AnnData object at library/datasets/dataset.h5ad (without subsampling) and the limited background text at outputs/briefs/paper_summary.txt. Summarize key dataset properties (dimensions, obs/var annotations, spatial coordinates, technology, tissue context) and basic QC metrics into a tabular inventory, and start an exploration log documenting data structure and initial high-level observations.",
+      "reasoning": "A structured overview of the dataset and the allowed background constraints is required to ensure all subsequent exploration and hypotheses remain grounded in the actual data and protocol-compliant (no gold_claims, no PDF).",
+      "expected_artifacts": [
+        "project/outputs/tables/data_inventory.tsv",
+        "project/outputs/hypotheses/exploration_log.md"
+      ],
+      "assigned_agent": "coding_agent",
+      "assignment_rationale": "Loading the AnnData object, computing QC summaries, and writing structured inventory/log files are data-engineering and analysis tasks best handled by the general-purpose coding_agent, which is the appropriate fallback for dataset-level operations.",
+      "skills": [],
+      "status": "done",
+      "actual_outputs": [
+        "project/outputs/tables/data_inventory.tsv",
+        "project/outputs/hypotheses/exploration_log.md"
+      ],
+      "params": null
+    },
+    {
+      "id": 2,
+      "title": "Perform spatial and expression exploration",
+      "description": "Using the full AnnData object, perform exploratory analyses (e.g., spatial distributions of major annotations, expression of canonical markers, neighborhood patterns, condition/region differences) and record concrete, numbered OBSERVATION entries in the exploration_log.md, each with associated evidence (figures/stats referenced) and links to relevant metadata fields.",
+      "reasoning": "Systematic exploration of spatial patterns and expression structure provides the empirical observations that will directly ground subsequent hypotheses, ensuring they are data-driven rather than inferred from withheld literature.",
+      "expected_artifacts": [
+        "project/outputs/hypotheses/exploration_log.md",
+        "project/outputs/figures/exploratory_plots_overview.png"
+      ],
+      "assigned_agent": "coding_agent",
+      "assignment_rationale": "Spatial and expression exploration with plots and basic statistics on the full AnnData object requires flexible Python/R analysis capabilities, which fall squarely within the coding_agent\u2019s expertise.",
+      "skills": [],
+      "status": "done",
+      "actual_outputs": [
+        "project/outputs/hypotheses/exploration_log.md",
+        "project/outputs/figures/exploratory_plots_overview.png"
+      ],
+      "params": null
+    },
+    {
+      "id": 3,
+      "title": "Draft observation-grounded hypotheses and test plans",
+      "description": "Based on the numbered OBSERVATION entries and limited background, generate approximately three explicit, falsifiable hypotheses that reference specific observation IDs, cell types/regions/conditions, and spatial or molecular patterns. For each, define a structured test_plan (e.g., differential expression, spatial enrichment, neighborhood association) specifying inputs, contrasts, metrics, and decision criteria, and save them as a draft JSON.",
+      "reasoning": "Creating explicit hypotheses linked to observed patterns and predefined test plans ensures that later analyses are targeted, reproducible, and falsifiable rather than open-ended exploration.",
+      "expected_artifacts": [
+        "project/outputs/hypotheses/hypotheses_draft.json"
+      ],
+      "assigned_agent": "hypothesis_agent",
+      "assignment_rationale": "Designing explicit, falsifiable, observation-linked hypotheses and structured test plans is the core specialization of the hypothesis_agent.",
+      "skills": [],
+      "status": "done",
+      "actual_outputs": [
+        "project/outputs/hypotheses/hypotheses_draft.json"
+      ],
+      "params": null
+    },
+    {
+      "id": 4,
+      "title": "Critically review and score draft hypotheses",
+      "description": "Evaluate each draft hypothesis for biological plausibility, non-circularity, specificity, testability on the given dataset, and distinctness from mere re-statements of observations. Assign preliminary quality scores along the dimensions derivable, novel, feasible, specific, and falsifiable, and record detailed critiques and suggestions for refinement in a separate JSON file.",
+      "reasoning": "A dedicated critique phase improves hypothesis quality and documents reasoning, while producing structured quality scores that will be refined in the final hypotheses.json.",
+      "expected_artifacts": [
+        "project/outputs/hypotheses/pre_review_criticism.json"
+      ],
+      "assigned_agent": "critic_agent",
+      "assignment_rationale": "Systematically critiquing hypotheses, checking for non-circularity and testability, and assigning quality scores matches the critic_agent\u2019s role as a pre-review and falsification-focused evaluator.",
+      "skills": [],
+      "status": "done",
+      "actual_outputs": [
+        "project/outputs/hypotheses/pre_review_criticism.json"
+      ],
+      "params": null
+    },
+    {
+      "id": 5,
+      "title": "Finalize hypotheses with quality scores and narrative brief",
+      "description": "Revise the draft hypotheses using the critic feedback to produce a final hypotheses.json where each hypothesis includes a clear statement, linked observation IDs, a finalized test_plan, and quality_scores for derivable, novel, feasible, specific, and falsifiable. In parallel, write hypothesis_brief.md summarizing each hypothesis in prose, including rationale from the exploration_log and the planned analyses, without referencing any withheld paper findings.",
+      "reasoning": "This step consolidates hypotheses into a machine-readable specification for execution and a human-readable narrative, while embedding the required quality metrics for evaluation.",
+      "expected_artifacts": [
+        "project/outputs/hypotheses/hypotheses.json",
+        "project/outputs/hypotheses/hypothesis_brief.md"
+      ],
+      "assigned_agent": "hypothesis_agent",
+      "assignment_rationale": "Refining hypotheses using critique, finalizing test plans, and producing a coherent hypotheses.json plus narrative brief are hypothesis-focused synthesis tasks well-suited to the hypothesis_agent.",
+      "skills": [],
+      "status": "done",
+      "actual_outputs": [
+        "project/outputs/hypotheses/hypotheses.json",
+        "project/outputs/hypotheses/hypothesis_brief.md"
+      ],
+      "params": null
+    },
+    {
+      "id": 6,
+      "title": "Execute hypothesis test plans on full dataset",
+      "description": "For each hypothesis in hypotheses.json, execute the specified test_plan using the full AnnData (no cell/spot subsampling), running the appropriate spatial/statistical analyses (e.g., DE tests, spatial autocorrelation, neighborhood composition, region-specific signatures). Aggregate results, including test statistics, effect sizes, p-values, and diagnostic plots, and assign each hypothesis a status of SUPPORTED, REFINE, or DROPPED with narrowing_notes, saving everything into test_results_phase3.json and updating hypotheses.json if needed.",
+      "reasoning": "Running the pre-specified tests and codifying outcomes with clear statuses and supporting evidence completes the hypothesis-recovery loop and provides the benchmark\u2019s required structured test results.",
+      "expected_artifacts": [
+        "project/outputs/hypotheses/test_results_phase3.json",
+        "project/outputs/hypotheses/hypotheses.json"
+      ],
+      "assigned_agent": "coding_agent",
+      "assignment_rationale": "Executing the test plans on the full AnnData, running statistical/spatial analyses, and compiling test_results_phase3.json and updated hypotheses.json are computational analysis and data-handling tasks for which the coding_agent is the appropriate general-purpose choice.",
+      "skills": [],
+      "status": "running",
+      "actual_outputs": [
+        "project/outputs/hypotheses/test_results_phase3.json",
+        "project/outputs/hypotheses/hypotheses.json"
+      ],
+      "params": null
+    }
+  ]
+}

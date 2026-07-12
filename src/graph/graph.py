@@ -53,13 +53,14 @@ from graph.plan_output import create_planner_state_update, create_recruiter_stat
 def create_tissueagent_graph(
     state_queue: Queue,
     model_proc_fn: Callable[..., BaseChatModel],
+    domain_agents: list | None = None,
     **custom_agent_kwargs,
 ) -> StateGraph:
     """Build the full TissueAgent state graph (uncompiled).
 
-    Constructs sub-agent graphs for each entry in :data:`AgentDefns`, then wires the five main
-    pipeline agents with conditional routing edges. The caller is responsible for compiling the
-    returned graph.
+    Constructs sub-agent graphs for each entry in :data:`AgentDefns` (or *domain_agents*),
+    then wires the five main pipeline agents with conditional routing edges. The caller is
+    responsible for compiling the returned graph.
 
     Execution mode (autopilot vs copilot) is an **app-layer** concern. It lives on
     :class:`server.session_manager.SessionState` and is honored by the server's WebSocket handlers
@@ -71,6 +72,9 @@ def create_tissueagent_graph(
             render them.
         model_proc_fn: Callable applied to every bound model (typically adds retry logic for
             rate-limit errors).
+        domain_agents: Optional override of the recruitable domain-agent list. Defaults to
+            :data:`AgentDefns`. Benchmark ablations may pass a filtered copy (e.g. without
+            ``cellvoyager_agent``).
         **custom_agent_kwargs: Extra keyword arguments forwarded to :class:`CustomAgent`
             constructors. Each ctor receives only the kwargs it declares in its signature (filtered
             via ``inspect.signature``). For example, ``kernel_client=...`` is consumed by the coding
@@ -79,10 +83,11 @@ def create_tissueagent_graph(
     Returns:
         An uncompiled :class:`~langgraph.graph.StateGraph` ready to be compiled via ``.compile()``.
     """
+    agents = list(domain_agents) if domain_agents is not None else list(AgentDefns)
     assign_agent_node_id = lambda id: f"{id}_agent"
     assign_tool_node_id = lambda id: f"{id}_tools"
 
-    agent_id_descriptions = {assign_agent_node_id(a.id): a.description for a in AgentDefns}
+    agent_id_descriptions = {assign_agent_node_id(a.id): a.description for a in agents}
     logging.info(f"Agent ID Descriptions: {json.dumps(agent_id_descriptions, indent=4)}")
 
     ## Build Subagents
@@ -90,7 +95,7 @@ def create_tissueagent_graph(
     context_resolver = create_step_context_resolver(assign_agent_node_id)
     agent_invocation_tools = []
     invocation_tools_by_agent: dict[str, "StructuredTool"] = {}
-    for agent in AgentDefns:
+    for agent in agents:
         if isinstance(agent, ReActAgent):
             agent_subgraph = StateGraph(AgentState)
             agent_model = model_proc_fn(agent.model_ctor().bind_tools(agent.tools))
@@ -313,7 +318,7 @@ def create_tissueagent_graph(
 
     recruiter_tool_node = create_tool_node(RecruiterAgent.tools)
 
-    valid_agent_ids = {assign_agent_node_id(a.id) for a in AgentDefns}
+    valid_agent_ids = {assign_agent_node_id(a.id) for a in agents}
     recruiter_state_update_fn = create_recruiter_state_update(
         valid_agent_ids,
         max_retries=MAX_RECRUITER_RETRIES,

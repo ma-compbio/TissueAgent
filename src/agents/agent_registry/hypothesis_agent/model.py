@@ -197,8 +197,11 @@ def create_hypothesis_agent(
         # REPL persistence across invocations is handled by ``repl_holder``
         # in the closure above — no state-threading needed.
         with subagent_invocation("Hypothesis Agent") as invocation_id:
+            from config import RECURSION_LIMIT
+
             final_state = agent.invoke(
-                {"messages": [HumanMessage(prompt)], "skill_prompt": skill_prompt_text}
+                {"messages": [HumanMessage(prompt)], "skill_prompt": skill_prompt_text},
+                config={"recursion_limit": RECURSION_LIMIT},
             )
 
         state_queue.put((id, final_state, invocation_id))

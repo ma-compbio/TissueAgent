@@ -1,0 +1,204 @@
+{
+  "fixture_id": "2026_NC_Renoir",
+  "scored_utc": "2026-07-11T06:36:40.244632+00:00",
+  "scorer": "heuristic_v1",
+  "scorer_note": "Automatic keyword/jaccard matching for triage; expert audit required for manuscript numbers.",
+  "arms": {
+    "tissueagent": {
+      "arm": "tissueagent",
+      "run_dir": "benchmark/hypothesis_recovery/2026_NC_Renoir/runs/tissueagent/ta_20260711_043155",
+      "n_hypotheses": 3,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.3333,
+      "recovery_rate_including_related": 1.0,
+      "claims_recovered": [
+        "GC2"
+      ],
+      "claims_related": [
+        "GC1",
+        "GC3"
+      ],
+      "claims_missed": [],
+      "mean_quality_scores": {
+        "derivable": 7.667,
+        "novel": 8.0,
+        "feasible": 8.0,
+        "specific": 8.0,
+        "falsifiable": 8.333
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 1.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "H1",
+          "statement": "Tissue classes that display strong spatial self-clustering preferentially engage in autocrine ligand\u2013target signaling within the same class, whereas more spatially intermixed classes rely proportionally more on paracrine signaling across class boundaries.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.3075,
+          "evidence": [
+            "keywords=['communication niches', 'ligand-target', 'ligand-receptor', 'spatial niches']",
+            "jaccard=0.061"
+          ],
+          "quality_scores": {
+            "derivable": 8,
+            "novel": 8,
+            "feasible": 9,
+            "specific": 8,
+            "falsifiable": 8
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "REFINE"
+        },
+        {
+          "hypothesis_id": "H2",
+          "statement": "Within the DCIS class, spots embedded in lymphocyte-rich neighborhoods will exhibit stronger immune-response target programs and weaker stromal-remodeling programs than DCIS spots embedded in stroma-dominated neighborhoods.",
+          "best_claim_id": "GC2",
+          "recovery": "related",
+          "match_score": 0.3432,
+          "evidence": [
+            "keywords=['stromal', 'immune', 'ligand-target']",
+            "cell_types=['stromal', 'immune']",
+            "jaccard=0.078"
+          ],
+          "quality_scores": {
+            "derivable": 8,
+            "novel": 8,
+            "feasible": 8,
+            "specific": 8,
+            "falsifiable": 9
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "REFINE"
+        },
+        {
+          "hypothesis_id": "H3",
+          "statement": "Spatial interfaces between DCIS and stromal classes support distinct invasion- and matrix-remodeling\u2013related target programs that are stronger than in either DCIS or stromal interior regions and cannot be explained solely by linear mixing of interior profiles.",
+          "best_claim_id": "GC2",
+          "recovery": "partial",
+          "match_score": 0.3996,
+          "evidence": [
+            "keywords=['stromal', 'immune', 'ligand-target', 'interface']",
+            "cell_types=['stromal', 'immune']",
+            "jaccard=0.073"
+          ],
+          "quality_scores": {
+            "derivable": 7,
+            "novel": 8,
+            "feasible": 7,
+            "specific": 8,
+            "falsifiable": 8
+          },
+          "testable": true,
+          "execution_success": true,
+          "status": "SUPPORTED"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "H1",
+          "label": "related",
+          "score": 0.30748091603053435
+        },
+        "GC2": {
+          "hypothesis_id": "H3",
+          "label": "partial",
+          "score": 0.3995934959349593
+        },
+        "GC3": {
+          "hypothesis_id": "H1",
+          "label": "related",
+          "score": 0.28977272727272724
+        }
+      }
+    },
+    "cellvoyager": {
+      "arm": "cellvoyager",
+      "run_dir": "benchmark/hypothesis_recovery/2026_NC_Renoir/runs/cellvoyager/cv_20260711_035621",
+      "n_hypotheses": 3,
+      "n_gold_claims": 3,
+      "recovery_rate_exact_or_partial": 0.0,
+      "recovery_rate_including_related": 1.0,
+      "claims_recovered": [],
+      "claims_related": [
+        "GC1",
+        "GC2",
+        "GC3"
+      ],
+      "claims_missed": [],
+      "mean_quality_scores": {
+        "derivable": null,
+        "novel": null,
+        "feasible": null,
+        "specific": null,
+        "falsifiable": null
+      },
+      "testability_rate": 1.0,
+      "execution_success_rate": 0.0,
+      "per_hypothesis": [
+        {
+          "hypothesis_id": "CV1",
+          "statement": "# Analysis\n\n**Hypothesis**: Differential expression patterns highlight unique communication niches within TNBC tumor regions compared to 'Normal + stroma + lymphocytes', revealing critical interactions between spatially organized cells.",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.2421,
+          "evidence": [
+            "keywords=['communication niches', 'spatial niches', 'tnbc']",
+            "jaccard=0.071"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        },
+        {
+          "hypothesis_id": "CV2",
+          "statement": "# Analysis Plan\n\n**Hypothesis**: Differential expression patterns highlight unique communication niches within TNBC tumor regions compared to 'Normal + stroma + lymphocytes', revealing critical interactions between spatially organized cells.\n\n## Steps:\n- Identify differentially expressed genes (DEGs",
+          "best_claim_id": "GC1",
+          "recovery": "related",
+          "match_score": 0.2325,
+          "evidence": [
+            "keywords=['communication niches', 'spatial niches', 'tnbc']",
+            "jaccard=0.050"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        },
+        {
+          "hypothesis_id": "CV3",
+          "statement": "## The code performs PCA (Principal Component Analysis) on a single-cell dataset using the Scanpy library to reduce its dimensionality, which is an alternative to using SCVI for the same purpose. The resulting PCA components are stored in the `adata` object's observation matrix to facilitate later a",
+          "best_claim_id": "GC2",
+          "recovery": "miss",
+          "match_score": 0.0158,
+          "evidence": [
+            "jaccard=0.035"
+          ],
+          "quality_scores": {},
+          "testable": true,
+          "execution_success": null,
+          "status": "PROPOSED"
+        }
+      ],
+      "per_claim_best": {
+        "GC1": {
+          "hypothesis_id": "CV1",
+          "label": "related",
+          "score": 0.24214285714285713
+        },
+        "GC2": {
+          "hypothesis_id": "CV1",
+          "label": "related",
+          "score": 0.091260162601626
+        },
+        "GC3": {
+          "hypothesis_id": "CV2",
+          "label": "related",
+          "score": 0.1051470588235294
+        }
+      }
+    }
+  }
+}

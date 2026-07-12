@@ -40,8 +40,11 @@ returns a JSON-serialisable dict with keys:
 
 ## Pre-flight checks
 
-1. Verify the `.h5ad` file exists. If not, return a clear error to the
-   manager — do not call the tool.
+1. Resolve the `.h5ad` path. Prefer a host path under the TissueAgent
+   workspace (e.g. an absolute path ending in `library/datasets/<name>.h5ad`).
+   Container-style prefixes like `/mnt/data` or `/workspace` are acceptable;
+   the tool remaps them. If the file cannot be found, return a clear error —
+   do not invent a path.
 2. Confirm `background_text` is non-empty.
 
 ## Output format
