@@ -38,7 +38,7 @@ Additional disk outputs:
 
 ## API cheatsheet
 
-Signatures of the five functions used below — verified against COMMOT 0.0.3 docs. See `search_documentation(library='commot', name=...)` for full parameter descriptions.
+Signatures of the five functions used below — verified against COMMOT 0.0.3 docs. See `search_documentation(library='commot', name=...)` for full parameter descriptions. You should generally use the parameter values (e.g. cot_intermax, n_permutations) given below or the default ones supplied by COMMOT, unless you have a reason to deviate from them. Justify these reasons, if any, in your response.
 
 ```python
 ct.pp.ligand_receptor_database(
@@ -55,10 +55,7 @@ ct.pp.filter_lr_database(
 )  # -> DataFrame RENAMED to columns ['ligand', 'receptor', 'pathway']
 
 ct.tl.spatial_communication(
-    adata, database_name, df_ligrec, dis_thr,     # dis_thr REQUIRED-scalar — see gotcha
-    heteromeric=True, heteromeric_rule='min', heteromeric_delimiter='_',
-    pathway_sum=True,                              # REQUIRED for -sum-sender/-sum-receiver aggregates
-    cost_type='euc', cot_eps_p=0.1, cot_rho=10.0, cot_nitermax=10000,
+  cost_type='euc', cot_eps_p=0.1, cot_rho=10.0, cot_nitermax=10000,
     cot_weights=(0.25,0.25,0.25,0.25), copy=False,
 )  # -> writes adata.obsp['commot-<db>-<L>-<R>'], adata.obsm['commot-<db>-sum-{sender,receiver}']
 
@@ -90,7 +87,7 @@ ct.tl.cluster_communication_spatial_permutation(
 4. Filter to LRs expressed in the data: `df_f = ct.pp.filter_lr_database(df, adata, min_cell_pct=0.05)`.
 5. `ct.tl.spatial_communication(adata, database_name='cellchat', df_ligrec=df_f, dis_thr=<dis_thr>, heteromeric=True, pathway_sum=True)`.
 6. For each unique `pathway` in `df_f['pathway']`:
-   - `ct.tl.cluster_communication(adata, database_name='cellchat', pathway_name=p, clustering='_ccc_cell_type', n_permutations=500)`.
+   - `ct.tl.cluster_communication(adata, database_name='cellchat', pathway_name=p, clustering='_ccc_cell_type', n_permutations=100)`.
    - Pull `adata.uns[f'commot_cluster-_ccc_cell_type-cellchat-{p}']` and expand the cluster×cluster strength/p-value matrices into long-form rows, one per `(pathway, ligand, receptor, source, target)`.
 7. Write `commot_cluster_results.csv` and the JSON log, re-write `ccc_prepped.h5ad`.
 

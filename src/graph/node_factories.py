@@ -79,13 +79,21 @@ def create_agent_node(
         A callable suitable for use as a LangGraph node function.
     """
 
+    if callable(prompt):
+        try:
+            preview_text = prompt({"messages": []})
+        except Exception as e:
+            preview_text = f"<callable prompt; could not render at build time: {e}>"
+    else:
+        preview_text = prompt
+    logging.info(f"System prompt for `{agent_node_id}`:\n{preview_text}")
+
     def agent_node(state: MessagesState) -> Command:
         messages = list(map(sanitize_message, state["messages"]))
         if message_filter_fn:
             messages = message_filter_fn(messages)
         prompt_text = prompt(state) if callable(prompt) else prompt
         system_prompt = SystemMessage(prompt_text)
-        logging.info(f"System prompt for `{agent_node_id}`:\n{prompt_text}")
         t0 = time.perf_counter()
         response = standardize_message_format(
             cast(AIMessage, agent_model.invoke([system_prompt] + messages))
