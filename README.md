@@ -353,6 +353,10 @@ You can supply keys in two ways:
 
 Changing the orchestration model also updates the expert model by default; click **sync** next to the Expert dropdown to re-link them after you've changed it independently. Model changes take effect on your next message.
 
+## Coding sandbox
+
+The coding agent can optionally execute code inside an isolated Docker container instead of directly on your host — see [`DOCKER.md`](DOCKER.md) for what it is, tradeoffs, and usage.
+
 ## External agents
 
 TissueAgent integrates third-party research agents through a thin adapter layer. The included external agent is **GeneAgent** ([ncbi-nlp/GeneAgent](https://github.com/ncbi-nlp/GeneAgent)), which interprets a gene list and returns a verified biological-process narrative.

@@ -51,6 +51,23 @@ RUN pip install --no-cache-dir \
     plotnine \
     tangram-sc
 
+# Cell-cell communication ensemble (LIANA+ / COMMOT / stLearn) + plotting helpers.
+# Note: stlearn pulls torch + full CUDA runtime (~3-5 GB).
+RUN pip install --no-cache-dir \
+    commot \
+    stlearn \
+    pycirclize \
+    upsetplot
+
+# commot 0.0.3 references np.Inf, which NumPy 2.0 removed. Patch inline.
+RUN sed -i 's/np\.Inf\b/np.inf/g' \
+    /opt/venv/lib/python*/site-packages/commot/_optimal_transport/_usot.py
+
+# Re-open venv perms so uid 1000 can install additional packages at runtime.
+# The earlier chmod ran before the pip installs above, so files/dirs created
+# by root (e.g. /opt/venv/share/*) were left 755 root:root.
+RUN chmod -R a+w /opt/venv
+
 # -----------------------------------------
 # R environment
 # -----------------------------------------
