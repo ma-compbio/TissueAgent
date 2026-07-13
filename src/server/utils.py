@@ -908,6 +908,25 @@ def project_uploads_dir(project_id: str) -> Path:
     return out
 
 
+def _rmtree_permissive(path: Path | str) -> None:
+    """rmtree that first grants owner write across a read-only tree.
+
+    Needed because the materialized skills snapshot under
+    ``project/skills/`` is chmod'd read-only after copy; a plain
+    ``shutil.rmtree`` refuses to unlink files whose parent directory
+    lacks write permission.
+    """
+    root = Path(path)
+    if not root.exists():
+        return
+    for node in [root, *root.rglob("*")]:
+        try:
+            os.chmod(node, 0o700)
+        except OSError as e:
+            logging.warning("rmtree chmod +w failed for %s: %s", node, e)
+    shutil.rmtree(root, ignore_errors=True)
+
+
 def clear_active_project_dir() -> None:
     """Wipe the active project dir back to a clean empty shell.
 
@@ -918,7 +937,7 @@ def clear_active_project_dir() -> None:
     for child in list(ACTIVE_PROJECT_DIR.iterdir()):
         try:
             if child.is_dir():
-                shutil.rmtree(child, ignore_errors=True)
+                _rmtree_permissive(child)
             else:
                 child.unlink()
         except Exception as e:
@@ -1003,7 +1022,7 @@ def switch_active_project(new_id: Optional[str]) -> None:
                 # promoting over an anonymous shell. Remove it so the
                 # rename has a clean target.
                 if ACTIVE_PROJECT_DIR.exists():
-                    shutil.rmtree(ACTIVE_PROJECT_DIR)
+                    _rmtree_permissive(ACTIVE_PROJECT_DIR)
                 src.rename(ACTIVE_PROJECT_DIR)
                 for sub in (PROJECT_UPLOADS_DIRNAME, PROJECT_OUTPUTS_DIRNAME):
                     (ACTIVE_PROJECT_DIR / sub).mkdir(exist_ok=True)

@@ -453,6 +453,19 @@ def create_recruiter_state_update(valid_agent_ids: set, max_retries: int = 2):
             "recruiter_state_update: annotated %d step(s), status=recruited",
             len(doc.steps),
         )
+        try:
+            from agents.skills_workspace import materialize_skills
+            assigned = {s for step in doc.steps for s in (step.skills or [])}
+            materialized = materialize_skills(assigned)
+            if materialized:
+                logging.info(
+                    "recruiter_state_update: materialized skills %s under workspace",
+                    materialized,
+                )
+        except Exception as e:
+            logging.warning(
+                "recruiter_state_update: skill materialization failed: %s", e
+            )
         return {"recruiter_validation_errors": None, "recruiter_retry_count": 0}
 
     return recruiter_state_update

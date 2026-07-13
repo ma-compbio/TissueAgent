@@ -51,6 +51,7 @@ PROJECTS_DIR = ROOT / "projects"
 PROJECT_CHAT_FILENAME = ".chat.json"
 PROJECT_OUTPUTS_DIRNAME = "outputs"
 PROJECT_UPLOADS_DIRNAME = "uploads"
+PROJECT_SKILLS_DIRNAME = "skills"
 
 # The active project's stable on-disk home. Always exists (empty shell
 # when no project is active). Kernel cwd is unconditionally
@@ -72,6 +73,11 @@ def active_project_root() -> Path:
 def active_project_outputs() -> Path:
     """The directory the agent writes outputs into by default."""
     return ACTIVE_PROJECT_DIR / PROJECT_OUTPUTS_DIRNAME
+
+
+def active_project_skills() -> Path:
+    """The read-only per-plan snapshot of recruiter-assigned skill folders."""
+    return ACTIVE_PROJECT_DIR / PROJECT_SKILLS_DIRNAME
 
 
 # Back-compat aliases. ``UPLOADS_DIR`` / ``PDF_UPLOADS_DIR`` historically
@@ -119,6 +125,7 @@ DOCKER_IMAGE_NAME = "tissueagent-sandbox"
 DOCKER_CONTAINER_NAME = "tissueagent-sandbox"
 CONTAINER_DATA_DIR = "/workspace"
 CONTAINER_NOTEBOOK_DIR = "/workspace/notebook"
+CONTAINER_SKILLS_ROOT = f"{CONTAINER_DATA_DIR}/project/{PROJECT_SKILLS_DIRNAME}"
 
 MAX_OUTPUT_CHARS = 3000
 MAX_REPLANS = 2

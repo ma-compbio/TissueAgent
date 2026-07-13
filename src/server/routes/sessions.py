@@ -415,7 +415,8 @@ async def delete_session(filename: str):
         raise HTTPException(status_code=404, detail="Project not found.")
 
     try:
-        shutil.rmtree(parked)
+        from server.utils import _rmtree_permissive
+        _rmtree_permissive(parked)
     except Exception as e:
         logging.error("Failed to delete project", exc_info=e)
         raise HTTPException(status_code=500, detail="Failed to delete project.")

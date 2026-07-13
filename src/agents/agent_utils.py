@@ -48,15 +48,21 @@ def format_skill_prompt(skill_names: list[str]) -> str:
     """Build the skill injection block for a sub-agent system prompt.
 
     Loads skill content from the skill registry, strips YAML frontmatter, and wraps each skill in a
-    formatted section with universal boilerplate.
+    formatted section with universal boilerplate. For folder-based skills whose bundled assets
+    (``scripts/``, ``references/``) have been snapshotted under the active project, prepends the
+    sandbox-visible absolute path so bare relative references in the skill body resolve.
 
     Returns empty string if no valid skills are found.
     """
     if not skill_names:
         return ""
     from agents.recruiter_agent.prompt import get_skill_metadata
+    from config import CONTAINER_SKILLS_ROOT, active_project_skills
+    from knowledge import SKILLS_DIR
 
     skills = get_skill_metadata()
+    materialized_root = active_project_skills()
+    skills_root = SKILLS_DIR.resolve()
     sections = []
     for name in skill_names:
         meta = skills.get(name)
@@ -73,7 +79,14 @@ def format_skill_prompt(skill_names: list[str]) -> str:
                 body = text
         else:
             body = text
-        sections.append(f"### Skill: {name}\n\n{body}")
+        assets_note = ""
+        is_folder_skill = meta.path.parent.resolve() != skills_root
+        if is_folder_skill and (materialized_root / name).exists():
+            assets_note = (
+                f"**Assets root:** `{CONTAINER_SKILLS_ROOT}/{name}/` (read-only). "
+                "Any `scripts/` or `references/` paths cited below resolve under this root.\n\n"
+            )
+        sections.append(f"### Skill: {name}\n\n{assets_note}{body}")
     if not sections:
         return ""
     header = (
