@@ -23,6 +23,7 @@ from langchain.tools import StructuredTool
 from pydantic import BaseModel, Field
 
 from agents.agent_tools import glob_tool, grep_tool, read_tool, write_tool
+from config import MAX_STEP_RETRIES
 from graph.node_factories import run_heuristic_validation
 from graph.ui_events import emit_message
 from langchain_core.messages import AIMessage
@@ -195,6 +196,21 @@ def create_manager_step_tools(
             )
         target_id = target.id
 
+        # Enforce the per-step retry budget. Once exhausted, refuse the retry and
+        # leave the step ``failed`` so the manager must advance (``next_step`` to
+        # accept the partial result) or let the evaluator trigger a replan,
+        # rather than looping ``retry_step`` until the recursion limit.
+        if (target.retry_count or 0) >= MAX_STEP_RETRIES:
+            _set_step_status(target_id, "failed")
+            return (
+                f"Error: step {target_id} has reached the retry limit "
+                f"(MAX_STEP_RETRIES={MAX_STEP_RETRIES}); it has been retried "
+                f"{target.retry_count} time(s) without producing the expected "
+                "artifacts. Do NOT call retry_step on it again. Either call "
+                "next_step to accept the partial result and continue, or emit "
+                "your final response so the evaluator can decide whether to replan."
+            )
+
         # Briefly mark the failing attempt, then re-arm the step for the retry.
         _set_step_status(target_id, "failed")
         doc = plan_store.read()
@@ -202,6 +218,7 @@ def create_manager_step_tools(
         if target is None:
             return f"Error: step {target_id} disappeared between status writes."
         target.status = "running"  # type: ignore[assignment]
+        target.retry_count = (target.retry_count or 0) + 1
         plan_store.write(doc)
         _emit_plan_updated(doc)
 

@@ -44,6 +44,14 @@ def create_coding_agent(
     graph = StateGraph(AgentState)
     id = "coding_agent"
 
+    # Per-invocation counter of consecutive failed code executions. Reset at the
+    # start of each step invocation (see ``_agent_invocation_tool``) and bumped
+    # by the python/r tools; once it reaches ``MAX_EXECUTOR_RETRIES`` the tools
+    # refuse to run more code and instruct the agent to stop and summarize.
+    from config import MAX_EXECUTOR_RETRIES
+
+    _exec_state = {"consecutive_errors": 0}
+
     ### Documentation tool
 
     documentation_index = DocumentationIndex(doc_filepaths)
@@ -112,11 +120,38 @@ def create_coding_agent(
                 msg.additional_kwargs["trace_image_paths"] = paths
         emit_message(msg)
 
+    def _retry_budget_message() -> str:
+        """Directive returned once the consecutive-failure budget is spent."""
+        return (
+            f"[EXECUTOR RETRY LIMIT] {_exec_state['consecutive_errors']} consecutive "
+            f"code executions have failed (limit MAX_EXECUTOR_RETRIES="
+            f"{MAX_EXECUTOR_RETRIES}). Do NOT run more code for this step. Stop, "
+            "summarize what you attempted and the errors you hit, and hand control "
+            "back so the manager can retry the step with new instructions or replan."
+        )
+
+    def _update_retry_counter(result: ExecutionResult) -> str | None:
+        """Track consecutive failures; return a stop-directive when over budget.
+
+        Returns ``None`` while within budget. A successful execution resets the
+        counter to zero.
+        """
+        if result.error:
+            _exec_state["consecutive_errors"] += 1
+            if _exec_state["consecutive_errors"] >= MAX_EXECUTOR_RETRIES:
+                return _retry_budget_message()
+        else:
+            _exec_state["consecutive_errors"] = 0
+        return None
+
     def python(code: str) -> str | list:
         logging.info(f"python tool executing:\n{code}")
         result = kernel_client.execute(code, language="python")
         logging.info(f"python tool output:\n{result.text}")
         _emit_output("Python Output:\n", result)
+        over_budget = _update_retry_counter(result)
+        if over_budget is not None:
+            return f"{result.text}\n\n{over_budget}"
         return _format_execution_result(result)
 
     python_tool = StructuredTool.from_function(
@@ -134,6 +169,9 @@ def create_coding_agent(
         result = kernel_client.execute(code, language="r")
         logging.info(f"r tool output:\n{result.text}")
         _emit_output("R Output:\n", result)
+        over_budget = _update_retry_counter(result)
+        if over_budget is not None:
+            return f"{result.text}\n\n{over_budget}"
         return _format_execution_result(result)
 
     r_tool = StructuredTool.from_function(
@@ -184,6 +222,9 @@ def create_coding_agent(
     def agent_invocation_tool(prompt: str) -> str:
         """Run the coding agent graph on a prompt and return the final message."""
         logging.info(f"Invoking agent `{id}`")
+        # Fresh retry budget for each step invocation (the tool closures persist
+        # across invocations, so the counter must be reset here).
+        _exec_state["consecutive_errors"] = 0
         message = HumanMessage(prompt)
 
         skill_prompt_text = ""
@@ -199,11 +240,11 @@ def create_coding_agent(
             "Coding Agent",
             step_id=step_ctx.step_id if step_ctx else None,
         ) as invocation_id:
-            from config import RECURSION_LIMIT
+            from config import EXECUTOR_RECURSION_LIMIT
 
             final_state = agent.invoke(
                 {"messages": [message], "skill_prompt": skill_prompt_text},
-                config={"recursion_limit": RECURSION_LIMIT},
+                config={"recursion_limit": EXECUTOR_RECURSION_LIMIT},
             )
         state_queue.put((id, final_state, invocation_id))
         # Hand off to the wrapping tool_node so it pairs this final state with

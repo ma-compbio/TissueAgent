@@ -61,6 +61,10 @@ class ExecutionResult:
 
     text: str
     images: list[str] = field(default_factory=list)  # base64-encoded data URIs
+    # True when the execution raised (Python/R traceback), timed out, or the
+    # kernel was unreachable. Lets the coding agent count consecutive failures
+    # against ``config.MAX_EXECUTOR_RETRIES`` without sniffing the text.
+    error: bool = False
 
 
 class ContainerManager:
@@ -341,16 +345,19 @@ class KernelClient:
             kernel_id = self._get_or_start_kernel(language)
         except KernelUnavailableError as e:
             logging.error(str(e))
-            return ExecutionResult(text=f"[ERROR] {e}")
+            return ExecutionResult(text=f"[ERROR] {e}", error=True)
         ws_url = f"{self._ws_base}/api/kernels/{kernel_id}/channels"
 
         try:
             ws = websocket.create_connection(ws_url, timeout=30)
         except (websocket.WebSocketException, OSError) as e:
             logging.error(f"Failed to connect to kernel websocket: {e}")
-            return ExecutionResult(text=f"[ERROR] Kernel websocket unavailable: {e}")
+            return ExecutionResult(
+                text=f"[ERROR] Kernel websocket unavailable: {e}", error=True
+            )
 
         timed_out = False
+        had_error = False
         try:
             msg = _make_execute_request(code)
             msg_id = msg["header"]["msg_id"]
@@ -394,6 +401,7 @@ class KernelClient:
                 elif msg_type == "error":
                     tb = response["content"].get("traceback", [])
                     output_parts.append("\n".join(tb))
+                    had_error = True
                 elif msg_type == "status":
                     if response["content"].get("execution_state") == "idle":
                         break
@@ -413,11 +421,12 @@ class KernelClient:
                 output_parts.append(
                     f"\n[ERROR] Execution timed out after {EXECUTION_TIMEOUT}s."
                 )
+                had_error = True
         finally:
             ws.close()
 
         text = truncate_output("".join(output_parts), MAX_OUTPUT_CHARS)
-        return ExecutionResult(text=text, images=images)
+        return ExecutionResult(text=text, images=images, error=had_error)
 
     def _get_or_start_kernel(self, language: str) -> str:
         """Return an existing kernel id or start a new one."""

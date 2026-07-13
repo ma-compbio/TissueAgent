@@ -124,3 +124,23 @@ MAX_OUTPUT_CHARS = 3000
 MAX_REPLANS = 2
 MAX_RECRUITER_RETRIES = 2
 MAX_PLANNER_RETRIES = 2
+
+# Retry budgets for the three execution-control loops (smaller than the global
+# RECURSION_LIMIT so a stuck loop fails fast instead of burning the whole graph
+# budget). See graph.evaluator (replan), manager_agent.tools (retry_step), and
+# coding_agent.model (executor inner loop).
+#
+# ``MAX_EXECUTOR_RETRIES`` is the number of *consecutive* failed code
+# executions (Python/R traceback, timeout, or unreachable kernel) a coding
+# sub-agent may accumulate within a single step before the code tools refuse
+# to run more code and tell it to stop and summarize. A successful execution
+# resets the counter. See coding_agent.model.
+MAX_EXECUTOR_RETRIES = 15
+# Hard LangGraph backstop for a coding sub-agent's inner loop — well below the
+# global RECURSION_LIMIT so a runaway loop fails fast, but high enough for a
+# legitimately multi-tool step (search docs -> run -> inspect -> rerun) plus
+# the retry budget above. Each tool call ≈ two graph turns.
+EXECUTOR_RECURSION_LIMIT = 60
+# ``MAX_STEP_RETRIES`` is how many times the manager may ``retry_step`` a single
+# plan step before the retry is refused and it must advance or replan.
+MAX_STEP_RETRIES = 3

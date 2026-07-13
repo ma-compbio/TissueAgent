@@ -96,6 +96,10 @@ class PlanStep:
     skills: List[str] = field(default_factory=list)
     status: StepStatus = "pending"
     actual_outputs: List[str] = field(default_factory=list)
+    # How many times the manager has ``retry_step``-ed this step. Bounded by
+    # ``config.MAX_STEP_RETRIES``; carried in JSON payloads, not persisted to
+    # plan.md (the conversation is authoritative).
+    retry_count: int = 0
     # Args the manager passed to the specialist tool when this step ran.
     # Populated post-hoc by ``annotate_steps_with_params`` from the chat
     # history. Not persisted in plan.md (the conversation is authoritative);
@@ -148,6 +152,7 @@ class PlanDocument:
             out.append("")
             step_yaml = {
                 "status": step.status,
+                "retry_count": int(step.retry_count),
                 "assigned_agent": step.assigned_agent,
                 "assigned_rationale": step.assignment_rationale,
                 "skills": list(step.skills),
@@ -243,6 +248,10 @@ def _parse_markdown(text: str) -> PlanDocument:
             except yaml.YAMLError:
                 data = {}
             step.status = data.get("status", "pending")  # type: ignore[assignment]
+            try:
+                step.retry_count = int(data.get("retry_count", 0) or 0)
+            except (TypeError, ValueError):
+                step.retry_count = 0
             step.assigned_agent = data.get("assigned_agent")
             step.assignment_rationale = data.get("assigned_rationale")
             step.skills = list(data.get("skills") or [])
