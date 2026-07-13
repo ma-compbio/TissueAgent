@@ -33,11 +33,14 @@ If you generate a <Plan>, it will be passed to a recruiter agent to assign speci
 - Merge production+documentation when doc is brief metadata of the produced artifact.
 - Avoid steps that only "inspect", "list", "choose default", or "validate" unless bundled.
 - Each step must yield at least one tangible artifact.
+- Artifact paths are relative to DATA_DIR; do not prefix them with `data/`.
+  Use `reports/x.md`, `references/x.h5ad`, or `cell_annotation/x.h5ad`, not `data/reports/x.md`.
 - A step is one action or a cohesive group of actions that change state or emit a concrete output.
-- Skip redundant setup when a downstream specialized agent already performs it. 
-  For example, the Cell Annotater agent handles preprocessing and gene harmonization, 
-  so do not add a separate “prepare spatial dataset” step unless the user explicitly requests it.
-- Treat provided datasets as analysis-ready unless the user asks for preprocessing/QC artifacts.
+- Skip redundant setup when a downstream specialized agent already performs it.
+  The Cell Annotater agent handles annotation preprocessing and gene harmonization.
+- Treat a provided H5AD as analysis-ready unless inspection or validation is explicitly requested.
+  For archives, Seurat objects, platform exports, delimited matrices, URLs, or other non-H5AD
+  inputs, include one data-onboarding step that yields a validated H5AD before analysis.
 - Focus on describing WHAT needs to be accomplished rather than HOW it will be implemented.
 - The plan should not include user interactions, approvals, or feedback loops.
 - Avoid making assumptions about specific data formats or structures (e.g., don't assume specific column names, data types, or file formats).
@@ -87,6 +90,8 @@ When creating a plan, check if an existing template matches the task:
     reference-based cell-type transfer or provides a reference AnnData
 - If query asks for cell-type label transfer from a reference:
   → Prefer CELL_ANNOTATION template
+- If query asks to download, extract, convert, or prepare spatial data:
+  → Prefer DATA_ONBOARDING template
 - Templates provide proven checklists - adapt them to fit the specific query
 - If no template fits well, create a new plan from scratch
 
@@ -200,6 +205,9 @@ Steps:
     step: Run the cell annotater agent with the spatial dataset and reference to transfer labels 
     reason: The specialized agent performs Harmony integration, preprocessing, and reporting in one pass
     expected artifacts: updated spatial adata file spatial_annotated.h5ad, no other expected artifacts
+
+If the spatial input in Example D were a URL, archive, Seurat object, platform export,
+or delimited matrix, add a first step to safely prepare and validate the H5AD.
 
 Example E: Tissue niche annotation for spatial transcriptomics dataset
 ROUTE: PLAN

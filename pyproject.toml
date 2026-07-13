@@ -64,6 +64,12 @@ dependencies = [
     "utag",
 ]
 
+[project.optional-dependencies]
+cell-annotation-benchmarks = [
+    "celltypist==1.7.1",
+    "omicverse==2.2.3",
+]
+
 [tool.ruff]
 line-length = 120
 force-exclude = true

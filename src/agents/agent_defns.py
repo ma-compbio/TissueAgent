@@ -56,6 +56,11 @@ from agents.agent_registry.cell_annotater_agent.prompt import (
     CellTissueAnnotationDescription
 )
 from agents.agent_registry.cell_annotater_agent.tools import CellAnnotaterTools
+from agents.agent_registry.data_onboarding_agent.prompt import (
+    DataOnboardingDescription,
+    DataOnboardingPrompt,
+)
+from agents.agent_registry.data_onboarding_agent.tools import DataOnboardingTools
 from agents.agent_registry.hypothesis_agent.prompt import HypothesisAgentDescription
 
 
@@ -183,6 +188,14 @@ AgentDefns: List[Union[ReActAgent, CustomAgent]] = [
         description=SingleCellDescription,
         prompt=SingleCellPrompt,
         tools=SingleCellTools,
+        model_ctor=DefaultModelCtor,
+    ),
+    ReActAgent(
+        id="data_onboarding",
+        name="Data Onboarding Agent",
+        description=DataOnboardingDescription,
+        prompt=DataOnboardingPrompt,
+        tools=DataOnboardingTools,
         model_ctor=DefaultModelCtor,
     ),
     ReActAgent(

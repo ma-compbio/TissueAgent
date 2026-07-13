@@ -159,7 +159,7 @@ def query_cellxgene_census_live(
         for tbl in reader:
             df = tbl.to_pandas(types_mapper=None)
             # Update aggregations
-            for ds_id, sub in df.groupby("dataset_id", dropna=True):
+            for ds_id, sub in df.groupby("dataset_id", dropna=True, observed=False):
                 n = len(sub)
                 if n == 0:  # shouldn't happen, but be safe
                     continue
@@ -231,7 +231,7 @@ def query_cellxgene_census_live(
         out = out.head(max_results).reset_index(drop=True)
 
     # Enrich with dataset/collection metadata
-    if enrich_metadata:
+    if enrich_metadata and hasattr(cg, "get_datasets"):
         try:
             meta = cg.get_datasets(census_version=census_version)  # returns a DataFrame
             # Keep a few useful columns if present
@@ -251,9 +251,9 @@ def query_cellxgene_census_live(
             ]
             meta = meta[[c for c in keep_cols if c in meta.columns]].drop_duplicates("dataset_id")
             out = out.merge(meta, on="dataset_id", how="left")
-        except Exception as e:
-            # Non-fatal if metadata fetch fails
-            out["metadata_error"] = str(e)
+        except Exception:
+            # Non-fatal if metadata fetch fails.
+            pass
 
     return out
 

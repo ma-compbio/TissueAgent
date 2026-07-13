@@ -1,18 +1,19 @@
 template_id: CELL_ANNOTATION
 title: Reference-based cell-type transfer
 task: Transfer cell-type labels from a provided or explicitly requested reference dataset
-version: "1.0"
-last_updated: 2025-11-11
+version: "1.2"
+last_updated: 2026-07-13
 tags: [cell type annotation, label transfer, harmony, reference, scRNA-seq, spatial]
 
 inputs:
-  - spatial AnnData(.h5ad) file path
+  - spatial dataset path or public source; non-H5AD inputs require onboarding
   - reference AnnData(.h5ad) file path or explicit request to acquire a reference
 
 outputs:
-  - updated spatial AnnData(.h5ad) file with cell type column in .obs
-  - no other expected artifiacts, only the updated anndata file for the spatial dataset
+  - updated spatial AnnData(.h5ad) file with harmony_predicted_cell_type and confidence columns in .obs
+  - no other expected artifacts, only the updated AnnData file for the spatial dataset
 step_sketch: >
-  use a provided or explicitly requested reference dataset → use Harmony transfer
-  to infer cell types in spatial dataset
+  if needed, safely convert and validate spatial input as H5AD → use a provided or
+  explicitly requested reference dataset → inspect both expression matrices and make
+  an evidence-backed preprocessing decision → use Harmony transfer to infer cell types
 # eval: ["file_exists(spatial_scatterplot.png)", "n_points>0", "n_nan==0", "aspect≈1"]

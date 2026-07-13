@@ -96,6 +96,16 @@ Open **http://localhost:8000**.
 
 Install uv, Python 3.12, and run `uv sync` from the root of this repository to install all Python packages. Then, see `demo/` for examples on how to invoke TissueAgent directly from a Jupyter Notebook.
 
+### Cell annotation reviewer benchmark
+
+The direct CellTypist and GPTCellType comparisons are isolated optional dependencies:
+
+```bash
+uv sync --frozen --extra cell-annotation-benchmarks
+```
+
+This installs only the versions pinned in `uv.lock`; the demo never installs packages at runtime. The ovarian Seurat conversion additionally requires an existing R installation with Seurat and Matrix. Missing R packages are reported explicitly and are never installed by TissueAgent. See `demo/cell_annotation_benchmark.ipynb` for the three-dataset quick/full workflow.
+
 > [!TIP]
 > All agents use GPT-5 by default. To save API tokens, models with lower reasoning capabilities can be used. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
 
@@ -107,6 +117,8 @@ All datasets referenced in the manuscript are publicly available:
 - Single-cell reference dataset for cell type deconvolution: [CellxGene collection b52eb423](https://cellxgene.cziscience.com/collections/b52eb423-5d0d-4645-b217-e1c6d38b2e72)
 - 10x Visium Alzheimer's disease spatial transcriptomics dataset (Miyoshi et al., 2024): GEO accession [GSE233208](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE233208)
 - Spatial mouse atlas (Lohoff et al., 2022): [https://crukci.shinyapps.io/SpatialMouseAtlas/](https://crukci.shinyapps.io/SpatialMouseAtlas/)
+- Mouse CNS STARmap PLUS atlas (Shi et al., 2023): [Zenodo record 8327576](https://zenodo.org/records/8327576)
+- Ovarian cancer spatial atlas (Vázquez-García et al., 2024): [Zenodo record 12613839](https://zenodo.org/records/12613839)
 - Spatiotemporal transcriptomics dataset (Chen et al., 2022): CNGBdb accession [STDS0000058](https://db.cngb.org/search/project/STDS0000058/)
 
 ### License

@@ -1,5 +1,4 @@
 import logging
-import shutil
 import sys
 from contextlib import contextmanager
 
@@ -43,21 +42,17 @@ def tee_output(path, mode="a"):
 from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, SESSIONS_DIR, UPLOADS_DIR
 
 def _reset_data_directories() -> None:
-    """Clear and keep explicitly listed runtime folders, and delete all other subdirectories.
+    """Create runtime directories without deleting datasets or previous results.
 
-    - Keeps (but clears): data/dataset, data/uploads, data/pdfs, sessions/
-    - Deletes entirely: any other subdirectories under data/
+    The historical helper name is retained for older notebooks. Destructive
+    resetting made benchmark inputs and references disappear between runs, so
+    this function now performs idempotent setup only.
     """
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    keep_and_clear = {DATASET_DIR, UPLOADS_DIR, PDF_UPLOADS_DIR}
-
-    for child in DATA_DIR.iterdir():
-        if not child.is_dir():
-            continue
-        if child in keep_and_clear:
-            shutil.rmtree(child, ignore_errors=True)
-            child.mkdir(parents=True, exist_ok=True)
-        else:
-            shutil.rmtree(child, ignore_errors=True)
-    shutil.rmtree(SESSIONS_DIR, ignore_errors=True)
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+    for directory in (
+        DATA_DIR,
+        DATASET_DIR,
+        UPLOADS_DIR,
+        PDF_UPLOADS_DIR,
+        SESSIONS_DIR,
+    ):
+        directory.mkdir(parents=True, exist_ok=True)
