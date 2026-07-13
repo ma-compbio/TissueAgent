@@ -19,6 +19,8 @@ Do NOT use this skill outside the ensemble — for a single-method run use the m
 - **Spatial h5ad** *(required)* — `.obsm['spatial']` populated (or `obs['x','y']` which we'll convert), raw integer counts ideally in `.X` or `adata.layers['counts']`.
 - **Cell-type column** *(required)* — name of an `.obs` column with discrete cell type labels. Must have ≥2 categories with ≥10 cells each, otherwise downstream permutation tests are meaningless.
 - **Species** *(required)* — `"human"` or `"mouse"`. Determines the LR resource name used downstream (`consensus` vs `mouseconsensus` for LIANA+; `'human'`/`'mouse'` for COMMOT's CellChatDB; LR DB species for stLearn).
+- **Platform** *(required)* — one of `visium | visium_hd | xenium | merfish | seqfish | slide_seq | st | unknown`. Drives every downstream neighborhood parameter (COMMOT's `dis_thr`, stLearn's `distance` / gridding path, LIANA+'s `bandwidth`). Detect from `adata.uns['spatial'][library_id]['scalefactors']` when present (→ Visium/Visium HD); otherwise ask the user.
+- **Coordinate units** *(required)* — `um | pixel | normalized`. Raw Visium `.obsm['spatial']` is in fullres pixels — convert to µm via the Space Ranger scalefactor. Xenium / MERFISH / seqFISH raw exports ship in µm. `normalized` means the atlas has already standardized coordinates (mean-centered, ~[-3,3]); this is UNUSABLE for physical-scale calibration — refuse and pull the raw data.
 - **Gene-symbol convention** — gene names must be **symbols** (HGNC for human, MGI for mouse). If `.var_names` look like Ensembl IDs (start with `ENSG`/`ENSMUSG`), the skill maps them via the same `mygene` workflow used in [[cell-type-annotation]].
 
 ## Output
@@ -31,36 +33,71 @@ Written to the active project's `outputs/` folder:
   - `.layers['norm_no_log']` = `normalize_total` only, **no log1p** (stLearn-ready)
   - `.obs['_ccc_cell_type']` = a clean copy of the user's cell-type column with `str` dtype + categorical conversion + invalid-character scrub
   - `.obsm['spatial']` = float array, shape `(n_obs, 2)`
-- `logs/ccc_data_prep.json` — `{species, cell_type_col, n_cells, n_genes, n_categories, min_cells_per_category, spatial_coord_range, gene_symbol_convention, mapped_n_genes}`.
+- `logs/ccc_data_prep.json` — full platform + calibration record. Every downstream skill in the ensemble reads this and refuses to run if `median_nn_um` is null:
+
+  ```json
+  {
+    "species":                "human | mouse",
+    "platform":               "visium | visium_hd | xenium | merfish | seqfish | slide_seq | st | unknown",
+    "resolution_mode":        "spot_multicell | single_cell",
+    "coord_unit":             "um | pixel | normalized",
+    "spot_diameter_um":       55.0,          // 55 for Visium, 2 for Visium HD, null for imaging
+    "median_nn_distance":     123.4,         // median 1-NN in coord_unit
+    "median_nn_um":           123.4,         // same converted to µm (null if coord_unit=normalized)
+    "n_cells_per_mm2":        3400.0,        // null if coord_unit != um
+    "cell_type_col":          "_ccc_cell_type",
+    "n_cells":                19416,
+    "n_genes":                351,
+    "n_categories":           22,
+    "min_cells_per_category": 45,
+    "spatial_coord_range":    [xmin, ymin, xmax, ymax],
+    "gene_symbol_convention": "hgnc | mgi | ensembl_mapped",
+    "mapped_n_genes":         null
+  }
+  ```
 
 ## Success Criteria
 
 - `ccc_prepped.h5ad` loads and contains the three layers above.
 - `_ccc_cell_type` has ≥2 categories AND `min_cells_per_category ≥ 10`.
 - `adata.obsm['spatial'].shape == (n_obs, 2)` and contains no NaNs.
-- ≥1000 genes survive QC (otherwise LR overlap will be too small downstream — flag this and stop).
+- ≥1000 genes survive QC (otherwise LR overlap will be too small downstream — flag this and stop). Targeted imaging panels (Xenium/MERFISH/seqFISH) will often have 200–500 genes; when that's the case, DO NOT hard-fail — mark `n_genes < 1000` in the JSON log so downstream skills can widen their filters (e.g. LIANA `expr_prop=0.05`) instead.
+- `platform`, `resolution_mode`, `coord_unit`, `median_nn_um` all populated in `logs/ccc_data_prep.json`. Refuse to write `ccc_prepped.h5ad` without them — every downstream skill depends on this calibration.
 
 ## Workflow
 
 1. Load the h5ad, find raw counts (prefer `layers['counts']`, else `.X` if `.X.dtype` is integer, else error).
 2. Validate spatial coords: if `obsm['spatial']` absent and `obs[['x','y']]` present, build `obsm['spatial'] = obs[['x','y']].to_numpy(float)`. Assert no NaN, no all-zero rows.
-3. Validate `cell_type_col`: assert column exists, `nunique() >= 2`, `value_counts().min() >= 10`. Copy to `obs['_ccc_cell_type']` with strings (no leading digits, no `|` or `/`, replace whitespace with `_`).
-4. Gene-symbol check: peek at `var_names[:10]`. If they match `ENSG\d+` (or `ENSMUSG\d+` for mouse), map to symbols via `mygene.MyGeneInfo().querymany(..., species=species, scopes='ensembl.gene', fields='symbol')`. Drop unmapped.
-5. Basic QC: `sc.pp.filter_genes(adata, min_cells=3)`, `sc.pp.filter_cells(adata, min_genes=10)`. If `<1000` genes remain, raise (the ensemble would be uninformative).
-6. Cache raw counts to `adata.layers['counts']`.
-7. Build the two normalized variants: `normalize_total → layers['norm_no_log']`, then `normalize_total + log1p → .X`.
-8. Write `ccc_prepped.h5ad` and the JSON log.
+3. **Platform calibration.** This is the step that makes the ensemble platform-agnostic — every downstream method reads what it produces:
+   - Determine `platform` and `coord_unit`. Prefer `adata.uns['spatial'][library_id]` (Visium/Visium HD ship a `scalefactors_json` there); else ask the user.
+   - Detect pre-normalized coords early: if `|mean| < 1` on both axes AND `max(|coord|) < 10`, set `coord_unit = "normalized"` and RAISE — recalibrating downstream radii on standardized coords is meaningless.
+   - If `coord_unit == "pixel"` (Visium), pull `tissue_hires_scalef` (or `microns_per_pixel`) from `.uns['spatial'][library_id]['scalefactors']` and compute `spot_diameter_um = spot_diameter_fullres × scalefactor`.
+   - `median_nn_distance`: sample up to 2000 cells, compute each cell's 1-NN Euclidean distance, take the median. Convert to µm to fill `median_nn_um`.
+   - `resolution_mode`: `spot_multicell` for `visium | visium_hd | st | slide_seq`; `single_cell` for `xenium | merfish | seqfish`; abort with an actionable message for `unknown`.
+   - If `coord_unit == "um"`, compute `n_cells_per_mm2 = n_cells / area_mm2` from the coord range.
+4. Validate `cell_type_col`: assert column exists, `nunique() >= 2`, `value_counts().min() >= 10`. Copy to `obs['_ccc_cell_type']` with strings (no leading digits, no `|` or `/`, replace whitespace with `_`).
+5. Gene-symbol check: peek at `var_names[:10]`. If they match `ENSG\d+` (or `ENSMUSG\d+` for mouse), map to symbols via `mygene.MyGeneInfo().querymany(..., species=species, scopes='ensembl.gene', fields='symbol')`. Drop unmapped.
+6. Basic QC: `sc.pp.filter_genes(adata, min_cells=3)`, `sc.pp.filter_cells(adata, min_genes=10)`. If `<1000` genes remain, log a warning (don't hard-fail on imaging panels; see Success Criteria).
+7. Cache raw counts to `adata.layers['counts']`.
+8. Build the two normalized variants: `normalize_total → layers['norm_no_log']`, then `normalize_total + log1p → .X`.
+9. Write `ccc_prepped.h5ad` and the extended JSON log.
 
 ## Code Template
 
 ```python
-import json
+import json, os
 import numpy as np
 import scanpy as sc
+from sklearn.neighbors import NearestNeighbors
 
 ADATA_IN   = "uploads/spatial.h5ad"   # adjust
 CELL_TYPE  = "cell_type"              # adjust
 SPECIES    = "human"                  # or "mouse"
+PLATFORM   = "xenium"                 # visium | visium_hd | xenium | merfish | seqfish | slide_seq | st
+COORD_UNIT = "um"                     # um | pixel | normalized
+
+SPOT_MULTI = {"visium", "visium_hd", "st", "slide_seq"}
+SPOT_UM    = {"visium": 55.0, "visium_hd": 2.0}
 
 adata = sc.read_h5ad(ADATA_IN)
 
@@ -75,8 +112,45 @@ if "counts" not in adata.layers:
 if "spatial" not in adata.obsm:
     adata.obsm["spatial"] = adata.obs[["x", "y"]].to_numpy(float)
 assert not np.isnan(adata.obsm["spatial"]).any()
+coords = adata.obsm["spatial"]
 
-# 3. cell type
+# 3. Platform calibration
+# Detect pre-normalized coords (mean-centered, small range) — refuse.
+if (np.abs(coords.mean(axis=0)) < 1).all() and np.abs(coords).max() < 10:
+    COORD_UNIT = "normalized"
+if COORD_UNIT == "normalized":
+    raise ValueError(
+        "Spatial coordinates look pre-normalized/standardized (|mean|<1, max<10). "
+        "Downstream dis_thr/bandwidth calibration requires physical units — "
+        "re-pull the raw h5ad with un-normalized coordinates."
+    )
+
+resolution_mode = "spot_multicell" if PLATFORM in SPOT_MULTI else "single_cell"
+
+# µm-per-unit conversion for pixel coords (Visium): pull from adata.uns['spatial']
+um_per_unit = 1.0
+if COORD_UNIT == "pixel" and "spatial" in adata.uns:
+    lib = next(iter(adata.uns["spatial"].values()))
+    scale = lib.get("scalefactors", {})
+    # Space Ranger publishes microns_per_pixel; fall back to tissue_hires_scalef if needed
+    um_per_unit = float(scale.get("microns_per_pixel", 1.0))
+
+# 1-NN median distance from a 2000-cell sample
+rng = np.random.default_rng(1337)
+sample = coords[rng.choice(coords.shape[0], size=min(2000, coords.shape[0]), replace=False)]
+dists, _ = NearestNeighbors(n_neighbors=2).fit(coords).kneighbors(sample)
+median_nn_distance = float(np.median(dists[:, 1]))
+median_nn_um       = median_nn_distance * um_per_unit
+
+# Density (only meaningful in µm)
+n_cells_per_mm2 = None
+if COORD_UNIT == "um":
+    xmin, ymin = coords.min(axis=0); xmax, ymax = coords.max(axis=0)
+    area_mm2 = ((xmax - xmin) * (ymax - ymin)) / 1e6
+    if area_mm2 > 0:
+        n_cells_per_mm2 = float(adata.n_obs / area_mm2)
+
+# 4. cell type
 assert CELL_TYPE in adata.obs and adata.obs[CELL_TYPE].nunique() >= 2
 adata.obs["_ccc_cell_type"] = (
     adata.obs[CELL_TYPE].astype(str)
@@ -86,28 +160,46 @@ adata.obs["_ccc_cell_type"] = (
 assert adata.obs["_ccc_cell_type"].value_counts().min() >= 10, \
     "Need >=10 cells per cell type for permutation tests"
 
-# 4. (omit gene-symbol mapping if names already look like symbols)
+# 5. (omit gene-symbol mapping if names already look like symbols)
 
-# 5. QC
+# 6. QC — soft warn on small imaging panels instead of hard-failing
 sc.pp.filter_genes(adata, min_cells=3)
 sc.pp.filter_cells(adata, min_genes=10)
-assert adata.n_vars >= 1000, "Too few genes survive QC; CCC ensemble unlikely to be informative"
+small_panel = adata.n_vars < 1000
 
-# 6 + 7. counts + two normalization variants
+# 7 + 8. counts + two normalization variants
 adata.layers["counts"] = adata.layers.get("counts", adata.X.copy())
 norm_only = sc.pp.normalize_total(adata, target_sum=1e4, inplace=False)["X"]
 adata.layers["norm_no_log"] = norm_only
 sc.pp.normalize_total(adata, target_sum=1e4)
 sc.pp.log1p(adata)
 
-import os; os.makedirs("logs", exist_ok=True)
+# 9. write
+os.makedirs("logs", exist_ok=True)
 adata.write("ccc_prepped.h5ad")
-json.dump({"species": SPECIES, "cell_type_col": "_ccc_cell_type",
-           "n_cells": int(adata.n_obs), "n_genes": int(adata.n_vars),
-           "n_categories": int(adata.obs["_ccc_cell_type"].nunique()),
-           "min_cells_per_category": int(adata.obs["_ccc_cell_type"].value_counts().min())},
-          open("logs/ccc_data_prep.json", "w"), indent=2)
-print("ccc_prepped.h5ad ready:", adata.shape)
+
+xmin, ymin = coords.min(axis=0).tolist()
+xmax, ymax = coords.max(axis=0).tolist()
+json.dump({
+    "species": SPECIES,
+    "platform": PLATFORM,
+    "resolution_mode": resolution_mode,
+    "coord_unit": COORD_UNIT,
+    "spot_diameter_um": SPOT_UM.get(PLATFORM),
+    "median_nn_distance": median_nn_distance,
+    "median_nn_um": median_nn_um,
+    "n_cells_per_mm2": n_cells_per_mm2,
+    "cell_type_col": "_ccc_cell_type",
+    "n_cells": int(adata.n_obs),
+    "n_genes": int(adata.n_vars),
+    "n_categories": int(adata.obs["_ccc_cell_type"].nunique()),
+    "min_cells_per_category": int(adata.obs["_ccc_cell_type"].value_counts().min()),
+    "spatial_coord_range": [xmin, ymin, xmax, ymax],
+    "gene_symbol_convention": "hgnc" if SPECIES == "human" else "mgi",
+    "mapped_n_genes": None,
+    "small_panel": bool(small_panel),
+}, open("logs/ccc_data_prep.json", "w"), indent=2)
+print("ccc_prepped.h5ad ready:", adata.shape, "median_nn_um:", round(median_nn_um, 2))
 ```
 
 ## Common Issues
@@ -117,6 +209,8 @@ print("ccc_prepped.h5ad ready:", adata.shape)
 - **Mouse data with `resource_name='consensus'` (human) → empty results.** Pass `species='mouse'` and use the matching resource downstream.
 - **One-cell-type "spatial domain" labels.** Permutation tests require multiple categories with reasonable cell counts. <10 cells/category produces unstable permutation p-values; the skill aborts.
 - **Non-integer counts in `.X`.** Some platforms (Xenium, MERFISH after probe normalization) ship floats. Check the source pipeline — if counts are truly probabilistic, save `np.round(...).astype(int)` to `layers['counts']` only after confirming with the user.
+- **Pre-normalized / standardized `.obsm['spatial']`.** Atlas h5ads (seqFISH embryo atlas, some MERFISH releases) ship coordinates already mean-centered and scaled to ~[-3, 3]. This is unusable for physical-scale calibration — `dis_thr = 500`, `bandwidth = 200 pixels`, `distance = 250` all become unit-less nonsense. The workflow detects this (`|mean|<1` and `max<10`) and refuses; pull the raw un-normalized coords instead.
+- **Visium coord unit ambiguity.** `.obsm['spatial']` is fullres pixels by default. Do not pass 500 as a µm value in that space — convert first via `microns_per_pixel` from `.uns['spatial'][library_id]['scalefactors']`.
 
 ## References
 

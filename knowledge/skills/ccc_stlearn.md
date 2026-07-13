@@ -14,10 +14,21 @@ Step 4 of the `ccc_ensemble` plan. stLearn's CCI test is a **spot-level hotspot 
 
 Do not use on non-spatial data.
 
+## Mode branching (Visium vs imaging platforms)
+
+The skill has **two execution paths** picked from `logs/ccc_data_prep.json`'s `resolution_mode`. This matches stLearn's own tutorials — the CCI page assumes Visium; the Xenium page grids first.
+
+| `resolution_mode` | Path | `st.tl.cci.grid` | `distance` | `spot_mixtures` |
+|---|---|---|---|---|
+| `spot_multicell` (Visium / ST / Slide-seq) | direct | not called | `None` (spot + immediate neighbours) | `True` if deconvolution proportions are in `adata.uns[label]`, else `False` |
+| `single_cell` (Xenium / MERFISH / seqFISH) | **grid first** | `n_row=125, n_col=125, use_label='_ccc_cell_type'` | `≈ 3 × median_nn_um` (or the grid pitch) | `True` — the gridded object carries per-grid cell-type proportions |
+
+Without gridding, single-cell-resolution data (a) blows up the neighbour graph (`19 spots with no neighbours` was the seqFISH failure mode), and (b) forces `spot_mixtures=False`, which the paper's decision tree calls the "stLearn\*" variant — a lossier fallback. Grid first.
+
 ## Input
 
 - `ccc_prepped.h5ad` from [[ccc-data-prep]] — note we will use `layers['norm_no_log']` (normalize_total **without** log1p) because stLearn's LR statistic assumes raw-scale relative counts.
-- Species `"human"` or `"mouse"`.
+- `logs/ccc_data_prep.json` — READ `species`, `resolution_mode`, `median_nn_um` (drives `distance`). Refuse if `median_nn_um` is null.
 - Cell-type column `_ccc_cell_type`.
 
 ## Output
@@ -47,12 +58,15 @@ Stored on the AnnData (per the tutorial):
 ## Workflow
 
 1. `pip install stlearn`.
-2. Load `ccc_prepped.h5ad`. **Swap `.X` to the no-log1p layer**: `adata.X = adata.layers['norm_no_log'].copy()`.
+2. Load `ccc_prepped.h5ad` and `logs/ccc_data_prep.json`. **Swap `.X` to the no-log1p layer**: `adata.X = adata.layers['norm_no_log'].copy()`.
 3. `lrs = st.tl.cci.load_lrs(['connectomeDB2020_lit'], species=species)` — `'connectomeDB2020_put'` is the larger, lower-confidence set; `lit` is literature-supported only.
-4. `st.tl.cci.run(adata, lrs, min_spots=20, distance=None, n_pairs=500, n_cpus=4, random_state=1337)`.
-5. `st.tl.cci.adj_pvals(adata, correct_axis='spot', pval_adj_cutoff=0.05, adj_method='fdr_bh')`.
-6. `st.tl.cci.run_cci(adata, use_label='_ccc_cell_type', min_spots=3, spot_mixtures=False, n_perms=500, n_cpus=4, random_state=1337)`.
-7. Flatten `adata.uns['lr_summary']` → `stlearn_lr_summary.csv`. Flatten `adata.uns['per_lr_cci__ccc_cell_type']` → long-form `stlearn_per_lr_cci.csv` for the aggregation step.
+4. **Branch on `resolution_mode`**:
+   - `spot_multicell`: proceed directly on `adata`. `distance = None` (spot + immediate neighbours). `spot_mixtures = True` if `adata.uns[label]` contains deconvolution proportions, else `False`.
+   - `single_cell`: **grid first** — `adata = st.tl.cci.grid(adata, n_row=125, n_col=125, use_label='_ccc_cell_type')`. This matches stLearn's Xenium tutorial exactly. Then set `distance = max(3 × median_nn_um, grid_pitch_um)` and `spot_mixtures = True` (the gridded pseudo-spots carry the cell-type proportions).
+5. `st.tl.cci.run(adata, lrs, min_spots=20, distance=<see above>, n_pairs=500, n_cpus=4, random_state=1337)`.
+6. `st.tl.cci.adj_pvals(adata, correct_axis='spot', pval_adj_cutoff=0.05, adj_method='fdr_bh')`.
+7. `st.tl.cci.run_cci(adata, use_label='_ccc_cell_type', min_spots=3, spot_mixtures=<see above>, n_perms=500, n_cpus=4, random_state=1337)`.
+8. Flatten `adata.uns['lr_summary']` → `stlearn_lr_summary.csv`. Flatten `adata.uns['per_lr_cci__ccc_cell_type']` → long-form `stlearn_per_lr_cci.csv` for the aggregation step. When run on a gridded object, record `gridded=True` in `logs/ccc_stlearn.json` so aggregation knows source/target are grid-derived proportions rather than raw cell labels.
 
 ## Code Template
 
@@ -65,21 +79,46 @@ import pandas as pd
 import scanpy as sc
 import stlearn as st
 
+with open("logs/ccc_data_prep.json") as f:
+    prep = json.load(f)
+
+species         = prep["species"]
+resolution_mode = prep["resolution_mode"]
+median_nn_um    = prep["median_nn_um"]
+if median_nn_um is None:
+    raise ValueError("median_nn_um is null — ccc-data-prep needs physical coords")
+
 adata = sc.read_h5ad("ccc_prepped.h5ad")
-species = "human"   # read from logs/ccc_data_prep.json
 
 # stLearn wants normalize_total WITHOUT log1p
 adata.X = adata.layers["norm_no_log"].copy()
 
 lrs = st.tl.cci.load_lrs(["connectomeDB2020_lit"], species=species)
 
+# --- mode branch ---
+gridded = False
+if resolution_mode == "single_cell":
+    # matches stLearn's Xenium tutorial: cell_cell_interaction_xenium.html
+    N_ROW = N_COL = 125
+    adata = st.tl.cci.grid(adata, n_row=N_ROW, n_col=N_COL, use_label="_ccc_cell_type")
+    gridded = True
+    xr = adata.obsm["spatial"][:, 0].ptp()
+    yr = adata.obsm["spatial"][:, 1].ptp()
+    grid_pitch_um = min(xr / N_ROW, yr / N_COL)
+    distance = max(3 * median_nn_um, grid_pitch_um)
+    spot_mixtures = True
+else:
+    # Visium / ST / Slide-seq
+    distance = None                      # spot + immediate neighbours per stLearn CCI tutorial
+    spot_mixtures = bool(prep.get("cell_type_col") in adata.uns)  # True iff deconv proportions
+
 st.tl.cci.run(adata, lrs,
-              min_spots=20, distance=None, n_pairs=500,
+              min_spots=20, distance=distance, n_pairs=500,
               n_cpus=4, random_state=1337)
 st.tl.cci.adj_pvals(adata, correct_axis="spot",
                     pval_adj_cutoff=0.05, adj_method="fdr_bh")
 st.tl.cci.run_cci(adata, use_label="_ccc_cell_type",
-                  min_spots=3, spot_mixtures=False,
+                  min_spots=3, spot_mixtures=spot_mixtures,
                   n_perms=500, n_cpus=4, random_state=1337)
 
 os.makedirs("logs", exist_ok=True)
@@ -98,18 +137,25 @@ for lr, df in per_lr.items():
 pd.DataFrame(rows).to_csv("stlearn_per_lr_cci.csv", index=False)
 
 json.dump({"species": species,
+           "resolution_mode": resolution_mode,
+           "gridded": gridded,
+           "distance": (float(distance) if distance is not None else None),
+           "spot_mixtures": spot_mixtures,
            "n_lr_pairs_loaded": int(len(lrs)),
            "n_lr_pairs_significant": int((lr_summary["n_spots_sig"] > 0).sum()),
            "n_permutations": 500},
           open("logs/ccc_stlearn.json", "w"), indent=2)
 adata.write("ccc_prepped.h5ad")
-print("stLearn CCI done; LRs significant:", (lr_summary['n_spots_sig'] > 0).sum())
+print("stLearn CCI done; gridded:", gridded,
+      "LRs significant:", (lr_summary['n_spots_sig'] > 0).sum())
 ```
 
 ## Common Issues
 
 - **`.X` is log1p → all `lr_scores` collapse near zero.** The tutorial explicitly says "NOTE: no log1p". The data-prep skill stashed `layers['norm_no_log']` exactly so this skill could swap it in.
-- **`distance=None` uses Visium's default neighbour distance.** For Xenium/MERFISH, pass an explicit pixel/µm value matching the spot/cell spacing.
+- **`distance=None` uses Visium's default neighbour distance.** Only valid for `spot_multicell` platforms. For imaging data the correct approach is to grid first (`st.tl.cci.grid`) and then pass a distance derived from `median_nn_um` or the grid pitch — do not pass `None` to imaging inputs.
+- **`spot_mixtures=False` on ungridded single-cell data (the "stLearn\*" fallback).** Loses information and structurally over-calls autocrine interactions when a cell's spatial neighbours share its own cell type. Prefer the grid path.
+- **Skipping the grid step on imaging data.** Produces "N spots with no neighbours" warnings, huge neighbour graphs, and hours of runtime for little signal. Grid.
 - **`n_pairs` too low → noisy permutation p-values.** 500 is reasonable; 1000+ for publication.
 - **`spot_mixtures=True` requires a cell-type proportion matrix in `uns[use_label]`.** Deconvolution upstream is required if true; else use `False` (one cell type per spot/cell).
 - **`per_lr_cci_*` LR naming.** The key uses `<ligand>_<receptor>`; if a ligand name contains an underscore (rare), `split('_', 1)` splits at the first one — confirm format before trusting downstream joins.
@@ -117,7 +163,8 @@ print("stLearn CCI done; LRs significant:", (lr_summary['n_spots_sig'] > 0).sum(
 
 ## References
 
-- stLearn CCI tutorial: <https://stlearn.readthedocs.io/en/latest/tutorials/cell_cell_interaction.html>
+- stLearn CCI tutorial (Visium): <https://stlearn.readthedocs.io/en/latest/tutorials/cell_cell_interaction.html>
+- stLearn Xenium CCI tutorial (grid path): <https://stlearn.readthedocs.io/en/latest/tutorials/cell_cell_interaction_xenium.html>
 - stLearn paper: Pham et al., *Nature Communications* 2023 — "Robust mapping of spatiotemporal trajectories and cell-cell interactions in healthy and diseased tissues."
 - connectomeDB2020: Raredon et al., *Sci. Adv.* 2019.
 - Related skills: [[ccc-data-prep]], [[ccc-liana]], [[ccc-commot]].
