@@ -1,4 +1,4 @@
-"""Download one CELLxGENE Census source H5AD safely into DATA_DIR."""
+"""Download CELLxGENE Census source h5ad files into the active project."""
 
 import cellxgene_census
 import anndata as ad
@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from config import DATA_DIR
+from config import DATA_DIR, active_project_outputs
 
 
 def _resolve_output_path(filename: str) -> Path:
@@ -49,7 +49,10 @@ def retrieve_cellxgene_single_cell(
 
     Args:
         dataset_id: CELLxGENE Census dataset identifier.
-        filename: Target filename within DATA_DIR.
+        filename: Target filename. Lands at
+            ``project/outputs/datasets/<filename>`` so the user
+            can see the downloaded dataset in the Files panel and the
+            agent can read it back from a stable relative path.
 
     Returns:
         census_version: Pinned Census release or the stable alias.

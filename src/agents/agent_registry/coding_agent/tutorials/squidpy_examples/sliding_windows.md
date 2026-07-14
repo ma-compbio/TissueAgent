@@ -1,7 +1,16 @@
+---
+title: "Analyse your spatial data using sliding windows"
+keywords:
+  - "squidpy"
+  - "sliding-window"
+  - "spatial"
+  - "overlap"
+  - "mibitof"
+  - "spatial-analysis"
+---
 # Analyse your spatial data using sliding windows
 
-This example shows how to use {func}`squidpy.tl.sliding_window` to divide the 
-obs of an {attr}`anndata.AnnData` object into adjecent, potentially overlapping,
+This example shows how to use `squidpy.tl.sliding_window` to divide the
 windows.
 
 
@@ -18,8 +27,8 @@ First, let's download the MIBI-TOF dataset.
 adata = sq.datasets.mibitof()
 ```
 
-This data set contains a cell type annotation in {attr}`anndata.AnnData.obs["Cluster"]`
-and a slide annotation in {attr}`anndata.AnnData.obs["library_id"]`
+This data set contains a cell type annotation in `anndata.AnnData.obs["Cluster"]`
+and a slide annotation in `anndata.AnnData.obs["library_id"]`
 
 
 ```python
@@ -46,8 +55,6 @@ Let's inspect the column that the function has added to our data.
 adata.obs["sliding_window_assignment"]
 ```
 
-We see that each observation has been assigned to a window, which is defined by the `sliding_window_assignment` column. We can visualise this using {func}`squidpy.pl.spatial_scatter`.
-
 
 ```python
 sq.pl.spatial_scatter(
@@ -68,8 +75,6 @@ sq.pl.spatial_scatter(
 )
 ```
 
-We see that the function has created 16 windows, this is based on the `window_size` of 200 and an `overlap` of 0. The behaviour of the function changes when we use an overlap, since then observations will be assigned to multiple windows. This information can no longer be stored in a single column. Let's try this out.
-
 
 ```python
 adata = sq.datasets.mibitof()  # fresh copy
@@ -83,7 +88,7 @@ sq.tl.sliding_window(
 )
 ```
 
-When now inspecting the {attr}`anndata.AnnData.obs`, we see that several columns have been added, each indicating whether an observation is a member of a specific window, stratified by `library_key`.
+When now inspecting the `anndata.AnnData.obs`, we see that several columns have been added, each indicating whether an observation is a member of a specific window, stratified by `library_key`.
 
 Due to the overlapping assignments, we now have more "true" assignments than observations. This is because each observation can be a member of multiple windows.
 
@@ -119,7 +124,7 @@ sq.pl.spatial_scatter(
 plt.tight_layout()
 ```
 
-Finally, we see that these specific parameters result in tiny windows with very few cells at the bottom and right corner. We can drop these with the parameter `drop_partial_windows`. 
+Finally, we see that these specific parameters result in tiny windows with very few cells at the bottom and right corner. We can drop these with the parameter `drop_partial_windows`.
 
 
 ```python
@@ -150,7 +155,7 @@ sq.pl.spatial_scatter(
 plt.tight_layout()
 ```
 
-If desired, in-place modifications can be avoided by using `copy=True`. This then returns a {attr}`pandas.DataFrame` with the assignments.
+If desired, in-place modifications can be avoided by using `copy=True`. This then returns a `pandas.DataFrame` with the assignments.
 
 
 ```python
@@ -166,26 +171,4 @@ assignment = sq.tl.sliding_window(
 )
 
 assignment
-```
-
-## For reproducibility
-
-
-```python
-import spatialdata
-
-import numpy
-import pandas
-
-import matplotlib
-
-import scanpy
-import squidpy
-
-%load_ext watermark
-```
-
-
-```python
-%watermark -v -m -p numpy,pandas,matplotlib,scanpy,squidpy,spatialdata
 ```

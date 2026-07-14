@@ -1,3 +1,5 @@
+"""Prompt and description strings for the Cell Annotater Agent."""
+
 CellTissueAnnotationDescription = """
 Performs two distinct annotation workflows:
 1. Harmony reference label transfer for cell-type labels only when the user provides
@@ -99,6 +101,8 @@ Use ReAct INTERNALLY and STOP once the requested annotation task has completed.
 - **Harmony transfer** → summarize success (annotated spatial AnnData path, input/output cell counts, transferred/excluded cells, cell type counts, mean prediction confidence, number of shared genes).
 - **Niche annotation** → summarize success (annotated spatial AnnData path, niche label counts, niche key used, and saved JSON artifact paths for niche prompts/results).
 - Keep concise. If blocked, state the missing field(s) you need.
+
+{{skill_prompt}}
 
 # Output Format (enforced)
 <scratchpad>

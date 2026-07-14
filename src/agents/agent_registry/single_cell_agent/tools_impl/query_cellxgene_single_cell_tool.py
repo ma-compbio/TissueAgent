@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Dict, Any
+from typing import Any, Iterable
 from collections import defaultdict
-from typing import Union
 import pandas as pd
 import cellxgene_census as cg
 
@@ -19,26 +18,26 @@ import cellxgene_census as cg
 class CensusQuery:
     """Criteria for live filtering of CELLxGENE Census obs.
 
-    Provide labels (NOT ontology IDs) for tissue/disease/etc. that match the obs columns.
-    Handle ontology expansion/synonyms before calling this.
+    Provide labels (NOT ontology IDs) for tissue/disease/etc. that match the obs columns. Handle ontology
+    expansion/synonyms before calling this.
     """
 
     species: str = "homo_sapiens"  # "homo_sapiens" | "mus_musculus"
-    tissue_general: Optional[List[str]] = None
-    tissue: Optional[List[str]] = None
-    disease: Optional[List[str]] = None
-    development_stage: Optional[List[str]] = None
-    sex: Optional[List[str]] = None
-    assay: Optional[List[str]] = None
-    is_primary_data: Optional[bool] = True  # Prefer primary by default
-    columns_extra: Optional[List[str]] = (
+    tissue_general: list[str] | None = None
+    tissue: list[str] | None = None
+    disease: list[str] | None = None
+    development_stage: list[str] | None = None
+    sex: list[str] | None = None
+    assay: list[str] | None = None
+    is_primary_data: bool | None = True  # Prefer primary by default
+    columns_extra: list[str] | None = (
         None  # e.g., ["cell_type"] if you plan to post-aggregate cell types
     )
     # Output controls
     include_cell_type_counts: bool = False
     top_k_cell_types: int = 15  # Only used if include_cell_type_counts=True
 
-    def needed_columns(self) -> List[str]:
+    def needed_columns(self) -> list[str]:
         """Return the list of Census obs columns required by this query."""
         base = [
             "dataset_id",
@@ -113,7 +112,7 @@ def query_cellxgene_census_live(
     query: CensusQuery,
     census_version: str = "latest",
     enrich_metadata: bool = False,
-    max_results: Optional[int] = None,
+    max_results: int | None = None,
 ) -> pd.DataFrame:
     """Live query against CELLxGENE Census SOMA obs using value_filter, streaming aggregation.
 
@@ -142,7 +141,7 @@ def query_cellxgene_census_live(
     devstages = defaultdict(set)
     sexes = defaultdict(set)
     primary_flags = defaultdict(list)
-    celltype_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    celltype_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
     with cg.open_soma(census_version=census_version) as census:
         if org not in census["census_data"]:
@@ -179,7 +178,7 @@ def query_cellxgene_census_live(
                         celltype_counts[ds_id][ct] += int(c)
 
     # Materialize per-dataset rows
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for ds_id in n_cells.keys():
         row = {
             "dataset_id": ds_id,
@@ -258,7 +257,7 @@ def query_cellxgene_census_live(
     return out
 
 
-def _mode_bool(vals: List[bool]) -> Optional[bool]:
+def _mode_bool(vals: list[bool]) -> bool | None:
     """Return the majority boolean value, or None on empty or tie."""
     if not vals:
         return None
@@ -270,7 +269,7 @@ def _mode_bool(vals: List[bool]) -> Optional[bool]:
     return trues > falses
 
 
-def _coerce_str_or_list(x: Optional[Union[str, Iterable[str]]]) -> Optional[List[str]]:
+def _coerce_str_or_list(x: str | Iterable[str] | None) -> list[str] | None:
     """Accept None, a single string, or an iterable of strings; normalize to list[str] or None."""
     if x is None:
         return None
@@ -284,12 +283,12 @@ def _coerce_str_or_list(x: Optional[Union[str, Iterable[str]]]) -> Optional[List
 
 def run_query_cellxgene_census_live(
     species: str = "homo_sapiens",
-    tissue_general: Optional[Union[str, List[str]]] = None,
-    tissue: Optional[Union[str, List[str]]] = None,
-    disease: Optional[Union[str, List[str]]] = None,
-    development_stage: Optional[Union[str, List[str]]] = None,
-    sex: Optional[Union[str, List[str]]] = None,
-    assay: Optional[Union[str, List[str]]] = (
+    tissue_general: str | list[str] | None = None,
+    tissue: str | list[str] | None = None,
+    disease: str | list[str] | None = None,
+    development_stage: str | list[str] | None = None,
+    sex: str | list[str] | None = None,
+    assay: str | list[str] | None = (
         # Common scRNA-seq assays (feel free to tweak)
         [
             "10x 3' v3",
@@ -309,12 +308,12 @@ def run_query_cellxgene_census_live(
             "Fluidigm C1",
         ]
     ),
-    is_primary_data: Optional[bool] = True,
+    is_primary_data: bool | None = True,
     include_cell_type_counts: bool = False,
     top_k_cell_types: int = 15,
     census_version: str = "latest",
     enrich_metadata: bool = True,
-    max_results: Optional[int] = 20,
+    max_results: int | None = 20,
 ) -> str:
     """Live-filter CELLxGENE Census by species/tissue/disease/etc. and aggregate per dataset.
 

@@ -1,3 +1,13 @@
+---
+title: "Analyze Nanostring data"
+keywords:
+  - "squidpy"
+  - "nanostring"
+  - "cosmx"
+  - "spatial-statistics"
+  - "co-occurrence"
+  - "moran"
+---
 # Analyze Nanostring data
 
 In this tutorial we show how we can use Squidpy and Scanpy for the analysis of Nanostring data.
@@ -17,10 +27,9 @@ import squidpy as sq
 sc.logging.print_header()
 ```
 
-Download the data, unpack and load to AnnData
----------------------------------------------
+## Download the data, unpack and load to AnnData
 
-Download the data from [Nanostring FFPE Dataset](https://nanostring.com/products/cosmx-spatial-molecular-imager/ffpe-dataset/). Unpack the `.tar.gz` file.
+Download the data from Nanostring FFPE Dataset. Unpack the `.tar.gz` file.
 Load the unpacked dataset into an `anndata.AnnData` object. The dataset used here consists of a non-small-cell lung cancer (NSCLC) tissue which represents the largest single-cell and sub-cellular analysis on Formalin-Fixed Paraffin-Embedded (FFPE) samples.
 
 Comment out the following lines to download the dataset.
@@ -46,8 +55,7 @@ adata = sq.read.nanostring(
 )
 ```
 
-Calculate quality control metrics
----------------------------------
+## Calculate quality control metrics
 
 Obtain the control probes using their names prefixed with "NegPrb-".
 Calculate the quality control metrics on the `anndata.AnnData` using `scanpy.pp.calculate_qc_metrics`.
@@ -154,11 +162,6 @@ You may have to install `scikit-misc` package for highly variable genes identifi
 
 
 ```python
-# !pip install scikit-misc
-```
-
-
-```python
 adata.layers["counts"] = adata.X.copy()
 sc.pp.normalize_total(adata, inplace=True)
 sc.pp.log1p(adata)
@@ -168,8 +171,7 @@ sc.tl.umap(adata)
 sc.tl.leiden(adata)
 ```
 
-Visualize annotation on UMAP and spatial coordinates
-----------------------------------------------------
+## Visualize annotation on UMAP and spatial coordinates
 
 Subplot with scatter plot in UMAP (Uniform Manifold Approximation and Projection) basis. The embedded points were colored, respectively, according to the total counts, number of genes by counts and leiden clusters in each of the subplots. This gives us some idea of what the data looks like.
 
@@ -227,7 +229,6 @@ sq.pl.spatial_segment(
 )
 ```
 
-If groups of observations are plotted (as above), it\'s possible to modify whether to "visualize" the segmentation masks that do not belong to any selected group. It is set as \"transparent\" by default (see above) but in cases where e.g. no image is present it can be useful to visualize them nonetheless.
 
 A scale bar can also be added, where size and pixel units must be passed. The sizes of the scalebars for these examples are not real values and are purely for visualization purposes.
 
@@ -278,15 +279,11 @@ sq.pl.spatial_segment(
 )
 ```
 
-----
 
-Computation of spatial statistics
----------------------------------
+## Computation of spatial statistics
 
-Building the spatial neighbors graphs
--------------------------------------
+## Building the spatial neighbors graphs
 
-Spatial graph is a graph of spatial neighbors with observations as nodes and neighborhood relations between observations as edges. We use spatial coordinates of spots/cells to identify neighbors among them. Different approaches of defining a neighborhood relation among observations are used for different types of spatial datasets. We use `squidpy.gr.spatial_neighbors` to compute the spatial neighbors graph. We use this function for a non-grid dataset with `coord_type = 'generic'`.
 
 Depending on the `coord_type`, `n_neighs` specifies the number of neighboring tiles if `coord_type='grid'` and when the `coord_type` is not a grid, `n_neighs` represents the number of neighborhoods. Moreover, `radius` is only available when `coord_type='generic'`.
 
@@ -379,10 +376,8 @@ adata.obsp["spatial_connectivities"]
 adata.obsp["spatial_distances"]
 ```
 
-----
 
-Compute centrality scores
--------------------------
+## Compute centrality scores
 
 This example shows how to compute centrality scores, given a spatial graph and cell type annotation.
 
@@ -418,23 +413,13 @@ The results were visualized by plotting the average centrality, closeness centra
 sq.pl.centrality_scores(adata, cluster_key="leiden", figsize=(10, 6))
 ```
 
-----
 
-Compute co-occurrence probability
----------------------------------
+## Compute co-occurrence probability
 
 This example shows how to compute the co-occurrence probability.
 
 The co-occurrence score is defined as:
 
-\begin{equation}
-\frac{p(exp|cond)}{p(exp)}
-\end{equation}
-where $p(exp|cond)$ is the conditional probability of observing a
-cluster $exp$ conditioned on the presence of a cluster $cond$, whereas
-$p(exp)$ is the probability of observing $exp$ in the radius size of
-interest. The score is computed across increasing radii size around each
-cell in the tissue.
 
 We can compute the co-occurrence score with `squidpy.gr.co_occurrence`.
 Results of co-occurrence probability ratio can be visualized with `squidpy.pl.co_occurrence`. The '3' in the $\frac{p(exp|cond)}{p(exp)}$ represents a Leiden clustered group.
@@ -471,10 +456,8 @@ sq.pl.spatial_segment(
 )
 ```
 
-----
 
-Neighbors enrichment analysis
------------------------------
+## Neighbors enrichment analysis
 
 This example shows how to run the neighbors enrichment analysis routine.
 
@@ -527,18 +510,15 @@ sq.pl.spatial_segment(
 )
 ```
 
-----
 
-Compute Ripley's statistics
----------------------------
+## Compute Ripley's statistics
 
 This example shows how to compute the Ripley's L function.
 
-The Ripley's L function is a descriptive statistics generally used to determine whether points have a random, dispersed or clustered distribution pattern at certain scale. The Ripley's L is a variance-normalized version of the Ripley's K statistic. There are also 2 other Ripley's statistics available (that are closely related): 'G' and 'F'.
 
 Ripley's G monitors the portion of points for which the nearest neighbor is within a given distance threshold, and plots that cumulative percentage against the increasing distance radii.
 
-For increasing separation range, Ripley's F function assembles the percentage of points which can be found in the aforementioned range from an arbitrary point pattern spawned in the expanse of the noticed pattern. 
+For increasing separation range, Ripley's F function assembles the percentage of points which can be found in the aforementioned range from an arbitrary point pattern spawned in the expanse of the noticed pattern.
 
 We can compute the Ripley's L function with `squidpy.gr.ripley`.
 Results can be visualized with `squidpy.pl.ripley`. The same was plotted for `adata_subset`. Other Ripley's statistics can be specified using `mode = 'G'` or `mode = 'F'`.
@@ -569,10 +549,8 @@ sq.pl.spatial_segment(
 )
 ```
 
-----
 
-Compute Moran's I score
------------------------
+## Compute Moran's I score
 
 This example shows how to compute the Moran's I global spatial auto-correlation statistics.
 
@@ -592,7 +570,7 @@ sq.gr.spatial_autocorr(
 adata_subset.uns["moranI"].head(10)
 ```
 
-We can visualize some of those genes with `squidpy.pl.spatial_segment`. We could also pass `mode = 'geary'` to compute a closely related auto-correlation statistic, [Geary's C](https://en.wikipedia.org/wiki/Geary%27s_C). See `squidpy.gr.spatial_autocorr` for more information.
+We can visualize some of those genes with `squidpy.pl.spatial_segment`. We could also pass `mode = 'geary'` to compute a closely related auto-correlation statistic, Geary's C. See `squidpy.gr.spatial_autocorr` for more information.
 
 
 ```python

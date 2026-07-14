@@ -1,84 +1,96 @@
-import type { FileInfo, SessionInfo } from "../types/messages";
-import FileUpload from "./FileUpload";
-import PlanViewer, { type PlanEntry } from "./PlanViewer";
-import SessionManager from "./SessionManager";
+import type { SessionInfo } from "../types/messages";
+import FileBrowser from "./FileBrowser";
+import ProjectsPanel from "./ProjectsPanel";
+import Splitter from "./Splitter";
+import { usePersistedSize } from "../hooks/usePersistedSize";
+
+// Height of the Projects panel inside the sidebar (the Files panel
+// fills whatever's left). Persisted across reloads. Below ~140 the
+// Projects list gets too cramped to read; above ~900 the Files panel
+// loses too much room on shorter laptop screens.
+const PROJECTS_HEIGHT_KEY = "tissueagent:sidebar-projects-height";
+const PROJECTS_HEIGHT_DEFAULT = 280;
+const PROJECTS_HEIGHT_MIN = 140;
+const PROJECTS_HEIGHT_MAX = 900;
 
 interface Props {
-  enableDebug: boolean;
-  onToggleDebug: () => void;
-  showFileBrowser: boolean;
-  onToggleFileBrowser: () => void;
-  uploadedFiles: FileInfo[];
-  onUploadFiles: (files: FileList) => void;
+  /** Outer sidebar width in pixels; driven by the splitter in App.tsx. */
+  width: number;
   sessions: SessionInfo[];
+  currentProjectId: string;
+  currentProjectTitle: string;
   onFetchSessions: () => void;
-  onSave: () => Promise<boolean>;
+  onNewProject: () => Promise<true | string>;
   onLoad: (filename: string) => Promise<boolean>;
-  onExportHtml: () => void;
+  onDelete: (filename: string) => Promise<true | string>;
   hasMessages: boolean;
-  planPrompt: string | null;
-  planEntries: PlanEntry[];
-  isRunning: boolean;
+  fileBrowserRefreshKey: number;
+  onUploadToLibrary: (files: FileList) => Promise<void> | void;
+  onUploadToProject: (files: FileList) => Promise<void> | void;
 }
 
+/**
+ * Left column of the 3-column chat layout.
+ *
+ * Vertical stack: ``ProjectsPanel`` on top (resizable height), then the
+ * embedded compact ``FileBrowser`` below. The plan panel used to live
+ * here too but moved out to its own right-hand ``PlanColumn``.
+ */
 export default function Sidebar({
-  enableDebug,
-  onToggleDebug,
-  showFileBrowser,
-  onToggleFileBrowser,
-  uploadedFiles,
-  onUploadFiles,
+  width,
   sessions,
+  currentProjectId,
+  currentProjectTitle,
   onFetchSessions,
-  onSave,
+  onNewProject,
   onLoad,
-  onExportHtml,
+  onDelete,
   hasMessages,
-  planPrompt,
-  planEntries,
-  isRunning,
+  fileBrowserRefreshKey,
+  onUploadToLibrary,
+  onUploadToProject,
 }: Props) {
+  const [projectsHeight, resizeProjects] = usePersistedSize(
+    PROJECTS_HEIGHT_KEY,
+    PROJECTS_HEIGHT_DEFAULT,
+    PROJECTS_HEIGHT_MIN,
+    PROJECTS_HEIGHT_MAX,
+  );
+
   return (
-    <aside className="sidebar">
-      <div className="sidebar-top">
-        <FileUpload
-          uploadedFiles={uploadedFiles}
-          onUploadFiles={onUploadFiles}
-        />
-
-        <div className="upload-divider" />
-
-        <div className="sidebar-controls">
-          <button className="sidebar-btn" onClick={onToggleFileBrowser}>
-            {showFileBrowser ? "Close" : "Open"} File Browser
-          </button>
-          <label className="debug-toggle">
-            <input
-              type="checkbox"
-              checked={enableDebug}
-              onChange={onToggleDebug}
-            />
-            Enable Trace
-          </label>
-        </div>
-
-        <div className="upload-divider" />
-
-        <SessionManager
+    <aside
+      className="sidebar"
+      style={{ width: `${width}px`, minWidth: `${width}px` }}
+    >
+      <div
+        className="sidebar-projects"
+        style={{ height: `${projectsHeight}px` }}
+      >
+        <ProjectsPanel
           sessions={sessions}
-          onFetchSessions={onFetchSessions}
-          onSave={onSave}
-          onLoad={onLoad}
-          onExportHtml={onExportHtml}
+          currentProjectId={currentProjectId}
           hasMessages={hasMessages}
+          onFetchSessions={onFetchSessions}
+          onNewProject={onNewProject}
+          onLoad={onLoad}
+          onDelete={onDelete}
         />
       </div>
 
-      <div className="sidebar-bottom">
-        <PlanViewer
-          prompt={planPrompt}
-          entries={planEntries}
-          isRunning={isRunning}
+      <Splitter
+        orientation="horizontal"
+        onResize={resizeProjects}
+        ariaLabel="Resize projects panel"
+      />
+
+      <div className="sidebar-files">
+        <FileBrowser
+          refreshKey={fileBrowserRefreshKey}
+          currentProjectId={currentProjectId}
+          currentProjectTitle={currentProjectTitle}
+          onUploadToLibrary={onUploadToLibrary}
+          onUploadToProject={onUploadToProject}
+          compact
         />
       </div>
     </aside>

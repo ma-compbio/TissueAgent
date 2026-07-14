@@ -1,22 +1,13 @@
 """Model and parameter configuration for the coding agent."""
-from functools import partial
-from pathlib import Path
-from langchain_openai import ChatOpenAI
 
-# Model constructor configuration
-model_ctor = partial(ChatOpenAI, model="gpt-5")  # reasoning_effort="medium"
-# reasoning_effort: "low", "medium", "high"
-# note: reasoning tokens are counted in API cost
+from knowledge import DOCS_DIR
+from models import model_ctor_for_role
 
-# Documentation file paths - mapping library names to their JSON files
+coding_agent_model_ctor = model_ctor_for_role("worker")
+
 doc_filepaths = {
-    "scanpy": Path(__file__).resolve().parent / "docs/scanpy_docs.json",
-    "squidpy": Path(__file__).resolve().parent / "docs/squidpy_docs.json",
-    "liana": Path(__file__).resolve().parent / "docs/liana_docs.json",
-}
-
-# Tutorial directories - mapping library names to their tutorial directories
-tutorial_directories = {
-    "liana": Path(__file__).resolve().parent / "tutorials/liana-examples",
-    "squidpy": Path(__file__).resolve().parent / "tutorials/squidpy_examples",
+    "scanpy": DOCS_DIR / "scanpy_docs.json",
+    "squidpy": DOCS_DIR / "squidpy_docs.json",
+    "liana": DOCS_DIR / "liana_docs.json",
+    "commot": DOCS_DIR / "commot_docs.json",
 }

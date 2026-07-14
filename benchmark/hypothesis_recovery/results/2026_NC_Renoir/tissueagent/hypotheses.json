@@ -1,0 +1,318 @@
+{
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "Invasive cancer spots at the tumor\u2013lymphocyte interface show a higher basal-like epithelial program (KRT14/KRT5) relative to the luminal-like program (EPCAM/KRT8/KRT18) compared with invasive cancer spots located in the tumor core without lymphocyte neighbors.",
+      "linked_observations": [
+        "OBSERVATION 4",
+        "OBSERVATION 6",
+        "OBSERVATION 9"
+      ],
+      "rationale": "OBSERVATION 4 and 9 indicate strong spatial interfaces between lymphocytes and invasive cancer, while OBSERVATION 6 shows distinct spatial patterning of basal versus luminal keratins within epithelial/tumor regions. If immune contact is associated with a more basal-like invasive phenotype at the edge, then invasive cancer spots abutting lymphocyte-classified spots should be relatively enriched for KRT14/KRT5 compared to EPCAM/KRT8/KRT18 versus invasive spots embedded in the tumor core.",
+      "test_plan": {
+        "analysis_type": "spatially_stratified_gene_program_comparison",
+        "inputs": {
+          "classification": "adata.obs['Classification']",
+          "spatial_coords": "adata.obsm['spatial']",
+          "expression": "adata.X",
+          "gene_modules": {
+            "basal_program": [
+              "KRT14",
+              "KRT5"
+            ],
+            "luminal_program": [
+              "EPCAM",
+              "KRT8",
+              "KRT18"
+            ]
+          }
+        },
+        "contrasts": [
+          {
+            "name": "interface_invasive_vs_core_invasive",
+            "group_1_label": "interface_invasive",
+            "group_2_label": "core_invasive",
+            "group_1_definition": "Spots with Classification == 'Invasive cancer + lymphocytes' whose spatial nearest neighbors (e.g., within a fixed-radius or kNN graph) include at least one spot with Classification == 'Lymphocytes'.",
+            "group_2_definition": "Spots with Classification == 'Invasive cancer + lymphocytes' whose nearest neighbors are all annotated as tumor-like (e.g., 'Invasive cancer + lymphocytes', DCIS) and include no spots with Classification == 'Lymphocytes'."
+          }
+        ],
+        "metrics": [
+          {
+            "name": "module_score_basal",
+            "description": "Per-spot average normalized expression of KRT14 and KRT5."
+          },
+          {
+            "name": "module_score_luminal",
+            "description": "Per-spot average normalized expression of EPCAM, KRT8, KRT18."
+          },
+          {
+            "name": "basal_minus_luminal",
+            "description": "Difference module_score_basal - module_score_luminal per spot."
+          },
+          {
+            "name": "effect_size_difference",
+            "description": "Difference in mean basal_minus_luminal between interface_invasive and core_invasive (and optionally Cohen's d)."
+          },
+          {
+            "name": "p_value_rank_sum",
+            "description": "Two-sided Wilcoxon rank-sum test comparing basal_minus_luminal between interface_invasive and core_invasive, with Benjamini\u2013Hochberg FDR correction."
+          }
+        ],
+        "decision_criteria": "SUPPORT if interface_invasive spots have a significantly higher basal_minus_luminal score than core_invasive spots, defined as: (i) mean(basal_minus_luminal_interface) \u2212 mean(basal_minus_luminal_core) \u2265 0.15 on log-normalized scale, and (ii) FDR-adjusted p_value_rank_sum < 0.05. REFUTE if these conditions are not met or the direction is reversed (interface_invasive not more basal-biased than core_invasive).",
+        "neighbor_definition": {
+          "k": 6,
+          "method": "kNN",
+          "space": "adata.obsm['spatial']"
+        },
+        "group_size_criteria": {
+          "min_spots_per_group": 20,
+          "fallback_strategy": "If any comparison group has fewer than 20 spots, merge closely related classes within the same broad category (e.g., tumor core-like vs non-core) or simplify the contrast to interface vs non-interface spots."
+        },
+        "qc_covariates": {
+          "include_in_models": [
+            "nCount_RNA",
+            "nFeature_RNA"
+          ],
+          "notes": "Include QC metrics such as nCount_RNA and nFeature_RNA as covariates or perform sensitivity analyses with and without these covariates."
+        },
+        "notes": "Phase 3 result: REFINE based on current dataset; see test_results_phase3.json for metrics."
+      },
+      "quality_scores": {
+        "derivable": 5,
+        "novel": 4,
+        "feasible": 4,
+        "specific": 5,
+        "falsifiable": 5
+      },
+      "final_status": "REFINE"
+    },
+    {
+      "id": "H2",
+      "statement": "Lymphocyte-classified spots adjacent to invasive cancer (tumor-proximal aggregates) are relatively enriched for T cell markers compared to B cell markers, whereas lymphocyte spots embedded in stromal/normal territories are less T cell\u2013biased or more B cell\u2013balanced.",
+      "linked_observations": [
+        "OBSERVATION 4",
+        "OBSERVATION 5",
+        "OBSERVATION 7",
+        "OBSERVATION 9"
+      ],
+      "rationale": "OBSERVATION 4 and 9 show that lymphocytes are frequently adjacent to invasive cancer regions, forming tumor\u2013immune interfaces, while OBSERVATION 5 notes lymphocytes also occur in stromal domains. OBSERVATION 7 indicates that T cell (CD3D, CD3E, CD2) and B cell (MS4A1, CD79A) markers form discrete immune foci. A plausible implication is that tumor-associated immune aggregates are more T cell\u2013dominated, whereas stromal lymphoid areas are more mixed or B cell\u2013enriched. This predicts a higher T-vs-B marker bias in tumor-proximal lymphocyte spots than in stromal-associated lymphocyte spots.",
+      "test_plan": {
+        "analysis_type": "neighborhood_association_expression_bias",
+        "inputs": {
+          "classification": "adata.obs['Classification']",
+          "spatial_coords": "adata.obsm['spatial']",
+          "expression": "adata.X",
+          "gene_modules": {
+            "t_cell_markers": [
+              "CD3D",
+              "CD3E",
+              "CD2"
+            ],
+            "b_cell_markers": [
+              "MS4A1",
+              "CD79A"
+            ]
+          }
+        },
+        "contrasts": [
+          {
+            "name": "tumor_proximal_vs_stromal_lymphocytes",
+            "group_1_label": "tumor_proximal_lymphocytes",
+            "group_2_label": "stromal_lymphocytes",
+            "group_1_definition": "Spots with Classification == 'Lymphocytes' that have at least one neighbor with Classification in {'Invasive cancer + lymphocytes', 'DCIS'}.",
+            "group_2_definition": "Spots with Classification == 'Lymphocytes' whose neighbors do NOT include any 'Invasive cancer + lymphocytes' or 'DCIS' spots and instead are restricted to stromal/normal labels such as 'Stroma', 'Stroma + adipose tissue', 'Normal + stroma + lymphocytes'."
+          }
+        ],
+        "metrics": [
+          {
+            "name": "t_module_score",
+            "description": "Per-spot average normalized expression of CD3D, CD3E, CD2."
+          },
+          {
+            "name": "b_module_score",
+            "description": "Per-spot average normalized expression of MS4A1, CD79A."
+          },
+          {
+            "name": "t_minus_b_score",
+            "description": "Difference t_module_score - b_module_score per lymphocyte spot."
+          },
+          {
+            "name": "effect_size_difference",
+            "description": "Difference in mean t_minus_b_score between tumor_proximal_lymphocytes and stromal_lymphocytes (and optionally Cohen's d)."
+          },
+          {
+            "name": "p_value_rank_sum",
+            "description": "Two-sided Wilcoxon rank-sum test comparing t_minus_b_score between the two lymphocyte groups, with Benjamini\u2013Hochberg FDR correction."
+          }
+        ],
+        "decision_criteria": "SUPPORT if tumor_proximal_lymphocytes have a significantly higher T-vs-B bias than stromal_lymphocytes, defined as: (i) mean(t_minus_b_score_tumor_proximal) \u2212 mean(t_minus_b_score_stromal) \u2265 0.1 on log-normalized scale, and (ii) FDR-adjusted p_value_rank_sum < 0.05. REFUTE if the difference does not reach this effect size or significance, or if stromal_lymphocytes show equal or greater T-cell bias.",
+        "neighbor_definition": {
+          "k": 6,
+          "method": "kNN",
+          "space": "adata.obsm['spatial']"
+        },
+        "group_size_criteria": {
+          "min_spots_per_group": 20,
+          "fallback_strategy": "If any comparison group has fewer than 20 spots, merge closely related classes within the same broad category (e.g., tumor core-like vs non-core) or simplify the contrast to interface vs non-interface spots."
+        },
+        "notes": "Phase 3 result: DROPPED based on current dataset; see test_results_phase3.json for metrics."
+      },
+      "quality_scores": {
+        "derivable": 5,
+        "novel": 4,
+        "feasible": 4,
+        "specific": 5,
+        "falsifiable": 5
+      },
+      "final_status": "DROPPED"
+    },
+    {
+      "id": "H3",
+      "statement": "Spots at tumor\u2013stroma interfaces are enriched for myeloid marker expression (LYZ, CD68) relative to both tumor-core and stroma-core spots, indicating preferential localization of myeloid cells at invasive fronts.",
+      "linked_observations": [
+        "OBSERVATION 2",
+        "OBSERVATION 5",
+        "OBSERVATION 8",
+        "OBSERVATION 9"
+      ],
+      "rationale": "OBSERVATION 2 and 9 indicate that tumor and stromal classifications form coherent domains with clear interfaces, while OBSERVATION 5 describes broad stromal territories surrounding the invasive cancer core. OBSERVATION 8 shows that myeloid markers (LYZ, CD68) are expressed in punctate patterns overlapping stromal and immune-associated regions. If myeloid cells preferentially accumulate at the interface between tumor and stroma, interface spots\u2014defined by mixed tumor and stroma neighbors\u2014should show higher myeloid marker scores than either tumor-core or stroma-core spots.",
+      "test_plan": {
+        "analysis_type": "spatial_enrichment",
+        "inputs": {
+          "classification": "adata.obs['Classification']",
+          "spatial_coords": "adata.obsm['spatial']",
+          "expression": "adata.X",
+          "myeloid_markers": [
+            "LYZ",
+            "CD68"
+          ]
+        },
+        "contrasts": [
+          {
+            "name": "interface_vs_cores",
+            "groups": [
+              {
+                "label": "tumor_stroma_interface",
+                "definition": "Spots of any Classification whose neighbors include at least one tumor-like spot (e.g., 'Invasive cancer + lymphocytes' or 'DCIS') and at least one stromal-like spot (e.g., 'Stroma', 'Stroma + adipose tissue', 'Normal + stroma + lymphocytes')."
+              },
+              {
+                "label": "tumor_core",
+                "definition": "Spots with Classification in {'Invasive cancer + lymphocytes', 'DCIS'} whose neighbors are all tumor-like (same set) and include no stromal-like classifications."
+              },
+              {
+                "label": "stroma_core",
+                "definition": "Spots with Classification in {'Stroma', 'Stroma + adipose tissue', 'Normal + stroma + lymphocytes'} whose neighbors are all stromal-like and include no tumor-like classifications."
+              }
+            ]
+          }
+        ],
+        "metrics": [
+          {
+            "name": "myeloid_module_score",
+            "description": "Per-spot average normalized expression of LYZ and CD68."
+          },
+          {
+            "name": "group_mean_scores",
+            "description": "Mean myeloid_module_score in tumor_stroma_interface, tumor_core, and stroma_core."
+          },
+          {
+            "name": "kruskal_wallis_p",
+            "description": "P-value from Kruskal\u2013Wallis test comparing myeloid_module_score across the three groups."
+          },
+          {
+            "name": "pairwise_effect_sizes",
+            "description": "Pairwise differences in mean myeloid_module_score (and optionally Cohen's d) for interface vs tumor_core and interface vs stroma_core, with BH-corrected pairwise Wilcoxon tests."
+          }
+        ],
+        "decision_criteria": "SUPPORT if: (i) Kruskal\u2013Wallis test across the three groups yields p < 0.05, and (ii) tumor_stroma_interface has higher mean myeloid_module_score than both tumor_core and stroma_core by at least 0.1 log-normalized units, with FDR-adjusted pairwise p-values < 0.05 for both comparisons. REFUTE if these conditions are not satisfied or if either core group equals or exceeds interface myeloid scores.",
+        "neighbor_definition": {
+          "k": 6,
+          "method": "kNN",
+          "space": "adata.obsm['spatial']"
+        },
+        "group_size_criteria": {
+          "min_spots_per_group": 20,
+          "fallback_strategy": "If any comparison group has fewer than 20 spots, merge closely related classes within the same broad category (e.g., tumor core-like vs non-core) or simplify the contrast to interface vs non-interface spots."
+        },
+        "notes": "Phase 3 result: DROPPED based on current dataset; see test_results_phase3.json for metrics."
+      },
+      "quality_scores": {
+        "derivable": 5,
+        "novel": 4,
+        "feasible": 4,
+        "specific": 5,
+        "falsifiable": 5
+      },
+      "final_status": "DROPPED"
+    },
+    {
+      "id": "H4",
+      "statement": "The spatial adjacency between lymphocyte-classified spots and invasive cancer regions is stronger than expected from shared localization to high-quality (high nCount_RNA / nFeature_RNA) tissue areas, i.e., the lymphocyte\u2013tumor neighbor association remains significant after adjusting for QC gradients.",
+      "linked_observations": [
+        "OBSERVATION 3",
+        "OBSERVATION 4",
+        "OBSERVATION 9"
+      ],
+      "rationale": "OBSERVATION 3 reports smooth spatial gradients in RNA counts and detected genes, with central dense tissue having higher QC metrics. OBSERVATION 4 and 9 show prominent spatial co-localization and neighbor associations between lymphocytes and invasive cancer regions. To rule out QC-driven artifacts (e.g., both lymphocytes and tumor occurring mainly in high-quality central areas), one can test whether lymphocyte\u2013tumor adjacency remains enriched after accounting for nCount_RNA and nFeature_RNA.",
+      "test_plan": {
+        "analysis_type": "neighborhood_association_with_covariates",
+        "inputs": {
+          "classification": "adata.obs['Classification']",
+          "spatial_coords": "adata.obsm['spatial']",
+          "qc_metrics": "adata.obs[['nCount_RNA', 'nFeature_RNA']]",
+          "neighbor_graph": "precomputed spatial kNN or radius graph on adata.obsm['spatial']"
+        },
+        "contrasts": [
+          {
+            "name": "lymphocyte_neighbors_of_tumor_vs_expected",
+            "definition": "Model the probability that a spot is 'Lymphocytes' as a function of whether it neighbors invasive cancer (neighbors with Classification in {'Invasive cancer + lymphocytes', 'DCIS'}) while adjusting for QC metrics."
+          }
+        ],
+        "metrics": [
+          {
+            "name": "logistic_regression_coefficient",
+            "description": "Coefficient (and standard error) for a binary indicator of having at least one invasive cancer neighbor in a logistic regression predicting whether a spot's Classification == 'Lymphocytes', including nCount_RNA and nFeature_RNA as covariates."
+          },
+          {
+            "name": "p_value_invasive_neighbor_effect",
+            "description": "Wald test p-value (or likelihood ratio test p-value) for the invasive-neighbor coefficient, with BH correction if multiple models are fitted."
+          },
+          {
+            "name": "odds_ratio_invasive_neighbor",
+            "description": "Exponentiated logistic regression coefficient giving the odds ratio of a spot being 'Lymphocytes' when it has at least one invasive cancer neighbor, adjusted for QC metrics."
+          }
+        ],
+        "covariates": [
+          "nCount_RNA",
+          "nFeature_RNA"
+        ],
+        "decision_criteria": "SUPPORT if, in the adjusted logistic regression, the invasive-neighbor indicator has a positive coefficient corresponding to an odds_ratio_invasive_neighbor \u2265 1.5 and an FDR-adjusted p_value_invasive_neighbor_effect < 0.05. REFUTE if the adjusted association is non-significant (FDR \u2265 0.05) or weak (odds_ratio_invasive_neighbor < 1.5), indicating that QC gradients largely explain the observed adjacency.",
+        "neighbor_definition": {
+          "k": 6,
+          "method": "kNN",
+          "space": "adata.obsm['spatial']"
+        },
+        "group_size_criteria": {
+          "min_spots_per_group": 20,
+          "fallback_strategy": "If any comparison group has fewer than 20 spots, merge closely related classes within the same broad category (e.g., tumor core-like vs non-core) or simplify the contrast to interface vs non-interface spots."
+        },
+        "qc_covariates": {
+          "include_in_models": [
+            "nCount_RNA",
+            "nFeature_RNA"
+          ],
+          "notes": "Include QC metrics such as nCount_RNA and nFeature_RNA as covariates or perform sensitivity analyses with and without these covariates."
+        },
+        "notes": "Phase 3 result: SUPPORTED based on current dataset; see test_results_phase3.json for metrics."
+      },
+      "quality_scores": {
+        "derivable": 5,
+        "novel": 3,
+        "feasible": 5,
+        "specific": 4,
+        "falsifiable": 5
+      },
+      "final_status": "SUPPORTED"
+    }
+  ]
+}

@@ -10,6 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        pythonRuntimeLibs = with pkgs; [ stdenv.cc.cc.lib zlib ];
       in
       {
         devShells.default = pkgs.mkShell {
@@ -18,10 +19,13 @@
             nodePackages.npm
             python312
             uv
-          ];
+            docker-client
+          ] ++ pythonRuntimeLibs;
+
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath pythonRuntimeLibs;
 
           shellHook = ''
-            echo "TissueAgent dev shell — node $(node --version), npm $(npm --version)"
+            echo "TissueAgent dev shell - node $(node --version), npm $(npm --version)"
           '';
         };
       }

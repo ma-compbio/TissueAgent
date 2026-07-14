@@ -1,0 +1,30 @@
+{
+  "created_utc": "2026-07-11T10:56:00.515951+00:00",
+  "arm": "tissueagent_cellvoyager",
+  "mode": "full_graph",
+  "fixture_id": "2023_NC_SpaCET",
+  "h5ad": "/home/mingqiam/TissueAgent/benchmark/hypothesis_recovery/2023_NC_SpaCET/dataset.h5ad",
+  "no_docker": true,
+  "allow_cellvoyager": true,
+  "recruited_agents": [
+    "cellvoyager_agent_agent",
+    "coding_agent",
+    "critic_agent",
+    "hypothesis_agent"
+  ],
+  "cellvoyager_recruited": true,
+  "plan_status": "recruited",
+  "project_id": "recovery_2023_NC_SpaCET_tacv_20260711_100905",
+  "domain_agent_ids": [
+    "coding",
+    "pdf_reader",
+    "searcher",
+    "single_cell",
+    "critic",
+    "gene",
+    "cellvoyager_agent",
+    "cell_annotator",
+    "spot",
+    "hypothesis"
+  ]
+}

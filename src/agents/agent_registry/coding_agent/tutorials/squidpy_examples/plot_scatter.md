@@ -1,16 +1,18 @@
+---
+title: "Plot scatter plot in spatial coordinates"
+keywords:
+  - "squidpy"
+  - "spatial-scatter"
+  - "plotting"
+  - "visium"
+  - "visualization"
+  - "multi-slide"
+---
 # Plot scatter plot in spatial coordinates
 
 This example shows how to use `squidpy.pl.spatial_scatter` to plot
-annotations and features stored in `anndata.AnnData`.
 
 This plotting is useful when points and underlying image are available.
-
-:::{seealso}
-
-    See {doc}`plot_segment` for segmentation
-    masks.
-:::
-
 
 
 ```python
@@ -25,20 +27,13 @@ We can take a quick look at the Visium dataset by plotting cluster label
 and gene expression of choice.
 
 
-
 ```python
 sq.pl.spatial_scatter(adata, color=["Sox8", "cluster"])
 ```
 
 `squidpy.pl.spatial_scatter` closely resembles `scanpy.pl.spatial` but
-it provides additional functionalities. For instance, with the
-`` `shape ``\` argument it\'s possible to plot polygons such as square
-or hexagons, a useful feature when technologies other than Visium are
-used, such as *Dbit-seq*. Furthermore, it\'s also possible to plot a
-scale bar, where size and pixel units must be passed. The size for this
-example are not the real values and are for purely visualization
+`shape ``\` argument it\'s possible to plot polygons such as square
 purposes.
-
 
 
 ```python
@@ -52,10 +47,7 @@ sq.pl.spatial_scatter(
 ```
 
 A key feature of `squidpy.pl.spatial_scatter` is that it can handle
-multiple slides datasets. For the purpose of showing this functionality,
-let\'s create a new `anndata.AnnData` with two Visium slides. We\'ll
 also build the spatial graph, to show the edge plotting functionality.
-
 
 
 ```python
@@ -82,15 +74,7 @@ sq.pl.spatial_scatter(
 ```
 
 In the above plots, the two Visium datasets are cropped and plotted
-sequentially. It\'s possible to select which plots should be plotted
-first with the `` `library_first ``[ argument. Furthermore, it\'s also
-possible to selectively modify each library, for instance, changing the
-size of the points as well as the cropping coordinates. To do so, lists
-can be passed to those arguments, with the same number of elements as
-the Visium slides to be plotted. This applies to all elements which
-could be dataset specific, such as ]{.title-ref}`title`[,
-]{.title-ref}`outline_width`[, ]{.title-ref}`size`\` etc.
-
+`outline_width`[, `size`\` etc.
 
 
 ```python
@@ -115,13 +99,9 @@ sq.pl.spatial_scatter(
 ```
 
 If no image is present, a simple scatter plot will be plotted, but the
-rest of the functionality remains unchanged. It\'s important to specify
-`` `shape=None ``[ in order to default to plain scatter plot.
-Furthermore, in this setting the ]{.title-ref}`size`[ argument
-represents the actual size of the dot, instead of a scaling factor of
-the diameter as in the previous plot. See
-{func}\`squidpy.pl.spatial\_scatter]{.title-ref} for documentation.
-
+`shape=None ``[ in order to default to plain scatter plot.
+Furthermore, in this setting the `size`[ argument
+{func}\`squidpy.pl.spatial\_scatter for documentation.
 
 
 ```python

@@ -1,0 +1,99 @@
+{
+  "status": "recruited",
+  "user_request": "Recover biologically grounded spatial hypotheses under a withheld-background protocol from library/datasets/dataset.h5ad, then test and narrow them to SUPPORTED/REFINE/DROPPED, producing specific hypothesis and testing artifacts under project outputs.",
+  "provenance": {
+    "template_names": [
+      "hypothesis_recovery_withheld"
+    ],
+    "justification": "The plan directly adapts the hypothesis_recovery_withheld template: Step 1 corresponds to dataset inventory and exploration_log creation; Steps 2\u20134 implement draft hypothesis generation, critic review with quality scoring, and finalized hypotheses plus hypothesis_brief; Step 5 executes the test plans and records phase3 results. Paths are placed under project/outputs/, and the CellVoyager-dependent branch from the template is omitted because CellVoyager is explicitly unavailable in this run. The protocol constraints (only using outputs/briefs/paper_summary.txt, no PDF reading, no gold_claims, no subsampling) are embedded in step descriptions."
+  },
+  "steps": [
+    {
+      "id": 1,
+      "title": "Ingest background and inventory dataset",
+      "description": "Read only outputs/briefs/paper_summary.txt for tissue/technology/annotation constraints, then load library/datasets/dataset.h5ad (without subsampling) to characterize its structure, annotations, and basic spatial expression patterns. Produce an exploration log documenting concrete OBSERVATION entries and a tabular data inventory.",
+      "reasoning": "A constrained, paper-independent understanding of the dataset and its annotations is required before proposing hypotheses; the exploration_log anchors later hypotheses to explicit, reproducible observations, while the inventory summarizes what variables, spatial coordinates, and metadata are available for testing.",
+      "expected_artifacts": [
+        "project/outputs/hypotheses/exploration_log.md",
+        "project/outputs/tables/data_inventory.tsv"
+      ],
+      "assigned_agent": "coding_agent",
+      "assignment_rationale": "This step requires loading an AnnData object, inspecting its structure and spatial metadata, and programmatically generating an exploration log and inventory table, which fits the coding_agent\u2019s spatial transcriptomics and Python/R data handling capabilities.",
+      "skills": [],
+      "status": "done",
+      "actual_outputs": [
+        "project/outputs/hypotheses/exploration_log.md",
+        "project/outputs/tables/data_inventory.tsv"
+      ],
+      "params": null
+    },
+    {
+      "id": 2,
+      "title": "Draft data-grounded hypotheses and test plans",
+      "description": "Using the exploration_log observations and limited background, draft approximately three biologically meaningful spatial hypotheses (no paper-derived claims) that are derivable, novel, specific, and falsifiable. Each hypothesis should reference OBSERVATION ids, define clear variables and contrasts, and include a structured test_plan describing which analyses to run on the full AnnData (no subsampling). Save these as a draft JSON specification.",
+      "reasoning": "Structuring hypotheses and their planned tests together ensures they can be objectively evaluated and executed later; grounding them in explicit observations prevents circular reasoning and keeps them independent of withheld author findings.",
+      "expected_artifacts": [
+        "project/outputs/hypotheses/hypotheses_draft.json"
+      ],
+      "assigned_agent": "hypothesis_agent",
+      "assignment_rationale": "This step centers on formulating clear, falsifiable, data-grounded spatial hypotheses and structured test plans, which is exactly the hypothesis_agent\u2019s specialization.",
+      "skills": [],
+      "status": "done",
+      "actual_outputs": [],
+      "params": null
+    },
+    {
+      "id": 3,
+      "title": "Critically review and score draft hypotheses",
+      "description": "Have a critic agent review each draft hypothesis for biological plausibility, non-circular logic, clarity of contrasts, and suitability for the available data. Assign quality scores (e.g., derivable, novel, feasible, specific, falsifiable, and an overall robustness score) and record detailed criticism and suggested revisions in a separate JSON file.",
+      "reasoning": "An explicit critique phase improves hypothesis quality and documents limitations; the structured scores will later be integrated into the finalized hypotheses.json to meet the benchmark\u2019s quality_scoring requirements.",
+      "expected_artifacts": [
+        "project/outputs/hypotheses/pre_review_criticism.json"
+      ],
+      "assigned_agent": "critic_agent",
+      "assignment_rationale": "Reviewing hypotheses for plausibility, non-circularity, and testability and assigning quality scores is the explicit role of the critic_agent.",
+      "skills": [],
+      "status": "done",
+      "actual_outputs": [
+        "project/outputs/hypotheses/pre_review_criticism.json"
+      ],
+      "params": null
+    },
+    {
+      "id": 4,
+      "title": "Finalize hypotheses and narrative brief",
+      "description": "Revise the draft hypotheses using the critic feedback, finalize their phrasing, link them to specific OBSERVATION ids, and integrate per-hypothesis quality scores (derivable/novel/feasible/specific/falsifiable and overall robustness). Assign an initial status (e.g., PENDING_TEST) and ensure the embedded test_plan for each is executable on the full dataset. Save the finalized hypotheses.json and a concise, human-readable hypothesis_brief.md summarizing each hypothesis and why it is biologically interesting.",
+      "reasoning": "This step produces the benchmark-mandated hypotheses.json with quality scores and creates a narrative brief that explains the recovered hypotheses without referencing withheld paper results, making subsequent testing and interpretation transparent.",
+      "expected_artifacts": [
+        "project/outputs/hypotheses/hypotheses.json",
+        "project/outputs/hypotheses/hypothesis_brief.md"
+      ],
+      "assigned_agent": "hypothesis_agent",
+      "assignment_rationale": "Revising and finalizing hypotheses, integrating critic feedback and quality scores, and drafting a narrative brief are best handled by the hypothesis_agent, which is tailored to hypothesis refinement and articulation.",
+      "skills": [],
+      "status": "done",
+      "actual_outputs": [
+        "project/outputs/hypotheses/hypotheses.json",
+        "project/outputs/hypotheses/hypothesis_brief.md"
+      ],
+      "params": null
+    },
+    {
+      "id": 5,
+      "title": "Execute tests and record phase3 outcomes",
+      "description": "Run each hypothesis\u2019s predefined test_plan on library/datasets/dataset.h5ad using appropriate spatial and statistical analyses (always on the full AnnData, without subsampling). For each hypothesis, compute the specified metrics, collect effect sizes and p-values where applicable, and determine a narrowed status: SUPPORTED, REFINE, or DROPPED, with brief narrowing_notes. Save all per-hypothesis test outcomes and updated statuses in test_results_phase3.json, and if needed update or cross-reference statuses in hypotheses.json.",
+      "reasoning": "Systematic execution of the predefined tests and explicit recording of outcomes is essential to complete the hypothesis-recovery benchmark, enabling objective assessment of which recovered hypotheses are supported, require refinement, or should be discarded.",
+      "expected_artifacts": [
+        "project/outputs/hypotheses/test_results_phase3.json"
+      ],
+      "assigned_agent": "coding_agent",
+      "assignment_rationale": "Executing hypothesis test plans on the full AnnData object, running spatial and statistical analyses, and writing structured JSON outputs are computational tasks aligned with the coding_agent\u2019s strengths in spatial transcriptomics analysis.",
+      "skills": [],
+      "status": "running",
+      "actual_outputs": [
+        "project/outputs/hypotheses/test_results_phase3.json"
+      ],
+      "params": null
+    }
+  ]
+}

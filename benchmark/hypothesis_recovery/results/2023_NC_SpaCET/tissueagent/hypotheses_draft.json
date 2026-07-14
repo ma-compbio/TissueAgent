@@ -1,0 +1,410 @@
+[
+  {
+    "id": "H1",
+    "title": "Immune activation gradients between tissue edge and interior",
+    "statement": "Regions near the outer tissue boundary have higher immune-activation program scores and a higher fraction of immune-enriched spots than the tissue interior, indicating a spatially organized immune response rather than a random distribution across the section.",
+    "referenced_observations": [
+      "OBSERVATION 1",
+      "OBSERVATION 2"
+    ],
+    "biological_rationale": "The exploration log reported non-random spatial clustering of immune-associated gene expression and immune-annotated spots (OBSERVATION 1, OBSERVATION 2). A common biological interpretation of such patterns is that immune cells preferentially accumulate at tissue boundaries where external antigens, damage signals, or lesion interfaces are most exposed. This hypothesis formalizes that idea by asking whether immune-activation programs are systematically enriched at the tissue edge compared to the interior of the profiled section.",
+    "variables": {
+      "immune_program_score": "Continuous per-spot module score summarizing expression of immune-activation genes (e.g., antigen presentation, cytokine signaling) as defined in the exploration analysis.",
+      "distance_to_tissue_edge": "Continuous per-spot distance from the outer tissue boundary computed from spatial coordinates (e.g., distance to the convex hull of tissue-covered spots).",
+      "region_group": "Categorical variable obtained by binning distance_to_tissue_edge into 'edge' (outer quantile, e.g., 0–20% closest to edge) versus 'interior' (remaining spots).",
+      "immune_enriched_spot": "Binary indicator for spots classified as immune-enriched based on cell-type annotation or high immune_program_score (e.g., top quantile)."
+    },
+    "contrasts": [
+      {
+        "name": "Immune program score: edge vs interior",
+        "groups": [
+          "edge",
+          "interior"
+        ],
+        "metric": "Distribution of immune_program_score across region_group",
+        "description": "Test whether edge spots have higher immune_program_score than interior spots."
+      },
+      {
+        "name": "Immune-enriched frequency: edge vs interior",
+        "groups": [
+          "edge",
+          "interior"
+        ],
+        "metric": "Proportion of immune_enriched_spot in each region_group",
+        "description": "Test whether the fraction of immune-enriched spots is higher at the edge than in the interior."
+      }
+    ],
+    "test_plan": [
+      {
+        "step": 1,
+        "description": "Load the full AnnData object from library/datasets/dataset.h5ad with spatial coordinates and any existing cell-type/cluster annotations.",
+        "method": "data_loading",
+        "inputs": {
+          "adata_path": "library/datasets/dataset.h5ad"
+        },
+        "parameters": {
+          "use_raw": false
+        }
+      },
+      {
+        "step": 2,
+        "description": "Compute an immune-activation module score per spot using the immune gene set defined in the exploration (e.g., genes highlighted in OBSERVATION 1/2). Store as adata.obs['immune_program_score'].",
+        "method": "module_score",
+        "inputs": {
+          "gene_set_source": "exploration_log immune-related gene list"
+        },
+        "parameters": {
+          "score_name": "immune_program_score"
+        }
+      },
+      {
+        "step": 3,
+        "description": "From adata.obsm['spatial'], compute the convex hull of tissue-covered spots and the Euclidean distance from each spot to the hull boundary. Store as adata.obs['distance_to_tissue_edge'].",
+        "method": "spatial_distance_to_edge",
+        "inputs": {
+          "spatial_key": "spatial"
+        },
+        "parameters": {
+          "hull_method": "convex_hull"
+        }
+      },
+      {
+        "step": 4,
+        "description": "Define region_group by binning distance_to_tissue_edge into 'edge' (e.g., lowest 20% of distances) and 'interior' (remaining 80%). Store as adata.obs['region_group'].",
+        "method": "bin_continuous_to_categories",
+        "inputs": {
+          "source": "distance_to_tissue_edge"
+        },
+        "parameters": {
+          "edge_quantile": 0.2
+        }
+      },
+      {
+        "step": 5,
+        "description": "Define immune_enriched_spot as True for spots in the top quantile (e.g., 80th percentile and above) of immune_program_score or with immune cell-type annotation, depending on available labels. Store as adata.obs['immune_enriched_spot'].",
+        "method": "threshold_or_annotation",
+        "inputs": {
+          "score_key": "immune_program_score",
+          "annotation_key": "cell_type"
+        },
+        "parameters": {
+          "score_quantile_threshold": 0.8
+        }
+      },
+      {
+        "step": 6,
+        "description": "Compare immune_program_score between edge and interior using a non-parametric test (e.g., Wilcoxon rank-sum) and report effect size and p-value.",
+        "method": "group_comparison_continuous",
+        "inputs": {
+          "value_key": "immune_program_score",
+          "group_key": "region_group"
+        },
+        "parameters": {
+          "test": "wilcoxon"
+        }
+      },
+      {
+        "step": 7,
+        "description": "Compare the proportion of immune_enriched_spot between edge and interior using a chi-squared test or logistic regression with region_group as predictor.",
+        "method": "group_comparison_proportion",
+        "inputs": {
+          "binary_key": "immune_enriched_spot",
+          "group_key": "region_group"
+        },
+        "parameters": {
+          "test": "chi2"
+        }
+      },
+      {
+        "step": 8,
+        "description": "As a spatial null model, randomly permute the region_group labels across spots many times (e.g., 1000 permutations) while keeping coordinates fixed, recompute the edge-minus-interior difference in mean immune_program_score, and compare the observed difference to this null distribution.",
+        "method": "spatial_permutation_test",
+        "inputs": {
+          "value_key": "immune_program_score",
+          "group_key": "region_group"
+        },
+        "parameters": {
+          "n_permutations": 1000,
+          "preserve_spatial_structure": false
+        }
+      }
+    ],
+    "notes": "This hypothesis focuses on coarse tissue geometry (outer boundary vs interior) and does not depend on any specific disease mechanism proposed in the paper; it is driven solely by spatial patterns of immune-associated expression noted in the exploration log."
+  },
+  {
+    "id": "H2",
+    "title": "Domain-boundary spots show increased local cell-state diversity and interaction programs",
+    "statement": "Spots located at transcriptional domain boundaries—defined as having immediate neighbors from multiple major clusters—exhibit higher local cell-state diversity and higher expression of cell–cell interaction gene modules than interior spots of each domain.",
+    "referenced_observations": [
+      "OBSERVATION 2",
+      "OBSERVATION 3"
+    ],
+    "biological_rationale": "The exploration log described spatially distinct transcriptional domains and transition zones where expression patterns from adjacent domains appeared to mix (OBSERVATION 2, OBSERVATION 3). Biologically, boundaries between domains are often enriched for interacting cell types and signaling molecules mediating communication across compartments. This hypothesis formalizes that boundary concept by predicting that boundary spots show both higher local cell-state diversity and higher expression of interaction-related gene programs than domain interiors.",
+    "variables": {
+      "domain_label": "Categorical label assigning each spot to a major transcriptional domain or cluster (e.g., from Leiden or domain clustering used in the exploration).",
+      "neighbor_domain_set": "For each spot, the set of domain_label values observed among its immediate spatial neighbors (e.g., k-nearest neighbors in coordinate space).",
+      "boundary_status": "Binary indicator: 'boundary' if neighbor_domain_set contains more than one domain, 'interior' if all neighbors share the spot's own domain_label.",
+      "local_diversity_index": "Continuous measure (e.g., Shannon entropy) of domain_label diversity in the spot's neighborhood.",
+      "interaction_program_score": "Continuous per-spot module score summarizing expression of ligand–receptor, adhesion, or other interaction-related genes as defined in the exploration."
+    },
+    "contrasts": [
+      {
+        "name": "Local diversity: boundary vs interior",
+        "groups": [
+          "boundary",
+          "interior"
+        ],
+        "metric": "Distribution of local_diversity_index",
+        "description": "Test whether boundary spots have higher local domain-label diversity than interior spots."
+      },
+      {
+        "name": "Interaction program: boundary vs interior",
+        "groups": [
+          "boundary",
+          "interior"
+        ],
+        "metric": "Distribution of interaction_program_score",
+        "description": "Test whether interaction-related gene programs are upregulated at domain boundaries relative to interiors."
+      }
+    ],
+    "test_plan": [
+      {
+        "step": 1,
+        "description": "Load the full AnnData object with spatial coordinates and previously computed domain or cluster labels (e.g., adata.obs['domain'] or adata.obs['cluster']).",
+        "method": "data_loading",
+        "inputs": {
+          "adata_path": "library/datasets/dataset.h5ad"
+        },
+        "parameters": {
+          "use_raw": false
+        }
+      },
+      {
+        "step": 2,
+        "description": "Select a domain_label column (e.g., 'domain' if present, else a cluster label) capturing the major spatial domains described in the exploration log.",
+        "method": "select_annotation",
+        "inputs": {
+          "candidate_keys": [
+            "domain",
+            "cluster",
+            "leiden"
+          ]
+        },
+        "parameters": {
+          "preferred_order": [
+            "domain",
+            "cluster",
+            "leiden"
+          ]
+        }
+      },
+      {
+        "step": 3,
+        "description": "Construct a spatial neighbor graph using adata.obsm['spatial'] (e.g., k-nearest neighbors with k=6).",
+        "method": "build_spatial_knn_graph",
+        "inputs": {
+          "spatial_key": "spatial"
+        },
+        "parameters": {
+          "n_neighbors": 6
+        }
+      },
+      {
+        "step": 4,
+        "description": "For each spot, collect domain_label values of its neighbors, compute neighbor_domain_set, and classify spots as 'boundary' if neighbor_domain_set contains more than one domain, otherwise 'interior'. Store as adata.obs['boundary_status'].",
+        "method": "compute_boundary_status",
+        "inputs": {
+          "domain_key": "domain_label",
+          "graph_key": "spatial_knn"
+        },
+        "parameters": {
+          "min_unique_domains_for_boundary": 2
+        }
+      },
+      {
+        "step": 5,
+        "description": "Compute a local diversity index (e.g., Shannon entropy over neighbor domain_label frequencies) for each spot; store as adata.obs['local_diversity_index'].",
+        "method": "local_entropy",
+        "inputs": {
+          "domain_key": "domain_label",
+          "graph_key": "spatial_knn"
+        },
+        "parameters": {
+          "base": 2
+        }
+      },
+      {
+        "step": 6,
+        "description": "Score an interaction-related gene program per spot using the ligand–receptor/adhesion gene set defined in the exploration. Store as adata.obs['interaction_program_score'].",
+        "method": "module_score",
+        "inputs": {
+          "gene_set_source": "exploration_log interaction-related gene list"
+        },
+        "parameters": {
+          "score_name": "interaction_program_score"
+        }
+      },
+      {
+        "step": 7,
+        "description": "Compare local_diversity_index between boundary and interior spots using a Wilcoxon rank-sum test and compute effect size.",
+        "method": "group_comparison_continuous",
+        "inputs": {
+          "value_key": "local_diversity_index",
+          "group_key": "boundary_status"
+        },
+        "parameters": {
+          "test": "wilcoxon"
+        }
+      },
+      {
+        "step": 8,
+        "description": "Compare interaction_program_score between boundary and interior spots using a Wilcoxon rank-sum test and compute effect size.",
+        "method": "group_comparison_continuous",
+        "inputs": {
+          "value_key": "interaction_program_score",
+          "group_key": "boundary_status"
+        },
+        "parameters": {
+          "test": "wilcoxon"
+        }
+      },
+      {
+        "step": 9,
+        "description": "Perform a spatial permutation test by shuffling domain_label across spots while keeping the spatial graph fixed, recomputing boundary_status and local_diversity_index for each permutation to generate null distributions for the boundary vs interior differences.",
+        "method": "spatial_permutation_test",
+        "inputs": {
+          "value_key": "local_diversity_index",
+          "group_key": "boundary_status"
+        },
+        "parameters": {
+          "n_permutations": 500
+        }
+      }
+    ],
+    "notes": "This hypothesis elevates qualitative boundary observations into quantitative tests of local diversity and interaction-program enrichment, without invoking any specific mechanistic model from the primary paper."
+  },
+  {
+    "id": "H3",
+    "title": "Spatial segregation of proliferation and inflammation/stress programs",
+    "statement": "Spots with high proliferation program scores are spatially segregated from spots with high inflammation/stress program scores, such that direct neighborhood co-localization of proliferation-high and inflammation-high spots occurs less often than expected under a spatially random label permutation.",
+    "referenced_observations": [
+      "OBSERVATION 1",
+      "OBSERVATION 3"
+    ],
+    "biological_rationale": "The exploration log noted that gene modules associated with cell-cycle/proliferation and with inflammation or stress responses showed distinct spatial patterns rather than perfectly overlapping expression (OBSERVATION 1, OBSERVATION 3). In many tissues, actively proliferating regions avoid highly inflamed or stressed microenvironments. This hypothesis formalizes that idea by predicting that proliferation-high and inflammation-high spots are under-represented as direct neighbors compared to a spatially randomized null model.",
+    "variables": {
+      "proliferation_score": "Continuous per-spot module score for a cell-cycle/proliferation gene program (e.g., G2M/S-phase genes) defined in the exploration.",
+      "inflammation_score": "Continuous per-spot module score for an inflammation/stress-response gene program (e.g., interferon response, cytokines, heat-shock) defined in the exploration.",
+      "proliferation_high": "Binary indicator for spots in the top quantile (e.g., 80th percentile and above) of proliferation_score.",
+      "inflammation_high": "Binary indicator for spots in the top quantile of inflammation_score.",
+      "spatial_graph": "Adjacency graph connecting spatially neighboring spots (e.g., k-nearest neighbors or Visium grid adjacency)."
+    },
+    "contrasts": [
+      {
+        "name": "Observed vs expected proliferation–inflammation neighbor edges",
+        "groups": [
+          "observed",
+          "permuted_null"
+        ],
+        "metric": "Number (or fraction) of edges in spatial_graph that connect a proliferation_high spot to an inflammation_high neighbor.",
+        "description": "Test whether direct neighborhood co-localization of proliferation-high and inflammation-high spots is depleted relative to a permutation-based null model."
+      }
+    ],
+    "test_plan": [
+      {
+        "step": 1,
+        "description": "Load the full AnnData object with spatial coordinates.",
+        "method": "data_loading",
+        "inputs": {
+          "adata_path": "library/datasets/dataset.h5ad"
+        },
+        "parameters": {
+          "use_raw": false
+        }
+      },
+      {
+        "step": 2,
+        "description": "Compute per-spot module scores for proliferation and inflammation/stress gene programs using gene sets identified in the exploration; store as adata.obs['proliferation_score'] and adata.obs['inflammation_score'].",
+        "method": "module_score",
+        "inputs": {
+          "gene_set_source": "exploration_log proliferation and inflammation gene lists"
+        },
+        "parameters": {
+          "score_names": [
+            "proliferation_score",
+            "inflammation_score"
+          ]
+        }
+      },
+      {
+        "step": 3,
+        "description": "Define binary indicators proliferation_high and inflammation_high using upper quantile thresholds (e.g., 80th percentile) of the respective scores; store in adata.obs.",
+        "method": "threshold_scores",
+        "inputs": {
+          "score_keys": [
+            "proliferation_score",
+            "inflammation_score"
+          ]
+        },
+        "parameters": {
+          "quantile_threshold": 0.8
+        }
+      },
+      {
+        "step": 4,
+        "description": "Construct a spatial neighbor graph (spatial_graph) using either Visium spot adjacency or k-nearest neighbors in coordinate space (e.g., k=6).",
+        "method": "build_spatial_knn_graph",
+        "inputs": {
+          "spatial_key": "spatial"
+        },
+        "parameters": {
+          "n_neighbors": 6
+        }
+      },
+      {
+        "step": 5,
+        "description": "Count the number of edges in spatial_graph that connect a proliferation_high spot to an inflammation_high spot. Normalize by the total number of edges to obtain an observed fraction of proliferation–inflammation neighbor edges.",
+        "method": "edge_type_counting",
+        "inputs": {
+          "graph_key": "spatial_knn",
+          "indicator_keys": [
+            "proliferation_high",
+            "inflammation_high"
+          ]
+        },
+        "parameters": {
+          "directed": false
+        }
+      },
+      {
+        "step": 6,
+        "description": "Generate a permutation-based null distribution by randomly shuffling the proliferation_high and inflammation_high labels across spots (preserving the number of positives for each) for many iterations (e.g., 1000), recomputing the fraction of proliferation–inflammation neighbor edges each time.",
+        "method": "label_permutation_null",
+        "inputs": {
+          "graph_key": "spatial_knn",
+          "indicator_keys": [
+            "proliferation_high",
+            "inflammation_high"
+          ]
+        },
+        "parameters": {
+          "n_permutations": 1000,
+          "preserve_marginals": true
+        }
+      },
+      {
+        "step": 7,
+        "description": "Compare the observed fraction of proliferation–inflammation neighbor edges to the permutation null distribution to obtain an empirical p-value and z-score; optionally visualize the null distribution with the observed value overlaid.",
+        "method": "permutation_pvalue",
+        "inputs": {
+          "observed_stat_key": "frac_prolif_inflam_edges",
+          "null_distribution_key": "null_frac_prolif_inflam_edges"
+        },
+        "parameters": {
+          "tail": "two-sided"
+        }
+      }
+    ],
+    "notes": "This hypothesis tests for spatial segregation between proliferation-dominated and inflammation-dominated microenvironments using only data-derived gene programs and spatial adjacency, without assuming any particular disease pathway from the paper."
+  }
+]

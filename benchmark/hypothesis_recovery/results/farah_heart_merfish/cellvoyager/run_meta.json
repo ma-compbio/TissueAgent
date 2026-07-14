@@ -1,0 +1,10 @@
+{
+  "created_utc": "2026-07-11T06:36:14.250833+00:00",
+  "arm": "cellvoyager",
+  "mode": "live",
+  "fixture_id": "farah_heart_merfish",
+  "h5ad": "/home/mingqiam/TissueAgent/data/dataset/dataset_farah_heart_merfish.h5ad",
+  "returncode": 0,
+  "n_hypotheses": 2,
+  "upstream_run_directory": "/home/mingqiam/TissueAgent/workspace/cellvoyager_agent/cv_20260711_063017"
+}

@@ -1,17 +1,18 @@
+---
+title: "Plot segmentation masks"
+keywords:
+  - "squidpy"
+  - "segmentation"
+  - "plotting"
+  - "spatial-segment"
+  - "mibitof"
+  - "visualization"
+---
 # Plot segmentation masks
 
 This example shows how to use `squidpy.pl.spatial_segment` to plot
-segmentation masks and features in `anndata.AnnData`.
 
 This plotting is useful when segmentation masks and underlying image are
-available.
-
-:::{seealso}
-
-    See {doc}`plot_scatter` for scatter plot.
-    
-:::
-
 
 
 ```python
@@ -22,23 +23,16 @@ adata.uns["spatial"].keys()
 ```
 
 In this dataset we have 3 unique keys, which means that there are 3
-unique `` `library_id ``[. As detailed in
-{ref}\`sphx\_glr\_auto\_tutorials\_tutorial\_read\_spatial.py]{.title-ref},
-it means that there are 3 unique field of views (FOV) in this dataset.
 The information to link the library ids to the observations are stored
-in {attr}`adata.obs`.
-
+in `adata.obs`.
 
 
 ```python
 adata.obs
 ```
 
-Specifically, the key `` `library_id ``[ in
-{attr}\`adata.obs]{.title-ref} contains the same unique values contained
-in {attr}`adata.uns`. We can visualize the 3 spatial dataset with
+Specifically, the key `library_id ``[ in
 `squidpy.pl.spatial_segment`.
-
 
 
 ```python
@@ -48,10 +42,7 @@ sq.pl.spatial_segment(
 ```
 
 There are several parameters that can be controlled. For instance, it is
-possible to plot segmentation masks as \"contours\", in order to
-visualize the underlying image. Let\'s visualize it for one specific
 cropped FOV.
-
 
 
 ```python
@@ -67,9 +58,7 @@ sq.pl.spatial_segment(
 ```
 
 It\'s also possible to add an outline to better distinguish segmentation
-masks\' boundaries. Furthermore, the underlying image can be removed,
 gray scaled or single channels can be plotted.
-
 
 
 ```python
@@ -87,11 +76,7 @@ sq.pl.spatial_segment(
 ```
 
 If groups of observations are plotted (as above), it\'s possible to
-modify whether to \"visualize\" the segmentation masks that do not
-belong to any selected group. It is set as \"transparent\" by default
-(see above) but in cases where e.g. no image is present it can be useful
 to visualize them nonetheless
-
 
 
 ```python
@@ -108,9 +93,7 @@ sq.pl.spatial_segment(
 ```
 
 Finally, a scale bar can be added, where size and pixel units must be
-passed. The size for this example are not the real values and are for
 purely visualization purposes.
-
 
 
 ```python

@@ -1,6 +1,33 @@
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { SerializedMessage, SubagentTranscript } from "../types/messages";
+import AgentAvatar from "./AgentAvatar";
+
+const API = import.meta.env.DEV ? "http://localhost:8000" : "";
+
+/** Resolve a markdown image src into a loadable URL.
+ *
+ * The reporter embeds figures as project-relative paths (e.g.
+ * `outputs/figures/umap.png`). Rewrite those to the file-download endpoint;
+ * pass through absolute/http/data URLs untouched. Returns null when the src
+ * can't be resolved to a project-relative path (renders nothing).
+ */
+function resolveFigureSrc(
+  src: string | undefined,
+  projectId: string,
+): string | null {
+  if (!src) return null;
+  if (/^(https?:|data:)/i.test(src)) return src;
+  // Normalize: strip leading slashes and a stray "project/" prefix.
+  let rel = src.replace(/^\/+/, "").replace(/^project\//, "");
+  if (!rel.startsWith("outputs/")) return null;
+  if (!projectId) return null;
+  return `${API}/api/files/download/${rel}?scope=project&project_id=${encodeURIComponent(
+    projectId,
+  )}&inline=1`;
+}
 
 export interface AgentRun {
   agentName: string;
@@ -117,7 +144,7 @@ function SubagentCard({
       onClick={() => onSelectTrace(toolId)}
     >
       <div className="subagent-card-header">
-        <span className="avatar">{state.avatar}</span>
+        <AgentAvatar name={state.agent_name} fallback={state.avatar} size={22} />
         <span className="subagent-card-name">{state.agent_name}</span>
         <span className="subagent-card-action">
           {isSelected ? "▼ Hide trace" : "▶ View trace"}
@@ -125,11 +152,62 @@ function SubagentCard({
       </div>
       {finalOutput && (
         <div className="subagent-card-output">
-          {finalOutput.length > 300
-            ? finalOutput.slice(0, 300) + "..."
-            : finalOutput}
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {finalOutput}
+          </ReactMarkdown>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Extract the final response text from an agent run's messages. */
+export function extractFinalResponse(messages: SerializedMessage[]): string | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.type !== "ai") continue;
+    if (msg.tags?.response) return msg.tags.response;
+    if (msg.tags?.plan) return msg.tags.plan;
+    if (msg.body?.trim()) return msg.body;
+    if (msg.content?.trim()) return msg.content;
+  }
+  return null;
+}
+
+/** Full-width box showing the reporter's final answer, rendered in markdown. */
+export function FinalAnswerBox({
+  content,
+  projectId = "",
+}: {
+  content: string;
+  projectId?: string;
+}) {
+  return (
+    <div className="final-answer-box">
+      <div className="final-answer-body">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            img: ({ src, alt }) => {
+              const url = resolveFigureSrc(src as string | undefined, projectId);
+              if (!url) return null;
+              return (
+                <img
+                  src={url}
+                  alt={alt ?? "figure"}
+                  className="final-figure"
+                  loading="lazy"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              );
+            },
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
     </div>
   );
 }
@@ -144,15 +222,22 @@ export function AgentRunCard({
   onSelectTrace: (id: string) => void;
   isSelected: boolean;
 }) {
+  // Planner and recruiter output raw JSON that isn't useful as a preview —
+  // hide the summary for them and let the user open the trace to see it.
+  const suppressSummary =
+    run.agentName === "planner_agent" || run.agentName === "recruiter_agent";
+
   // Summarize: find the last high-level tag content, or list tool call names
   let summary: string | null = null;
-  for (let i = run.messages.length - 1; i >= 0; i--) {
-    const msg = run.messages[i];
-    if (msg.type !== "ai") continue;
-    if (msg.tags?.response) { summary = msg.tags.response; break; }
-    if (msg.tags?.plan) { summary = msg.tags.plan; break; }
-    if (msg.body?.trim()) { summary = msg.body; break; }
-    if (msg.content?.trim()) { summary = msg.content; break; }
+  if (!suppressSummary) {
+    for (let i = run.messages.length - 1; i >= 0; i--) {
+      const msg = run.messages[i];
+      if (msg.type !== "ai") continue;
+      if (msg.tags?.response) { summary = msg.tags.response; break; }
+      if (msg.tags?.plan) { summary = msg.tags.plan; break; }
+      if (msg.body?.trim()) { summary = msg.body; break; }
+      if (msg.content?.trim()) { summary = msg.content; break; }
+    }
   }
 
   return (
@@ -161,7 +246,7 @@ export function AgentRunCard({
       onClick={() => onSelectTrace(run.syntheticId)}
     >
       <div className="subagent-card-header">
-        <span className="avatar">{run.avatar}</span>
+        <AgentAvatar name={run.agentName} fallback={run.avatar} size={22} />
         <span className="subagent-card-name">{run.label}</span>
         <span className="subagent-card-action">
           {isSelected ? "▼ Hide trace" : "▶ View trace"}
@@ -169,7 +254,9 @@ export function AgentRunCard({
       </div>
       {summary && (
         <div className="subagent-card-output">
-          {summary.length > 300 ? summary.slice(0, 300) + "..." : summary}
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {summary}
+          </ReactMarkdown>
         </div>
       )}
     </div>
@@ -222,7 +309,7 @@ export default function MessageBubble({
     return (
       <div className="message-bubble user-message">
         <div className="message-header">
-          <span className="avatar">{message.avatar}</span>
+          <AgentAvatar name={message.name} fallback={message.avatar} size={20} />
           <span className="label">You</span>
         </div>
         <div className="message-body">
@@ -282,7 +369,7 @@ export default function MessageBubble({
     return (
       <div className="message-bubble ai-message">
         <div className="message-header">
-          <span className="avatar">{message.avatar}</span>
+          <AgentAvatar name={message.name} fallback={message.avatar} size={20} />
           <span className="label">{message.label}</span>
           {message.route && (
             <span className="route-pill">{message.route}</span>

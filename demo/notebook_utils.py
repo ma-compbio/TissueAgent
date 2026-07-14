@@ -1,22 +1,33 @@
+"""Utilities for demo notebooks: output teeing and data-directory management."""
+
 import logging
 import sys
 from contextlib import contextmanager
 
+from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, SESSIONS_DIR, UPLOADS_DIR
+
+
 class Tee:
+    """File-like object that writes to multiple streams simultaneously."""
+
     def __init__(self, *streams):
+        """Initialize with one or more writable streams."""
         self.streams = streams
 
     def write(self, data):
+        """Write data to all streams and flush immediately."""
         for stream in self.streams:
             stream.write(data)
             stream.flush()
 
     def flush(self):
+        """Flush all streams."""
         for stream in self.streams:
             stream.flush()
 
 @contextmanager
 def tee_output(path, mode="a"):
+    """Context manager that tees stdout/stderr and logging output to *path*."""
     stdout = sys.stdout
     stderr = sys.stderr
     file_handler = logging.FileHandler(path, mode=mode)
@@ -39,14 +50,11 @@ def tee_output(path, mode="a"):
             root_logger.removeHandler(file_handler)
             file_handler.close()
 
-from config import DATA_DIR, DATASET_DIR, PDF_UPLOADS_DIR, SESSIONS_DIR, UPLOADS_DIR
-
 def _reset_data_directories() -> None:
     """Create runtime directories without deleting datasets or previous results.
 
-    The historical helper name is retained for older notebooks. Destructive
-    resetting made benchmark inputs and references disappear between runs, so
-    this function now performs idempotent setup only.
+    - Keeps (but clears): workspace/dataset, workspace/uploads, workspace/pdfs, sessions/
+    - Deletes entirely: any other subdirectories under workspace/
     """
     for directory in (
         DATA_DIR,

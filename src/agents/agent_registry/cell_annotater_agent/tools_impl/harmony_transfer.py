@@ -1,3 +1,5 @@
+"""Harmony-based label transfer from reference to spatial transcriptomics data."""
+
 from __future__ import annotations
 
 from typing import Any, Dict
@@ -15,7 +17,13 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 import mygene
 
-from config import DATA_DIR, DATASET_DIR, UPLOADS_DIR
+from config import (
+    DATA_DIR,
+    DATASET_DIR,
+    LIBRARY_FILES_DIR,
+    UPLOADS_DIR,
+    active_project_outputs,
+)
 
 
 ENSEMBL_GENE_RE = re.compile(r"^ENS[A-Z0-9]*G\d+", re.IGNORECASE)
@@ -65,57 +73,72 @@ def _relative_to_data_dir(path: Path) -> str:
 
 
 def _resolve_path(path_like: str, *, must_exist: bool) -> Path:
-    """
-    Resolve a user-provided path into DATA_DIR while allowing references to common
-    subdirectories created by the app (e.g. dataset/ or uploads/). Always enforces
-    that the final target stays within DATA_DIR.
+    """Resolve a user-provided path inside the workspace.
+
+    For inputs (``must_exist=True``) the function tries multiple common
+    roots so the agent can pass a bare filename and we'll find the file
+    wherever it lives: library/datasets/, library/files/, the active
+    project's uploads/ / outputs/, or the legacy dataset/ root.
+
+    For outputs (``must_exist=False``) the path is anchored under the
+    active project's outputs/ directory. Absolute paths are accepted
+    but must resolve inside the workspace.
     """
     raw_path = Path(path_like).expanduser()
     data_root = DATA_DIR.resolve()
 
-    candidate_roots = [
-        None if raw_path.is_absolute() else DATA_DIR.parent,
-        None if raw_path.is_absolute() else DATA_DIR,
-        None if raw_path.is_absolute() else DATASET_DIR,
-        None if raw_path.is_absolute() else UPLOADS_DIR,
-    ]
-
-    candidates = []
-    if raw_path.is_absolute():
-        candidates.append(raw_path)
-    else:
-        for root in candidate_roots:
-            if root is None:
-                continue
-            candidates.append(root / raw_path)
-
-    seen: set[Path] = set()
-    for candidate in candidates:
-        resolved_candidate = candidate.resolve()
-        if resolved_candidate in seen:
-            continue
-        seen.add(resolved_candidate)
-        try:
-            resolved_candidate.relative_to(data_root)
-        except ValueError:
-            continue
-        if must_exist and not resolved_candidate.exists():
-            continue
-        return resolved_candidate
-
+    # ----- Input lookup --------------------------------------------------
     if must_exist:
-        searched_locations = [str((root / raw_path).resolve()) for root in {DATA_DIR, DATASET_DIR, UPLOADS_DIR}]
+        # Search the workspace's read-able roots in priority order.
+        outputs_root = active_project_outputs()
+        candidate_roots: list[Path] = []
+        if raw_path.is_absolute():
+            candidates = [raw_path]
+        else:
+            for root in (
+                outputs_root,
+                outputs_root.parent / "uploads"
+                    if outputs_root.name == "outputs"
+                    else None,
+                DATASET_DIR,
+                LIBRARY_FILES_DIR,
+                UPLOADS_DIR,  # legacy alias; same as LIBRARY_FILES_DIR
+                DATA_DIR,
+            ):
+                if root is None:
+                    continue
+                candidate_roots.append(root)
+            candidates = [root / raw_path for root in candidate_roots]
+
+        seen: set[Path] = set()
+        for candidate in candidates:
+            resolved_candidate = candidate.resolve()
+            if resolved_candidate in seen:
+                continue
+            seen.add(resolved_candidate)
+            try:
+                resolved_candidate.relative_to(data_root)
+            except ValueError:
+                continue
+            if resolved_candidate.exists():
+                return resolved_candidate
+
+        searched_locations = sorted({str(c) for c in seen})
         raise FileNotFoundError(
-            f"Path '{path_like}' not found inside DATA_DIR '{DATA_DIR}'. "
-            f"Searched: {', '.join(sorted(searched_locations))}"
+            f"Input '{path_like}' not found inside the workspace '{DATA_DIR}'. "
+            f"Searched: {', '.join(searched_locations)}"
         )
 
-    target = (raw_path if raw_path.is_absolute() else DATA_DIR / raw_path).resolve()
+    # ----- Output path ---------------------------------------------------
+    if raw_path.is_absolute():
+        target = raw_path.resolve()
+    else:
+        target = (active_project_outputs() / raw_path).resolve()
     try:
         target.relative_to(data_root)
     except ValueError as exc:
         raise ValueError(
-            f"Output path '{path_like}' must be inside DATA_DIR '{DATA_DIR}'."
+            f"Output path '{path_like}' must be inside the workspace '{DATA_DIR}'."
         ) from exc
     return target
 
@@ -215,7 +238,9 @@ def _inspect_expression_matrix(
         elif negative_fraction > 0:
             state = "processed_continuous"
             confidence = "high"
-            rationale = "Negative expression values are incompatible with an untransformed count matrix."
+            rationale = (
+                "Negative expression values are incompatible with an untransformed count matrix."
+            )
         elif integer_like_fraction is not None and integer_like_fraction >= 0.99:
             state = "raw_count_like"
             confidence = "high"
@@ -377,7 +402,7 @@ def harmony_transfer_tool(
     gene_mapping_species: str = "auto",
     gene_mapping_target: str = "symbol",
 ) -> Dict[str, Any]:
-
+    """Transfer reference cell-type labels to spatial data using Harmony."""
     if skip_preprocessing is None:
         return {
             "status": "error",
@@ -388,7 +413,6 @@ def harmony_transfer_tool(
                 "with inspect_anndata_preprocessing_tool."
             ),
         }
-
     try:
         spatial_path = _resolve_path(spatial_anndata_path, must_exist=True)
     except FileNotFoundError as exc:
@@ -467,11 +491,13 @@ def harmony_transfer_tool(
             )
             symbol_casing_stats = {}
             if _normalize_target_namespace(gene_mapping_target) == "symbol":
-                adata_ref, adata_spatial, symbol_casing_stats = _align_symbol_casing_between_datasets(
-                    adata_ref, adata_spatial
+                adata_ref, adata_spatial, symbol_casing_stats = (
+                    _align_symbol_casing_between_datasets(adata_ref, adata_spatial)
                 )
                 ref_mapping_stats["n_output_genes_after_symbol_casing"] = int(adata_ref.n_vars)
-                spatial_mapping_stats["n_output_genes_after_symbol_casing"] = int(adata_spatial.n_vars)
+                spatial_mapping_stats["n_output_genes_after_symbol_casing"] = int(
+                    adata_spatial.n_vars
+                )
             gene_mapping_stats = {
                 "species": resolved_species,
                 "target_namespace": gene_mapping_target,
@@ -794,7 +820,6 @@ def _preprocess_dataset(
         percent_top=valid_percent_top or None,
         inplace=True,
     )
-
     sc.pp.filter_cells(adata, min_genes=min_genes)
     if adata.n_obs == 0:
         raise ValueError(
@@ -869,8 +894,7 @@ def map_genes(
     from_field: str = "symbol,alias",
     to_field: str = "ensembl.gene",
 ) -> pd.DataFrame:
-    """
-    Map gene identifiers using the MyGene.info API.
+    """Map gene identifiers using the MyGene.info API.
 
     Parameters
     ----------
@@ -883,7 +907,7 @@ def map_genes(
     to_field : str, default="ensembl.gene"
         The target identifier field to map to (e.g., "symbol", "entrezgene").
 
-    Returns
+    Returns:
     -------
     pd.DataFrame
         DataFrame with columns: ["query", "mapped_id"] and potentially "notfound".
@@ -939,8 +963,7 @@ def replace_var_names_with_mapping(
     source_values: pd.Index | None = None,
     source_name: str = "var_names",
 ) -> sc.AnnData:
-    """
-    Replace adata.var_names (gene names) using a mapping DataFrame from map_genes().
+    """Replace adata.var_names using a mapping DataFrame from map_genes().
 
     Parameters
     ----------
@@ -949,12 +972,11 @@ def replace_var_names_with_mapping(
     mapping_df : pd.DataFrame
         Must contain columns ["query", "mapped_id"] as returned by map_genes().
 
-    Returns
+    Returns:
     -------
     adata : anndata.AnnData
         A new AnnData object with updated var_names (mapped IDs).
     """
-
     # Ensure mapping_df has the expected columns
     if not {"query", "mapped_id"}.issubset(mapping_df.columns):
         raise ValueError("mapping_df must contain columns: ['query', 'mapped_id'].")
@@ -1050,7 +1072,9 @@ def _align_symbol_casing_between_datasets(
     canonical_by_upper = _canonical_symbol_case_map(ref_names.append(spatial_names))
 
     adata_ref, ref_stats = _apply_symbol_case_map(adata_ref, canonical_by_upper, "reference")
-    adata_spatial, spatial_stats = _apply_symbol_case_map(adata_spatial, canonical_by_upper, "spatial")
+    adata_spatial, spatial_stats = _apply_symbol_case_map(
+        adata_spatial, canonical_by_upper, "spatial"
+    )
 
     return adata_ref, adata_spatial, {
         "n_symbol_groups": int(len(canonical_by_upper)),
@@ -1175,7 +1199,9 @@ def _infer_gene_identifier_kind(values: pd.Index) -> str:
     non_empty = values[values != ""]
     if len(non_empty) == 0:
         return "symbol"
-    ensembl_fraction = float(np.mean(non_empty.map(lambda value: bool(ENSEMBL_GENE_RE.match(value)))))
+    ensembl_fraction = float(
+        np.mean(non_empty.map(lambda value: bool(ENSEMBL_GENE_RE.match(value))))
+    )
     return "ensembl" if ensembl_fraction >= 0.5 else "symbol"
 
 

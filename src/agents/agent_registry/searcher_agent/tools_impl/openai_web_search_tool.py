@@ -1,7 +1,7 @@
 """General web search engine backed by the OpenAI Responses API."""
 
 from __future__ import annotations
-from typing import Optional, Any, List
+from typing import Any
 from dataclasses import dataclass
 
 from openai import OpenAI
@@ -17,7 +17,7 @@ def _extract_text(output: Any) -> str:
     """Walk the OpenAI response output items and concatenate text parts."""
     if not output:
         return ""
-    parts: List[str] = []
+    parts: list[str] = []
     for item in output:
         t = getattr(item, "type", None)
         if t == "message":
@@ -42,7 +42,7 @@ def _extract_text(output: Any) -> str:
 class OpenAIWebSearchEngine:
     """Web search engine backed by the OpenAI Responses API with web_search tool."""
 
-    api_key: Optional[Any] = None
+    api_key: Any | None = None
     default_model: str = "gpt-4o"
 
     def __post_init__(self):
@@ -58,9 +58,9 @@ class OpenAIWebSearchEngine:
     def run(
         self,
         query: str,
-        model: Optional[str] = None,
+        model: str | None = None,
         max_output_tokens: int = 2000,
-        instructions: Optional[str] = None,
+        instructions: str | None = None,
     ) -> str:
         """Perform a web search and return a concise answer with citations.
 

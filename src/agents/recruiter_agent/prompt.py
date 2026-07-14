@@ -1,54 +1,139 @@
-"""Prompt templates and description for the recruiter agent."""
+"""Prompt templates, description, and skill registry loader for the recruiter agent."""
 
-from agents.agent_utils import format_agent_id_descriptions
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from agents.agent_utils import format_agent_id_descriptions, parse_yaml_frontmatter
+from knowledge import SKILLS_DIR
+
+_DIR = Path(__file__).parent
+
+_SKILL_REGISTRY = SKILLS_DIR
+
+_TEMPLATE = (_DIR / "prompt.txt").read_text()
 
 RecruiterDescription = """
 Takes the global plan and match each step to the most suitable expert agent from the Agent Registry.
 """.strip()
 
-RecruiterPrompt = lambda agent_id_descriptions: f"""
-You are the Recruiter Agent, an expert in agent assignment for bioinformatics tasks. 
-You will be provided with a global <Plan> from the Planner Agent, consisting of a title and a checklist of concrete, high-level steps to complete a user query.
-Your job is to assign specialized expert agents from <Agent Registry> to each step of the <Plan> based on the step's action, reasoning and expected artifacts and form a <Executor Team>. 
-You will not execute any steps yourself; your role is solely to assign agents.
-You will then forward the updated <Plan> with assigned <Executor Team> to the Manager Agent for execution. 
 
-Use the following guidelines to assign agents effectively:
-- All expert agents are described in <Agent Registry>: {format_agent_id_descriptions(agent_id_descriptions)}
-- Each step should be assigned to the single most suitable agent from the <Agent Registry>.
-- Consider the action, reasoning, and expected artifacts of each step when making your assignment. Ensure that the assigned agents have the necessary capabilities to complete the step effectively.
-- If a step involves multiple actions or expected artifacts, choose more than one agent if necessary.
-- You may assign the same agent to multiple steps.
-- If no agent is suitable for a step, leave it unassigned and provide a brief explanation in the final output.
-- For tissue niche, spatial niche, anatomical region, UTAG, or allowed-label niche annotation steps, assign cell_annotater_agent only. Do not assign single_cell_agent unless the step explicitly asks to find/download a reference or run reference-based cell-type transfer.
-- For reference-based cell-type transfer steps, assign cell_annotater_agent when a reference AnnData already exists; assign single_cell_agent only for an explicit reference acquisition/download step.
-- For downloading, extracting, inspecting, converting, or validating spatial data, assign data_onboarding_agent. Do not assign the coding agent to run ad hoc conversion scripts.
-- If cell annotation input is not H5AD, assign data_onboarding_agent to the preparation step and cell_annotater_agent only to the subsequent transfer step.
-
-You will need to output the updated <Plan> with assigned agents. For each step, add two new fields: <assigned agent> and <assignment rationale> and do not change any of the existing fields.
-The final output should follow the following format exactly:
-'''
-PLAN
-Task: [Don't change the task title from the input]
-Steps: 
-[] step <N>: 
-    step: [Dont change the step from the input]
-    reason: [Dont change the reason from the input]
-    expected artifacts: [Dont change the expected artifacts from the input]
-    assigned agent: [The name of the assigned agent you selected from the <Agent Registry>]
-    assignment rationale: [A brief explanation of why you assigned this agent to this step]
-'''
-
-Here is a breakdown of the two new fields <assigned agent> and <assignment rationale> you need to include in each step as well as their specific instructions:
-- <assigned agent>: The name of the specialized expert agent you selected from the <Agent Registry> to assign to this step. This should be the exact name as listed in the <Agent Registry>.
-- <assignment rationale>: A brief explanation of why you assigned this particular agent to this step. This should be a concise justification based on the action, reasoning, and expected artifacts of the step, as well as the capabilities of the assigned agent.  
+# ---------------------------------------------------------------------------
+# Skill registry loader
+# ---------------------------------------------------------------------------
 
 
-## Formatting Rules
-- Start the output with <Plan>.
-- Do NOT change the title from the input.
-- Do Not change the reason, step, or expected artifacts of each step from the input.
-- For each step, add two new fields: <assigned agent> and <assignment rationale>.
+@dataclass
+class SkillMeta:
+    """Parsed skill frontmatter."""
+
+    name: str
+    description: str
+    applies_to: list[str]
+    status: str = "enable"
+    path: Path = field(default_factory=Path)
 
 
-""".strip()
+# Subdirectories under the skill registry that are NOT skills — archives,
+# examples, or asset folders — and must not be scanned for skill markdown.
+_SKILL_DIR_IGNORE = {"cached_skills"}
+
+
+def _skill_md_in_dir(d: Path) -> Path | None:
+    """Return the skill's markdown file inside a skill folder, or ``None``.
+
+    A folder-based skill keeps its markdown alongside ``scripts/`` and
+    ``references/``. Prefer ``SKILL.md``, then ``<dirname>.md`` (the renamed
+    convention), then a single ``*.md`` at the folder root as a fallback.
+    """
+    for candidate in (d / "SKILL.md", d / f"{d.name}.md"):
+        if candidate.is_file():
+            return candidate
+    md_files = [p for p in d.glob("*.md") if p.name.lower() != "readme.md"]
+    return md_files[0] if len(md_files) == 1 else None
+
+
+def _skill_from_file(p: Path) -> SkillMeta | None:
+    """Parse one skill markdown file into a :class:`SkillMeta`, if enabled."""
+    fm = parse_yaml_frontmatter(p.read_text())
+    if fm is None:
+        return None
+    status = str(fm.get("status", "enable")).strip().lower()
+    if status != "enable":
+        return None
+    name = fm.get("name", p.stem)
+    return SkillMeta(
+        name=name,
+        description=(fm.get("description") or "").strip(),
+        applies_to=list(fm.get("applies_to") or []),
+        status=status,
+        path=p,
+    )
+
+
+def _parse_skills() -> dict[str, SkillMeta]:
+    """Scan the skill registry and return enabled skills.
+
+    Discovers both layouts:
+      * **flat** — a top-level ``<name>.md`` file (except ``README.md``);
+      * **folder** — a ``<name>/`` directory holding its skill markdown
+        (``SKILL.md`` or ``<name>.md``) next to ``scripts/`` / ``references/``.
+    Archive/asset folders in ``_SKILL_DIR_IGNORE`` (e.g. ``cached_skills``) are
+    skipped. When a name is defined by both a folder and a flat file, the
+    folder wins (it carries the bundled assets).
+    """
+    flat: dict[str, SkillMeta] = {}
+    folder: dict[str, SkillMeta] = {}
+    for entry in sorted(_SKILL_REGISTRY.iterdir()):
+        if entry.is_dir():
+            if entry.name in _SKILL_DIR_IGNORE:
+                continue
+            md = _skill_md_in_dir(entry)
+            if md is None:
+                continue
+            meta = _skill_from_file(md)
+            if meta is not None:
+                folder[meta.name] = meta
+        elif entry.suffix == ".md" and entry.name.lower() != "readme.md":
+            meta = _skill_from_file(entry)
+            if meta is not None:
+                flat[meta.name] = meta
+    # Folder skills take precedence over a flat file of the same name.
+    return {**flat, **folder}
+
+
+_SKILL_CACHE: dict[str, SkillMeta] | None = None
+
+
+def get_skill_metadata() -> dict[str, SkillMeta]:
+    """Return the name-to-metadata mapping for all enabled skills (cached)."""
+    global _SKILL_CACHE
+    if _SKILL_CACHE is None:
+        _SKILL_CACHE = _parse_skills()
+    return _SKILL_CACHE
+
+
+def get_skill_index() -> str:
+    """Build a compact skill listing for prompt injection."""
+    lines = [""]
+    for name, meta in sorted(get_skill_metadata().items()):
+        agents = ", ".join(meta.applies_to)
+        lines.append(f"- **{name}**: {meta.description} _(applies to: {agents})_")
+    if len(lines) == 1:
+        lines.append("_(No skills registered yet.)_")
+    lines.append("")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Prompt
+# ---------------------------------------------------------------------------
+
+def RecruiterPrompt(agent_id_descriptions: dict[str, str]) -> str:
+    """Build the recruiter agent system prompt with registry placeholders filled."""
+    return _TEMPLATE.replace(
+        "{{agent_registry}}", format_agent_id_descriptions(agent_id_descriptions)
+    ).replace(
+        "{{skill_registry}}", get_skill_index()
+    )

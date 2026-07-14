@@ -1,0 +1,162 @@
+{
+  "H1": {
+    "per_class_stats": [
+      {
+        "class": "DCIS",
+        "n_spots": 273,
+        "obs_self_edges": 652,
+        "exp_self_edges": 175.691065466686,
+        "self_enrichment_ratio": 3.711059513858035,
+        "total_incident_edges": 843,
+        "self_edges": 652,
+        "autocrine_preference_proxy": 0.7734282325029656
+      },
+      {
+        "class": "Invasive cancer + lymphocytes",
+        "n_spots": 317,
+        "obs_self_edges": 835,
+        "exp_self_edges": 236.88791581373442,
+        "self_enrichment_ratio": 3.5248737662775618,
+        "total_incident_edges": 906,
+        "self_edges": 835,
+        "autocrine_preference_proxy": 0.9216335540838853
+      },
+      {
+        "class": "Lymphocytes",
+        "n_spots": 81,
+        "obs_self_edges": 141,
+        "exp_self_edges": 15.466584558050245,
+        "self_enrichment_ratio": 9.116427707150802,
+        "total_incident_edges": 294,
+        "self_edges": 141,
+        "autocrine_preference_proxy": 0.47959183673469385
+      },
+      {
+        "class": "Normal + stroma + lymphocytes",
+        "n_spots": 240,
+        "obs_self_edges": 645,
+        "exp_self_edges": 135.78345839714896,
+        "self_enrichment_ratio": 4.750210427793486,
+        "total_incident_edges": 681,
+        "self_edges": 645,
+        "autocrine_preference_proxy": 0.947136563876652
+      },
+      {
+        "class": "Stroma",
+        "n_spots": 134,
+        "obs_self_edges": 305,
+        "exp_self_edges": 42.328607273944556,
+        "self_enrichment_ratio": 7.205528828909598,
+        "total_incident_edges": 425,
+        "self_edges": 305,
+        "autocrine_preference_proxy": 0.7176470588235294
+      },
+      {
+        "class": "Stroma + adipose tissue",
+        "n_spots": 114,
+        "obs_self_edges": 292,
+        "exp_self_edges": 30.63614280085674,
+        "self_enrichment_ratio": 9.531225973781341,
+        "total_incident_edges": 331,
+        "self_edges": 292,
+        "autocrine_preference_proxy": 0.8821752265861027
+      }
+    ],
+    "spearman_rho_self_clustering_vs_autocrine_pref_all": 0.39759036144578314,
+    "spearman_p_self_clustering_vs_autocrine_pref_all": 0.32935525869871046,
+    "spearman_rho_self_clustering_vs_autocrine_pref_common": -0.4285714285714286,
+    "spearman_p_self_clustering_vs_autocrine_pref_common": 0.3965014577259474
+  },
+  "H2": {
+    "n_dcis_spots": 273,
+    "immune_genes_used": [
+      "CD3D",
+      "CD3E",
+      "CD3G",
+      "CD2",
+      "CD247",
+      "LCK",
+      "TRAC",
+      "TRBC1",
+      "NKG7",
+      "GNLY",
+      "PRF1",
+      "GZMB",
+      "IFNG",
+      "CXCL9",
+      "CXCL10"
+    ],
+    "stromal_genes_used": [
+      "COL1A1",
+      "COL1A2",
+      "COL3A1",
+      "COL6A1",
+      "COL6A3",
+      "FN1",
+      "THBS1",
+      "PDGFRB",
+      "ACTA2",
+      "TAGLN",
+      "VIM",
+      "CXCL12",
+      "MMP2",
+      "MMP9"
+    ],
+    "immune_rho_frac_lymph_vs_program": 0.11426636055904316,
+    "immune_p_frac_lymph_vs_program": 0.05936136826789658,
+    "stromal_rho_frac_stroma_vs_program": 0.01967271095850656,
+    "stromal_p_frac_stroma_vs_program": 0.7462511880348215,
+    "low_lymph_quantile_threshold": 0.0,
+    "high_lymph_quantile_threshold": 0.0,
+    "low_lymph_n": 212,
+    "high_lymph_n": 273,
+    "low_lymph_mean_immune_score": 0.3606918238993711,
+    "high_lymph_mean_immune_score": 0.3982905982905983
+  },
+  "H3": {
+    "n_dcis_interface": 52,
+    "n_dcis_interior": 171,
+    "n_stroma_interface": 41,
+    "n_stroma_interior": 79,
+    "invasion_genes_used": [
+      "VIM",
+      "SNAI1",
+      "SNAI2",
+      "TWIST1",
+      "ZEB1",
+      "ZEB2",
+      "ITGA5",
+      "ITGB1",
+      "MMP2",
+      "MMP9",
+      "MMP14"
+    ],
+    "matrix_genes_used": [
+      "COL1A1",
+      "COL1A2",
+      "COL3A1",
+      "COL5A1",
+      "COL6A1",
+      "COL6A3",
+      "FN1",
+      "THBS1",
+      "SPARC",
+      "LUM",
+      "DCN"
+    ],
+    "dcis_interface_mean_invasion": 5.854895104895106,
+    "dcis_interior_mean_invasion": 5.93886230728336,
+    "dcis_p_invasion_interface_vs_interior": 0.6444570938286702,
+    "dcis_interface_mean_matrix": 3.0699300699300696,
+    "dcis_interior_mean_matrix": 3.151515151515152,
+    "dcis_p_matrix_interface_vs_interior": 0.274120927534502,
+    "stroma_interface_mean_invasion": 3.862527716186252,
+    "stroma_interior_mean_invasion": 1.5960874568469507,
+    "stroma_p_invasion_interface_vs_interior": 3.472715280967736e-08,
+    "stroma_interface_mean_matrix": 3.1286031042128597,
+    "stroma_interior_mean_matrix": 3.672036823935558,
+    "stroma_p_matrix_interface_vs_interior": 0.5209058629255373,
+    "dcis_interface_mean_residual_invasion": 1.2372584154562838,
+    "dcis_interface_mean_residual_matrix": 0.3916310043683457
+  }
+}

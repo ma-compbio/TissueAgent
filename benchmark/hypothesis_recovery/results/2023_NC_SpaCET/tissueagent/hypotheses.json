@@ -1,0 +1,251 @@
+[
+  {
+    "id": "H1",
+    "title": "Enrichment of immune-lineage scores at tumor edge versus interior",
+    "statement": "In this single human tumor section, spatial spots located near the outer tissue boundary show higher T cell lineage scores and related immune-activation module scores than interior spots, even after accounting for variation in total counts and detected genes.",
+    "referenced_observations": [
+      "OBSERVATION_2.2_spatial_pattern_lineage_scores",
+      "OBSERVATION_3.1_spatial_gradients_and_edge_definition"
+    ],
+    "biological_rationale": "In solid tumors, adaptive immune cells often accumulate at invasive margins and stromal-rich peripheries rather than uniformly infiltrating the core. The exploration log documents non-random spatial structure in lineage scores including T cell scores across the array. If immune surveillance is preferentially active at tissue edges, then T cell\u2013associated expression programs derived from this dataset should be enriched in edge-proximal spots relative to interior spots, beyond what can be explained by technical covariates such as n_counts and n_genes.",
+    "variables": {
+      "outcome_variables": {
+        "score_Tcell": "Existing spot-level T cell lineage score from adata.obs['score_Tcell'].",
+        "immune_activation_score": "New module score per spot, defined within this dataset as the standardized mean expression of a gene set constructed as follows: genes whose expression is positively correlated with score_Tcell across spots (FDR-controlled), excluding mitochondrial and ribosomal genes."
+      },
+      "predictor_variables": {
+        "distance_to_edge": "Continuous distance (in array coordinate or physical space) from each spot to the outer contour of the in-tissue mask, computed from adata.obsm['spatial'] or array_row/array_col.",
+        "edge_status": "Binary categorical indicator (EDGE vs INTERIOR) derived by thresholding distance_to_edge at a fixed quantile (e.g., outer X% of spots labeled EDGE), with sensitivity analyses across thresholds."
+      },
+      "covariates": {
+        "n_counts": "Total UMI counts per spot, from QC.",
+        "n_genes": "Number of detected genes per spot, from QC."
+      }
+    },
+    "contrasts": [
+      {
+        "name": "Edge_vs_Interior_TcellScore",
+        "description": "Compare mean score_Tcell between EDGE and INTERIOR spots, controlling for n_counts and n_genes.",
+        "groups": [
+          "EDGE",
+          "INTERIOR"
+        ],
+        "outcome": "score_Tcell"
+      },
+      {
+        "name": "Edge_vs_Interior_ImmuneActivation",
+        "description": "Compare mean immune_activation_score between EDGE and INTERIOR spots, with the same covariate adjustment.",
+        "groups": [
+          "EDGE",
+          "INTERIOR"
+        ],
+        "outcome": "immune_activation_score"
+      },
+      {
+        "name": "Distance_Gradient",
+        "description": "Assess whether score_Tcell and immune_activation_score decrease monotonically with increasing distance_to_edge, beyond QC covariates.",
+        "groups": [
+          "continuous_distance"
+        ],
+        "outcome": "score_Tcell_and_immune_activation_score"
+      }
+    ],
+    "test_plan": [
+      "Load the AnnData object from 'library/datasets/dataset.h5ad' without modification to count data.",
+      "Confirm availability of obs columns: score_Tcell, n_counts, n_genes, array_row, array_col; and obsm['spatial'].",
+      "Construct a 2D tissue mask using in_tissue and spatial coordinates to estimate the outer tissue boundary (e.g., via alpha shape or convex hull of in-tissue spots).",
+      "Compute distance_to_edge for each spot as the minimum Euclidean distance from the spot's spatial coordinate to the boundary curve.",
+      "Define edge_status by classifying spots into EDGE vs INTERIOR using a prespecified distance threshold (e.g., top 20% closest to edge as EDGE), and record alternative thresholds (e.g., 10%, 30%) for sensitivity analysis.",
+      "Define an immune_activation gene set using only this dataset: compute gene-wise correlations between each gene's expression and score_Tcell across spots; select genes with positive correlation and FDR-adjusted p-value below a chosen threshold, excluding mitochondrial and ribosomal genes based on var annotations.",
+      "Compute immune_activation_score per spot as the scaled mean expression of the selected immune_activation genes.",
+      "Summarize score_Tcell and immune_activation_score distributions for EDGE and INTERIOR groups (means, medians, variances) and visualize spatial maps to ensure no obvious artifacts.",
+      "Fit linear models (or generalized additive models if needed) for score_Tcell and immune_activation_score with predictors edge_status and covariates n_counts and n_genes; test the coefficient for edge_status.",
+      "Fit regression models with continuous distance_to_edge (plus n_counts and n_genes) to test for negative associations between distance_to_edge and immune measures (i.e., higher immune signal closer to the edge).",
+      "Implement a spatial permutation null: randomly permute edge_status (or distance_to_edge values) among spots within local neighborhoods that preserve spatial autocorrelation structure, recompute the test statistics, and compare the observed statistics to this null distribution.",
+      "Repeat key analyses (edge vs interior contrasts and distance gradients) across different edge_status thresholds to check robustness of conclusions to the exact definition of 'edge'.",
+      "Summarize results as effect sizes, confidence intervals, and permutation-based p-values for all three contrasts."
+    ],
+    "quality_scores": {
+      "derivable": 3.5,
+      "novel": 3.8,
+      "feasible": 4.2,
+      "specific": 4.0,
+      "falsifiable": 4.2
+    },
+    "status": "PENDING_TEST",
+    "flags": [
+      "AMBIG_GENESET",
+      "AMBIG_GENESET_CLARIFIED_VIA_TCELL_CORR",
+      "CLARIFY_NULL_MODEL",
+      "EDGE_DEFINITION_SENSITIVE",
+      "EDGE_DEFINITION_SENSITIVITY_CHECK",
+      "NEEDS_DOMAIN_LABELS",
+      "NEEDS_QC_COVARIATES",
+      "QC_COVARIATE_ADJUSTMENT_INCLUDED"
+    ],
+    "notes": "This specification removes any claim that immune clustering patterns were already directly observed for a custom 'immune program'; instead, the immune_activation score is defined explicitly from this dataset based on correlation with score_Tcell. The edge vs interior contrast is framed as a testable hypothesis that could be falsified if immune scores are uniform or higher in the interior."
+  },
+  {
+    "id": "H2",
+    "title": "Higher domain-level heterogeneity and lineage mixing at tumor boundaries",
+    "statement": "Tissue regions near the tumor boundary exhibit greater diversity of transcriptomic domains and stronger co-localization of immune and stromal lineage scores than interior regions, when domains are defined in an unsupervised manner from spatially smoothed expression patterns.",
+    "referenced_observations": [
+      "OBSERVATION_2.2_spatial_pattern_lineage_scores",
+      "OBSERVATION_3.2_spatial_autocorrelation_domains"
+    ],
+    "biological_rationale": "The exploration log indicates that lineage scores (malignant, CAF, M2, T cell) show non-random spatial structure and co-vary across the array, suggesting distinct microenvironmental domains. In solid tumors, invasive margins often contain interdigitated malignant, stromal, and immune niches, whereas deep interior regions tend to be more homogeneous. If this holds in the profiled tumor, unsupervised spatial domains derived from expression should be more numerous and compositionally diverse near the tissue edge than in the interior, and boundary domains should show greater mixing of immune and stromal lineages.",
+    "variables": {
+      "derived_annotations": {
+        "domain_label": "Categorical label assigned to each spot from unsupervised clustering of spatially smoothed gene expression or of the multivariate lineage score vector [score_malignant, score_CAF, score_M2, score_Tcell].",
+        "boundary_status": "Categorical label of domains: BOUNDARY_DOMAIN vs INTERIOR_DOMAIN, defined by the proportion of member spots classified as EDGE vs INTERIOR (from H1 distance_to_edge)."
+      },
+      "spot_level_variables": {
+        "score_malignant": "Existing malignant lineage score per spot.",
+        "score_CAF": "Existing CAF lineage score per spot.",
+        "score_M2": "Existing M2 macrophage lineage score per spot.",
+        "score_Tcell": "Existing T cell lineage score per spot.",
+        "n_counts": "Total UMI counts per spot.",
+        "n_genes": "Number of detected genes per spot."
+      }
+    },
+    "contrasts": [
+      {
+        "name": "DomainCount_Boundary_vs_Interior",
+        "description": "Compare the number of distinct domain_label categories that intersect the set of EDGE spots versus the set of INTERIOR spots.",
+        "groups": [
+          "BOUNDARY_DOMAINS",
+          "INTERIOR_DOMAINS"
+        ],
+        "outcome": "domain_label_richness"
+      },
+      {
+        "name": "Lineage_Mixing_Boundary_vs_Interior",
+        "description": "Compare within-domain diversity of lineage scores (e.g., entropy or variance of [score_malignant, score_CAF, score_M2, score_Tcell]) between boundary and interior domains.",
+        "groups": [
+          "BOUNDARY_DOMAINS",
+          "INTERIOR_DOMAINS"
+        ],
+        "outcome": "lineage_score_diversity_metric"
+      },
+      {
+        "name": "CoLocalization_Immune_Stromal",
+        "description": "Compare the strength of positive correlations between immune (score_Tcell, score_M2) and stromal/malignant (score_CAF, score_malignant) scores within boundary versus interior domains.",
+        "groups": [
+          "BOUNDARY_DOMAINS",
+          "INTERIOR_DOMAINS"
+        ],
+        "outcome": "correlation_coefficients"
+      }
+    ],
+    "test_plan": [
+      "Load the AnnData object and confirm availability of lineage scores and QC covariates in obs.",
+      "Re-use or compute distance_to_edge and edge_status for each spot as specified in H1.",
+      "Perform dimensionality reduction on either (a) spatially smoothed gene expression (e.g., PCA on most variable genes after smoothing), or (b) the four-dimensional lineage score vector, to obtain a low-dimensional representation that captures major spatial expression structure.",
+      "Run a spatially aware clustering algorithm (e.g., Leiden or KMeans on the low-dimensional representation, optionally incorporating spatial coordinates) to assign a domain_label to each spot. Explore a range of cluster resolutions and select a resolution that yields a reasonable number of domains (e.g., 5\u201315).",
+      "Label each domain_label as BOUNDARY_DOMAIN or INTERIOR_DOMAIN based on the proportion of its member spots that have edge_status = EDGE; for example, domains with \u226550% EDGE spots are labeled BOUNDARY_DOMAIN.",
+      "Quantify domain_label richness at the boundary versus interior by counting how many distinct domain_labels have at least one EDGE spot versus at least one INTERIOR spot. Use a permutation test that shuffles edge_status labels among spots (while preserving the domain structure) to assess whether the observed difference exceeds that expected by chance.",
+      "Within each domain_label, compute a lineage diversity metric (e.g., Shannon entropy or multivariate variance) based on the normalized lineage scores [score_malignant, score_CAF, score_M2, score_Tcell]. Then compare the distribution of this diversity metric between BOUNDARY_DOMAINS and INTERIOR_DOMAINS using regression or non-parametric tests, adjusting for average n_counts and n_genes per domain.",
+      "Within each domain_label, estimate pairwise correlations between immune scores (score_Tcell, score_M2) and stromal/malignant scores (score_CAF, score_malignant). Summarize these correlations (e.g., mean of positive correlations) for boundary versus interior domains.",
+      "Use a permutation-based null that shuffles domain_label assignments among spots (within spatial neighborhoods) to test whether observed differences in lineage diversity and immune\u2013stromal correlation between boundary and interior domains could arise by chance under the same global score distributions.",
+      "Perform sensitivity analyses by varying clustering resolution and boundary-domain definition thresholds, summarizing how robust the key contrasts are to these choices."
+    ],
+    "quality_scores": {
+      "derivable": 3.2,
+      "novel": 4.0,
+      "feasible": 3.0,
+      "specific": 3.5,
+      "falsifiable": 3.8
+    },
+    "status": "PENDING_TEST",
+    "flags": [
+      "AMBIG_GENESET",
+      "CLARIFY_NULL_MODEL",
+      "CLUSTER_RESOLUTION_SENSITIVITY",
+      "EDGE_DEFINITION_SENSITIVE",
+      "NEEDS_DOMAIN_LABELS",
+      "NEEDS_QC_COVARIATES",
+      "QC_COVARIATE_ADJUSTMENT_INCLUDED"
+    ],
+    "notes": "This hypothesis preserves the draft focus on boundary versus interior domain diversity and lineage mixing, but removes any implication that such boundary-enriched heterogeneity was already demonstrated. All domain definitions are moved into the test plan, and explicit null models and QC covariate adjustments are specified."
+  },
+  {
+    "id": "H3",
+    "title": "Spatial segregation of proliferation-like and inflammation-like programs within the tumor",
+    "statement": "Within this tumor section, spots with high proliferation-associated gene expression programs are spatially segregated from spots with high inflammation-associated programs, such that local neighborhoods tend to be dominated by one program or the other rather than a balanced mixture.",
+    "referenced_observations": [
+      "OBSERVATION_2.3_QC_and_highly_variable_genes",
+      "OBSERVATION_2.2_spatial_pattern_lineage_scores"
+    ],
+    "biological_rationale": "The exploration log documents spatially structured variation in lineage scores and QC metrics, implying that certain regions differ systematically in transcriptional activity. In many tumors, highly proliferative tumor regions with strong malignant programs are distinct from inflamed regions rich in immune activity. Using only this dataset, one can derive proliferation-like and inflammation-like gene programs from expression variation and T cell\u2013associated patterns. If proliferative and inflammatory states occupy different niches, then scores for these programs should be negatively associated within local spatial neighborhoods and show distinct spatial domains with limited overlap.",
+    "variables": {
+      "program_scores": {
+        "proliferation_program_score": "Module score per spot defined from genes that form a coherent expression module enriched for cell-cycle and mitotic markers, identified via unsupervised factorization (e.g., PCA factor or NMF component) on highly variable genes and confirmed by overlap with canonical proliferation genes present in this dataset.",
+        "inflammation_program_score": "Module score per spot defined from genes that correlate positively with score_Tcell and/or M2 scores and form an expression module enriched for immune signaling, again identified from this dataset via factorization or correlation-based selection, excluding QC-driven genes."
+      },
+      "spatial_variables": {
+        "local_neighborhood": "For each spot, the set of nearby spots defined by k-nearest neighbors in spatial coordinates or a fixed radius, used to summarize local composition."
+      },
+      "covariates": {
+        "n_counts": "Total UMI counts per spot.",
+        "n_genes": "Number of detected genes per spot."
+      }
+    },
+    "contrasts": [
+      {
+        "name": "Global_AntiCorrelation",
+        "description": "Assess the global correlation between proliferation_program_score and inflammation_program_score across spots, controlling for n_counts and n_genes.",
+        "groups": [
+          "all_spots"
+        ],
+        "outcome": "correlation_coefficient"
+      },
+      {
+        "name": "Local_Segregation_Index",
+        "description": "Within local neighborhoods, quantify whether spots tend to be dominated by either high proliferation or high inflammation scores, using a segregation or mutual-exclusivity index.",
+        "groups": [
+          "local_neighborhoods"
+        ],
+        "outcome": "segregation_metric"
+      },
+      {
+        "name": "Domain_Level_Enrichment",
+        "description": "Using domain_label from H2, test whether distinct domains are preferentially proliferation-dominant or inflammation-dominant, and whether co-dominant domains are rare.",
+        "groups": [
+          "domain_labels"
+        ],
+        "outcome": "program_score_distributions"
+      }
+    ],
+    "test_plan": [
+      "Load the AnnData object and confirm availability of lineage scores, QC covariates, and spatial coordinates.",
+      "Identify highly variable genes using standard variance-based criteria, excluding mitochondrial and ribosomal genes.",
+      "Perform an unsupervised factorization (e.g., PCA or NMF) on the expression matrix restricted to highly variable genes to obtain a low-dimensional representation of major transcriptional programs.",
+      "Inspect loadings to identify one component enriched for canonical proliferation markers (e.g., cell cycle genes present in this dataset) and define the proliferation_program gene set as the top-loading genes on that component.",
+      "Similarly, identify a component whose loadings are enriched for genes positively correlated with score_Tcell and/or score_M2; define the inflammation_program gene set as the top-loading genes with strong positive correlation to these lineage scores.",
+      "Compute proliferation_program_score and inflammation_program_score for each spot as standardized module scores based on their respective gene sets.",
+      "Fit regression or partial correlation models to estimate the association between proliferation_program_score and inflammation_program_score across spots while adjusting for n_counts and n_genes, and test whether the adjusted correlation is significantly negative, zero, or positive.",
+      "Construct a spatial neighborhood graph (e.g., k-nearest neighbors in obsm['spatial']) and, for each spot, summarize the local mean proliferation and inflammation scores.",
+      "Define a local segregation metric (e.g., the fraction of neighbors in which one program score exceeds the other by a specified margin) and summarize this metric across the tissue; compare to a null distribution obtained by permuting program scores across spots while preserving spatial coordinates.",
+      "Using domain_label from H2, compute mean proliferation_program_score and inflammation_program_score for each domain, classify domains as proliferation-dominant, inflammation-dominant, or mixed based on relative scores, and test whether the observed frequency of mixed domains differs from that expected under a null that shuffles program scores among spots within domains.",
+      "Perform sensitivity analyses by varying the definition of highly variable genes, the number of factors/components, and neighborhood parameters, recording whether the qualitative conclusion about spatial segregation is robust."
+    ],
+    "quality_scores": {
+      "derivable": 3.0,
+      "novel": 4.2,
+      "feasible": 4.0,
+      "specific": 4.3,
+      "falsifiable": 4.5
+    },
+    "status": "PENDING_TEST",
+    "flags": [
+      "AMBIG_GENESET",
+      "AMBIG_GENESET_REFINED_VIA_FACTOR_LOADING",
+      "CLARIFY_NULL_MODEL",
+      "EDGE_DEFINITION_SENSITIVE",
+      "NEEDS_CLEAR_NEIGHBORHOOD_DEF",
+      "NEEDS_QC_COVARIATES",
+      "QC_COVARIATE_ADJUSTMENT_INCLUDED"
+    ],
+    "notes": "This refines the draft hypothesis by explicitly defining how proliferation and inflammation programs will be derived from the same dataset, without assuming prior detection of their spatial segregation. The focus remains on whether these programs occupy distinct spatial niches versus being co-localized."
+  }
+]

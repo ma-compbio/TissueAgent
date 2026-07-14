@@ -1,8 +1,17 @@
+---
+title: "Calculate distances to a user-defined anchor point"
+keywords:
+  - "squidpy"
+  - "var-by-distance"
+  - "spatial"
+  - "expression"
+  - "distance"
+  - "visualization"
+---
 # Calculate distances to a user-defined anchor point
 
-This example shows how to use {func}`squidpy.tl.var_by_distance` to calculate the minimum distances of all observations
-to a user-defined anchor point, store the results in {attr}`anndata.AnnData.obsm` and plot the expression by distance.
-using {func}`squidpy.pl.var_by_distance`.
+This example shows how to use `squidpy.tl.var_by_distance` to calculate the minimum distances of all observations
+using `squidpy.pl.var_by_distance`.
 
 
 ```python
@@ -16,8 +25,8 @@ First, let's download the MIBI-TOF dataset.
 adata = sq.datasets.mibitof()
 ```
 
-This data set contains a cell type annotation in {attr}`anndata.AnnData.obs["Cluster"]`
-and a slide annotation in {attr}`anndata.AnnData.obs["library_id"]`
+This data set contains a cell type annotation in `anndata.AnnData.obs["Cluster"]`
+and a slide annotation in `anndata.AnnData.obs["library_id"]`
 
 
 ```python
@@ -26,7 +35,7 @@ adata.obs
 
 For each slide we now want to calculate the distance of all observations to the closest Epithelial cell.
 In addition we want to include the condition of the donors and the donor id in the resulting design matrix
-As we don't create a copy, the result will be stored in {attr}`anndata.AnnData.obsm`.
+As we don't create a copy, the result will be stored in `anndata.AnnData.obsm`.
 
 
 ```python

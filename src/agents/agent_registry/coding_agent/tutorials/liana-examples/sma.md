@@ -15,14 +15,13 @@ keywords:
 ---
 # Integrating Multi-Modal Spatially-Resolved Technologies with LIANA+
 
-Here, we apply of LIANA+ on a spatially-resolved metabolite-transcriptome dataset from a recent murine Parkinson’s disease model [Vicari et al., 2023](https://www.nature.com/articles/s41587-023-01937-y). 
+Here, we apply of LIANA+ on a spatially-resolved metabolite-transcriptome dataset from a recent murine Parkinson’s disease model Vicari et al., 2023.
 We demonstrate LIANA+'s utility in harmonizing spatially-resolved transcriptomics and MALDI-MSI data to unravel metabolite-mediated interactions and the molecular mechanisms of dopamine regulation in the striatum.
 
 Two particular challenges with this data are:
 - The unaligned spatial locations of the two omics technologies
 - The untargeted nature of the MALDI-MSI data, which results in a large number of features with unknown identities. Only few of which were previously identified as specific metabolites.
 
-Here, we show untargeted modelling of known and unknown metabolite peaks and their spatial relationships with transcriptomics data. Specifically, we use a multi-view modelling strategy [MISTy](https://liana-py.readthedocs.io/en/latest/notebooks/misty.html) to decipher global spatial relationships of metabolite peaks with cell types and brain-specific receptors. Then, we use LIANA+'s [local metrics](https://liana-py.readthedocs.io/en/latest/notebooks/bivariate.html) to pinpoint the subregions of interaction. 
 
 We also show strategies to enable spatial multi-omics analysis from diverse omics technologies with unaligned locations and observations.
 
@@ -49,9 +48,9 @@ First, we obtain the a single slide from the dataset. This slide has already bee
 We have log1p transformed the RNA-seq data and total-ion count normalised the MALDI-MSI data.
 
 We have also **pre-aligned** the images from the two technologies, though the observations are not aligned - an issue that we will address in this notebook.
-For image and coordinate transformations, we refer the users to [SpatialData](https://spatialdata.scverse.org/en/latest/tutorials/notebooks/notebooks.html) or [stAlign](https://jef.works/STalign/overview.html#input-data).
+For image and coordinate transformations, we refer the users to SpatialData or stAlign.
 
-We have additionally deconvoluted the cell types in the RNA-seq data using [Tangram](https://github.com/broadinstitute/Tangram).
+We have additionally deconvoluted the cell types in the RNA-seq data using Tangram.
 
 
 So, in total we have three modalities: the MALDI-MSI data, the RNA-seq data, and the cell type data:
@@ -87,11 +86,10 @@ If you look closely here, you will notice that the metabolite locations are not 
 
 ## Experimental Design
 
-Of note, mice in this data were subjected to unilateral 6-hydroxydopamine-induced lesions in one hemisphere while the other remained intact. 
+Of note, mice in this data were subjected to unilateral 6-hydroxydopamine-induced lesions in one hemisphere while the other remained intact.
 These 6-Hydroxydopamine-induced lesions selectively destroy substantia nigra-originated dopaminergic neurons, thereby impairing dopamine-mediated regulatory mechanisms of the striatum - an area of the brain crucial for movement coordination.
 
 Along with annotations of the lesioned and intact hemispheres, we also have annotations for the striatum:
-
 
 
 ```python
@@ -120,7 +118,7 @@ rna = rna[:, rna.var['highly_variable']]
 ct = ct[:, ct.var['highly_variable']]
 ```
 
-Note that we use simple coefficient of variation and highly-variable gene functions, but one may easily replace this step with e.g. the spatially-informed Moran's I from [Squidpy](https://squidpy.readthedocs.io/en/stable/).
+Note that we use simple coefficient of variation and highly-variable gene functions, but one may easily replace this step with e.g. the spatially-informed Moran's I from Squidpy.
 
 ### Additional processing steps
 Scale the intensities and cap the max value
@@ -130,7 +128,7 @@ Scale the intensities and cap the max value
 sc.pp.scale(msi, max_value=5)
 ```
 
-Obtain brain-specific metabolite-receptor interactions from [MetalinksDB](https://www.biorxiv.org/content/10.1101/2023.12.30.573715v1.abstract).
+Obtain brain-specific metabolite-receptor interactions from MetalinksDB.
 
 
 ```python
@@ -141,7 +139,7 @@ metalinks = li.rs.get_metalinks(tissue_location='Brain',
 metalinks.head()
 ```
 
-Convert to murine symbols using orthology knowledge from [HCOP](https://www.genenames.org/help/hcop/). If you use this function, please reference the [original database](https://www.genenames.org/help/hcop/#!/#tocAnchor-1-6).
+Convert to murine symbols using orthology knowledge from HCOP. If you use this function, please reference the original database.
 
 
 ```python
@@ -219,14 +217,13 @@ misty
 By using the metabolite modality as a reference, we can now predict the metabolite intensities from the spatially-weighted cell types and brain-specific receptors.
 
 Specifically, we do so, by modelling the lesioned and intact hemispheres separately - enabled via the `maskby` parameter.
-This masking procedure, simply masks the observations according to the `lesion` annotations, following spatially-weighting the extra views.  
+This masking procedure, simply masks the observations according to the `lesion` annotations, following spatially-weighting the extra views.
 
 
 ```python
 misty(model=li.mt.sp.LinearModel, verbose=True, bypass_intra=True, maskby='lesion')
 ```
 
-We can see that in the intact hemisphere there are several metabolites peaks which are relatively well predicted (R2 > 0.5), and among them are Dopamine and 3-Methoxytyramine (3-MT).
 Of note, while we don't focus on the unannotated metabolite peaks, we can see that some of them are also well predicted. This is a good indication of which metabolite peaks might be of interest for further investigation, and subsequently, identification.
 
 
@@ -241,7 +238,7 @@ On the other hand, we don't see those peaks in the lesioned hemisphere, which is
 li.pl.target_metrics(misty, stat='multi_R2', return_fig=True, top_n=20, filter_fun=lambda x: x['intra_group']=='lesioned')
 ```
 
-Within the intact hemisphere we can see that in the top predictors of Dopamine are MSN1/2 as well as Drd1/2 receptors. 
+Within the intact hemisphere we can see that in the top predictors of Dopamine are MSN1/2 as well as Drd1/2 receptors.
 MSN1/2 are Medium Spiny Neurons, which are the main cell type in the striatum, and Drd1/2 are Dopamine receptors. This is consistent with the known biology of the striatum, where Dopamine is a key neurotransmitter, and the Drd1/2 receptors are the main receptors for Dopamine in the striatum.
 
 
@@ -258,7 +255,7 @@ plt.figure(figsize=(5, 4))
 interactions['rank'] = interactions['importances'].rank(ascending=False)
 plt.scatter(interactions['rank'], interactions['importances'], s=11,
             c=interactions['view'].map({'ct': '#008B8B', 'receptor': '#a11838'}))
-            
+
 # add for top 10
 top_n = interactions[interactions['rank'] <= 10]
 texts = []
@@ -274,7 +271,6 @@ Focusing on Dopamine, we can next use LIANA+'s local metrics to identify the sub
 
 While the transformation of spatial locations is done internally by MISTy, we need to transform the metabolite intensities to a grid-like manner, so that we can use the local metrics.
 To do so, we use the `interpolate_adata` function, which interpolates one modality to another. Here, we will interpolate the metabolite intensities to the RNA-seq data, so that we can use the spatial locations of the RNA-seq data to identify the local interactions.
-
 
 
 ```python
@@ -318,14 +314,14 @@ Let's calculate the local metrics for the Dopamine intensities with and Drd1/2 r
 
 
 ```python
-lrdata = li.mt.bivariate(mdata, 
+lrdata = li.mt.bivariate(mdata,
                          local_name='cosine',
-                         x_mod='msi', 
+                         x_mod='msi',
                          y_mod='rna',
-                         x_use_raw=False, 
+                         x_use_raw=False,
                          y_use_raw=False,
-                         verbose=True, 
-                         mask_negatives=True, 
+                         verbose=True,
+                         mask_negatives=True,
                          n_perms=1000,
                          interactions=interactions,
                          x_transform=sc.pp.scale,
@@ -342,7 +338,3 @@ sc.pl.spatial(lrdata,
               cmap='cividis_r', vmax=1, layer='pvals',
               **kwargs)
 ```
-
-We see that interactions with Dopamine as largely anticipated are predominantly located within the Striatum of the intact hemisphere, and are typically absent in the lesioned hemisphere.
-
-

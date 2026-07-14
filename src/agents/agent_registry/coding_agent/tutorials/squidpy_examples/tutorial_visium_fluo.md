@@ -1,28 +1,31 @@
+---
+title: "Analyze Visium fluorescence data"
+keywords:
+  - "squidpy"
+  - "visium"
+  - "fluorescence"
+  - "segmentation"
+  - "image-features"
+  - "clustering"
+---
 # Analyze Visium fluorescence data
 
 This tutorial shows how to apply Squidpy image analysis features for the analysis of Visium data.
 
 For a tutorial using Visium data that includes the graph analysis functions, have a look at
-{doc}`tutorial_visium_hne`.
+`tutorial_visium_hne`.
 The dataset used here consists of a Visium slide of a coronal section of the mouse brain.
 The original dataset is publicly available at the
-10x genomics `dataset portal <https://support.10xgenomics.com/spatial-gene-expression/datasets>`_ .
-Here, we provide a pre-processed dataset, with pre-annotated clusters, in {class}`anndata.AnnData` format and the
-tissue image in {class}`squidpy.im.ImageContainer` format.
+Here, we provide a pre-processed dataset, with pre-annotated clusters, in `anndata.AnnData` format and the
 
-A couple of notes on pre-processing:
 
     - The pre-processing pipeline is the same as the one shown in the original
-      `Scanpy tutorial <https://scanpy-tutorials.readthedocs.io/en/latest/spatial/basic-analysis.html>`_ .
+      Scanpy tutorial  .
     - The cluster annotation was performed using several resources, such as the
-      `Allen Brain Atlas <https://mouse.brain-map.org/experiment/thumbnails/100048576?image_type=atlas>`_ ,
-      the `Mouse Brain gene expression atlas <http://mousebrain.org/>`_
-      from the Linnarson lab and this recent pre-print {cite}`linnarson2020`.
+      Allen Brain Atlas  ,
 
-Import packages & data
-----------------------
-To run the notebook locally, create a conda environment as *conda env create -f environment.yml* using this
-`environment.yml <https://github.com/scverse/squidpy_notebooks/blob/main/environment.yml>`_.
+## Import packages & data
+environment.yml .
 
 
 ```python
@@ -43,9 +46,7 @@ adata = sq.datasets.visium_fluo_adata_crop()
 ```
 
 First, let's visualize the cluster annotation in the spatial context
-with {func}`squidpy.pl.spatial_scatter`.
 
-As you can see, this dataset is a smaller crop of the whole brain section.
 We provide this crop to make the execution time of this tutorial a bit shorter.
 
 
@@ -55,7 +56,7 @@ sq.pl.spatial_scatter(adata, color="cluster")
 
 The fluorescence image provided with this dataset has three channels:
 *DAPI* (specific to DNA), *anti-NEUN* (specific to neurons), *anti-GFAP* (specific to Glial cells).
-We can directly visualize the channels with the method {meth}`squidpy.im.ImageContainer.show`.
+We can directly visualize the channels with the method `squidpy.im.ImageContainer.show`.
 
 
 ```python
@@ -63,34 +64,26 @@ img.show(channelwise=True)
 ```
 
 Visium datasets contain high-resolution images of the tissue.
-Using the function {func}`squidpy.im.calculate_image_features` you can calculate image features
-for each Visium spot and create a ``obs x features`` matrix in ``adata`` that can then be analyzed together
-with the ``obs x gene`` gene expression matrix.
+Using the function `squidpy.im.calculate_image_features` you can calculate image features
 
 By extracting image features we are aiming to get both similar and complementary information to the
-gene expression values.
 Similar information is for example present in the case of a tissue with two different cell types
-whose morphology is different.
 Such cell type information is then contained in both the gene expression values and the tissue image features.
 Complementary or additional information is present in the fact that we can use a nucleus segmentation
-to count cells and add features summarizing the immediate spatial neighborhood of a spot.
 
 Squidpy contains several feature extractors and a flexible pipeline of calculating features
-of different scales and sizes.
-There are several detailed examples of how to use {func}`squidpy.im.calculate_image_features`.
-{doc}`../examples/image/compute_features` provides a good starting point for learning more.
+There are several detailed examples of how to use `squidpy.im.calculate_image_features`.
+`../examples/image/compute_features` provides a good starting point for learning more.
 
 Here, we will extract `summary`, `histogram`, `segmentation`, and `texture` features.
 To provide more context and allow the calculation of multi-scale features, we will additionally calculate
 `summary` and `histogram` features at different crop sizes and scales.
 
-Image segmentation
-------------------
-To calculate `segmentation` features, we first need to segment the tissue image using {func}`squidpy.im.segment`.
+## Image segmentation
+To calculate `segmentation` features, we first need to segment the tissue image using `squidpy.im.segment`.
 But even before that, it's best practice to pre-process the image by e.g. smoothing it using
-in {func}`squidpy.im.process`.
 We will then use the *DAPI* channel of the fluorescence image (``channel_id s= 0``).
-Please refer to {doc}`../examples/image/compute_segment_fluo`
+Please refer to `../examples/image/compute_segment_fluo`
 for more details on how to calculate a segmented image.
 
 
@@ -114,21 +107,17 @@ img_crop.show(
 )
 ```
 
-The result of {func}`squidpy.im.segment` is saved in ``img['segmented_watershed']`` by default.
+The result of `squidpy.im.segment` is saved in ``img['segmented_watershed']`` by default.
 It is a label image where each segmented object is annotated with a different integer number.
 
-Segmentation features
----------------------
+## Segmentation features
 We can now use the segmentation to calculate segmentation features.
 These include morphological features of the segmented objects and channel-wise image
-intensities beneath the segmentation mask.
 In particular, we can count the segmented objects within each Visium spot to get an
-approximation of the number of cells.
 In addition, we can calculate the mean intensity of each fluorescence channel within the segmented objects.
 Depending on the fluorescence channels, this can give us e.g., an estimation of the cell type.
 For more details on how the segmentation features, you can have a look at
-the docs of {func}`squidpy.im.calculate_image_features` or the example at
-{doc}`../examples/image/compute_segmentation_features`.
+`../examples/image/compute_segmentation_features`.
 
 
 ```python
@@ -158,32 +147,22 @@ sq.pl.spatial_scatter(
 )
 ```
 
-Above, we made use of {func}`squidpy.pl.extract`, a method to extract
-all features in a given `adata.obsm['{key}']` and temporarily save them to {attr}`anndata.AnnData.obs`.
 Such method is particularly useful for plotting purpose, as shown above.
 
-The number of cells per Visium spot provides an interesting view of the data that can enhance
-the characterization of gene-space clusters.
-We can see that the cell-rich pyramidal layer of the Hippocampus has more cells than the surrounding areas
-(upper left).
 This fine-grained view of the Hippocampus is not visible in the gene clusters where
-the Hippocampus is one cluster only.
 
-The per-channel intensities plotted in the second row show us that the areas labeled with *Cortex_1* and
 *Cortex_3* have a higher intensity of channel 1, *anti-NEUN* (lower left).
 This means that these areas have more neurons that the remaining areas in this crop.
 In addition, cluster *Fiber_tracts* and *lateral ventricles* seems to be enriched with *Glial cells*,
-seen by the larger mean intensities of channel 2, *anti-GFAP*, in these areas (lower right).
 
-Extract and cluster features
-----------------------------
+## Extract and cluster features
 Now we will calculate summary, histogram, and texture features.
 These features provide a useful compressed summary of the tissue image.
 For more information on these features, refer to:
 
-  - {doc}`../examples/image/compute_summary_features`.
-  - {doc}`../examples/image/compute_histogram_features`.
-  - {doc}`../examples/image/compute_texture_features`.
+  - `../examples/image/compute_summary_features`.
+  - `../examples/image/compute_histogram_features`.
+  - `../examples/image/compute_texture_features`.
 
 
 ```python
@@ -273,14 +252,7 @@ sq.pl.spatial_scatter(
 )
 ```
 
-Like the gene-space clusters (bottom middle), the feature space clusters are also spatially coherent.
 
-The feature clusters of the different feature extractors are quite diverse, but all of them reflect
-the structure of the Hippocampus by assigning different clusters to the different structural areas.
 This is a higher level of detail than the gene-space clustering provides with only one cluster for the Hippocampus.
 
-The feature clusters also show the layered structure of the cortex, but again subdividing it in more clusters
-than the gene-space clustering.
 It might be possible to re-cluster the gene expression counts with a higher resolution to also get
-more fine-grained clusters, but nevertheless the image features seem to provide additional supporting
-information to the gene-space clusters.

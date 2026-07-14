@@ -1,0 +1,34 @@
+# Declarative metadata for the gene_agent external agent.
+# See INTEGRATING.md at the repo root for the full schema.
+
+id: gene
+name: Gene Agent
+version: 0.2.0
+description: >
+  Interprets a user-provided gene list using NCBI's GeneAgent cascade
+  to propose and verify a biological-process narrative against
+  domain-specific databases (GO, KEGG, NCBI gene summaries, PubMed).
+
+upstream:
+  repo: https://github.com/ncbi-nlp/GeneAgent.git
+  # Pinned commit — bump this and re-test when upgrading.
+  commit: 88fd1adb40dce9545bde5b904ef3a628c09d747c
+  submodule_path: upstream
+
+# This external agent always uses OpenAI's gpt-5.1 for reproducibility,
+# independent of TissueAgent's UI model selection. See runner.py.
+llm:
+  pinned_model: gpt-5.1
+  required_env_vars:
+    - OPENAI_API_KEY
+
+# Data artifacts go under data/gene_agent/<request_id>/...
+data_subdir: gene_agent
+
+# The single StructuredTool the manager sees.
+tool:
+  name: geneagent_analyze_gene_set_tool
+  description: >
+    Runs the NCBI GeneAgent cascade to propose and verify biological
+    process names for a gene set. Returns the final summary, extracted
+    process names, verification logs, and artifact paths.

@@ -1,18 +1,104 @@
-"""Shared utilities for agent prompt construction and file access.
+"""Shared utilities for agent prompt construction.
 
-Provides helpers for formatting agent descriptions, extracting XML-style
-blocks from LLM responses, and a simple file-retriever tool that lists
-files in the data directory.
+Provides helpers for formatting agent descriptions, extracting XML-style blocks from LLM responses,
+and text truncation.
 """
 
+from __future__ import annotations
+
+import logging
 import re
-from langchain.tools import StructuredTool
-from typing import Dict, Optional
+from pathlib import Path
 
-from config import DATA_DIR
+import yaml
 
 
-def format_agent_id_descriptions(agent_id_descriptions: Dict[str, str]) -> str:
+def substitute_shared_prompts(text: str) -> str:
+    """Replace ``{{<stem>}}`` placeholders with the contents of ``shared_prompts/<stem>.txt``.
+
+    Idempotent: re-applying it on already-substituted text is a no-op because the placeholder
+    string is consumed by the first pass. New shared fragments can be added by dropping a ``.txt``
+    file into ``src/agents/shared_prompts/``; any prompt that references ``{{<stem>}}`` will then
+    pick it up automatically.
+    """
+    shared_prompts_dir = Path(__file__).parent / "shared_prompts"
+    shared_prompts = {p.stem: p.read_text().rstrip() for p in shared_prompts_dir.glob("*.txt")}
+    for name, content in shared_prompts.items():
+        text = text.replace(f"{{{{{name}}}}}", content)
+    return text
+
+
+def parse_yaml_frontmatter(text: str) -> dict | None:
+    """Extract YAML frontmatter from a Markdown string.
+
+    Expects the text to start with ``---``, followed by YAML content, closed by another ``---``.
+    Returns the parsed dict, or ``None`` if the text has no valid frontmatter.
+    """
+    if not text.startswith("---"):
+        return None
+    try:
+        end = text.index("---", 3)
+    except ValueError:
+        return None
+    result = yaml.safe_load(text[3:end])
+    return result if isinstance(result, dict) else None
+
+
+def format_skill_prompt(skill_names: list[str]) -> str:
+    """Build the skill injection block for a sub-agent system prompt.
+
+    Loads skill content from the skill registry, strips YAML frontmatter, and wraps each skill in a
+    formatted section with universal boilerplate. For folder-based skills whose bundled assets
+    (``scripts/``, ``references/``) have been snapshotted under the active project, prepends the
+    sandbox-visible absolute path so bare relative references in the skill body resolve.
+
+    Returns empty string if no valid skills are found.
+    """
+    if not skill_names:
+        return ""
+    from agents.recruiter_agent.prompt import get_skill_metadata
+    from config import CONTAINER_SKILLS_ROOT, active_project_skills
+    from knowledge import SKILLS_DIR
+
+    skills = get_skill_metadata()
+    materialized_root = active_project_skills()
+    skills_root = SKILLS_DIR.resolve()
+    sections = []
+    for name in skill_names:
+        meta = skills.get(name)
+        if meta is None:
+            logging.warning(f"Skill '{name}' not found in registry, skipping.")
+            continue
+        text = meta.path.read_text()
+        # Strip YAML frontmatter
+        if text.startswith("---"):
+            try:
+                end = text.index("---", 3)
+                body = text[end + 3 :].strip()
+            except ValueError:
+                body = text
+        else:
+            body = text
+        assets_note = ""
+        is_folder_skill = meta.path.parent.resolve() != skills_root
+        if is_folder_skill and (materialized_root / name).exists():
+            assets_note = (
+                f"**Assets root:** `{CONTAINER_SKILLS_ROOT}/{name}/` (read-only). "
+                "Any `scripts/` or `references/` paths cited below resolve under this root.\n\n"
+            )
+        sections.append(f"### Skill: {name}\n\n{assets_note}{body}")
+    if not sections:
+        return ""
+    header = (
+        "## Skills\n\n"
+        "The following skill templates have been assigned to guide your approach "
+        "for this task. You may adopt parts of a skill's approach without following "
+        "it exactly, adapting it to fit the specific requirements of the current task."
+    )
+    return header + "\n\n" + "\n\n---\n\n".join(sections)
+
+
+def format_agent_id_descriptions(agent_id_descriptions: dict[str, str]) -> str:
     """Format agent ID-to-description pairs as a bulleted list for prompts.
 
     Args:
@@ -20,7 +106,7 @@ def format_agent_id_descriptions(agent_id_descriptions: Dict[str, str]) -> str:
             human-readable descriptions.
 
     Returns:
-        A newline-separated string with one ``" - id: description"`` entry
+        A newline-separated string with one " - id: description" entry
         per agent.
     """
     return "\n".join(
@@ -28,7 +114,7 @@ def format_agent_id_descriptions(agent_id_descriptions: Dict[str, str]) -> str:
     )
 
 
-def extract_block(pattern: str, text: str) -> Optional[str]:
+def extract_block(pattern: str, text: str) -> str | None:
     """Extract the content of an XML-style block from an LLM response.
 
     Searches *text* for ``<pattern>…</pattern>`` tags.  If a single
@@ -58,28 +144,10 @@ def extract_block(pattern: str, text: str) -> Optional[str]:
     return None
 
 
-### file retriever tool
-
-
-def file_retriever() -> str:
-    """List all files currently stored under ``DATA_DIR``.
-
-    Returns:
-        A human-readable string containing the ``DATA_DIR`` path and a
-        list of every file path found recursively within it.
-    """
-    filenames = [str(path) for path in DATA_DIR.rglob("*") if path.is_file()]
-    return "\n".join(
-        [
-            "Files are stored in the DATA_DIR subdirectory.",
-            f"DATA_DIR: '{DATA_DIR}'",
-            f"File Paths: {filenames}",
-        ]
-    )
-
-
-file_retriever_tool = StructuredTool.from_function(
-    func=file_retriever,
-    name="file_retriever_tool",
-    description="Returns a list of file names in the data directory.",
-)
+def truncate_output(text: str, max_chars: int) -> str:
+    """Truncate text to max_chars, keeping the head and tail with a notice in between."""
+    if len(text) <= max_chars:
+        return text
+    half = max_chars // 2
+    removed = len(text) - max_chars
+    return f"{text[:half]}\n\n... [{removed} characters truncated] ...\n\n{text[-half:]}"

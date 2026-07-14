@@ -1,0 +1,161 @@
+{
+  "dataset_summary": {
+    "n_obs": 3798,
+    "n_vars": 36601,
+    "obs_columns": [
+      "bc_short",
+      "in_tissue",
+      "array_row",
+      "array_col",
+      "score_CAF",
+      "score_M2",
+      "score_malignant",
+      "score_Tcell"
+    ],
+    "spatial_key": "spatial"
+  },
+  "H1": {
+    "interface_summary": {
+      "iface_distance_threshold": 273.7480593538519,
+      "n_stromal_high": 380,
+      "n_immune_high": 657,
+      "n_epithelial_high": 380,
+      "n_immune_interface": 199,
+      "n_immune_isolated": 458,
+      "n_stromal_interface": 169,
+      "n_stromal_isolated": 211,
+      "n_epithelial_interface": 269,
+      "n_epithelial_insulated": 111
+    },
+    "tests": {
+      "immune_inflam": {
+        "n_interface": 199,
+        "n_isolated": 458,
+        "mean_interface": 1.0157931556510609,
+        "mean_isolated": 1.048253125535875,
+        "effect_direction": "interface<=isolated",
+        "statistic": -1.8165668662672025,
+        "p_value": 0.06928346071933138
+      },
+      "stromal_ecm": {
+        "n_interface": 169,
+        "n_isolated": 211,
+        "mean_interface": 1.2576983926799405,
+        "mean_isolated": 1.0486661526226508,
+        "effect_direction": "interface>isolated",
+        "statistic": 5.533175883253037,
+        "p_value": 3.144838339479119e-08
+      }
+    }
+  },
+  "H2": {
+    "n_regions": 4,
+    "region_means": {
+      "0": {
+        "score_glycolysis": 0.43813359256312784,
+        "score_oxphos": 0.42305093382735903,
+        "score_hypoxia": 0.3501816189640034,
+        "score_upr": 0.33798771087104484,
+        "score_ros": 0.37075115885496657,
+        "score_ecm": 1.0459402798209945
+      },
+      "1": {
+        "score_glycolysis": 0.48259518000353324,
+        "score_oxphos": 0.5685347202276663,
+        "score_hypoxia": 0.34449396414290634,
+        "score_upr": 0.49835534472932835,
+        "score_ros": 0.31391909280861346,
+        "score_ecm": 0.3165207293261748
+      },
+      "2": {
+        "score_glycolysis": 0.4621852545055839,
+        "score_oxphos": 0.5413367943468428,
+        "score_hypoxia": 0.39310693600101765,
+        "score_upr": 0.4007875196598778,
+        "score_ros": 0.37048795050966693,
+        "score_ecm": 0.7924139747934893
+      },
+      "3": {
+        "score_glycolysis": 0.47652843302873654,
+        "score_oxphos": 0.5638926811948659,
+        "score_hypoxia": 0.4037735867873563,
+        "score_upr": 0.4691023891810413,
+        "score_ros": 0.34997606889161886,
+        "score_ecm": 0.38135965555225876
+      }
+    },
+    "ecm_vs_modules_corr": {
+      "score_glycolysis": {
+        "rho": -1.0,
+        "p_value": 0.0
+      },
+      "score_oxphos": {
+        "rho": -1.0,
+        "p_value": 0.0
+      },
+      "score_hypoxia": {
+        "rho": 0.19999999999999998,
+        "p_value": 0.8
+      },
+      "score_upr": {
+        "rho": -1.0,
+        "p_value": 0.0
+      },
+      "score_ros": {
+        "rho": 1.0,
+        "p_value": 0.0
+      }
+    },
+    "trend_vs_ecm_rank": {
+      "score_glycolysis": {
+        "rho_vs_rank": -1.0,
+        "p_value_vs_rank": 0.0
+      },
+      "score_oxphos": {
+        "rho_vs_rank": -1.0,
+        "p_value_vs_rank": 0.0
+      },
+      "score_hypoxia": {
+        "rho_vs_rank": 0.19999999999999998,
+        "p_value_vs_rank": 0.8
+      },
+      "score_upr": {
+        "rho_vs_rank": -1.0,
+        "p_value_vs_rank": 0.0
+      },
+      "score_ros": {
+        "rho_vs_rank": 1.0,
+        "p_value_vs_rank": 0.0
+      }
+    }
+  },
+  "H3": {
+    "epi_barrier": {
+      "n_interface": 269,
+      "n_insulated": 111,
+      "mean_interface": 0.258846355702945,
+      "mean_insulated": 0.28633766895443113,
+      "effect_direction": "interface<insulated",
+      "statistic": -2.554780515128254,
+      "p_value": 0.010625477468759692
+    },
+    "adhesion": {
+      "n_adjacent": 206,
+      "n_background": 3592,
+      "mean_adjacent": 0.5435952904893334,
+      "mean_background": 0.4076465235406771,
+      "effect_direction": "adjacent>background",
+      "statistic": 9.922420226513797,
+      "p_value": 3.325919601894007e-23
+    },
+    "chemotaxis": {
+      "n_adjacent": 206,
+      "n_background": 3592,
+      "mean_adjacent": -0.04087402884297532,
+      "mean_background": 0.06749403787632866,
+      "effect_direction": "adjacent<=background",
+      "statistic": -8.502728857737708,
+      "p_value": 1.851850950122672e-17
+    }
+  }
+}

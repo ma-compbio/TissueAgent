@@ -1,0 +1,73 @@
+# Hypothesis-recovery benchmark — revision results (Comment #7)
+
+**Nature Methods rebuttal policy:** all dual-arm runs use the **full** AnnData
+listed in each fixture `dataset_manifest.json`. **No cell/spot subsampling.**
+
+Automatic scores: `demo/score_hypothesis_recovery.py` (heuristic v1).
+**Expert audit required before quoting numbers in the manuscript.**
+
+## Protocol
+
+Identical inputs per fixture: full `.h5ad` + withheld `background.md`
+(no gold claims / PDF findings).
+
+| Arm | Runner |
+|-----|--------|
+| TissueAgent | Live 3-phase (`--live`): explore → draft → test/narrow |
+| CellVoyager | `run_cellvoyager_analysis`, `gpt-4o`, `num_analyses=1`, ≥2 repeats |
+
+## Aggregate (heuristic v1, latest run per arm)
+
+| Fixture | n_obs (full) | TissueAgent recovery (exact/partial) | +related | TA exec | CellVoyager recovery (exact/partial) | +related |
+|---------|-------------:|-------------------------------------:|---------:|--------:|-------------------------------------:|---------:|
+| farah_heart_merfish | 228,635 | 0.33 | 0.67 | 1.00 | 0.00 | 0.33 |
+| 2026_NC_Renoir (TNBC) | 1,162 | 0.33 | 1.00 | 1.00 | 0.00 | 1.00 |
+| 2025_NM_Spotiphy (Xenium FAD) | 104,831 | 0.33 | 1.00 | 1.00 | 0.00 | 1.00 |
+| 2023_NC_SpaCET (10x Visium breast) | 3,798 | 0.00 | 1.00 | 1.00 | 0.00 | 0.67 |
+
+See `aggregate_scores.md` for the machine-generated table.
+
+## Dual-arm completeness
+
+| Fixture | TA live | CV repeats | Notes |
+|---------|---------|------------|-------|
+| farah_heart_merfish | yes (`ta_20260711_055449`) | 2 | Full MERFISH; seed runs retained as archive only |
+| 2026_NC_Renoir | yes (`ta_20260711_043155`) | 3 | Full TNBC Visium CID44971 |
+| 2025_NM_Spotiphy | yes (`ta_20260711_052657`) | 2 | Full Xenium_FAD_1 from Zenodo |
+| 2023_NC_SpaCET | yes (`ta_20260711_050348`) | 2 | Full 10x Visium breast cancer section |
+
+## Qualitative contrast (for Response)
+
+- Across fixtures, **TissueAgent** consistently produces structured hypotheses with
+  five-dimension scores, executable `test_plan`s, and phase-3 statistical
+  narrowing (`execution_success_rate = 1.0`).
+- **CellVoyager** on the same withheld inputs often proposes related exploratory
+  analyses (CCC / spatial patterns) but, on these runs, does not reach
+  exact/partial recovery of curated gold claims as often as TissueAgent, and
+  lacks the same structured quality-score + narrowing contract.
+- Farah live TA recovered fibro–lymphatic / community-structure themes on the
+  **full** 228k-cell object (see `results/farah_heart_merfish/tissueagent/`).
+
+## Reproduce
+
+```bash
+# Kernel Gateway must be up on :8888 (or LocalKernelGateway will start one)
+conda activate tissueagent
+export PYTHONPATH=src
+source .env   # OPENAI_API_KEY
+
+python demo/run_recovery_batch.py \
+  --fixtures 2026_NC_Renoir,2023_NC_SpaCET,2025_NM_Spotiphy,farah_heart_merfish \
+  --ta-live --cv-repeats 2 --model gpt-4o --no-docker
+
+python demo/score_hypothesis_recovery.py --all --aggregate
+```
+
+CellVoyager requires conda env `cellvoyager`. Timeout = 4h for full-size ST.
+
+## Manuscript checklist
+
+- [ ] Expert-audit recovery labels (exact/partial/related) on all 4 fixtures
+- [ ] Optionally add a third CV repeat if Comment #8 consistency needs more N
+- [ ] Insert Table + Methods from `METHODS.md` (state: full data, no subsample)
+- [ ] Kidney atlas remains stretch (controlled access)

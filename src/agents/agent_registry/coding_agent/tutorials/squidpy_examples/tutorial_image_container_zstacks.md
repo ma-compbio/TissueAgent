@@ -1,16 +1,24 @@
+---
+title: "Use z-stacks with ImageContainer"
+keywords:
+  - "squidpy"
+  - "image-container"
+  - "z-stacks"
+  - "multi-section"
+  - "visium"
+  - "processing"
+---
 # Use z-stacks with ImageContainer
-In this example we showcase how to use z-stacks with {class}`squidpy.im.ImageContainer`
+In this example we showcase how to use z-stacks with `squidpy.im.ImageContainer`
 
 It is possible to acquire several consecutive image slices from the same tissue.
 Squidpy's `ImageContainer` supports storing, processing, and visualization of these z-stacks.
 
 Here, we use the Visium 10x mouse brain sagittal slices as an example of a z-stack image with two Z dimensions.
-We will use the "hires" images contained in the {class}`anndata.AnnData` object, but you could also use the
-original resolution tiff images in the `ImageContainer`.
+We will use the "hires" images contained in the `anndata.AnnData` object, but you could also use the
 
 
-Import libraries and load individual image sections
----------------------------------------------------
+## Import libraries and load individual image sections
 
 
 ```python
@@ -47,18 +55,13 @@ for library_id in library_ids:
         )
 ```
 
-Concatenate per-section data to a z-stack
------------------------------------------
+## Concatenate per-section data to a z-stack
 To allow mapping from observations in `adata` to the correct Z dimension in `img`,
-we will store a ``library_id`` column in ``adata.obs`` and associate each ``library_id``
-to a Z dimension in the `ImageContainer`.
 
-For this, we will use {func}`anndata.concat` with ``uns_merge = only``
-(to ensure that `uns` entries are correctly concatenated),
+For this, we will use `anndata.concat` with ``uns_merge = only``
 ``label = 'library_id'`` and ``keys = library_ids`` (to create the necessary column in ``adata.obs``.
 
-To concatenate the individual {class}`squidpy.im.ImageContainer`,
-we will use {meth}`squidpy.im.ImageContainer.concat`, specifying
+To concatenate the individual `squidpy.im.ImageContainer`,
 ``library_ids = library_ids`` for associating each image with the correct observations in `adata`.
 
 
@@ -101,13 +104,10 @@ img2
 ```
 
 Generally, an `ImageContainer` with more than one Z dimension can be used in the same way as an `ImageContainer`
-with only one Z dimension.
 In addition, we can specify `library_id` to cropping, pre-processing,
-and segmentation functions if we'd like to only process a specific `library_id`.
 
-Visualization
--------------
-For using {func}`squidpy.pl.spatial_scatter`, subset the `adata` to the desired `library_id`.
+## Visualization
+For using `squidpy.pl.spatial_scatter`, subset the `adata` to the desired `library_id`.
 
 
 ```python
@@ -119,7 +119,7 @@ sq.pl.spatial_scatter(
 )
 ```
 
-{meth}`squidpy.im.ImageContainer.show` works with z-stacks out of the box, by plotting them as separate images.
+`squidpy.im.ImageContainer.show` works with z-stacks out of the box, by plotting them as separate images.
 Additionally, you can specify a `library_id` if you only want to plot one Z dimension.
 
 
@@ -132,14 +132,8 @@ The Napari viewer will have a slider at the bottom, allowing you to choose the Z
 The `adata` observations are automatically updated to the current Z dimension.
 
 When calling ``img.interactive`` just specify ``library_key`` as the column name in ``adata.obs``
-which maps from observations to `library_ids`
 
-.. code-block:: python
-
-   img.interactive(adata, library_key='library_id')
-
-Cropping
---------
+## Cropping
 By default, the cropping functions will crop all Z dimensions.
 
 
@@ -155,10 +149,9 @@ You can also specify ``library_id``, as either a single or multiple Z dimensions
 img.crop_corner(500, 1000, size=500, library_id=library_ids[0]).show()
 ```
 
-Processing and segmenting
--------------------------
+## Processing and segmenting
 Let us smooth the image.
-When not specifying a `library_id`, {func}`squidpy.im.process` treats the image as a 3D volume.
+When not specifying a `library_id`, `squidpy.im.process` treats the image as a 3D volume.
 As we would like to smooth only in x and y dimensions, and not in z, we need so specify a per-dimension `sigma`.
 The internal dimensions of the image are ``y, x, z, channels``, as you can check with ``crop['image'].dims``.
 Therefore, to only smooth in x and y, we need to specify ``sigma = [10, 10, 0, 0]``.
@@ -174,8 +167,7 @@ img.show("smooth1")
 Now, let us just smooth one `library_id`.
 Specifying `library_id` means that the processing function will process each Z dimension separately.
 This means that now the dimensions of the processed image are ``y, x, channels`` (with ``z`` removed), meaning that
-we have to update `sigma` accordingly.
-If the number of channels does not change due to the processing, {func}`squidpy.im.process` implies the identity
+If the number of channels does not change due to the processing, `squidpy.im.process` implies the identity
 function for non-processed Z dimensions.
 
 
@@ -205,15 +197,11 @@ sq.im.process(
 img.show("gray", cmap="gray")
 ```
 
-{func}`squidpy.im.segment` works in the same way, just specify `library_id` if you only wish to
-segment specific Z dimensions.
+`squidpy.im.segment` works in the same way, just specify `library_id` if you only wish to
 
-Feature calculation
--------------------
+## Feature calculation
 Calculating features from z-stack images is straight forward as well.
 With more than one Z dimension, we just need to specify the column name in ``adata.obs``
-which contains the mapping from observations to `library_ids`
-to allow the function to extract the features from the correct Z dimension.
 As of now, features can only be extracted on 2D, meaning from the Z dimension that the current spot is located on.
 
 The following call extracts features for each observation in `adata`, automatically choosing the correct
@@ -234,7 +222,6 @@ adata_crop.obsm["img_features"]
 ```
 
 The calculated features can now be used in downstream Scanpy analyses, by e.g. using all Z dimensions
-to cluster spots based on image features and gene features.
 
 Here, we cluster genes and calculated features using a standard Scanpy workflow.
 
@@ -250,12 +237,7 @@ sc.pp.neighbors(adata_crop, use_rep="img_features", key_added="neigh_features")
 sc.tl.leiden(adata_crop, neighbors_key="neigh_features", key_added="leiden_features")
 ```
 
-Visualize the result interactively using Napari, or statically using {func}`squidpy.pl.spatial_scatter`:
-
-.. code-block:: python
-
-   img.interactive(adata, library_key='library_id')
-
+Visualize the result interactively using Napari, or statically using `squidpy.pl.spatial_scatter`:
 
 ```python
 sq.pl.spatial_scatter(

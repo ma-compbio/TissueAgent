@@ -1,0 +1,1 @@
+- write(file_path, contents, mode="overwrite"|"append"|"error_if_exists"): create or update a UTF-8 text artifact under the workspace (typically `project/outputs/...`); the path is workspace-relative.

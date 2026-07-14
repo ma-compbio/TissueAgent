@@ -1,0 +1,19 @@
+# Finalized Spatial Hypotheses
+
+## Hypothesis H1
+
+**Statement.** Among tumor-classified spots, those with immediate immune-classified neighbors have higher interferon-response, antigen-presentation, and immune-checkpoint program scores than tumor-classified spots lacking immune neighbors.
+
+**Outcome.** **DO NOT SUPPORT (DROPPED).** After restricting to high-quality tumor spots and adjusting for sequencing depth, gene complexity, array edge, and spatial coordinates, immune-adjacent tumor spots did not show higher interferon, antigen-presentation, or checkpoint module scores than immune-distant tumor spots. Linear-model coefficients for the immune-adjacent indicator were small and non-significant after Benjamini–Hochberg correction across the three programs, Wilcoxon and permutation tests yielded non-significant differences, and immune-neighbor count showed at best weak, inconsistent associations with these scores. In this dataset, localized immune adjacency is therefore not a dominant driver of tumor immune-program activation, and the hypothesis is dropped.
+
+## Hypothesis H2
+
+**Statement.** Within tumor-classified regions, EMT/invasion program scores decrease with increasing distance from non-tumor tissue, while proliferation and cell-cycle program scores increase with distance, yielding opposing spatial gradients as a function of distance from non-tumor spots.
+
+**Outcome.** **SUGGESTIVE BUT REQUIRES REFINEMENT (REFINE).** The data show strong, highly significant spatial gradients, but with a direction opposite to the preregistered expectation. EMT module scores increased with greater distance from non-tumor tissue (positive regression coefficient and highly significant FDR-adjusted p-value), and EMT scores were lowest at the edge and highest in core tertiles. In contrast, G2M and E2F proliferation modules decreased with distance and were highest at the tumor edge, with strong edge–core contrasts and highly significant Wilcoxon tests after FDR control. Thus, EMT and proliferation programs do exhibit opposing radial trends, but the tumor in this sample appears to have a proliferative rim and a more EMT-like interior rather than the anticipated proliferative core with EMT-rich edge. The hypothesis should therefore be refined to allow sample-specific orientation of these gradients rather than enforcing a fixed edge-vs-core pattern.
+
+## Hypothesis H3
+
+**Statement.** Stromal spots immediately adjacent to tumor (peritumoral stroma) exhibit higher CAF/ECM program scores than more distant stromal spots, and these ECM/CAF programs show positive spatial autocorrelation with hotspots preferentially occurring near tumor boundaries.
+
+**Outcome.** **SUGGESTIVE BUT REQUIRES REFINEMENT (REFINE).** Stromal CAF and ECM programs were strongly spatially structured, but their pattern contradicted the simple peritumoral-enrichment expectation. After QC filtering and adjustment for sequencing depth, gene complexity, array edge, and spatial coordinates, peritumoral stromal spots had substantially *lower* ECM and CAF module scores than distant stromal spots, with moderate-to-large negative effect sizes and FDR-significant peritumoral coefficients in linear models as well as Wilcoxon tests. Global Moran's I computed on a 6-nearest-neighbor spatial graph (with permutation-based p-values) confirmed pronounced spatial clustering of ECM/CAF activity. These findings suggest that the dominant ECM-rich niches in this section lie in more distal stromal regions rather than tightly hugging the tumor boundary. The hypothesis should be refined to focus on non-monotonic or region-specific ECM/CAF landscapes instead of a uniformly ECM-high peritumoral ring.

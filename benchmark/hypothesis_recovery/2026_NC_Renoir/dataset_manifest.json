@@ -1,0 +1,30 @@
+{
+  "paper_id": "2026_NC_Renoir",
+  "status": "ready",
+  "h5ad_path": "benchmark/hypothesis_recovery/2026_NC_Renoir/dataset.h5ad",
+  "download_hints": [
+    {
+      "repository": "Zenodo",
+      "accession": "10.5281/zenodo.4739739",
+      "url": "https://doi.org/10.5281/zenodo.4739739",
+      "note": "TNBC Visium (CID44971 / CID4290) \u2014 preferred first download for a runnable Renoir fixture."
+    },
+    {
+      "repository": "ArrayExpress",
+      "accession": "E-MTAB-11114",
+      "url": "https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-11114",
+      "note": "Mouse brain Visium; pair with E-MTAB-11115 snRNA-seq reference if needed."
+    },
+    {
+      "repository": "GEO",
+      "accession": "GSE319617",
+      "url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE319617",
+      "note": "Fetal liver Visium HD from the Renoir study."
+    }
+  ],
+  "papers_raw_data": "papers/2026_NC_Renoir/raw_data.json",
+  "sample_id": "CID44971",
+  "n_obs": 1162,
+  "n_vars": 19237,
+  "note": "TNBC Visium CID44971 from Zenodo 4739739"
+}

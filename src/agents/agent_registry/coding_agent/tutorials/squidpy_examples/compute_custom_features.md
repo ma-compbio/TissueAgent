@@ -1,39 +1,29 @@
+---
+title: "Extract custom features"
+keywords:
+  - "squidpy"
+  - "custom features"
+  - "image features"
+  - "calculate_image_features"
+  - "feature extraction"
+  - "visium"
+  - "image analysis"
+  - "additional_layers"
+---
+
 # Extract custom features
 
-This example shows how to extract features from the tissue image using a
-custom function.
+This example shows how to extract features from the tissue image using a custom function.
 
-The custom feature calculation function can be any python function that
-takes an image as input, and returns a list of features. Here, we show a
-simple example by defining a function to calculate the mean of the
-images.
-
-Custom features are calculated by using `features = 'custom'`, which
-calls {func}`squidpy.im.ImageContainer.features_custom`. In addition to
-`feature_name` and `channels` we can specify the following
-`features_kwargs`:
-
-> -   `func` - custom feature extraction function.
-> -   `additional_layers` - names of image layers that should be passed
->     to `func` together with `layer`.
-> -   additional keyword arguments for `func`.
-
-::: {seealso}
-    
-    See {doc}`compute_features` for general usage
-    of {func}`squidpy.im.calculate_image_features`.
-
-:::
-
-
+Custom features are calculated with `features = 'custom'`. Key `features_kwargs` parameters:
+- `func` - custom feature extraction function
+- `additional_layers` - names of image layers passed to `func` together with `layer`
 
 ```python
 import squidpy as sq
 ```
 
-Let\'s load the H&E Visium dataset.
-
-
+Load the H&E Visium dataset.
 
 ```python
 # get spatial dataset including high-resolution tissue image
@@ -43,8 +33,6 @@ adata = sq.datasets.visium_hne_adata_crop()
 
 Define a custom feature extraction function.
 
-
-
 ```python
 def mean_fn(arr):
     """Compute mean of arr."""
@@ -53,10 +41,7 @@ def mean_fn(arr):
     return np.mean(arr)
 ```
 
-Now we can extract features using [mean\_fn]{.title-ref} by providing it
-within `features_kwargs`.
-
-
+Extract features using the custom function via `features_kwargs`.
 
 ```python
 sq.im.calculate_image_features(
@@ -69,19 +54,13 @@ sq.im.calculate_image_features(
 )
 ```
 
-The result is stored in {attr}`adata.obsm['custom_features']`.
-
-
+The result is stored in `adata.obsm['custom_features']`.
 
 ```python
 adata.obsm["custom_features"].head()
 ```
 
-Use `squidpy.pl.extract` to plot the histogram features on the tissue
-image or have a look at  [napari-spatialdata](https://spatialdata.scverse.org/projects/napari/en/stable/notebooks/spatialdata.html). Here, we show all calculated segmentation
-features.
-
-
+Plot the custom features on the tissue image.
 
 ```python
 sq.pl.spatial_scatter(
@@ -89,15 +68,7 @@ sq.pl.spatial_scatter(
 )
 ```
 
-You can also pass more than one image layer to the custom feature
-extraction function. For this, specify the necessary additional layer
-names using `additional_layers` in `features_kwargs`. The specified
-image layers will be passed to the custom feature extraction function.
-
-Here, we show this behavior by defining a feature extraction function
-that sums two image layers:
-
-
+Pass multiple image layers to the custom function using `additional_layers`.
 
 ```python
 def sum_fn(arr, extra_layer):

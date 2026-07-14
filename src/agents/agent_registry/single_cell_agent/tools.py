@@ -1,5 +1,6 @@
 """Tool definitions for the single cell agent."""
-from typing import List
+
+from __future__ import annotations
 
 from langchain.tools import StructuredTool
 
@@ -10,11 +11,12 @@ from agents.agent_registry.single_cell_agent.tools_impl.retrieve_cellxgene_singl
 from agents.agent_registry.single_cell_agent.tools_impl.query_cellxgene_single_cell_tool import (
     run_query_cellxgene_census_live,
 )
-from agents.agent_registry.single_cell_agent.tools_impl.cell2location_visium_deconvolution_tool import (
-    run_cell2location_visium_deconvolution,
-)
 
-SingleCellTools: List[StructuredTool] = [
+# cell2location Visium deconvolution lives on the spot_agent (spot-resolution
+# spatial data). Registering it here too would shadow that registration under
+# the same tool name and shipped stale defaults / a dropped `use_gpu=` kwarg.
+
+SingleCellTools: list[StructuredTool] = [
     StructuredTool.from_function(
         func=run_query_cellxgene_census_live,
         name="query_cellxgene_census_live_tool",
@@ -39,15 +41,6 @@ SingleCellTools: List[StructuredTool] = [
             "Downloads a dataset (indexed by dataset_id) from CELLxGENE for downstream analysis. "
             "The filename is resolved inside DATA_DIR, a stable or pinned Census version is used, "
             "the download is staged through a partial file, and only a valid H5AD is reused."
-        ),
-    ),
-    StructuredTool.from_function(
-        func=run_cell2location_visium_deconvolution,
-        name="cell2location_visium_deconvolution_tool",
-        description=(
-            "Runs cell2location on spot-level spatial transcriptomics data"
-            " (such as Visium) using a scRNA-seq reference to estimate cell"
-            " type abundances per spot and saves deconvolution outputs to disk."
         ),
     ),
 ]

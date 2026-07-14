@@ -1,8 +1,10 @@
 """CodeAct-style hypothesis agent with a persistent Python REPL for hypothesis synthesis."""
 
+from __future__ import annotations
+
 import logging
 from queue import Queue
-from typing import Optional
+
 
 from langchain.tools import StructuredTool
 from langgraph.types import Command
@@ -11,34 +13,45 @@ from langgraph.graph import END, MessagesState, START, StateGraph
 
 from agents.agent_utils import extract_block
 from agents.agent_registry.hypothesis_agent.tools import HypothesisTools
+from agents.repl_history import compress_repl_history
 from langchain_experimental.utilities import PythonREPL
 from agents.agent_registry.hypothesis_agent.prompt import (
     HypothesisAgentPrompt,
     HypothesisAgentDescription,
 )
-from graph.graph_utils import log_message, subagent_invocation
+from graph.ui_events import emit_message, stash_completed_subagent, subagent_invocation
 
-from config import DATA_DIR, PDF_UPLOADS_DIR
+from config import DATA_DIR, LIBRARY_DIR, PDF_UPLOADS_DIR, active_project_outputs
 
 
 class HypothesisState(MessagesState):
-    """Extended message state carrying the current code/response block and a persistent REPL."""
+    """Extended message state carrying the current code/response block.
+
+    The persistent ``PythonREPL`` used by ``exec_node`` is **not** part of this state — it lives in a closure-local
+    holder in :func:`create_hypothesis_agent` so it never reaches the checkpointer (msgpack cannot serialise a
+    ``PythonREPL``). The closure deliberately keeps the REPL alive across invocations so prior hypothesis variables
+    remain accessible to later "test hypothesis" calls.
+    """
 
     status_block: str  # content of <execute> or <response> block
-    repl: Optional[PythonREPL]
+    skill_prompt: str  # injected skill content for system prompt
 
 
-def create_hypothesis_agent(state_queue: Queue):
+def create_hypothesis_agent(
+    state_queue: Queue,
+    context_resolver=None,
+):
     """Build and return the hypothesis agent as a StructuredTool.
 
     Args:
         state_queue: Queue to which finished agent states are posted for UI consumption.
+        context_resolver: Optional callable that resolves skill/artifact context for a step.
 
     Returns:
         A StructuredTool that invokes the hypothesis agent graph with a text prompt.
     """
     graph = StateGraph(HypothesisState)
-    id = "hypothesis_agent"
+    id = "hypothesis"
 
     ### Tools
 
@@ -56,14 +69,19 @@ def create_hypothesis_agent(state_queue: Queue):
     def agent_node(state: HypothesisState):
         """Invoke the LLM and route to exec or END based on block type."""
         messages = state["messages"]
-        system_prompt = SystemMessage(HypothesisAgentPrompt)
+        skill_text = state.get("skill_prompt", "")
+        full_prompt = HypothesisAgentPrompt.replace("{{skill_prompt}}", skill_text)
+        system_prompt = SystemMessage(full_prompt)
+
+        # Strategy 2H: collapse older REPL iterations before re-sending.
+        compressed = compress_repl_history(messages)
 
         logging.info(f"invoking {id} agent_node")
-        response = model.invoke([system_prompt] + messages)
+        response = model.invoke([system_prompt] + compressed)
         logging.info(f"finished invoking {id} agent_node")
 
         response.name = id
-        log_message(response)
+        emit_message(response)
 
         response_text = str(response.content)
         code_block = extract_block("execute", response_text)
@@ -82,6 +100,11 @@ def create_hypothesis_agent(state_queue: Queue):
 
         logging.info(f"transferring from agent_node to {next_node}")
         return Command(goto=next_node, update={"messages": response_msg})
+
+    # Closure-local holder. Persists across multiple ``agent_invocation_tool``
+    # calls so the hypothesis agent's Python namespace survives manager
+    # round-trips (matches the prior ``_persistent_repl_state`` behavior).
+    repl_holder: dict = {"repl": None}
 
     def exec_node(state: HypothesisState):
         """Extract and run the <execute> code block in a persistent Python REPL."""
@@ -105,10 +128,9 @@ def create_hypothesis_agent(state_queue: Queue):
                 logging.warning(f"Blocked forbidden function call: {forbidden}")
                 return {
                     "messages": [HumanMessage(f"Python Error:\n{error_msg}")],
-                    "repl": state.get("repl"),
                 }
 
-        repl = state.get("repl")
+        repl = repl_holder["repl"]
         if repl is None:
             repl = PythonREPL()
             # Share globals/locals so helper functions can see prior imports.
@@ -123,9 +145,14 @@ def create_hypothesis_agent(state_queue: Queue):
             import re
 
             tools_context = {tool.name: tool.func for tool in tools}
+            # OUTPUTS_DIR is resolved at run time so it tracks the
+            # active project. Code that wants to drop a file inside the
+            # current project should write to OUTPUTS_DIR / "foo".
             initial_context = {
                 **tools_context,
                 "DATA_DIR": DATA_DIR,
+                "LIBRARY_DIR": LIBRARY_DIR,
+                "OUTPUTS_DIR": active_project_outputs(),
                 "PDF_UPLOADS_DIR": PDF_UPLOADS_DIR,
                 "subprocess": subprocess,
                 "Path": Path,
@@ -138,12 +165,14 @@ def create_hypothesis_agent(state_queue: Queue):
             for key, value in initial_context.items():
                 repl.globals[key] = value
 
+            repl_holder["repl"] = repl
+
         output = repl.run(code_block)
 
         logging.info(f"finished {id} exec_node")
 
-        log_message(HumanMessage(f"Python Output:\n{output}"))
-        return {"messages": [HumanMessage(f"Python Output:\n{output}")], "repl": repl}
+        emit_message(HumanMessage(f"Python Output:\n{output}"))
+        return {"messages": [HumanMessage(f"Python Output:\n{output}")]}
 
     graph.add_node(agent_node_id, agent_node)
     graph.add_node(exec_node_id, exec_node)
@@ -152,26 +181,41 @@ def create_hypothesis_agent(state_queue: Queue):
 
     agent = graph.compile()
 
-    # Persistent REPL state shared across Manager invocations
-    _persistent_repl_state = {}
-
     def agent_invocation_tool(prompt: str) -> str:
         """Run the hypothesis agent graph on a prompt and return the final message."""
         logging.info(f"Invoking agent `{id}`")
-        # Preserve REPL from previous invocation
-        initial_state = {"messages": [HumanMessage(prompt)]}
-        if "repl" in _persistent_repl_state:
-            initial_state["repl"] = _persistent_repl_state["repl"]
 
+        skill_prompt_text = ""
+        step_ctx = None
+        if context_resolver:
+            step_ctx = context_resolver("hypothesis")
+            if step_ctx and step_ctx.skills:
+                from agents.agent_utils import format_skill_prompt
+
+                skill_prompt_text = format_skill_prompt(step_ctx.skills)
+
+        # REPL persistence across invocations is handled by ``repl_holder``
+        # in the closure above — no state-threading needed.
         with subagent_invocation("Hypothesis Agent") as invocation_id:
-            final_state = agent.invoke(initial_state)
+            from config import RECURSION_LIMIT
 
-        # Store REPL for next invocation
-        if "repl" in final_state:
-            _persistent_repl_state["repl"] = final_state["repl"]
+            final_state = agent.invoke(
+                {"messages": [HumanMessage(prompt)], "skill_prompt": skill_prompt_text},
+                config={"recursion_limit": RECURSION_LIMIT},
+            )
 
         state_queue.put((id, final_state, invocation_id))
-        return final_state["messages"][-1].content
+        # Emit the finished card inline (see coding_agent/model.py): pair with
+        # the dispatching ToolMessage.id via the wrapping tool_node so the live
+        # trace flips to the completed card immediately, not at run_complete.
+        stash_completed_subagent(id, final_state, invocation_id)
+        result = final_state["messages"][-1].content
+
+        # Artifact validation is owned by the manager's ``next_step`` / ``retry_step``
+        # wrappers (see graph/node_factories.py::run_heuristic_validation). Do not
+        # re-run it here.
+
+        return result
 
     return StructuredTool.from_function(
         func=agent_invocation_tool,

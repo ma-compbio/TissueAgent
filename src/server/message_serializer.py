@@ -1,7 +1,7 @@
 """Serialize LangChain messages to JSON dicts for WebSocket transport.
 
-Each serialized message includes parsed metadata (agent badge, route header,
-HTML tags) so the React frontend can render without duplicating parsing logic.
+Each serialized message includes parsed metadata (agent badge, route header, HTML tags) so the React frontend can render
+without duplicating parsing logic.
 """
 
 from typing import Any, Dict, List, Optional
@@ -10,7 +10,6 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMe
 
 from server.utils import (
     extract_html_tags,
-    extract_tool_inputs,
     lookup_agent_badge,
     should_hide_message,
     split_route_and_body,
@@ -46,6 +45,14 @@ def serialize_message(message: BaseMessage, *, strip_images: bool = True) -> Dic
         "name": name,
         "content": content_text,
     }
+
+    # Trace plot references: project-relative paths to images spilled by the
+    # coding agent. Carried in additional_kwargs (not content) so they survive
+    # the image-stripping above; the frontend loads pixels from the file API.
+    extra = getattr(message, "additional_kwargs", None) or {}
+    trace_image_paths = extra.get("trace_image_paths")
+    if trace_image_paths:
+        result["image_paths"] = list(trace_image_paths)
 
     if isinstance(message, HumanMessage):
         result["avatar"] = USER_AVATAR

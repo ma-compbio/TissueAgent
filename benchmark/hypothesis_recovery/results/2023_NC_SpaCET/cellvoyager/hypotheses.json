@@ -1,0 +1,18 @@
+[
+  {
+    "id": "CV1",
+    "statement": "# Analysis\n\n**Hypothesis**: Exploring the spatial distribution of gene expression profiles across different cell types might reveal critical insights into tumor microenvironment heterogeneity.",
+    "code_excerpt": "import scanpy as sc\nimport numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nimport seaborn as sns\nfrom scipy import stats\nimport warnings\n\n# Set up visualization defaults for better plots\nsc.settings.verbosity = 3\nsc.settings.figsize = (8, 8)\nsc.settings.dpi = 100\nsc.settings.facecolor = 'white'\nwarnings.filterwarnings('ignore')\n\nplt.rcParams['figure.figsize'] = (10, 8)\nplt.rcParams['savefig.dpi'] = 150\nsns.set_style('whitegrid')\nsns.set_context('notebook', font_scale=1.2)\n\n# Load",
+    "source_notebook": "recovery_2023_NC_SpaCET_analysis_1.ipynb",
+    "quality_scores": {},
+    "status": "PROPOSED"
+  },
+  {
+    "id": "CV2",
+    "statement": "# Analysis Plan\n\n**Hypothesis**: Exploring the spatial distribution of gene expression profiles across different cell types might reveal critical insights into tumor microenvironment heterogeneity.\n\n## Steps:\n- Perform spatially informed neighborhood graph construction using spatial coordinates to identify spatially relevant gene expression patterns.\n- Conduct clustering analysis using the Leiden algorithm based on the spatially informed neighborhood graph to identify distinct cell populations.\n- Perform differential expression analysis between spatially identified clusters using scVI differential expression to reveal genes contributing to spatial heterogeneity in a probabilistic framework.\n- Validate the differential expression results by conducting statistical significance testing using Wilcoxon rank-sum test on identified marker genes among spatially distinct clusters, and print results.",
+    "code_excerpt": "\nimport scanpy as sc\n\n# Compute the spatial representation first\nadata.obsm['X_spatial'] = adata.obsm['spatial'] # Or any other available spatial coordinates\n\n# Using spatial coordinates for neighborhood graph construction\nsc.pp.neighbors(adata, use_rep='X_spatial', n_neighbors=15, method='umap')\n",
+    "source_notebook": "recovery_2023_NC_SpaCET_analysis_1.ipynb",
+    "quality_scores": {},
+    "status": "PROPOSED"
+  }
+]

@@ -1,30 +1,7 @@
 name: tissueagent
 channels:
   - conda-forge
-  - defaults
 dependencies:
-  - python=3.9
+  - python=3.12
+  - nodejs=22
   - pip
-  - pip:
-      - langchain==0.3.21
-      - langchain-core==0.3.48
-      - langchain-ollama==0.3.0
-      - langchain-openai==0.3.10
-      - langgraph==0.3.20
-      - matplotlib==3.9.4
-      - numpy==2.0.2
-      - pandas==2.2.3
-      - pydantic==2.10.6
-      - scanpy==1.10.3
-      - scipy==1.13.1
-      - scikit-learn==1.5.2
-      - sentence-transformers==3.3.1
-      - seaborn==0.13.2
-      - spatialdata-io==0.1.5
-      - squidpy==1.6.1
-      - streamlit==1.43.2
-      - streamlit-nested-layout==0.1.4
-      - streamlit-file-browser==3.2.22
-      - streamlit-modal==0.1.2
-      - google-search-results==2.4.2
-      - pymed==0.8.9

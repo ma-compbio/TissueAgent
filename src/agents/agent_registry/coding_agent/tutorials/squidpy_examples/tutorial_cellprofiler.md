@@ -1,18 +1,23 @@
+---
+title: "Feature extraction using CellProfiler"
+keywords:
+  - "squidpy"
+  - "cellprofiler"
+  - "feature-extraction"
+  - "segmentation"
+  - "visium"
+  - "clustering"
+---
 # Feature extraction using CellProfiler
 
-In this tutorial, we show how to use Squidpy with functions from CellProfiler pipelines for image processing and feature extraction.   
+In this tutorial, we show how to use Squidpy with functions from CellProfiler pipelines for image processing and feature extraction.
 
 We'll go through the following steps:
 
-1. Load Visium fluorescence data.
-2. Segment cells in Squidpy.
-3. Calculate CellProfiler's granularity features for image crops of Visium spots.
-4. Compute clustering on the image features in Squidpy.
 
 CellProfiler is typically used via its GUI interface to build image processing pipelines.
-First, download and install CellProfiler from the [download page](https://github.com/CellProfiler/CellProfiler). Check the issues on [CellProfiler Github](https://github.com/CellProfiler/CellProfiler/issues) in case of installation problems (can be tricky).   
+First, download and install CellProfiler from the download page. Check the issues on CellProfiler Github in case of installation problems (can be tricky).
 
-Note: In the future, CellProfiler functions will also be accessible via Python directly (according to the announcements of the CellProfiler team). Since this is not yet publicly well documented, we'll restrict this tutorial to the laborious way of saving intermediate files to bridge Squidpy and CellProfiler. For information on how to use the `cellprofiler-core` package for Python integration, the following [link](https://github.com/CellProfiler/CellProfiler/wiki/CellProfiler-as-a-Python-package) might be helpful.   
 
 ## Import packages & data
 
@@ -117,31 +122,20 @@ for crop, obs in img.generate_spot_crops(
 ## CellProfiler Pipeline: Calculate Image Features
 
 ### 1. Open the CellProfiler GUI App. A new project should open automatically.
-![image1](tutorial_cellprofiler_images/01CP_new_project.png)
 
 ### 2. Save the project in `BASE_DIR`.
-![image2](tutorial_cellprofiler_images/02CP_save_project.png)
 
 ### 3. CP-Pipeline `Images`: Drag and Drop the folder `imgs_dir` into CellProfiler.
-![image3](tutorial_cellprofiler_images/03CP_import_images.png)
 
 ### 4. CP-Pipeline `NamesAndTypes`: Declare to load crops as color images and segmentations as objects. Crops and segmentations files are aligned automatically.
-![image4](tutorial_cellprofiler_images/04CP_NamesAndTypes.png)
 
 ### 5. Convert image crops to gray images: Add `ColorToGray` module and define parameters.
-![image5](tutorial_cellprofiler_images/05CP_Create_ColorToGray.png)
-![image6](tutorial_cellprofiler_images/06CP_ColorToGray.png)
 
 ### 6. Measure CellProfiler's Granularity features within segments for each crop: Add `MeasureGranularity` module and define parameters.
-![image7](tutorial_cellprofiler_images/07CP_Create_Granularity.png)
-![image8](tutorial_cellprofiler_images/08CP_Granularity.png)
 
 ### 7. Export results to csv.
-![image9](tutorial_cellprofiler_images/09CP_Create_Export.png)   
-![image10](tutorial_cellprofiler_images/10CP_Export.png)
 
 ### 8. Run CellProfiler Pipeline (takes several minutes).
-![image11](tutorial_cellprofiler_images/11CP_Run.png)
 
 You can now delete the images in `imgs_dir` by uncommenting the cell below:
 
@@ -209,7 +203,3 @@ sq.pl.spatial_scatter(
     ncols=2,
 )
 ```
-
-We see that e.g. the blue cluster is prominent in the Hippocampus and the Thalamus, and the brown cluster is prominent in dense regions like Dentate gyrus.   
-
-This tutorial is an example on how to integrate CellProfiler within Squidpy pipelines. You can adapt this scheme to other task distributions: e.g. segmentation with CellProfiler and image feature calculation in Squidpy, or process images with CellProfiler, followed by a Squidpy pipeline etc.

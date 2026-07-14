@@ -1,17 +1,17 @@
 """Tool definitions for the reporter agent."""
-from typing import List
+
+from __future__ import annotations
 
 from langchain.tools import StructuredTool
 
-from agents.agent_utils import file_retriever_tool
-from agents.manager_agent.tools_impl.text_artifact_writer_tool import text_artifact_writer_tool
-# from agents.reporter_agent.tools_impl.jupyternb_generator_tool import jupyternb_generator_tool
+from agents.agent_tools import file_read_write_tools
+from agents.reporter_agent.tools_impl.jupyternb_generator_tool import (
+    jupyternb_generator_tool,
+)
 
-# ReporterToolNames = ["file_retriever_tool", "jupyternb_generator_tool"]
-ReporterToolNames = ["file_retriever_tool", "text_artifact_writer_tool"]
+ReporterToolNames = ["glob", "grep", "read", "write", "jupyternb_generator_tool"]
 
-ReporterTools: List[StructuredTool] = [
-    # jupyternb_generator_tool,
-    file_retriever_tool,
-    text_artifact_writer_tool,
+ReporterTools: list[StructuredTool] = [
+    *file_read_write_tools,
+    jupyternb_generator_tool,
 ]

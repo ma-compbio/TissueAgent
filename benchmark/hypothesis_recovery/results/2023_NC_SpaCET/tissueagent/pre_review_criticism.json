@@ -1,0 +1,113 @@
+{
+  "H1": {
+    "scores": {
+      "derivable": 3.5,
+      "novel": 3.8,
+      "feasible": 4.2,
+      "specific": 4.0,
+      "falsifiable": 4.2,
+      "robustness": 4.0
+    },
+    "strengths": [
+      "Biologically plausible pattern of immune enrichment at tissue boundaries in a tumor context.",
+      "Well-specified variables (distance_to_tissue_edge, region_group) and clear edge vs interior contrasts.",
+      "Includes both global (mean score) and categorical (fraction of immune-enriched spots) readouts.",
+      "Test plan uses only available data modalities (spatial coordinates, expression) and standard statistics, with a permutation-based spatial null."
+    ],
+    "weaknesses": [
+      "Key predictor (immune_program_score) depends on a gene set that is only vaguely defined ("immune-activation genes as defined in exploration"), which is not concretely documented in the exploration_log.",
+      "The hypothesis text claims that exploration showed non-random immune clustering, but the provided OBSERVATION entries in the exploration_log only document non-random spatial patterns for lineage scores and QC, not specifically for immune programs; this slightly over-steps what is derivable.",
+      "Potential circularity/triviality risk if immune_program_score is strongly driven by precomputed score_Tcell from the same dataset and the contrast essentially rephrases a known T-cell edge enrichment pattern from the original paper.",
+      "Edge vs interior definition via convex hull and fixed quantile of distance may be sensitive to irregular tissue outline and sparse occupancy; without explicit sensitivity checks, results could be driven by geometry or missing tiles rather than biology.",
+      "Confounding by n_counts/n_genes is acknowledged only partially; although stratified analyses are mentioned, there is no explicit plan to include depth as covariate or to check that immune enrichment is not simply an artifact of higher coverage at edges."
+    ],
+    "suggested_revisions": [
+      "Anchor the immune_program_score to a transparently specified gene list (e.g., genes with positive loading in an unsupervised immune-like factor derived from this dataset, or an explicit union of known antigen-presentation and T-cell marker genes) and record where that list will be stored (e.g., in .uns). Avoid vague reference to 'as defined in the exploration analysis' without a concrete source.",
+      "Tighten the linkage to the exploration_log: instead of citing non-existent 'immune-associated clustering', phrase the rationale in terms of the documented patchiness of lineage scores and high-variance immune-related genes (if any were identified), or explicitly treat this as a new prediction not directly observed in the log.",
+      "Clarify whether immune-enriched spots are defined by thresholding immune_program_score alone or in combination with existing score_Tcell/score_M2, and specify exact quantile or z-score thresholds; ensure that high-score spots are not trivially confined to the periphery by construction.",
+      "Strengthen the treatment of technical confounders: explicitly include models or stratified tests that adjust for n_counts and n_genes (e.g., linear model with immune_program_score ~ region_group + log1p(n_counts) + log1p(n_genes)), and/or match interior and edge spots on coverage before comparison.",
+      "Add robustness checks for the edge definition: test multiple schemes (e.g., distance quantiles, morphological erosion using the array grid, neighbor-based 'boundary' vs 'core' classification) and require that the enrichment is consistent across definitions to support the hypothesis.",
+      "Clarify success criteria and falsification: e.g., specify minimum effect size (difference in mean immune_program_score) and significance thresholds under both parametric and permutation tests, and note that failure to detect such a gradient under these criteria would count as falsifying the hypothesis."
+    ],
+    "flags": [
+      "ambiguous_gene_set:immune_program_score",
+      "needs_qc_covariate_control:n_counts_n_genes",
+      "edge_definition_sensitivity"
+    ]
+  },
+  "H2": {
+    "scores": {
+      "derivable": 3.2,
+      "novel": 4.0,
+      "feasible": 3.0,
+      "specific": 3.5,
+      "falsifiable": 3.8,
+      "robustness": 3.4
+    },
+    "strengths": [
+      "Biologically sensible focus on domain boundaries as potential niches of increased cell-state diversity and interaction-related transcription.",
+      "Introduces clear quantitative constructs (boundary_status, local_diversity_index, interaction_program_score) that can, in principle, be computed from a spatial graph and cluster labels.",
+      "Incorporates both distributional testing (Wilcoxon) and a spatial permutation null, which is conceptually appropriate.",
+      "Hypothesis goes beyond simple reproduction of any single exploration observation by positing a mechanistic link between boundaries and interaction programs."
+    ],
+    "weaknesses": [
+      "Key prerequisite variable domain_label is not actually present in the described AnnData; the test_plan assumes columns named 'domain', 'cluster', or 'leiden' without ensuring that any exist, so feasibility currently depends on additional, unspecified preprocessing.",
+      "The exploration_log, as provided, documents spatial patchiness and QC variation but does not explicitly define 'transcriptional domains' or a particular clustering; citing such domains imports extra structure not clearly derivable from the log alone.",
+      "Boundary definition (neighbors from >1 domain) conflates cluster resolution choices with biological boundaries; minor changes in cluster granularity could strongly alter boundary_status and hence the test outcome.",
+      "Interaction_program_score relies on a 'ligand–receptor/adhesion gene set' that is not specified in the exploration_log and may implicitly borrow from the underlying paper or external resources, increasing risk of circularity with original analyses.",
+      "Handling of compositional/coverage confounders is minimal: neither local_diversity_index nor interaction_program_score comparisons are explicitly adjusted for n_counts/n_genes or for domain-level differences in cell-type composition, which could generate spurious boundary effects.",
+      "The spatial permutation in step 9 shuffles domain_label but then recomputes boundary_status, which changes the group definition as well as the value being tested; interpretation of such a null is non-trivial and should be clarified."
+    ],
+    "suggested_revisions": [
+      "Explicitly define how domain_label will be obtained within this project (e.g., running Leiden clustering on a PCA/neighbor graph built from highly variable genes) and ensure that the clustering workflow is standardized and recorded before hypothesis testing; add a requirement that at least N spots per domain are present.",
+      "Align the rationale more tightly with concrete observations in the exploration_log: frame 'transcriptional domains' as clusters inferred from the observed patchiness of lineage scores and high-variance genes, rather than as pre-existing annotations from the paper.",
+      "Specify the interaction gene set construction in a data-driven, reproducible way (e.g., union of genes annotated as receptors/ligands in .var or taken from a pre-defined, cited resource stored locally for this project) and avoid opaque references to 'exploration_log interaction gene list' if no such list exists yet.",
+      "Refine boundary and interior definitions: consider requiring a minimum neighbor count and restrict analysis to domains with sufficient interior spots; add sensitivity analyses across clustering resolutions and K in the spatial_knn graph, and define success such that the effect must be robust across reasonable parameter ranges.",
+      "Introduce explicit controls for QC and composition confounders, e.g., compare boundary vs interior within each domain separately and/or include log1p(n_counts) and log1p(n_genes) as covariates in regression-based comparisons of interaction_program_score.",
+      "Clarify the spatial permutation null: decide whether domain_label or boundary_status is permuted, and fix group membership while shuffling values to generate a null for the boundary vs interior contrast; document this explicitly in the test_plan."
+    ],
+    "flags": [
+      "requires_additional_annotation:domain_label_clustering",
+      "ambiguous_gene_set:interaction_program_score",
+      "boundary_definition_sensitive_to_clustering",
+      "needs_qc_covariate_control:n_counts_n_genes"
+    ]
+  },
+  "H3": {
+    "scores": {
+      "derivable": 3.0,
+      "novel": 4.2,
+      "feasible": 4.0,
+      "specific": 4.3,
+      "falsifiable": 4.5,
+      "robustness": 4.0
+    },
+    "strengths": [
+      "Conceptually interesting test of spatial segregation between proliferation-dominated and inflammation/stress-dominated microenvironments within a tumor section.",
+      "Variables and contrasts are quite clearly specified: proliferation_score and inflammation_score with quantile-based thresholds, binary high/low indicators, and a well-defined edge-type statistic on a spatial neighbor graph.",
+      "Test plan includes a rigorous permutation-based null that preserves the marginal frequencies of high-proliferation and high-inflammation spots, directly targeting spatial dependence rather than global abundance differences.",
+      "Hypothesis is falsifiable: an observed fraction of proliferation–inflammation neighbor edges consistent with the null distribution would directly contradict the stated spatial segregation."
+    ],
+    "weaknesses": [
+      "The gene sets underlying proliferation_score and inflammation_score are referenced as coming from the exploration_log, but that log (in its current form) does not enumerate such gene lists; this disconnect introduces ambiguity and potential reliance on prior paper knowledge.",
+      "Using a single global quantile (e.g., 80th percentile) to define 'high' spots for both programs may be suboptimal given their possibly different score distributions; asymmetry could lead to very different numbers of high spots, impacting power and interpretation.",
+      "The current design treats any adjacency between a high-proliferation and a high-inflammation spot as equally informative, but does not consider distances beyond immediate neighbors or potential stratification by tissue compartments (e.g., malignant-score-high vs low regions).",
+      "There is no explicit adjustment for spatial variation in n_counts/n_genes, which may correlate with both module scores and local neighborhood structure, potentially inflating apparent segregation.",
+      "While biologically plausible in tumors generally, the specific expectation of mutual spatial exclusion between proliferation and inflammation is not clearly motivated by any stated observation in the provided exploration_log; it currently reads as a new conjecture rather than a direct extrapolation."
+    ],
+    "suggested_revisions": [
+      "Define and document the proliferation and inflammation/stress gene sets explicitly, specifying whether they are derived via unsupervised factor analysis on this dataset, curated from known cell-cycle and interferon/chemokine genes, or some combination; store them in a project-accessible location and reference that instead of the generic 'exploration_log lists'.",
+      "Consider adapting thresholds for high vs low scores separately for each program (e.g., program-specific quantiles or z-score cutoffs) and pre-specify acceptable ranges for the number of high spots to avoid extreme imbalance that would reduce statistical power.",
+      "Add a secondary analysis that examines the spatial correlation functions of the continuous scores (not just binary indicators), or computes Moran's I / join-count statistics, to cross-validate the neighbor-based segregation findings.",
+      "Incorporate checks for QC-related confounding: e.g., regress out log1p(n_counts) and log1p(n_genes) from the module scores before thresholding, or stratify the permutation tests by coverage deciles so that label shuffling preserves local sequencing depth structure.",
+      "Clarify in the rationale that this is a forward-looking hypothesis motivated by general tumor biology, not claimed directly from the exploration_log; consider linking it weakly to the observed patchiness of malignant and T-cell scores if relevant, but avoid implying prior evidence for segregation that was not actually observed.",
+      "Specify concrete success/failure criteria (e.g., empirical p-value < 0.01 and a minimum absolute deviation from the null expectation in the fraction of mixed edges), and consider exploring effect-modification by malignant score to increase interpretability."
+    ],
+    "flags": [
+      "ambiguous_gene_set:proliferation_inflammation_programs",
+      "needs_qc_covariate_control:n_counts_n_genes",
+      "threshold_choice_sensitivity",
+      "consider_additional_spatial_statistics"
+    ]
+  }
+}

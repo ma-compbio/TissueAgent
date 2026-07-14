@@ -1,0 +1,20 @@
+# Gitignored paths to copy into Claude Code worktrees.
+# One glob per line. Keep this light — heavy regeneratable trees
+# (.venv/, node_modules/) are intentionally excluded; rerun `uv sync`
+# and `npm install` inside the worktree instead.
+
+# Direnv / shell environment
+.envrc
+
+# Editor + agent settings
+.vscode/
+.claude/
+
+# Local-only agent scratch (so in-flight planning carries over)
+AGENTS.md
+COPILOT_PLAN.md
+COPILOT_QA.md
+.impeccable.md
+
+# Curated reference data the agents read from (small, ~31M)
+workspace/library/

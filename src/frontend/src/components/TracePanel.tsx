@@ -1,12 +1,64 @@
 import { useState } from "react";
-import type { SubagentTranscript, SerializedMessage } from "../types/messages";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import type { SubagentTranscript, SerializedMessage, ToolCall } from "../types/messages";
+import AgentAvatar from "./AgentAvatar";
+
+const API = import.meta.env.DEV ? "http://localhost:8000" : "";
+
+const CODE_TOOLS: Record<string, string> = {
+  python: "python",
+  r: "r",
+};
 
 interface Props {
   state: SubagentTranscript;
+  /** Active project id — required to resolve project-scoped image URLs. */
+  projectId: string;
   onClose: () => void;
 }
 
 const CODE_PREVIEW_LINES = 12;
+
+/** Render coding-agent plot images from their project-relative paths. */
+function TraceImages({
+  paths,
+  projectId,
+}: {
+  paths: string[];
+  projectId: string;
+}) {
+  if (!paths.length) return null;
+  return (
+    <div className="trace-images">
+      {paths.map((p, i) => {
+        const url = `${API}/api/files/download/${p}?scope=project&project_id=${encodeURIComponent(
+          projectId,
+        )}&inline=1`;
+        return (
+          <img
+            key={i}
+            src={url}
+            alt="plot output"
+            className="trace-image"
+            loading="lazy"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function Markdown({ children }: { children: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+  );
+}
 
 /** Render a code block with optional expand for long content. */
 function CodeBlock({ code }: { code: string }) {
@@ -74,15 +126,25 @@ function isCodeOutput(msg: SerializedMessage, prev: SerializedMessage | null): b
 function TraceStep({
   msg,
   prev,
+  toolCallMap,
+  projectId,
 }: {
   msg: SerializedMessage;
   prev: SerializedMessage | null;
+  toolCallMap: Map<string, ToolCall>;
+  projectId: string;
 }) {
   const [toolExpanded, setToolExpanded] = useState(false);
+  const images = msg.image_paths ?? [];
 
   // Code execution output (HumanMessage after an <execute> AI message)
   if (isCodeOutput(msg, prev)) {
-    return <OutputBlock text={msg.content || "<no output>"} />;
+    return (
+      <>
+        <OutputBlock text={msg.content || "<no output>"} />
+        <TraceImages paths={images} projectId={projectId} />
+      </>
+    );
   }
 
   // Regular human messages in trace (shouldn't normally appear; skip)
@@ -105,13 +167,13 @@ function TraceStep({
                 <CodeBlock code={content} />
               ) : (
                 <div className={`trace-tag-content trace-tag-${tag}`}>
-                  {content}
+                  <Markdown>{content}</Markdown>
                 </div>
               )}
             </div>
           ))
         ) : msg.content ? (
-          <div className="trace-ai-content">{msg.content}</div>
+          <div className="trace-ai-content"><Markdown>{msg.content}</Markdown></div>
         ) : null}
         {hasToolCalls && (
           <div className="trace-tool-calls">
@@ -128,6 +190,30 @@ function TraceStep({
 
   // Tool messages
   if (msg.type === "tool") {
+    const matchedCall = msg.tool_call_id ? toolCallMap.get(msg.tool_call_id) : null;
+    const toolName = msg.name || "unknown";
+    const codeLang = matchedCall ? CODE_TOOLS[matchedCall.name] : undefined;
+
+    const renderInputs = () => {
+      if (!matchedCall) return null;
+      if (codeLang && typeof matchedCall.args.code === "string") {
+        return (
+          <SyntaxHighlighter
+            language={codeLang}
+            style={oneLight}
+            customStyle={{ fontSize: "0.8rem", borderRadius: "0.4rem", margin: 0 }}
+          >
+            {matchedCall.args.code}
+          </SyntaxHighlighter>
+        );
+      }
+      return (
+        <pre className="trace-tool-content">
+          {JSON.stringify(matchedCall.args, null, 2)}
+        </pre>
+      );
+    };
+
     return (
       <div className="trace-tool-step">
         <div
@@ -137,10 +223,22 @@ function TraceStep({
           <span className="trace-expand-icon">
             {toolExpanded ? "▼" : "▶"}
           </span>
-          <span className="trace-step-label">tool: {msg.name || "unknown"}</span>
+          <span className="trace-step-label">tool: {toolName}</span>
         </div>
         {toolExpanded && (
-          <pre className="trace-tool-content">{msg.content || "<empty>"}</pre>
+          <div className="trace-tool-body">
+            {matchedCall && (
+              <div className="trace-tool-inputs">
+                <span className="trace-step-label">inputs</span>
+                {renderInputs()}
+              </div>
+            )}
+            <div className="trace-tool-output">
+              <span className="trace-step-label">output</span>
+              <pre className="trace-tool-content">{msg.content || "<empty>"}</pre>
+              <TraceImages paths={images} projectId={projectId} />
+            </div>
+          </div>
         )}
       </div>
     );
@@ -149,14 +247,28 @@ function TraceStep({
   return null;
 }
 
-export default function TracePanel({ state, onClose }: Props) {
+export default function TracePanel({ state, projectId, onClose }: Props) {
   const transcript = state.transcript || [];
+
+  // Build a map from tool_call_id -> ToolCall for quick lookup when rendering tool messages
+  const toolCallMap = new Map<string, ToolCall>();
+  for (const msg of transcript) {
+    if (msg.type === "ai" && msg.tool_calls) {
+      for (const tc of msg.tool_calls) {
+        if (tc.id) toolCallMap.set(tc.id, tc);
+      }
+    }
+  }
 
   return (
     <div className="trace-panel">
       <div className="trace-panel-header">
         <div className="trace-panel-title">
-          <span className="avatar">{state.avatar}</span>
+          <AgentAvatar
+            name={state.agent_name}
+            fallback={state.avatar}
+            size={22}
+          />
           <span className="trace-panel-name">{state.agent_name}</span>
         </div>
         <button className="trace-close-btn" onClick={onClose}>
@@ -172,6 +284,8 @@ export default function TracePanel({ state, onClose }: Props) {
               key={i}
               msg={msg}
               prev={i > 0 ? transcript[i - 1] : null}
+              toolCallMap={toolCallMap}
+              projectId={projectId}
             />
           ))
         )}

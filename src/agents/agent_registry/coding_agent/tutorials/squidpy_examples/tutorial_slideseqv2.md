@@ -1,16 +1,23 @@
+---
+title: "Analyze Slide-seqV2 data"
+keywords:
+  - "squidpy"
+  - "slide-seqv2"
+  - "neighborhood-enrichment"
+  - "ripley"
+  - "ligand-receptor"
+  - "spatial-autocorrelation"
+---
 # Analyze Slide-seqV2 data
 
 This tutorial shows how to apply Squidpy for the analysis of Slide-seqV2 data.
 
-The data used here was obtained from {cite}`Stickels2020-rf`.
-We provide a pre-processed subset of the data, in {class}`anndata.AnnData` format.
+We provide a pre-processed subset of the data, in `anndata.AnnData` format.
 We would like to thank @tudaga for providing cell-type level annotation.
 For details on how it was pre-processed, please refer to the original paper.
 
-Import packages & data
-----------------------
-To run the notebook locally, create a conda environment as *conda env create -f environment.yml* using this
-`environment.yml <https://github.com/scverse/squidpy_notebooks/blob/main/environment.yml>`_.
+## Import packages & data
+environment.yml .
 
 
 ```python
@@ -24,33 +31,26 @@ adata
 ```
 
 First, let's visualize cluster annotation in spatial context
-with {func}`squidpy.pl.spatial_scatter`.
+with `squidpy.pl.spatial_scatter`.
 
 
 ```python
 sq.pl.spatial_scatter(adata, color="cluster", size=1, shape=None)
 ```
 
-Neighborhood enrichment analysis
---------------------------------
+## Neighborhood enrichment analysis
 Similar to other spatial data, we can investigate spatial organization of clusters
-in a quantitative way, by computing a neighborhood enrichment score.
-You can compute such score with the following function: {func}`squidpy.gr.nhood_enrichment`.
+You can compute such score with the following function: `squidpy.gr.nhood_enrichment`.
 In short, it's an enrichment score on spatial proximity of clusters:
-if spots belonging to two different clusters are often close to each other,
-then they will have a high score and can be defined as being *enriched*.
 On the other hand, if they are far apart, the score will be low
-and they can be defined as *depleted*.
 This score is based on a permutation-based test, and you can set
-the number of permutations with the `n_perms` argument (default is 1000).
 
 Since the function works on a connectivity matrix, we need to compute that as well.
-This can be done with {func}`squidpy.gr.spatial_neighbors`.
-Please see {doc}`../examples/graph/compute_spatial_neighbors` and
-{doc}`../examples/graph/compute_nhood_enrichment` for more details
-of how these functions works.
+This can be done with `squidpy.gr.spatial_neighbors`.
+Please see `../examples/graph/compute_spatial_neighbors` and
+`../examples/graph/compute_nhood_enrichment` for more details
 
-Finally, we'll directly visualize the results with {func}`squidpy.pl.nhood_enrichment`.
+Finally, we'll directly visualize the results with `squidpy.pl.nhood_enrichment`.
 We'll add a dendrogram to the heatmap computed with linkage method *ward*.
 
 
@@ -62,10 +62,7 @@ sq.pl.nhood_enrichment(
 )
 ```
 
-Interestingly, there seems to be an enrichment between the *Endothelial_Tip*,
-the *Ependymal* cells. Another putative enrichment is between the *Oligodendrocytes*
-and *Polydendrocytes* cells. We can visualize the spatial organization of such clusters.
-For this, we'll use {func}`squidpy.pl.spatial_scatter` again.
+For this, we'll use `squidpy.pl.spatial_scatter` again.
 
 
 ```python
@@ -78,17 +75,12 @@ sq.pl.spatial_scatter(
 )
 ```
 
-Ripley's statistics
--------------------
+## Ripley's statistics
 In addition to the neighbor enrichment score, we can further investigate spatial
-organization of cell types in tissue by means of the Ripley's statistics.
 Ripley's statistics allow analyst to evaluate whether a discrete annotation (e.g. cell-type)
-appears to be clustered, dispersed or randomly distributed on the area of interest.
 In Squidpy, we implement three closely related Ripley's statistics, that can be
-easily computed with {func}`squidpy.gr.ripley`. Here, we'll showcase the Ripley's L statistic,
-which is a variance-stabilized version of the Ripley's K statistics.
-We'll visualize the results with {func}`squidpy.pl.ripley`.
-Check {doc}`../examples/graph/compute_ripley` for more details.
+We'll visualize the results with `squidpy.pl.ripley`.
+Check `../examples/graph/compute_ripley` for more details.
 
 
 ```python
@@ -97,9 +89,6 @@ sq.gr.ripley(adata, cluster_key="cluster", mode=mode, max_dist=500)
 sq.pl.ripley(adata, cluster_key="cluster", mode=mode)
 ```
 
-The plot highlight how some cell-types have a more clustered pattern,
-like *Astrocytes* and *CA11_CA2_CA3_Subiculum* cells, whereas other have a more
-dispersed pattern, like *Mural* cells. To confirm such interpretation, we can
 selectively visualize again their spatial organization.
 
 
@@ -113,27 +102,16 @@ sq.pl.spatial_scatter(
 )
 ```
 
-Ligand-receptor interaction analysis
-------------------------------------
+## Ligand-receptor interaction analysis
 The analysis showed above has provided us with quantitative information on
-cellular organization and communication at the tissue level.
 We might be interested in getting a list of potential candidates that might be driving
-such cellular communication.
 This naturally translates in doing a ligand-receptor interaction analysis.
-In Squidpy, we provide a fast re-implementation the popular method CellPhoneDB {cite}`cellphonedb`
-(`code <https://github.com/Teichlab/cellphonedb>`_ )
-and extended its database of annotated ligand-receptor interaction pairs with
-the popular database *Omnipath* {cite}`omnipath`.
+In Squidpy, we provide a fast re-implementation the popular method CellPhoneDB `cellphonedb`
 You can run the analysis for all clusters pairs, and all genes (in seconds,
-without leaving this notebook), with {func}`squidpy.gr.ligrec`.
 
 Let's perform the analysis and visualize the result for three clusters of
-interest: *Polydendrocytes* and *Oligodendrocytes*.
 For the visualization, we will filter out annotations
-with low-expressed genes (with the ``means_range`` argument)
-and decreasing the threshold
-for the adjusted p-value (with the ``alpha`` argument)
-Check {doc}`../examples/graph/compute_ligrec` for more details.
+Check `../examples/graph/compute_ligrec` for more details.
 
 
 ```python
@@ -153,21 +131,13 @@ sq.pl.ligrec(
 )
 ```
 
-The dotplot visualization provides an interesting set of candidate interactions
-that could be involved in the tissue organization of the cell types of interest.
-It should be noted that this method is a pure re-implementation of the original
-permutation-based test, and therefore retains all its caveats
-and should be interpreted accordingly.
 
-Spatially variable genes with spatial autocorrelation statistics
-----------------------------------------------------------------
+## Spatially variable genes with spatial autocorrelation statistics
 Lastly, with Squidpy we can investigate spatial variability of gene expression.
-{func}`squidpy.gr.spatial_autocorr` conveniently wraps two
-spatial autocorrelation statistics: *Moran's I* and *Geary's C**.
+`squidpy.gr.spatial_autocorr` conveniently wraps two
 They provide a score on the degree of spatial variability of gene expression.
 The statistic as well as the p-value are computed for each gene, and FDR correction
-is performed. For the purpose of this tutorial, let's compute the *Moran's I* score.
-See {doc}`../examples/graph/compute_moran` for more details.
+See `../examples/graph/compute_moran` for more details.
 
 
 ```python
@@ -176,7 +146,7 @@ adata.uns["moranI"].head(10)
 ```
 
 The results are stored in `adata.uns["moranI"]` and we can visualize selected genes
-with {func}`squidpy.pl.spatial_scatter`.
+with `squidpy.pl.spatial_scatter`.
 
 
 ```python

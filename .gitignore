@@ -7,10 +7,27 @@ __marimo__/
 # OSX
 .DS_Store
 
-# Data and Test directories
+# data and test directories
 /logs/
-cache/
-data/*
+/datasets/
+/cache/
+# workspace/: keep the high-level folder skeleton tracked (via .gitkeep),
+# but ignore everything users / agents put inside at runtime — project
+# runs, library uploads, scratch drafts, in-flight plan files.
+projects/
+plan_scratch/
+workspace/**
+!workspace/
+!workspace/library/
+!workspace/library/datasets/
+!workspace/library/files/
+!workspace/projects/
+!workspace/scratch/
+!workspace/scratch/uploads/
+!workspace/scratch/attachments/
+!workspace/plan_scratch/
+!workspace/notebook/
+!workspace/**/.gitkeep
 eval/
 temp/
 test/
@@ -24,3 +41,17 @@ node_modules/
 
 # build artifacts
 *.egg-info/
+
+# direnv
+.direnv/
+.envrc
+
+# AI assistant scratch (local-only planning notes)
+AGENTS.md
+COPILOT_PLAN.md
+COPILOT_QA.md
+.impeccable.md
+
+# Benchmark directory
+benchmark/
+workspace/cellvoyager_agent/

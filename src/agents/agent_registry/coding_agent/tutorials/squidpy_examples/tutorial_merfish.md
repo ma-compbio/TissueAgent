@@ -1,16 +1,23 @@
+---
+title: "Analyze Merfish data"
+keywords:
+  - "squidpy"
+  - "merfish"
+  - "3d-spatial"
+  - "neighborhood-enrichment"
+  - "spatial-autocorrelation"
+  - "differential-expression"
+---
 # Analyze Merfish data
 
 This tutorial shows how to apply Squidpy for the analysis of Merfish data.
 
-The data used here was obtained from {cite}`Moffitt2018-me`.
-We provide a pre-processed subset of the data, in {class}`anndata.AnnData` format.
+We provide a pre-processed subset of the data, in `anndata.AnnData` format.
 For details on how it was pre-processed, please refer to the original paper.
 
 
-Import packages & data
-----------------------
-To run the notebook locally, create a conda environment as *conda env create -f environment.yml* using this
-`environment.yml <https://github.com/scverse/squidpy_notebooks/blob/main/environment.yml>`_.
+## Import packages & data
+environment.yml .
 
 
 ```python
@@ -25,17 +32,16 @@ adata = sq.datasets.merfish()
 adata
 ```
 
-This datasets consists of consecutive slices from the mouse hypothalamic preoptic region.
 It represents an interesting example of how to work with 3D spatial data in Squidpy.
 Let's start with visualization: we can either visualize the 3D stack of slides
-using {func}`scanpy.pl.embedding`:
+using `scanpy.pl.embedding`:
 
 
 ```python
 sc.pl.embedding(adata, basis="spatial3d", projection="3d", color="Cell_class")
 ```
 
-Or visualize a single slide with {func}`squidpy.pl.spatial_scatter`. Here the slide identifier
+Or visualize a single slide with `squidpy.pl.spatial_scatter`. Here the slide identifier
 is stored in `adata.obs["Bregma"]`, see original paper for definition.
 
 
@@ -45,19 +51,13 @@ sq.pl.spatial_scatter(
 )
 ```
 
-Neighborhood enrichment analysis in 3D
---------------------------------------
+## Neighborhood enrichment analysis in 3D
 It is important to consider whether the analysis should be performed on the 3D
-spatial coordinates or the 2D coordinates for a single slice. Functions that
-make use of the spatial graph can already support 3D coordinates, but it is important
-to consider that the z-stack coordinate is in the same unit metrics as the x, y coordinates.
 Let's start with the neighborhood enrichment score. You can read more on the function
-in the docs at {doc}`../examples/graph/compute_spatial_neighbors`.
-First, we need to compute a neighbor graph with {func}`squidpy.gr.spatial_neighbors`.
+First, we need to compute a neighbor graph with `squidpy.gr.spatial_neighbors`.
 If we want to compute the neighbor graph on the 3D coordinate space,
-we need to specify ``spatial_key = "spatial3d"``.
-Then we can use {func}`squidpy.gr.nhood_enrichment` to compute the score, and visualize
-it with {func}`squidpy.pl.nhood_enrichment`.
+Then we can use `squidpy.gr.nhood_enrichment` to compute the score, and visualize
+it with `squidpy.pl.nhood_enrichment`.
 
 
 ```python
@@ -68,7 +68,7 @@ sq.pl.nhood_enrichment(
 )
 ```
 
-We can visualize some of the co-enriched clusters with {func}`scanpy.pl.embedding`.
+We can visualize some of the co-enriched clusters with `scanpy.pl.embedding`.
 We will set `na_colors=(1,1,1,0)` to make transparent the other observations,
 in order to better visualize the clusters of interests across z-stacks.
 
@@ -85,7 +85,7 @@ sc.pl.embedding(
 ```
 
 We can also visualize gene expression in 3D coordinates. Let's perform differential
-expression testing with {func}`scanpy.tl.rank_genes_groups` and visualize the results
+expression testing with `scanpy.tl.rank_genes_groups` and visualize the results
 
 
 ```python
@@ -101,7 +101,6 @@ sc.pl.embedding(adata, basis="spatial3d", projection="3d", color=["Gad1", "Mlc1"
 ```
 
 If the same analysis should be performed on a single slice, then it is advisable to
-copy the sample of interest in a new {class}`anndata.AnnData` and use it as
 a standard 2D spatial data object.
 
 
@@ -122,17 +121,14 @@ sq.pl.spatial_scatter(
 )
 ```
 
-Spatially variable genes with spatial autocorrelation statistics
-----------------------------------------------------------------
+## Spatially variable genes with spatial autocorrelation statistics
 With Squidpy we can investigate spatial variability of gene expression.
 This is an example of a function that only supports 2D data.
-{func}`squidpy.gr.spatial_autocorr` conveniently wraps two
-spatial autocorrelation statistics: *Moran's I* and *Geary's C*.
+`squidpy.gr.spatial_autocorr` conveniently wraps two
 They provide a score on the degree of spatial variability of gene expression.
 The statistic as well as the p-value are computed for each gene, and FDR correction
-is performed. For the purpose of this tutorial, let's compute the *Moran's I* score.
 The results are stored in `adata.uns['moranI']` and we can visualize selected genes
-with {func}`squidpy.pl.spatial_scatter`.
+with `squidpy.pl.spatial_scatter`.
 
 
 ```python

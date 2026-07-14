@@ -1,0 +1,108 @@
+{
+  "results": [
+    {
+      "id": "H1",
+      "status": "REFINE",
+      "metrics": {
+        "n_interface_invasive": 27,
+        "n_core_invasive": 285,
+        "mean_basal_minus_luminal_interface": 0.8387061741080386,
+        "mean_basal_minus_luminal_core": 0.7080896021505887,
+        "effect_size_difference_interface_minus_core": 0.1306165719574499,
+        "p_value_rank_sum_raw": 0.3907580137482164,
+        "p_value_rank_sum_fdr": 0.3907580137482164,
+        "criteria": {
+          "effect_size_threshold_met": false,
+          "p_value_threshold_met": false,
+          "direction_interface_more_basal": true
+        }
+      },
+      "figures": [
+        "project/outputs/figures/H1_basal_minus_luminal_violin.png",
+        "project/outputs/figures/H1_basal_minus_luminal_spatial.png"
+      ],
+      "narrowing_notes": "Interface invasive spots show only a modest, non-significant basal-minus-luminal increase over core invasive (mean difference \u2248 0.131, FDR p \u2248 0.391). This falls short of the pre-specified effect size (\u2265 0.15) and significance (FDR < 0.05). To refine, consider: (i) incorporating DCIS-labeled spots into the tumor core definition explicitly, (ii) reweighting the basal vs luminal gene sets or adding additional basal markers (e.g., KRT6 family) and luminal markers, (iii) modeling basal bias with continuous tumor\u2013immune distance instead of a binary interface/core split, and (iv) stratifying by patient or regional tumor subtype to reduce heterogeneity."
+    },
+    {
+      "id": "H2",
+      "status": "DROPPED",
+      "metrics": {
+        "n_tumor_proximal_lymphocytes": 59,
+        "n_stromal_lymphocytes_relaxed": 22,
+        "mean_t_minus_b_tumor_proximal": 0.33529890884207114,
+        "mean_t_minus_b_stromal_relaxed": 0.31711401219067964,
+        "effect_size_difference_tumor_proximal_minus_stromal": 0.018184896651391502,
+        "cohens_d_tumor_proximal_vs_stromal": 0.033257020258345614,
+        "p_value_rank_sum_raw": 0.8902064751730806,
+        "p_value_rank_sum_fdr": 0.8902064751730806,
+        "criteria": {
+          "effect_size_threshold_met": false,
+          "p_value_threshold_met": false,
+          "direction_tumor_proximal_more_Tbiased": true
+        }
+      },
+      "figures": [
+        "project/outputs/figures/H2_t_minus_b_violin.png",
+        "project/outputs/figures/H2_t_minus_b_spatial.png"
+      ],
+      "narrowing_notes": "Tumor-proximal lymphocytes do not show a stronger T-vs-B bias than lymphocytes without tumor-like neighbors (mean difference \u2248 0.018, FDR p \u2248 0.890, Cohen d \u2248 0.03). The distributions are nearly overlapping, refuting the pre-specified effect size (\u2265 0.1) and significance (FDR < 0.05). Future refinements could: (i) separate CD4\u207a vs CD8\u207a T cell modules, (ii) explicitly model B-cell\u2013rich tertiary lymphoid structures vs diffuse lymphocytes, and (iii) stratify by regional proximity (distance bands) rather than a simple neighbor vs non-neighbor dichotomy."
+    },
+    {
+      "id": "H3",
+      "status": "DROPPED",
+      "metrics": {
+        "n_tumor_stroma_interface": 110,
+        "n_tumor_core": 461,
+        "n_stroma_core": 427,
+        "mean_myeloid_interface": 0.34576954758095463,
+        "mean_myeloid_tumor_core": 0.688452324671981,
+        "mean_myeloid_stroma_core": 0.23748239852823275,
+        "kruskal_wallis_stat": 179.14320546297307,
+        "kruskal_wallis_p": 1.2576135225279189e-39,
+        "diff_interface_minus_tumor_core": -0.3426827770910264,
+        "diff_interface_minus_stroma_core": 0.10828714905272188,
+        "p_pairwise_interface_vs_tumor_core_raw": 5.5191217607684874e-09,
+        "p_pairwise_interface_vs_tumor_core_fdr": 1.1038243521536975e-08,
+        "p_pairwise_interface_vs_stroma_core_raw": 0.00010288658805730458,
+        "p_pairwise_interface_vs_stroma_core_fdr": 0.00010288658805730458,
+        "criteria": {
+          "kw_p_threshold_met": true,
+          "interface_higher_than_tumor_core_with_margin": false,
+          "interface_higher_than_stroma_core_with_margin": true,
+          "pairwise_interface_vs_tumor_core_fdr_lt_0_05": true,
+          "pairwise_interface_vs_stroma_core_fdr_lt_0_05": true
+        }
+      },
+      "figures": [
+        "project/outputs/figures/H3_myeloid_violin_three_group.png",
+        "project/outputs/figures/H3_myeloid_spatial_three_group.png"
+      ],
+      "narrowing_notes": "Tumor\u2013stroma interface spots do not show the strongest myeloid enrichment. In this dataset, tumor-core spots have the highest myeloid-module scores (interface mean \u2248 0.346, tumor_core mean \u2248 0.688, stroma_core mean \u2248 0.237), and the interface is significantly lower than tumor core (FDR-adjusted p \u226a 0.05). This pattern contradicts the original hypothesis of preferential myeloid localization at interfaces. Follow-up work could: (i) re-define cores and interfaces using a continuous tumor fraction or distance metric, (ii) distinguish macrophage- vs neutrophil-associated marker sets, and (iii) examine per-patient patterns to rule out sample-specific biases."
+    },
+    {
+      "id": "H4",
+      "status": "SUPPORTED",
+      "metrics": {
+        "n_spots_total": 1162,
+        "n_lymphocyte_spots": 81,
+        "n_spots_with_tumor_like_neighbor": 694,
+        "logistic_regression_coefficient": 0.8125204882208189,
+        "logistic_regression_se": 0.3049956076797467,
+        "odds_ratio_invasive_neighbor": 2.2535809586045352,
+        "wald_p_value_invasive_neighbor": 0.007720838924178766,
+        "fdr_p_value_invasive_neighbor": 0.007720838924178766,
+        "roc_auc": 0.665890065211681,
+        "criteria": {
+          "odds_ratio_threshold_met": true,
+          "p_value_threshold_met": true,
+          "direction_positive_association": true
+        }
+      },
+      "figures": [
+        "project/outputs/figures/H4_logit_ROC.png",
+        "project/outputs/figures/H4_logit_calibration.png"
+      ],
+      "narrowing_notes": ""
+    }
+  ]
+}

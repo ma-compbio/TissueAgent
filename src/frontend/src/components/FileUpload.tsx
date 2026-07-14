@@ -24,10 +24,6 @@ export default function FileUpload({ uploadedFiles, onUploadFiles }: Props) {
   return (
     <div className="file-upload-section">
       <div className="upload-label">Upload Files</div>
-      <div className="upload-caption">
-        Dataset files (h5ad, csv, etc.) go to dataset/. Everything else goes to
-        uploads/.
-      </div>
       <div
         className="drop-area"
         onDragOver={(e) => e.preventDefault()}

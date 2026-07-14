@@ -1,0 +1,28 @@
+{
+  "paper_id": "2023_Nature_KidneyCellStateAtlas",
+  "paper_citation": "Lake, B.B. et al. An atlas of healthy and injured cell states and niches in the human kidney. Nature 619, 585–594 (2023).",
+  "notes": "Gold claims are scorer-only. Agents must never see this file.",
+  "claims": [
+    {
+      "id": "GC1",
+      "statement": "Injured human kidney epithelium adopts discrete cycling, transitioning, adaptive (successful or maladaptive repair), and degenerative states, especially within proximal tubule and thick ascending limb subclasses.",
+      "keywords": ["adaptive", "maladaptive", "degenerative", "proximal tubule", "TAL", "repair"],
+      "cell_types": ["aPT", "PT", "TAL", "aEpi"],
+      "evidence_locus": "abstract / epithelial repair states"
+    },
+    {
+      "id": "GC2",
+      "statement": "Adaptive / injured tubular states co-localize with distinct immune-active cellular niches (including myeloid / neutrophil neighbourhoods) linking epithelial injury to local immune responses.",
+      "keywords": ["immune niches", "myeloid", "neutrophil", "neighbourhood", "injured tubules"],
+      "cell_types": ["MAC-M2", "neutrophil", "aPT", "aFIB"],
+      "evidence_locus": "spatial niches / 3D neighbourhood analyses"
+    },
+    {
+      "id": "GC3",
+      "statement": "Molecular signatures of epithelial repair / maladaptive states associate with decline in kidney function and can be mapped onto histological injury regions together with stromal (aFIB) expansion.",
+      "keywords": ["maladaptive", "fibrosis", "aFIB", "function decline", "injury"],
+      "cell_types": ["aFIB", "FIB", "aPT"],
+      "evidence_locus": "clinical association / Visium injury mapping"
+    }
+  ]
+}

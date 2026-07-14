@@ -1,112 +1,87 @@
 """Prompt templates and description for the manager agent."""
-from agents.agent_utils import format_agent_id_descriptions
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from agents.agent_utils import substitute_shared_prompts
+from server.plan_store import PlanDocument, plan_store
+
+_DIR = Path(__file__).parent
+_TEMPLATE = substitute_shared_prompts((_DIR / "prompt.txt").read_text())
 
 ManagerDescription = """
-Coordinate the Executor Team composed of expert agents to execute each step in the Plan. 
+Coordinate the Executor Team composed of expert agents to execute each step in the Plan.
 """.strip()
 
-ManagerPrompt = lambda agent_id_descriptions: (
-    f"""
-You are the Manager agent coordinating the Executor Team to execute a multi-step <Plan> for bioinformatics tasks.
-You will receive a <Plan> with a title and a numbered checklist of high-level steps. Each step lists an assigned agent from the <Agent Registry>.
 
-## Base Directory
-- DATA_DIR is the canonical workspace root.
-- All artifact paths must be treated and reported relative to DATA_DIR.
-- If any produced path is absolute under DATA_DIR, convert it to a relative path by removing the DATA_DIR prefix and any leading path separator.
-- If any produced path is outside DATA_DIR, treat the step as Failed.
+def _format_plan(doc: PlanDocument) -> str:
+    """Render the plan for the manager prompt: user request + steps with assignments.
 
-## Tools
-- agents.run(agent_id, task_instructions, expected_artifacts, prior_artifacts) — invoke an expert agent and obtain outputs/artifacts.
-- file_retriever_tool — list/read run manifests and artifact directories.
-- text_artifact_writer_tool(relative_path, contents, mode='overwrite'|'append'|'error_if_exists') — persist textual outputs inside DATA_DIR when an agent response needs to become a file artifact.
+    Deliberately omits per-step status. The manager derives progress from its own
+    tool-call history (each ``next_step`` / ``retry_step`` call and its result is
+    visible in the message list).
+    """
+    lines: list[str] = []
+    if doc.user_request:
+        lines.append(f"User request: {doc.user_request}")
+        lines.append("")
+    if not doc.steps:
+        lines.append("(no steps)")
+        return "\n".join(lines).rstrip()
+    lines.append("Steps:")
+    for step in doc.steps:
+        lines.append(f"Step {step.id} — {step.title}")
+        if step.description:
+            lines.append(f"  description: {step.description}")
+        lines.append(f"  assigned_agent: {step.assigned_agent or '(unassigned)'}")
+        if step.expected_artifacts:
+            lines.append(
+                "  expected_artifacts: " + ", ".join(step.expected_artifacts)
+            )
+    return "\n".join(lines)
 
-## PDF Handling (CRITICAL - READ CAREFULLY)
-- When invoking the PDF Reader Agent, you MUST pass pdf_file_ids from the conversation history.
-- The initial user message contains PDF attachments in this format:
-  "content": [
-    {{"type": "text", "text": "..."}},
-    {{"type": "file", "file": {{"file_id": "file-..."}}}}
-  ]
-- Extract ALL file_ids from the conversation history and pass them as a comma-separated string.
-- Example: pdf_reader_agent_transfer_tool(prompt="Analyze the paper...", pdf_file_ids="file-abc123,file-def456")
-- NEVER skip the PDF Reader Agent step claiming "PDF is already parsed" - the briefs/ files DO NOT exist yet.
-- The PDF Reader Agent's output (briefs/) is REQUIRED input for the Hypothesis Agent.
-- Only PDF Reader Agent needs pdf_file_ids - other agents use text-only prompts.
 
-## Execution Guidelines
-- Agent Registry: {format_agent_id_descriptions(agent_id_descriptions)}
-- Execute steps sequentially. Do not change the plan or add steps.
-- For each step:
-  1) Use the assigned agent. Do not substitute agents unless the step is explicitly duplicate or not needed.
-  2) Invoke agents.run with task constraints and expected outcomes, allowing the agent autonomy in execution approach.
-  3) Wait for the tool response. Do not mark the step successful without a tool response.
-  4) Validate that outputs match the expected artifacts by name/path/type. Paths must resolve inside DATA_DIR and be recorded as relative to DATA_DIR. If an agent only returns text but the step requires a file, immediately persist it with text_artifact_writer_tool and record the returned relative path. If mismatched or missing, treat as failure.
-  5) Retry once only if failed or mismatched. Adjust task constraints or inputs. Do not retry more than once.
-  6) You may skip a step only if it is a duplicate of a completed step or not needed to reach Good-Enough.
+def _format_filtered_registry(
+    doc: PlanDocument, agent_id_descriptions: dict[str, str]
+) -> str:
+    """Render descriptions for only the agents the plan actually assigns."""
+    used_ids: list[str] = []
+    seen: set[str] = set()
+    for step in doc.steps:
+        aid = step.assigned_agent
+        if aid and aid not in seen:
+            seen.add(aid)
+            used_ids.append(aid)
+    if not used_ids:
+        return "(no agents assigned)"
+    return "\n".join(
+        f" - {aid}: {agent_id_descriptions.get(aid, '(no description)')}"
+        for aid in used_ids
+    )
 
-## Task Instruction Guidelines
-- Communicate the task constraints and expected outcomes from the plan clearly to subagents.
-- Focus on what needs to be accomplished as specified in the plan, not how to accomplish it.
-- Allow subagents to determine their own approach and tool usage within the given constraints from the plan.
-- Include relevant context and prior artifacts as specified in the plan, but let the agent decide how to use them.
-- Trust subagents to persist until the task is completed rather than requiring step-by-step guidance.
-- Work with the information provided in the plan rather than adding supplementary guidance.
 
-## Dataset Artifact Persistence
-- When a step produces a processed dataset, instruct the subagent to:
-  - save the dataset file under `dataset/` (relative to DATA_DIR), not in a temp location;
-  - use the format requested in the plan (e.g., .h5ad, .parquet) and a descriptive, deterministic filename reflecting the dataset and step;
-  - return the saved relative path(s) under DATA_DIR as the execution artifacts.
+def ManagerPrompt(agent_id_descriptions: dict[str, str]):
+    """Build a state-aware prompt callable for the manager agent.
 
-## Plan Adherence Guidelines
-- Work strictly within the constraints and instructions already present in the plan.
-- Do not add additional suggestions, recommendations, or instructions beyond what is explicitly stated in the plan.
-- You may reword existing plan instructions for clarity and better communication, but do not introduce new information or requirements.
-- Focus on faithfully executing the plan as written, ensuring subagents understand the existing constraints and deliverables.
-- If the plan lacks specific details, work with what is provided rather than adding supplementary guidance.
+    Returns a function that, when called with the current LangGraph state, reads
+    ``plan_store`` and renders the manager prompt with two placeholders substituted:
 
-## Agentic Workflow Best Practices
-- Begin each step by rephrasing the task goal from the plan in a clear, concise manner before invoking agents.
-- Work with the structured approach outlined in the plan, communicating it clearly to subagents.
-- Provide progress updates as you execute each step, narrating progress clearly and sequentially.
-- Persist until each step is completely resolved before moving to the next step.
-- Work within the constraints provided in the plan - do not add additional guidance or requirements.
-- Do not ask for confirmation on assumptions - work with what is provided in the plan and adjust if needed.
-- Only terminate a step when you are sure the problem is solved and expected artifacts are produced as specified in the plan.
+    * ``{{formatted_plan}}`` — user request + step list with assigned_agent and
+      expected_artifacts (no status; the manager derives progress from its own
+      tool-call history).
+    * ``{{agent_registry}}`` — descriptions for only the agents assigned in the plan.
 
-## Good-Enough Criteria (STOP EARLY)
-- All requested artifacts for the user’s ask exist inside DATA_DIR, pass validation, and their paths are provided relative to DATA_DIR.
+    The manager's message filter (:func:`graph.message_filters.filter_for_manager`)
+    strips HumanMessages and every other agent's messages, so all situational context
+    lives in this system prompt.
+    """
+    def render(state) -> str:
+        doc = plan_store.read()
+        return (
+            _TEMPLATE
+            .replace("{{formatted_plan}}", _format_plan(doc))
+            .replace("{{agent_registry}}", _format_filtered_registry(doc, agent_id_descriptions))
+        )
 
-## Formatting Rules
-- Start output with `Task`.
-- Do not change the task title.
-- Do not change any of: step text, reason, expected artifacts, assigned agent, assignment rationale.
-- After each step, update the checklist visibly:
-  - Replace [ ] with [✓] when succeeded.
-  - Replace [ ] with [✗] when failed or skipped.
-- For each completed step, add:
-  execution result: Success: <brief summary> OR Failed: <brief reason> OR Skipped: <brief reason>
-  execution artifacts: [list of relative paths under DATA_DIR] or None
-
-## Plan Update Template
-'''
-PLAN
-Task: [Don't change the task title from the input]
-Steps:
-[✓|✗] step <N>:
-    step: [Dont change the step from the input]
-    reason: [Dont change the reason from the input]
-    expected artifacts: [Dont change the expected artifacts from the input]
-    assigned agent: [Dont change the assigned agent from the input]
-    assignment rationale: [Dont change the assignment rationale from the input]
-    execution result: [Success: ... | Failed: ... | Skipped: ...]
-    execution artifacts: [ relative/path/one, relative/path/two, ... ] or None
-'''
-
-## Mandatory Constraints
-- Never mark a step [✓] unless you have invoked the corresponding agent invocation tool for that step and validated that all expected artifacts are produced inside DATA_DIR with relative paths.
-- If agents.run errors or returns incomplete artifacts, mark [✗] with Failed and include None for execution artifacts, then apply a single retry if unused.
-- When skipping as duplicate/not needed, mark [✗] with Skipped and explain briefly.
-"""
-)
+    return render

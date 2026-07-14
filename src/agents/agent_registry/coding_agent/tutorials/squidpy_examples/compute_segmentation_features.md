@@ -1,31 +1,24 @@
+---
+title: "Extract segmentation features"
+keywords:
+  - "squidpy"
+  - "segmentation features"
+  - "calculate_image_features"
+  - "nuclei segmentation"
+  - "watershed"
+  - "regionprops"
+  - "label"
+  - "area"
+  - "mean_intensity"
+---
+
 # Extract segmentation features
 
-This example shows how to extract segmentation features from the tissue
-image.
+This example shows how to extract features from a nucleus segmentation. Use `features='segmentation'` with `calculate_image_features`.
 
-Features extracted from a nucleus segmentation range from the number of
-nuclei per image, over nuclei shapes and sizes, to the intensity of the
-input channels within the segmented objects. They are very interpretable
-features and provide valuable additional information. Segmentation
-features are calculated by using `features = 'segmentation'`, which
-calls {func}`squidpy.im.ImageContainer.features_segmentation`.
-
-In addition to `feature_name` and `channels` we can specify the
-following `features_kwargs`:
-
--   `label_layer` - name of label image layer in `img`.
--   `props` - segmentation features that are calculated. See
-    [properties]{.title-ref} in `skimage.measure.regionprops_table`.
-
-:::{seealso}
--   {doc}`compute_segment_fluo` for more
-    details on calculating a cell-segmentation.
--   {doc}`compute_features` for the general
-    usage of {func}`squidpy.im.calculate_image_features`.
-    
-:::
-
-
+Key `features_kwargs` parameters:
+- `label_layer` - name of the label image layer
+- `props` - segmentation properties to calculate (see `skimage.measure.regionprops_table`)
 
 ```python
 import matplotlib.pyplot as plt
@@ -33,19 +26,14 @@ import matplotlib.pyplot as plt
 import squidpy as sq
 ```
 
-First, let\'s load the fluorescence Visium dataset.
-
-
+Load the fluorescence Visium dataset.
 
 ```python
 img = sq.datasets.visium_fluo_image_crop()
 adata = sq.datasets.visium_fluo_adata_crop()
 ```
 
-Before calculating segmentation features, we need to first calculate a
-segmentation using `squidpy.im.segment`.
-
-
+First compute a segmentation.
 
 ```python
 sq.im.segment(
@@ -57,20 +45,7 @@ sq.im.segment(
 )
 ```
 
-Now we can calculate segmentation features. Here, we will calculate the
-following features:
-
-> -   number of nuclei `label`.
-> -   mean area of nuclei `area`.
-> -   mean intensity of channels 1 (anti-NEUN) and 2 (anti-GFAP) within
->     nuclei `mean_intensity`.
-
-We use `mask_cicle = True` to ensure that we are only extracting
-features from the tissue underneath each Visium spot. For more details
-on the image cropping, see
-`examples_image_compute_crops`.
-
-
+Calculate segmentation features: nuclei count, mean area, and mean intensity of channels 1 and 2.
 
 ```python
 sq.im.calculate_image_features(
@@ -90,19 +65,13 @@ sq.im.calculate_image_features(
 )
 ```
 
-The result is stored in {attr}`adata.obsm['segmentation_features']`.
-
-
+The result is stored in `adata.obsm['segmentation_features']`.
 
 ```python
 adata.obsm["segmentation_features"].head()
 ```
 
-Use `squidpy.pl.extract` to plot the texture features on the tissue
-image or have a look at  [napari-spatialdata](https://spatialdata.scverse.org/projects/napari/en/stable/notebooks/spatialdata.html). Here, we show all calculated segmentation
-features.
-
-
+Plot the segmentation features.
 
 ```python
 # show all channels (using low-res image contained in adata to save memory)
@@ -128,11 +97,3 @@ sq.pl.spatial_scatter(
     ncols=2,
 )
 ```
-
-[segmentation\_label]{.title-ref} shows the number of nuclei per spot
-and [segmentation\_area\_mean]{.title-ref} the mean are of nuclei per
-spot. The remaining two plots show the mean intensity of channels 1 and
-2 per spot. As the stains for channels 1 and 2 are specific to Neurons
-and Glial cells, respectively, these features show us Neuron and Glial
-cell dense areas.
-

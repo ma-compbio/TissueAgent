@@ -1,3 +1,5 @@
+
+
 # Demo
 
 This folder contains notebooks for several tasks described in the manuscript. Each notebook is self-contained and can be run end-to-end to load inputs, prompt the agent, and save outputs.
@@ -12,29 +14,7 @@ This folder contains notebooks for several tasks described in the manuscript. Ea
 
 4. Start a jupyter server with `jupyter notebook`.
 
-5. Open a notebook and run it top-to-bottom to reproduce a task. Data can be accessed in `demo/data`; generated data is written under `data/`, and reviewer artifacts are written under `demo/outputs/`.
-
-### Cell annotation benchmark
-
-Use `cell_annotation_benchmark.ipynb` for the reviewer benchmark. Its controls select one of the developing human heart, mouse CNS, or ovarian cancer datasets, quick/full execution, and any combination of TissueAgent, CellTypist, and GPTCellType.
-
-- Heart uses the existing local H5AD and local reference without downloading or reconversion.
-- Mouse CNS is converted from the required Zenodo raw-expression, spatial, metadata, and cluster CSVs in `scratch/zenodo_8327576_csv`; processed-expression and molecule-level spot files are not read.
-- Ovarian cancer uses the local `ST_Test1_so.rds` and the controlled Seurat conversion bridge.
-- Ground truth is saved separately before annotation. Missing or unmapped predictions are scored as `Unassigned` rather than dropped.
-- Before Harmony transfer, TissueAgent inspects bounded samples from both AnnData expression matrices and makes an evidence-backed preprocessing decision. Ambiguous or incompatible matrix states stop visibly rather than using a dataset-specific hard-coded flag.
-- The notebook does not install packages, display credentials, or delete shared datasets/results.
-
-`cell_annotation_w_baselines.ipynb` is retained as a legacy development record; it is not the canonical three-dataset workflow.
-
-The completed all-cell TissueAgent evaluation is summarized in
-[`outputs/cell_annotation/full-20260711_summary.md`](outputs/cell_annotation/full-20260711_summary.md).
-The earlier 25,000-cell comparison remains at
-[`outputs/cell_annotation/quick-20260711_summary.md`](outputs/cell_annotation/quick-20260711_summary.md),
-with its superseded heart preprocessing configuration called out explicitly.
-Each dataset run directory contains the method predictions, metrics, confusion matrices,
-unmapped-label audit, tool metadata, and complete TissueAgent transcript.
-
+5. Open a notebook and run it top-to-bottom to reproduce a task. Data can be accessed in `demo/data` and outputs are written to `workspace/` and copied into `demo/outputs/{TASK}`. The run is logged to `demo/outputs/{TASK}/transcript.log`.
 
 > [!WARNING]
 > LLM outputs are inherently stochastic, so TissueAgent may produce slightly different outputs between runs. 
@@ -46,8 +26,29 @@ demo
 ├── outputs/                             # transcripts and artifacts from demo tasks
 ├── figure_recreation_lohoff-2b.ipynb    # notebook for figure recreation task (Figure 2b from Lohoff et. al.)
 ├── figure_recreation_lohoff-2e.ipynb    # notebook for figure recreation task (Figure 2c from Lohoff et. al.)
-├── cell_annotation_benchmark.ipynb      # canonical three-dataset cell annotation benchmark
-├── cell_annotation/                     # manifests, direct baselines, metrics, and runners
+├── spot_deconvolution_visium_heart.ipynb    # notebook for cell-type deconvolution task
+├── run_hypothesis_recovery.py           # Comment #7 hypothesis-recovery benchmark runner
+├── score_hypothesis_recovery.py         # score TissueAgent vs CellVoyager runs
 ├── notebook_utils.py                    # utility functions for setting up and running TissueAgent in notebooks
 └── README.md
 ```
+
+### Hypothesis-recovery benchmark (Comment #7)
+
+See [`benchmark/hypothesis_recovery/README.md`](../benchmark/hypothesis_recovery/README.md) and
+[`METHODS.md`](../benchmark/hypothesis_recovery/METHODS.md). Quick start:
+
+```bash
+PYTHONPATH=src python demo/run_hypothesis_recovery.py \
+  --fixture farah_heart_merfish --arm tissueagent --seed-existing
+PYTHONPATH=src python demo/run_hypothesis_recovery.py \
+  --fixture farah_heart_merfish --arm cellvoyager --num-analyses 1 --model gpt-4o
+PYTHONPATH=src python demo/score_hypothesis_recovery.py --all --aggregate
+```
+
+### Web UI Demo
+
+https://github.com/user-attachments/assets/ef381418-cf5c-431b-9052-f931c922d2c8
+
+
+

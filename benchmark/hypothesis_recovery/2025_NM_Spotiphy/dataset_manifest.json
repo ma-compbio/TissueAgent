@@ -1,0 +1,19 @@
+{
+  "paper_id": "2025_NM_Spotiphy",
+  "status": "ready",
+  "h5ad_path": "benchmark/hypothesis_recovery/2025_NM_Spotiphy/_download/Xenium_FAD_1.h5ad",
+  "download_hints": [
+    {
+      "repository": "Zenodo",
+      "accession": "10.5281/zenodo.10520022",
+      "url": "https://zenodo.org/records/10520022",
+      "file": "Xenium_FAD_1.h5ad",
+      "note": "Preferred: direct h5ad for FAD mouse brain Xenium."
+    }
+  ],
+  "papers_raw_data": "papers/2025_NM_Spotiphy/raw_data.json",
+  "n_obs": 104831,
+  "n_vars": 247,
+  "source": "zenodo:10.5281/zenodo.10520022",
+  "sample_id": "Xenium_FAD_1"
+}

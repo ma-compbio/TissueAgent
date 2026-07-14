@@ -1,0 +1,6 @@
+## Workspace Layout
+- library/datasets/, library/files/: persistent shared inputs (read-only to agents).
+- project/uploads/: files the user uploaded for this run.
+- project/outputs/: where the all artifacts for this run are written to.
+- If permitted, you should only write to project/outputs. You may create subdirectories as needed such as figures/, tables/, etc., as needed.
+

@@ -1,7 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { SerializedMessage, SubagentTranscript } from "../types/messages";
-import MessageBubble, { AgentRunCard, type AgentRun } from "./MessageBubble";
+import AgentAvatar from "./AgentAvatar";
+import MessageBubble, { AgentRunCard, FinalAnswerBox, extractFinalResponse, type AgentRun } from "./MessageBubble";
+import ResizeDivider from "./ResizeDivider";
 import TracePanel from "./TracePanel";
+
+// The chat input no longer has a fixed height — it auto-grows with its
+// content up to this cap (≈ 12 lines), then scrolls inside the bubble.
+// Picked so a long paste doesn't push the chat messages off-screen.
+const CHAT_INPUT_MAX_PX = 240;
 
 interface Props {
   messages: SerializedMessage[];
@@ -10,7 +24,15 @@ interface Props {
   isRunning: boolean;
   elapsed: number | null;
   enableDebug: boolean;
+  /** Active project id — used to build file-download URLs for trace plots. */
+  projectId: string;
   onSendMessage: (text: string) => void;
+  /** Stop the in-flight run. Surfaced as the Stop button while running. */
+  onCancelRun: () => void;
+  /** Called when the user picks files via the chat-input "+" button.
+   *  The handler routes to the active project's ``uploads/`` directory
+   *  (minting the project if none is active). */
+  onUploadFiles: (files: FileList) => Promise<void> | void;
 }
 
 /**
@@ -170,6 +192,30 @@ function collapseAgentRuns(
   return result;
 }
 
+/**
+ * Find the name of the tool call currently in progress for a live trace.
+ * Walks the transcript backwards to the most recent AI message with
+ * ``tool_calls``, and returns the last one — which is the call the agent
+ * has just issued and is waiting on. Returns null if no tool call has
+ * been made yet in this step.
+ */
+function extractCurrentToolCall(trace: SubagentTranscript): string | null {
+  const transcript = trace.transcript;
+  if (!transcript) return null;
+  for (let i = transcript.length - 1; i >= 0; i--) {
+    const msg = transcript[i];
+    if (msg.type === "tool") {
+      // Latest activity is a completed tool result — no call in flight.
+      return null;
+    }
+    if (msg.type === "ai" && msg.tool_calls && msg.tool_calls.length > 0) {
+      const last = msg.tool_calls[msg.tool_calls.length - 1];
+      return last.name;
+    }
+  }
+  return null;
+}
+
 /** Build synthetic SubagentTranscripts from AgentRun items. */
 function buildSyntheticTraces(
   items: DisplayItem[]
@@ -196,16 +242,53 @@ export default function ChatView({
   isRunning,
   elapsed,
   enableDebug,
+  projectId,
   onSendMessage,
+  onCancelRun,
+  onUploadFiles,
 }: Props) {
   const [input, setInput] = useState("");
   const [selectedTrace, setSelectedTrace] = useState<string | null>(null);
+  const [traceWidth, setTraceWidth] = useState(520);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom on new messages
+  const handleAttachClick = () => fileInputRef.current?.click();
+  const handleFilesChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await onUploadFiles(files);
+    // Reset so picking the same file again re-fires onChange.
+    e.target.value = "";
+  };
+
+  // Auto-grow the textarea to fit its content, up to CHAT_INPUT_MAX_PX.
+  // Above the cap it becomes scrollable so a long paste doesn't push
+  // the messages off-screen.
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, CHAT_INPUT_MAX_PX)}px`;
+  }, [input]);
+
+  const handleTraceResize = useCallback((delta: number) => {
+    setTraceWidth((w) => Math.min(900, Math.max(280, w - delta)));
+  }, []);
+
+  // Auto-scroll to bottom on new messages, but only when the user is
+  // already near the bottom — otherwise every streamed token would yank
+  // the viewport away from wherever they scrolled back to read.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = containerRef.current;
+    if (!container) return;
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distanceFromBottom < 200) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -232,9 +315,21 @@ export default function ChatView({
     setSelectedTrace(selectedTrace === toolId ? null : toolId);
   };
 
-  const rawItems = buildDisplayItems(messages);
-  const displayItems = collapseAgentRuns(rawItems, subagentStates);
-  const syntheticTraces = useMemo(() => buildSyntheticTraces(displayItems), [displayItems]);
+  // Memoise the item pipeline so the O(n) transforms don't re-run on
+  // every render (input keystrokes, resize, trace toggle...) — a busy
+  // transcript can otherwise cost noticeable frame time. syntheticTraces
+  // used to depend on displayItems by identity but displayItems was
+  // recomputed each render, so its useMemo never hit; keying it here
+  // makes the memoisation actually stick.
+  const rawItems = useMemo(() => buildDisplayItems(messages), [messages]);
+  const displayItems = useMemo(
+    () => collapseAgentRuns(rawItems, subagentStates),
+    [rawItems, subagentStates],
+  );
+  const syntheticTraces = useMemo(
+    () => buildSyntheticTraces(displayItems),
+    [displayItems],
+  );
 
   const activeTrace = selectedTrace
     ? (liveTraces[selectedTrace] ?? syntheticTraces[selectedTrace] ?? subagentStates[selectedTrace] ?? null)
@@ -259,13 +354,19 @@ export default function ChatView({
               }
 
               if (item.kind === "agent_run") {
+                const isReporter = item.run.agentName === "reporter_agent";
+                const finalResponse = isReporter ? extractFinalResponse(item.run.messages) : null;
                 return (
-                  <AgentRunCard
-                    key={item.run.syntheticId}
-                    run={item.run}
-                    onSelectTrace={handleSelectTrace}
-                    isSelected={selectedTrace === item.run.syntheticId}
-                  />
+                  <div key={item.run.syntheticId}>
+                    <AgentRunCard
+                      run={item.run}
+                      onSelectTrace={handleSelectTrace}
+                      isSelected={selectedTrace === item.run.syntheticId}
+                    />
+                    {finalResponse && (
+                      <FinalAnswerBox content={finalResponse} projectId={projectId} />
+                    )}
+                  </div>
                 );
               }
 
@@ -337,18 +438,26 @@ export default function ChatView({
                   onClick={() => handleSelectTrace(invId)}
                 >
                   <div className="subagent-card-header">
-                    <span className="avatar">{trace.avatar}</span>
+                    <AgentAvatar
+                      name={trace.agent_name}
+                      fallback={trace.avatar}
+                      size={22}
+                    />
                     <span className="subagent-card-name">{trace.agent_name}</span>
                     <span className="subagent-card-action">
                       <span className="live-dot" />
                       {selectedTrace === invId ? "Viewing live trace" : "View live trace"}
                     </span>
                   </div>
-                  {trace.transcript && trace.transcript.length > 0 && (
-                    <div className="subagent-card-output">
-                      Step {trace.transcript.filter((m) => m.type === "ai").length} in progress...
-                    </div>
-                  )}
+                  {(() => {
+                    const currentToolCall = extractCurrentToolCall(trace);
+                    if (!currentToolCall) return null;
+                    return (
+                      <div className="subagent-card-output">
+                        <span className="tool-call-pill">→ {currentToolCall}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ))}
@@ -371,8 +480,13 @@ export default function ChatView({
             <div ref={messagesEndRef} />
           </div>
 
-          <form className="chat-input-bar" onSubmit={handleSubmit}>
+          <div className="chat-input-shell">
+          <form
+            className="chat-input-bar"
+            onSubmit={handleSubmit}
+          >
             <textarea
+              ref={textareaRef}
               className="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -381,24 +495,97 @@ export default function ChatView({
               disabled={isRunning}
               rows={1}
             />
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              hidden
+              onChange={handleFilesChosen}
+            />
             <button
-              type="submit"
-              className="send-button"
-              disabled={isRunning || !input.trim()}
+              type="button"
+              className="chat-attach-button"
+              onClick={handleAttachClick}
+              disabled={isRunning}
+              aria-label="Upload files to this project"
             >
-              Send
+              <svg
+                viewBox="0 0 16 16"
+                width="18"
+                height="18"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              >
+                <path d="M8 3v10M3 8h10" />
+              </svg>
+              <span className="chat-button-tooltip chat-button-tooltip-left" role="tooltip">
+                Upload files to this project
+              </span>
             </button>
+            {isRunning ? (
+              <button
+                type="button"
+                className="chat-stop-button"
+                onClick={onCancelRun}
+                aria-label="Stop the running agent"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="14"
+                  height="14"
+                  aria-hidden="true"
+                  fill="currentColor"
+                >
+                  <rect x="3" y="3" width="10" height="10" rx="1.5" />
+                </svg>
+                <span className="chat-button-tooltip chat-button-tooltip-right" role="tooltip">
+                  Stop the agent
+                </span>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="chat-send-button"
+                disabled={!input.trim()}
+                aria-label="Send message"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M8 13V3M3.5 7.5L8 3l4.5 4.5" />
+                </svg>
+                <span className="chat-button-tooltip chat-button-tooltip-right" role="tooltip">
+                  {input.trim() ? "Send message" : "Type a message to send"}
+                </span>
+              </button>
+            )}
           </form>
+          </div>
         </div>
       </div>
 
       {activeTrace && (
-        <div className="chat-column-right">
-          <TracePanel
-            state={activeTrace}
-            onClose={() => setSelectedTrace(null)}
-          />
-        </div>
+        <>
+          <ResizeDivider onResize={handleTraceResize} />
+          <div className="chat-column-right" style={{ width: traceWidth, minWidth: 280 }}>
+            <TracePanel
+              state={activeTrace}
+              projectId={projectId}
+              onClose={() => setSelectedTrace(null)}
+            />
+          </div>
+        </>
       )}
     </div>
   );

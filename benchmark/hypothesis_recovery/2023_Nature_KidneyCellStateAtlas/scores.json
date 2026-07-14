@@ -1,0 +1,20 @@
+{
+  "fixture_id": "2023_Nature_KidneyCellStateAtlas",
+  "scored_utc": "2026-07-11T15:44:05.983435+00:00",
+  "scorer": "heuristic_v1",
+  "scorer_note": "Automatic keyword/jaccard matching for triage; expert audit required for manuscript numbers.",
+  "arms": {
+    "tissueagent": {
+      "arm": "tissueagent",
+      "status": "missing_run"
+    },
+    "cellvoyager": {
+      "arm": "cellvoyager",
+      "status": "missing_run"
+    },
+    "tissueagent_cellvoyager": {
+      "arm": "tissueagent_cellvoyager",
+      "status": "missing_run"
+    }
+  }
+}

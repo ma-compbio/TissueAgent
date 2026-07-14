@@ -23,6 +23,10 @@ export interface SerializedMessage {
   // Tool message fields
   tool_call_id?: string | null;
   status?: string | null;
+
+  // Coding-agent plot references: project-relative paths (e.g.
+  // "outputs/figures/_trace/<id>.png") loaded from the file-download API.
+  image_paths?: string[];
 }
 
 export interface SubagentTranscript {
@@ -39,6 +43,35 @@ export interface HistoryData {
   subagent_states: Record<string, SubagentTranscript>;
 }
 
+/** Execution mode. Autopilot runs end-to-end; copilot pauses for human
+ *  review after the planner and after the recruiter. */
+export type SessionMode = "autopilot" | "copilot";
+
+/** Copilot pause labels — must match server-side `_interrupt_label`. */
+export type PauseLabel = "before_recruiter" | "before_manager";
+
+/** Per-agent accumulated API usage across the session. Mirrors
+ *  ``server.usage_tracker.AgentMetrics``. */
+export interface AgentMetrics {
+  input_tokens: number;
+  output_tokens: number;
+  time_seconds: number;
+  llm_calls: number;
+}
+
+/** Per-plan-step accumulated API usage. Mirrors
+ *  ``server.usage_tracker.StepMetrics``. */
+export interface StepMetrics extends AgentMetrics {
+  step_id: number;
+  agent_name: string;
+}
+
+/** Full snapshot of the session's API usage. */
+export interface MetricsData {
+  agents: Record<string, AgentMetrics>;
+  steps: StepMetrics[];
+}
+
 /** WebSocket event types from server. */
 export type ServerEvent =
   | { type: "history"; data: HistoryData }
@@ -48,7 +81,14 @@ export type ServerEvent =
   | { type: "subagent_message"; data: { invocation_id: string; agent_name: string; message: SerializedMessage } }
   | { type: "subagent_end"; data: { invocation_id: string; agent_name: string } }
   | { type: "run_complete"; elapsed_seconds: number }
-  | { type: "run_error"; error_type: string; detail: string };
+  | { type: "run_error"; error_type: string; detail: string }
+  | { type: "plan_updated"; data: { markdown: string; plan: unknown } }
+  | { type: "mode_updated"; data: { mode: SessionMode } }
+  | { type: "plan_review_requested"; data: { pause: PauseLabel } }
+  | { type: "assignment_review_requested"; data: { pause: PauseLabel } }
+  | { type: "run_cancelled"; data: Record<string, never> }
+  | { type: "project_saved"; data: { project_id: string; title: string } }
+  | { type: "metrics_updated"; data: MetricsData };
 
 /** WebSocket event types from client. */
 export interface SendMessageEvent {
@@ -56,6 +96,46 @@ export interface SendMessageEvent {
   text: string;
   image_ids: string[];
   pdf_ids: string[];
+}
+
+export interface SetModeEvent {
+  type: "set_mode";
+  mode: SessionMode;
+}
+
+/** Approve the currently-paused plan as-is. */
+export interface PlanApprovedEvent {
+  type: "plan_approved";
+}
+
+/** Submit edited plan markdown; server validates + persists + resumes. */
+export interface PlanEditedEvent {
+  type: "plan_edited";
+  markdown: string;
+}
+
+/** Submit free-text feedback on the plan; rewinds to the planner. */
+export interface PlanFeedbackEvent {
+  type: "plan_feedback";
+  text: string;
+}
+
+export interface AssignmentsApprovedEvent {
+  type: "assignments_approved";
+}
+
+export interface AssignmentsEditedEvent {
+  type: "assignments_edited";
+  markdown: string;
+}
+
+export interface AssignmentsFeedbackEvent {
+  type: "assignments_feedback";
+  text: string;
+}
+
+export interface RunCancelledClientEvent {
+  type: "run_cancelled";
 }
 
 export interface FileInfo {
@@ -77,4 +157,10 @@ export interface SessionInfo {
   filename: string;
   label: string;
   path: string;
+  /** First user message, derived at save time. Empty for legacy sessions. */
+  title?: string;
+  /** Stable on-disk filename stem; doubles as project id. */
+  project_id?: string;
+  /** Last-modified time as displayed in the projects list. */
+  saved_at?: string;
 }

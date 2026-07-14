@@ -1,11 +1,19 @@
+---
+title: "Cell-type deconvolution using Tangram"
+keywords:
+  - "squidpy"
+  - "tangram"
+  - "deconvolution"
+  - "cell-type-mapping"
+  - "segmentation"
+  - "visium"
+---
 # Cell-type deconvolution using Tangram
 
 In this tutorial, we show how to leverage Squidpy's `squidpy.im.ImageContainer` for cell-type deconvolution tasks.
 
 Mapping single-cell atlases to spatial transcriptomics data is a crucial analysis steps to integrate cell-type annotation across technologies. Information on the number of nuclei under each spot can help cell-type deconvolution methods.
-**Tangram** <cite data-cite="tangram">Biancalani et al. (2020)</cite>, ([code](https://github.com/broadinstitute/Tangram)) is a cell-type deconvolution method that enables mapping of cell-types to single nuclei under each spot. We will show how to leverage the image container segmentation capabilities, together with Tangram, to map cell types of the mouse cortex from sc-RNA-seq data to Visium data.
 
-To run the notebook locally, create a conda environment as *conda env create -f tangram_environment.yml* using this [tangram_environment.yml](https://github.com/scverse/squidpy_notebooks/blob/main/envs/tangram_environment.yml). 
 
 First, let's import some libraries.
 
@@ -46,7 +54,7 @@ img = sq.datasets.visium_fluo_image_crop()
 adata_sc = sq.datasets.sc_mouse_cortex()
 ```
 
-Here, we subset the crop of the mouse brain to only contain clusters of the brain cortex. The pre-processed single cell dataset was taken from <cite data-cite="tasic2018shared">Tasic et al. (2018)</cite> and pre-processed with standard scanpy functions. To start off, let's visualize both spatial and single-cell datasets.
+Here, we subset the crop of the mouse brain to only contain clusters of the brain cortex. The pre-processed single cell dataset was taken from  and pre-processed with standard scanpy functions. To start off, let's visualize both spatial and single-cell datasets.
 
 
 ```python
@@ -128,7 +136,6 @@ axs[2].set_yticks([])
 axs[2].set_title("Nucleous segmentation", fontdict={"fontsize": 20})
 ```
 
-We can appreciate that despite some false positive, the nuclei segmentation worked well.
 
 We then need to extract some image features useful for the deconvolution task downstream. Specifically, we will need:
 
@@ -168,8 +175,8 @@ sq.pl.spatial_scatter(adata_st, color=["cluster", "cell_count"], frameon=False)
 ```
 
 ## Deconvolution and mapping
-At this stage, we have all we need for the deconvolution task. 
-First, we need to find a set of common genes the single cell and spatial datasets. 
+At this stage, we have all we need for the deconvolution task.
+First, we need to find a set of common genes the single cell and spatial datasets.
 We will use the intersection of the highly variable genes.
 
 
@@ -208,10 +215,6 @@ ad_map = tg.map_cells_to_space(
 
 As a first result, we can take the average of the mapped cells and computes proportions from it. The following functions computes the proportions from the Tangram object result, and store them in the spatial AnnData object.
 
-We can appreciate how average results already give a sense of the success of the deconvolution step. Cortical layers are indeed at higher proportions in the correct regions in the tissue.
-
-Of course some layers seems to be better resolved then others. A more refined gene selection step could be of help in this case.
-
 
 ```python
 tg.project_cell_annotations(ad_map, adata_st, annotation="cell_subclass")
@@ -227,7 +230,6 @@ sq.pl.spatial_scatter(
 )
 ```
 
-And here comes the key part, where we will use the results of the previous deconvolution steps. Previously, we computed the absolute numbers of unique segmentation objects under each spot, together with their centroids. Let's extract them in the right format useful for Tangram.
 
 In the resulting dataframe, each row represents a single segmentation object (therefore a single nuclei). We also have the image coordinates as well as the unique centroid ID, which is a string that contains both the spot ID and a numerical index.
 
@@ -272,7 +274,7 @@ adata_segment = tg.deconvolve_cell_annotations(adata_st)
 adata_segment.obs.head()
 ```
 
-Note that the AnnData object does not contain counts, but only cell type annotations, as results of the Tangram mapping. 
+Note that the AnnData object does not contain counts, but only cell type annotations, as results of the Tangram mapping.
 Nevertheless, it's convenient to create such AnnData object for visualization purposes.
 
 Below you can appreciate how each dot is now not a Visium spot anymore, but a single unique segmentation object, with the mapped cell type.

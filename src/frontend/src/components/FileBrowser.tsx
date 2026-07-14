@@ -1,42 +1,133 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { BrowseEntry } from "../types/messages";
+import FilePreviewLightbox, {
+  type PreviewItem,
+} from "./FilePreviewLightbox";
+import Splitter from "./Splitter";
+import { usePersistedSize } from "../hooks/usePersistedSize";
+
+// Library section height inside the sidebar. Project files takes the
+// rest of the available space. Persisted across reloads. Below ~120
+// the library header + a row or two stop reading; above ~900 project
+// files gets squashed on smaller laptops.
+const LIBRARY_HEIGHT_KEY = "tissueagent:sidebar-library-height";
+const LIBRARY_HEIGHT_DEFAULT = 240;
+const LIBRARY_HEIGHT_MIN = 120;
+const LIBRARY_HEIGHT_MAX = 900;
 
 const API = import.meta.env.DEV ? "http://localhost:8000" : "";
 
 const IMAGE_EXTENSIONS = new Set([
-  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg",
+  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".tif", ".tiff",
 ]);
 
-function isImageFile(name: string): boolean {
+function fileExt(name: string): string {
   const dot = name.lastIndexOf(".");
-  if (dot < 0) return false;
-  return IMAGE_EXTENSIONS.has(name.slice(dot).toLowerCase());
+  return dot < 0 ? "" : name.slice(dot).toLowerCase();
+}
+
+function isImageFile(name: string): boolean {
+  return IMAGE_EXTENSIONS.has(fileExt(name));
+}
+
+/** Which on-disk root the browser is talking to. */
+export type FileScope = "library" | "project";
+
+/** Flatten a BrowseEntry tree into a list of leaf files, in render order.
+ *  Used by FilePreviewLightbox so prev/next can walk siblings naturally. */
+function collectLeafFiles(entries: BrowseEntry[]): BrowseEntry[] {
+  const out: BrowseEntry[] = [];
+  const walk = (es: BrowseEntry[]) => {
+    for (const e of es) {
+      if (e.is_dir) walk(e.children ?? []);
+      else out.push(e);
+    }
+  };
+  walk(entries);
+  return out;
+}
+
+/** Walk the tree to *path* (a "a/b/c"-style relative path) and return the
+ *  entries that live there. Returns null when the path doesn't resolve
+ *  to a directory in the current tree (e.g. it was removed). Empty path
+ *  is the root. */
+function entriesAt(
+  tree: BrowseEntry[],
+  path: string,
+): BrowseEntry[] | null {
+  if (!path) return tree;
+  const parts = path.split("/").filter(Boolean);
+  let level: BrowseEntry[] = tree;
+  for (const part of parts) {
+    const next: BrowseEntry | undefined = level.find(
+      (e) => e.is_dir && e.name === part,
+    );
+    if (!next) return null;
+    level = next.children ?? [];
+  }
+  return level;
+}
+
+/** Split a path into [{ name, path }] segments for breadcrumb rendering. */
+function breadcrumbSegments(path: string): Array<{ name: string; path: string }> {
+  if (!path) return [];
+  const parts = path.split("/").filter(Boolean);
+  const out: Array<{ name: string; path: string }> = [];
+  let acc = "";
+  for (const p of parts) {
+    acc = acc ? `${acc}/${p}` : p;
+    out.push({ name: p, path: acc });
+  }
+  return out;
+}
+
+/** Drop the trailing segment from a path. ``"a/b/c"`` → ``"a/b"``;
+ *  ``"a"`` or ``""`` → ``""``. */
+function parentPath(path: string): string {
+  if (!path) return "";
+  const parts = path.split("/").filter(Boolean);
+  parts.pop();
+  return parts.join("/");
 }
 
 function FileNode({
   entry,
+  scope,
+  projectId,
   onDelete,
-  onPreviewImage,
-  depth = 0,
+  onPreviewFile,
+  onEnterDir,
 }: {
   entry: BrowseEntry;
+  scope: FileScope;
+  projectId?: string;
   onDelete: () => void;
-  onPreviewImage: (path: string) => void;
-  depth?: number;
+  onPreviewFile: (path: string) => void;
+  onEnterDir: (path: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const qs = new URLSearchParams({ scope });
+  if (projectId) qs.set("project_id", projectId);
+  // encodeURI (not encodeURIComponent) so path separators survive — but
+  // reserved chars like ? # % inside a filename would otherwise break the
+  // URL. Encode each segment individually.
+  const encodedPath = entry.path
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+  const downloadUrl = `${API}/api/files/download/${encodedPath}?${qs}`;
+  const deleteUrl = `${API}/api/files/${encodedPath}?${qs}`;
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(`${API}/api/files/download/${entry.path}`, "_blank");
+    // rel="noopener noreferrer" via the third arg — window.open leaves the
+    // new tab with access to the opener otherwise.
+    window.open(downloadUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm(`Delete ${entry.name}?`)) return;
-    const res = await fetch(`${API}/api/files/${entry.path}`, {
-      method: "DELETE",
-    });
+    const res = await fetch(deleteUrl, { method: "DELETE" });
     if (res.ok) onDelete();
   };
 
@@ -49,24 +140,16 @@ function FileNode({
 
   if (entry.is_dir) {
     return (
-      <div className="file-node" style={{ paddingLeft: `${depth * 1.2}rem` }}>
+      <div className="file-node">
         <div
-          className="file-row dir-row"
-          onClick={() => setExpanded(!expanded)}
+          className="file-row dir-row file-row-clickable"
+          onClick={() => onEnterDir(entry.path)}
+          title={`Open ${entry.name}/`}
         >
-          <span className="file-icon">{expanded ? "📂" : "📁"}</span>
+          <span className="file-icon">📁</span>
           <span className="file-name">{entry.name}/</span>
+          <span className="file-row-chevron" aria-hidden="true">›</span>
         </div>
-        {expanded &&
-          entry.children?.map((child) => (
-            <FileNode
-              key={child.path}
-              entry={child}
-              onDelete={onDelete}
-              onPreviewImage={onPreviewImage}
-              depth={depth + 1}
-            />
-          ))}
       </div>
     );
   }
@@ -74,10 +157,11 @@ function FileNode({
   const isImage = isImageFile(entry.name);
 
   return (
-    <div className="file-node" style={{ paddingLeft: `${depth * 1.2}rem` }}>
+    <div className="file-node">
       <div
-        className={`file-row ${isImage ? "file-row-clickable" : ""}`}
-        onClick={isImage ? () => onPreviewImage(entry.path) : undefined}
+        className="file-row file-row-clickable"
+        onClick={() => onPreviewFile(entry.path)}
+        title="Open preview"
       >
         <span className="file-icon">{isImage ? "🖼" : "📄"}</span>
         <span className="file-name">{entry.name}</span>
@@ -93,71 +177,523 @@ function FileNode({
   );
 }
 
-export default function FileBrowser() {
+interface BrowserPaneProps {
+  title: string;
+  description?: string;
+  scope: FileScope;
+  projectId?: string;
+  refreshKey?: number;
+  emptyMessage?: string;
+  /** When true, render an "Upload" button in the section header. */
+  uploadable?: boolean;
+  /** Required when ``uploadable``. Called with the chosen files. */
+  onUpload?: (files: FileList) => Promise<void> | void;
+  /** Hover/focus tooltip text for the upload button. */
+  uploadTooltip?: string;
+  /** Tighter layout for narrow containers (sidebar embedding): the
+   *  description block is hidden, the upload-button label is collapsed
+   *  to "+", and the tree fills the column. */
+  compact?: boolean;
+  /** One-liner explanation surfaced via an info icon next to the title.
+   *  Useful in compact mode where the longer description is hidden. */
+  infoText?: string;
+  /** Open the parent-owned lightbox preview. The pane converts its
+   *  current tree's leaf files into PreviewItem[] and tells the parent
+   *  which one to focus. */
+  onOpenPreview: (items: PreviewItem[], index: number) => void;
+  /** Subtle status pill shown next to the title (e.g. "Unsaved"). */
+  statusBadge?: string;
+  /** Controlled current path. When provided, the pane reads from this
+   *  instead of its own internal state. Pair with ``onPathChange``. */
+  currentPath?: string;
+  /** Notified whenever the pane wants to change its path (folder
+   *  click, breadcrumb click, up arrow). Required when ``currentPath``
+   *  is provided. */
+  onPathChange?: (next: string) => void;
+}
+
+function BrowserPane({
+  title,
+  description,
+  scope,
+  projectId,
+  refreshKey,
+  emptyMessage,
+  uploadable,
+  onUpload,
+  compact = false,
+  infoText,
+  onOpenPreview,
+  statusBadge,
+  currentPath: controlledPath,
+  onPathChange,
+  uploadTooltip,
+}: BrowserPaneProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [tree, setTree] = useState<BrowseEntry[]>([]);
-  const [previewPath, setPreviewPath] = useState<string | null>(null);
+  // Current folder path *within* this pane's tree. Empty string = root.
+  // When ``currentPath`` is passed as a prop the pane is controlled by
+  // the parent (so the lightbox can drive navigation); otherwise it
+  // owns its own state internally.
+  const [uncontrolledPath, setUncontrolledPath] = useState<string>("");
+  const isControlled = controlledPath !== undefined;
+  const currentPath = isControlled ? controlledPath : uncontrolledPath;
+  const setCurrentPath = useCallback(
+    (next: string) => {
+      if (isControlled) {
+        onPathChange?.(next);
+      } else {
+        setUncontrolledPath(next);
+      }
+    },
+    [isControlled, onPathChange],
+  );
 
   const fetchTree = useCallback(async () => {
-    const res = await fetch(`${API}/api/files/browse`);
+    const qs = new URLSearchParams({ scope });
+    if (projectId) qs.set("project_id", projectId);
+    const res = await fetch(`${API}/api/files/browse?${qs}`);
     if (res.ok) setTree(await res.json());
-  }, []);
+    else setTree([]);
+  }, [scope, projectId]);
 
   useEffect(() => {
     fetchTree();
-  }, [fetchTree]);
+  }, [fetchTree, refreshKey]);
 
-  if (previewPath) {
-    const fileName = previewPath.split("/").pop() ?? previewPath;
-    return (
-      <div className="image-preview">
-        <div className="image-preview-header">
-          <button
-            className="image-preview-back"
-            onClick={() => setPreviewPath(null)}
-          >
-            ← Back
-          </button>
-          <span className="image-preview-name">{fileName}</span>
-          <button
-            className="file-action"
-            onClick={() =>
-              window.open(`${API}/api/files/download/${previewPath}`, "_blank")
-            }
-            title="Download"
-          >
-            ⬇ Download
-          </button>
-        </div>
-        <img
-          src={`${API}/api/files/download/${previewPath}`}
-          alt={fileName}
-          className="image-preview-img"
-        />
-      </div>
-    );
-  }
+  // Tree root identity changed (e.g. user switched projects). Drop the
+  // path so we don't display contents from the previous project. Only
+  // applies in uncontrolled mode — the parent owns reset behavior when
+  // it's driving currentPath.
+  useEffect(() => {
+    if (!isControlled) setUncontrolledPath("");
+  }, [scope, projectId, isControlled]);
+
+  // After a refetch, if the currentPath no longer resolves (folder was
+  // deleted, project switched, …) fall back to the deepest ancestor
+  // that still does — or root.
+  useEffect(() => {
+    if (!currentPath) return;
+    if (entriesAt(tree, currentPath) !== null) return;
+    let p = parentPath(currentPath);
+    while (p && entriesAt(tree, p) === null) p = parentPath(p);
+    setCurrentPath(p);
+  }, [tree, currentPath, setCurrentPath]);
+
+  const visibleEntries = entriesAt(tree, currentPath) ?? [];
+
+  const handleOpenPreview = useCallback(
+    (path: string) => {
+      // Walk only the current folder for prev/next siblings — feels
+      // natural; "next" from a project output shouldn't jump up into
+      // uploads/ and back down.
+      const leaves = collectLeafFiles(visibleEntries);
+      const items: PreviewItem[] = leaves.map((leaf) => ({
+        path: leaf.path,
+        name: leaf.name,
+        scope,
+        projectId,
+      }));
+      const idx = items.findIndex((it) => it.path === path);
+      if (idx >= 0) onOpenPreview(items, idx);
+    },
+    [visibleEntries, scope, projectId, onOpenPreview],
+  );
+
+  const handleUploadClick = () => fileInputRef.current?.click();
+  const handleFilesChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (onUpload) await onUpload(files);
+    // Reset the input so re-picking the same file fires onChange again.
+    e.target.value = "";
+    fetchTree();
+  };
+
+  const segments = breadcrumbSegments(currentPath);
+  const isAtRoot = currentPath === "";
 
   return (
-    <div className="file-browser">
-      <div className="file-browser-header">
-        <button className="refresh-btn" onClick={fetchTree}>
-          ↻ Refresh
+    <section
+      className={`file-browser-section ${compact ? "compact" : ""}`}
+    >
+      <header className="file-browser-section-header">
+        <div className="file-browser-section-titles">
+          <div className="file-browser-section-title-row">
+            <h2 className="file-browser-section-title">{title}</h2>
+            {statusBadge && (
+              <span
+                className="file-browser-section-badge"
+                title={statusBadge}
+              >
+                {statusBadge}
+              </span>
+            )}
+            {infoText && (
+              <span
+                className="file-browser-info"
+                tabIndex={0}
+                aria-label={`About ${title}`}
+                role="note"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="13"
+                  height="13"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                >
+                  <circle cx="8" cy="8" r="6.5" />
+                  <line x1="8" y1="7" x2="8" y2="11.5" strokeLinecap="round" />
+                  <circle cx="8" cy="4.7" r="0.6" fill="currentColor" stroke="none" />
+                </svg>
+                <span className="file-browser-info-popover" role="tooltip">
+                  {infoText}
+                </span>
+              </span>
+            )}
+          </div>
+          {description && !compact && (
+            <p className="file-browser-section-desc">{description}</p>
+          )}
+        </div>
+        <div className="file-browser-section-actions">
+          {uploadable && (
+            <>
+              {compact ? (
+                <button
+                  type="button"
+                  className="section-icon-btn"
+                  onClick={handleUploadClick}
+                  aria-label={uploadTooltip ?? `Upload to ${title}`}
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  >
+                    <path d="M8 3v10M3 8h10" />
+                  </svg>
+                  <span className="section-icon-tooltip" role="tooltip">
+                    {uploadTooltip ?? `Upload to ${title}`}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="file-browser-upload-btn"
+                  onClick={handleUploadClick}
+                  title={uploadTooltip ?? `Upload to ${title}`}
+                >
+                  + Upload
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={handleFilesChosen}
+              />
+            </>
+          )}
+          <button
+            type="button"
+            className="section-icon-btn"
+            onClick={fetchTree}
+            aria-label={`Refresh ${title}`}
+          >
+            {/* Refresh arrow — a 3/4 circle ending in a small chevron
+                tip. Same 14×14 visible area as the + button so the two
+                actions sit at identical optical weight in the header. */}
+            <svg
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {/* Arc: from top-right (~3 o'clock high) sweeping CCW to
+                  the 12 o'clock position, leaving a gap at top-right
+                  where the arrowhead sits. */}
+              <path d="M13.2 7.5a5.2 5.2 0 1 1-1.6-3.7" />
+              {/* Arrowhead at the end of the arc — points into the
+                  arc's direction of travel so it reads as a refresh
+                  cycle, not a "go forward" arrow. */}
+              <path d="M13.5 2.2v3.5h-3.5" />
+            </svg>
+            <span className="section-icon-tooltip" role="tooltip">
+              Refresh
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <nav className="file-browser-breadcrumb" aria-label="Current path">
+        <button
+          type="button"
+          className="breadcrumb-up"
+          onClick={() => setCurrentPath(parentPath(currentPath))}
+          disabled={isAtRoot}
+          aria-label="Go up one folder"
+          title="Up one folder"
+        >
+          ↑
         </button>
-      </div>
-      <div className="file-tree">
-        {tree.length === 0 ? (
-          <div className="empty-tree">No files yet.</div>
+        <ol className="breadcrumb-trail">
+          <li>
+            <button
+              type="button"
+              className={`breadcrumb-segment ${isAtRoot ? "active" : ""}`}
+              onClick={() => setCurrentPath("")}
+            >
+              {title}
+            </button>
+          </li>
+          {segments.map((seg, i) => {
+            const isLast = i === segments.length - 1;
+            return (
+              <li key={seg.path}>
+                <span className="breadcrumb-separator" aria-hidden="true">/</span>
+                <button
+                  type="button"
+                  className={`breadcrumb-segment ${isLast ? "active" : ""}`}
+                  onClick={() => setCurrentPath(seg.path)}
+                >
+                  {seg.name}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+
+      <div className={`file-tree ${compact ? "compact-tree" : ""}`}>
+        {visibleEntries.length === 0 ? (
+          <div className="empty-tree">
+            {isAtRoot
+              ? (emptyMessage ?? "No files yet.")
+              : "This folder is empty."}
+          </div>
         ) : (
-          tree.map((entry) => (
+          visibleEntries.map((entry) => (
             <FileNode
               key={entry.path}
               entry={entry}
+              scope={scope}
+              projectId={projectId}
               onDelete={fetchTree}
-              onPreviewImage={setPreviewPath}
+              onPreviewFile={handleOpenPreview}
+              onEnterDir={setCurrentPath}
             />
           ))
         )}
       </div>
+    </section>
+  );
+}
+
+interface FileBrowserProps {
+  /** Frontend bumps this counter to force a refetch (e.g. after uploads). */
+  refreshKey?: number;
+  /** Currently-active project id, or empty string if none. */
+  currentProjectId: string;
+  /** Display title for the active project, used in the section header. */
+  currentProjectTitle: string;
+  /** Upload handler for the Library "+ Upload" button. */
+  onUploadToLibrary: (files: FileList) => Promise<void> | void;
+  /** Upload handler for the Project Files "+ Upload" button.
+   *  Files land in projects/<active>/uploads/, minting a project if
+   *  none is active (the upload becomes part of the next conversation). */
+  onUploadToProject: (files: FileList) => Promise<void> | void;
+  /** Compact rendering for narrow sidebar embedding. Default is the
+   *  full-width Files page layout. */
+  compact?: boolean;
+}
+
+export default function FileBrowser({
+  refreshKey,
+  currentProjectId,
+  currentProjectTitle,
+  onUploadToLibrary,
+  onUploadToProject,
+  compact = false,
+}: FileBrowserProps) {
+  const projectLabel = currentProjectTitle?.trim()
+    ? compact
+      ? "Project files"
+      : `Project files — ${currentProjectTitle}`
+    : "Project files";
+
+  // Per-pane path state lives here at the root so the lightbox can
+  // drive each pane's currentPath when the user clicks a breadcrumb
+  // segment inside it. Each pane is still self-managed otherwise.
+  const [libraryPath, setLibraryPath] = useState<string>("");
+  const [projectPath, setProjectPath] = useState<string>("");
+
+  // Reset the project pane's path whenever the active project changes
+  // (the project tree's root identity has changed too).
+  useEffect(() => {
+    setProjectPath("");
+  }, [currentProjectId]);
+
+  // Lightbox state lives at the root so a single open preview is shared
+  // across both panes — and so the lightbox unmounts cleanly when the
+  // user closes it, regardless of which pane the file came from.
+  const [previewItems, setPreviewItems] = useState<PreviewItem[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const openPreview = useCallback((items: PreviewItem[], index: number) => {
+    if (items.length === 0 || index < 0 || index >= items.length) return;
+    setPreviewItems(items);
+    setPreviewIndex(index);
+    setPreviewOpen(true);
+  }, []);
+
+  const closePreview = useCallback(() => setPreviewOpen(false), []);
+
+  // Lightbox breadcrumb dispatch: close the lightbox and jump the
+  // matching pane to that folder.
+  const handleJumpToPath = useCallback(
+    (scope: FileScope, path: string) => {
+      if (scope === "library") setLibraryPath(path);
+      else setProjectPath(path);
+      setPreviewOpen(false);
+    },
+    [],
+  );
+
+  const libraryPane = (
+    <BrowserPane
+      title="Library"
+      description="Persistent reference data shared across every project. Use the + Upload button here to add datasets and reference files that any project can read."
+      infoText="Persistent reference data shared across all projects. Use + Upload to add datasets or files any project can read."
+      scope="library"
+      refreshKey={refreshKey}
+      emptyMessage={compact ? "No library files." : "No library files yet. Use + Upload to add datasets or reference files."}
+      uploadable
+      onUpload={onUploadToLibrary}
+      uploadTooltip="Upload to library"
+      compact={compact}
+      onOpenPreview={openPreview}
+      currentPath={libraryPath}
+      onPathChange={setLibraryPath}
+    />
+  );
+
+  const projectPane = (
+    <BrowserPane
+      title={projectLabel}
+      description={
+        currentProjectId
+          ? "Files attached to this project, plus everything the agent has written. Sidebar uploads land in uploads/; agent outputs land in outputs/."
+          : "Files you upload before the first prompt stay here as a temporary draft. They become part of the project (and persist) once you send a message."
+      }
+      infoText={
+        currentProjectId
+          ? "Files for the active project: user uploads land in uploads/, agent outputs in outputs/."
+          : "Draft project — uploads will be moved into this project on first prompt. Starting a new project before then discards them."
+      }
+      scope="project"
+      projectId={currentProjectId || undefined}
+      refreshKey={refreshKey}
+      emptyMessage={
+        currentProjectId
+          ? "No project files yet."
+          : "No files staged yet. Upload to stage files for the next prompt."
+      }
+      compact={compact}
+      onOpenPreview={openPreview}
+      statusBadge={!currentProjectId ? "Unsaved" : undefined}
+      currentPath={projectPath}
+      onPathChange={setProjectPath}
+      uploadable
+      onUpload={onUploadToProject}
+      uploadTooltip="Upload to project"
+    />
+  );
+
+  return (
+    <div className={`file-browser-stack ${compact ? "compact" : ""}`}>
+      {compact ? (
+        // Sidebar layout: fixed-height Library on top, Project files
+        // below, resize handle between them (mirrors the Projects ↔
+        // Files split in Sidebar.tsx for visual consistency).
+        <SidebarLibraryProjectStack
+          libraryPane={libraryPane}
+          projectPane={projectPane}
+        />
+      ) : (
+        // Standalone Files page: simple stack, no resize — the two
+        // sections live as full-width cards with their own min/max
+        // heights driven by .file-browser-section CSS.
+        <>
+          {libraryPane}
+          {projectPane}
+        </>
+      )}
+
+      {previewOpen && (
+        <FilePreviewLightbox
+          items={previewItems}
+          index={previewIndex}
+          onClose={closePreview}
+          onIndexChange={setPreviewIndex}
+          onJumpToPath={handleJumpToPath}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Compact-mode wrapper: Library pane (resizable height) + Project pane
+ * (fills remainder) + horizontal splitter between them. Lifted out of
+ * the main render so the standalone (non-compact) layout doesn't pay
+ * for the persisted-size hook or the wrapping divs.
+ */
+function SidebarLibraryProjectStack({
+  libraryPane,
+  projectPane,
+}: {
+  libraryPane: React.ReactNode;
+  projectPane: React.ReactNode;
+}) {
+  const [libraryHeight, resizeLibrary] = usePersistedSize(
+    LIBRARY_HEIGHT_KEY,
+    LIBRARY_HEIGHT_DEFAULT,
+    LIBRARY_HEIGHT_MIN,
+    LIBRARY_HEIGHT_MAX,
+  );
+
+  return (
+    <>
+      <div
+        className="file-browser-pane-slot"
+        style={{ height: `${libraryHeight}px` }}
+      >
+        {libraryPane}
+      </div>
+      <Splitter
+        orientation="horizontal"
+        onResize={resizeLibrary}
+        ariaLabel="Resize library panel"
+      />
+      <div className="file-browser-pane-slot file-browser-pane-slot--fill">
+        {projectPane}
+      </div>
+    </>
   );
 }

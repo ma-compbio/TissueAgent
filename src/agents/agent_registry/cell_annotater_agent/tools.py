@@ -1,4 +1,6 @@
-from typing import List
+"""Tool definitions for the Cell Annotater Agent."""
+
+from __future__ import annotations
 
 from langchain.tools import StructuredTool
 
@@ -10,7 +12,7 @@ from agents.agent_registry.cell_annotater_agent.tools_impl.niche_annotation impo
     niche_annotation_tool,
 )
 
-CellAnnotaterTools: List[StructuredTool] = [
+CellAnnotaterTools: list[StructuredTool] = [
     StructuredTool.from_function(
         func=inspect_anndata_preprocessing_tool,
         name="inspect_anndata_preprocessing_tool",

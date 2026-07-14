@@ -1,0 +1,39 @@
+# Declarative metadata for the CellVoyager external agent.
+# See INTEGRATING.md at the repo root for the full schema.
+
+id: cellvoyager_agent
+name: CellVoyager Agent
+version: 0.1.0
+description: >
+  Wraps the CellVoyager autonomous single-cell analysis agent (Zou Group).
+  Given an AnnData dataset and a biological-background text, CellVoyager
+  proposes and executes follow-up analyses, producing a Jupyter notebook and
+  per-analysis hypothesis statements with their analysis plans. Used in
+  TissueAgent for the retrospective hypothesis-recovery benchmark
+  (Reviewer #1 Comment #7 deliverable).
+
+upstream:
+  repo: https://github.com/zou-group/CellVoyager.git
+  # Pinned commit — bump this and re-test when upgrading.
+  commit: 982a5c241b2b8924495a365b4f640c2b9598f6d3
+  submodule_path: upstream
+
+# Model choice: CellVoyager defaults to claude-sonnet-4-6 via litellm. We
+# follow upstream's default for reproducibility against their published
+# benchmarks, but the runner accepts an override.
+llm:
+  pinned_model: claude-sonnet-4-6
+  required_env_vars:
+    - ANTHROPIC_API_KEY
+    - OPENAI_API_KEY  # CellVoyager uses both (Claude for reasoning, OpenAI for VLM)
+
+# Per-invocation artifacts go under data/cellvoyager_agent/<request_id>/.
+data_subdir: cellvoyager_agent
+
+# The single StructuredTool the manager sees.
+tool:
+  name: cellvoyager_analyze_dataset_tool
+  description: >
+    Runs CellVoyager's autonomous analysis pipeline on an AnnData dataset
+    given a biological-background text. Returns proposed hypotheses, the
+    generated Jupyter notebook path, and analysis summaries.
