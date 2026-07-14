@@ -211,10 +211,7 @@ def create_planner_state_update(max_retries: int = 2):
                     f"{max_retries} retries. Last response started with: {text[:120]!r}"
                 )
                 logging.error("planner_state_update: %s", error_msg)
-                response.content = (
-                    "ROUTE: DIRECT\n\n"
-                    f"Planner retries exhausted: {error_msg}"
-                )
+                response.content = f"ROUTE: DIRECT\n\nPlanner retries exhausted: {error_msg}"
                 return {
                     "planner_validation_errors": None,
                     "planner_retry_count": 0,
@@ -250,10 +247,7 @@ def create_planner_state_update(max_retries: int = 2):
                     f"Last response started with: {text[:120]!r}"
                 )
                 logging.error("planner_state_update: %s", error_msg)
-                response.content = (
-                    "ROUTE: DIRECT\n\n"
-                    f"Planner retries exhausted: {error_msg}"
-                )
+                response.content = f"ROUTE: DIRECT\n\nPlanner retries exhausted: {error_msg}"
                 return {
                     "planner_retry_count": 0,
                     "planner_retry_phase": current_phase,
@@ -279,10 +273,7 @@ def create_planner_state_update(max_retries: int = 2):
                     "No fenced JSON block found in the response."
                 )
                 logging.error("planner_state_update: %s", error_msg)
-                response.content = (
-                    "ROUTE: DIRECT\n\n"
-                    f"Planner retries exhausted: {error_msg}"
-                )
+                response.content = f"ROUTE: DIRECT\n\nPlanner retries exhausted: {error_msg}"
                 return {
                     "planner_retry_count": 0,
                     "planner_retry_phase": current_phase,
@@ -455,6 +446,7 @@ def create_recruiter_state_update(valid_agent_ids: set, max_retries: int = 2):
         )
         try:
             from agents.skills_workspace import materialize_skills
+
             assigned = {s for step in doc.steps for s in (step.skills or [])}
             materialized = materialize_skills(assigned)
             if materialized:
@@ -463,9 +455,7 @@ def create_recruiter_state_update(valid_agent_ids: set, max_retries: int = 2):
                     materialized,
                 )
         except Exception as e:
-            logging.warning(
-                "recruiter_state_update: skill materialization failed: %s", e
-            )
+            logging.warning("recruiter_state_update: skill materialization failed: %s", e)
         return {"recruiter_validation_errors": None, "recruiter_retry_count": 0}
 
     return recruiter_state_update

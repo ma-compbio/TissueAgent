@@ -108,7 +108,16 @@ def serialize_subagent_state(
 
     transcript: Optional[List[Dict]] = None
     if isinstance(final_state, dict) and final_state.get("messages"):
-        transcript = [serialize_message(msg) for msg in final_state["messages"]]
+        # Guard against non-BaseMessage entries. Legacy sessions saved before
+        # sub-agent transcripts were round-tripped properly hold the lossy
+        # ``str(BaseMessage)`` repr instead of message objects; serializing
+        # those would raise ``'str' object has no attribute 'content'`` and
+        # take down the whole WebSocket handshake. Skip them instead.
+        transcript = [
+            serialize_message(msg)
+            for msg in final_state["messages"]
+            if isinstance(msg, BaseMessage)
+        ]
 
     return {
         "tool_id": tool_id,

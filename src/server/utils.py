@@ -576,12 +576,17 @@ def _strip_images_from_subagent_states(subagent_states: Dict) -> Dict:
     """Return a copy of subagent_states with inline images stripped for saving.
 
     Sub-agent transcripts (the coding agent especially) can carry multimodal
-    tool results with base64 plots. Those states are persisted via
-    ``json.dumps(default=str)`` — which renders each message as an opaque repr,
-    so a JSON-level scrub can't reach the base64. Instead we collapse each
-    transcript's message content to text here, before dump. The plots remain
-    on disk (referenced by ``trace_image_paths``); the trace re-renders from
-    there on reload.
+    tool results with base64 plots. We collapse each transcript's message
+    content to text here, before dump. The plots remain on disk (referenced by
+    ``trace_image_paths``); the trace re-renders from there on reload.
+
+    The transcript messages are also converted to the same serializable dict
+    form as top-level messages (:func:`message_to_serializable`). Without this
+    step ``json.dumps(default=str)`` would fall back to ``str(BaseMessage)`` for
+    each message — an opaque repr that can't be re-hydrated on load, so the
+    restored transcript would be a list of plain strings and blow up the
+    serializer (``'str' object has no attribute 'content'``). ``load_session``
+    reverses this via :func:`messages_from_dict`.
     """
     cleaned: Dict = {}
     for tool_id, entry in subagent_states.items():
@@ -589,9 +594,10 @@ def _strip_images_from_subagent_states(subagent_states: Dict) -> Dict:
             entry = tuple(entry)
             state = entry[1]
             if isinstance(state, dict) and isinstance(state.get("messages"), list):
+                stripped = strip_images_for_display(state["messages"])
                 state = {
                     **state,
-                    "messages": strip_images_for_display(state["messages"]),
+                    "messages": [message_to_serializable(m) for m in stripped],
                 }
                 entry = (entry[0], state, *entry[2:])
         except Exception as e:
@@ -1122,6 +1128,39 @@ def list_project_chat_files() -> List[Path]:
     return chats
 
 
+def _rehydrate_subagent_states(subagent_states: Any) -> Dict[str, Any]:
+    """Re-hydrate persisted sub-agent transcripts back into ``BaseMessage``s.
+
+    The inverse of the conversion in :func:`_strip_images_from_subagent_states`:
+    each transcript's ``messages`` list is stored as serializable dicts and must
+    be turned back into message objects (via :func:`messages_from_dict`) so the
+    UI serializer can read ``message.content``.
+
+    Legacy sessions saved before this round-trip existed hold the lossy
+    ``str(BaseMessage)`` repr instead of dicts; those (and any other malformed
+    entries) are left untouched here and defended against downstream by the
+    serializer, so an old file loads with a degraded — but non-crashing — trace.
+    """
+    if not isinstance(subagent_states, dict):
+        return {}
+    rehydrated: Dict[str, Any] = {}
+    for tool_id, entry in subagent_states.items():
+        try:
+            entry = list(entry)
+            state = entry[1]
+            if isinstance(state, dict) and isinstance(state.get("messages"), list):
+                msgs = state["messages"]
+                # Only re-hydrate the current dict form; leave legacy string
+                # reprs (or anything unexpected) as-is for the serializer guard.
+                if all(isinstance(m, dict) for m in msgs):
+                    state = {**state, "messages": messages_from_dict(msgs)}
+                    entry[1] = state
+        except Exception as e:
+            logging.warning(f"Could not rehydrate subagent state {tool_id}: {e}")
+        rehydrated[tool_id] = tuple(entry) if isinstance(entry, list) else entry
+    return rehydrated
+
+
 def load_session(path: Path) -> Dict[str, Any]:
     """Load a chat session from a JSON file.
 
@@ -1142,7 +1181,9 @@ def load_session(path: Path) -> Dict[str, Any]:
         snapshot_raw = {}
     return {
         "messages": restored_messages,
-        "subagent_states": payload.get("subagent_states", {}),
+        "subagent_states": _rehydrate_subagent_states(
+            payload.get("subagent_states", {})
+        ),
         "uploaded_pdfs": payload.get("uploaded_pdfs", []),
         "replan_count": payload.get("replan_count", 0),
         "replan_history": payload.get("replan_history", []),
