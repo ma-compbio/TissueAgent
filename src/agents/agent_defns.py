@@ -28,6 +28,7 @@ from agents.agent_registry.critic_agent.prompt import (
 from agents.agent_registry.cellvoyager_agent import agent_definition as CellVoyagerAgentDef
 from agents.agent_registry.critic_agent.tools import CriticTools
 from agents.agent_registry.gene_agent import agent_definition as GeneAgentDef
+from agents.agent_registry.genegpt_agent import agent_definition as GeneGPTDef
 from agents.agent_registry.mllmcelltype_agent import (
     agent_definition as MLLMCelltypeAgentDef,
 )
@@ -222,6 +223,14 @@ AgentDefns: list[ReActAgent | CustomAgent] = [
         prompt=MLLMCelltypeAgentDef.prompt,
         tools=MLLMCelltypeAgentDef.tools,
         model_ctor=MLLMCelltypeAgentDef.model_ctor,
+    ),
+    ReActAgent(
+        id=GeneGPTDef.id,
+        name=GeneGPTDef.name,
+        description=GeneGPTDef.description,
+        prompt=GeneGPTDef.prompt,
+        tools=GeneGPTDef.tools,
+        model_ctor=GeneGPTDef.model_ctor,
     ),
     ReActAgent(
         id="cell_annotator",

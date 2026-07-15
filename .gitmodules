@@ -10,3 +10,6 @@
 	path = src/agents/agent_registry/mllmcelltype_agent/upstream
 	url = https://github.com/cafferychen777/mLLMCelltype.git
 	ignore = dirty
+[submodule "src/agents/agent_registry/genegpt_agent/upstream"]
+	path = src/agents/agent_registry/genegpt_agent/upstream
+	url = https://github.com/ncbi/GeneGPT.git

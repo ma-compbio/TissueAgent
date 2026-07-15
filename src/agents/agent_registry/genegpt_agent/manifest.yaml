@@ -1,0 +1,47 @@
+# Declarative metadata for the GeneGPT external agent.
+# See INTEGRATING.md at the repo root for the full schema.
+
+id: genegpt
+name: GeneGPT
+version: 0.1.0
+description: >
+  Wraps NCBI's GeneGPT (Jin et al., Bioinformatics 2024), an LLM agent that
+  answers factual genomics questions by generating and executing live NCBI
+  Web API calls (E-utilities esearch/efetch/esummary over gene/snp/omim, and
+  BLAST for DNA sequences). It resolves gene aliases and official symbols,
+  genomic locations, SNP-to-gene and gene-to-disease associations, and aligns
+  DNA sequences. Complementary to the Gene Agent, which instead verifies
+  biological-process narratives for a whole gene set.
+
+upstream:
+  repo: https://github.com/ncbi/GeneGPT.git
+  # Pinned commit — bump this and re-test when upgrading.
+  commit: 0a2a327a507be49e660597769cc53431abd6613a
+  submodule_path: upstream
+
+# GeneGPT's upstream default model (code-davinci-002 / gpt-3.5-turbo-16k) is
+# retired, so the adapter retargets its tool-use loop to a current OpenAI
+# model, pinned for reproducibility. The legacy openai==0.27 calling
+# convention is bridged by agents.llm_compat.patch_openai_legacy_api.
+# The model MUST support the `stop` parameter (GeneGPT halts generation on
+# a stop token after each emitted URL); reasoning models (gpt-5.x) reject
+# `stop`, so a chat-completions model like gpt-4o is used here.
+llm:
+  pinned_model: gpt-4o
+  required_env_vars:
+    - OPENAI_API_KEY
+  # Optional: an NCBI E-utilities API key raises the rate limit from 3 to 10
+  # requests/sec. Set NCBI_API_KEY to use it; unset is fine for low volume.
+  optional_env_vars:
+    - NCBI_API_KEY
+
+# Per-invocation artifacts go under <project>/outputs/genegpt/<request_id>/.
+data_subdir: genegpt
+
+# The single StructuredTool the manager sees.
+tool:
+  name: genegpt_answer_question_tool
+  description: >
+    Answers a factual genomics question by having an LLM call live NCBI Web
+    APIs (E-utilities / BLAST) in a multi-step loop. Returns the final answer,
+    the API-call trace, and artifact paths.
