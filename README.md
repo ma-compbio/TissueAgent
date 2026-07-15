@@ -359,33 +359,64 @@ The coding agent can optionally execute code inside an isolated Docker container
 
 ## External agents
 
-TissueAgent integrates third-party research agents through a thin adapter layer. The included external agent is **GeneAgent** ([ncbi-nlp/GeneAgent](https://github.com/ncbi-nlp/GeneAgent)), which interprets a gene list and returns a verified biological-process narrative.
+TissueAgent integrates third-party research agents through a thin adapter layer: each is wrapped as a folder under `src/agents/agent_registry/<agent_id>/` whose upstream source is pinned as a git submodule and exposed to the manager as a single tool. The following external agents ship with TissueAgent:
 
-### Installing GeneAgent
+| Agent | Upstream | What it does | Credentials / requirements |
+|---|---|---|---|
+| **GeneAgent** | [ncbi-nlp/GeneAgent](https://github.com/ncbi-nlp/GeneAgent) | Interprets a gene list and returns a biological-process narrative verified against GO/KEGG/NCBI/PubMed | `OPENAI_API_KEY` (pinned to `gpt-5.1`) |
+| **CellVoyager** | [zou-group/CellVoyager](https://github.com/zou-group/CellVoyager) | Autonomous single-cell analysis of an `.h5ad` dataset; proposes and executes analyses, producing a Jupyter notebook + hypotheses | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`; runs in an isolated `cellvoyager` conda env |
+| **mLLMCelltype** | [cafferychen777/mLLMCelltype](https://github.com/cafferychen777/mLLMCelltype) | Multi-LLM consensus cell-type annotation from per-cluster marker genes; returns labels plus confidence (consensus proportion, entropy, per-model votes) | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`; runs in an isolated `mllmcelltype` conda env |
+| **TxAgent** | [mims-harvard/TxAgent](https://github.com/mims-harvard/TxAgent) | Therapeutic-reasoning agent (drug interactions, contraindications, dose adjustment) via multi-step tool use over the ToolUniverse | **CUDA GPU required** (H100/80GB recommended) + model weights; runs in an isolated `txagent` conda env |
 
-GeneAgent's source is included as a git submodule pinned to a tested upstream commit. The standard `git clone --recurse-submodules ...` from the [repository set-up](#repository-set-up) section fetches it automatically. If you cloned without `--recurse-submodules`, run:
+### Installing the upstream code
+
+Every external agent's source is included as a git submodule pinned to a tested upstream commit. The standard `git clone --recurse-submodules ...` from the [repository set-up](#repository-set-up) section fetches them all automatically. If you cloned without `--recurse-submodules`, run:
 
 ```bash
 git submodule update --init --recursive
 ```
 
-This populates `src/agents/agent_registry/gene_agent/upstream/` with the GeneAgent repository. No additional pip install is required. TissueAgent imports the upstream code directly through its adapter.
+This populates each `src/agents/agent_registry/<agent_id>/upstream/` directory. TissueAgent imports the upstream code through its adapter — no pip install is needed for GeneAgent, and the isolated-env agents below have their own one-time setup.
 
-**Verify the submodule is present:**
+**Verify the submodules are present:**
 
 ```bash
-ls src/agents/agent_registry/gene_agent/upstream/main_cascade.py
+git submodule status
+# each line should show a commit SHA (not prefixed with '-') next to its path
 ```
 
-If the file is missing, re-run the `git submodule update` command above.
+If any are missing, re-run the `git submodule update` command above.
 
-### Credentials and model
+### Per-agent setup and notes
 
-GeneAgent always calls **OpenAI `gpt-5.1`** regardless of which model you've selected for TissueAgent's orchestration or expert agents. This keeps GeneAgent's behavior reproducible across sessions. You must therefore have `OPENAI_API_KEY` available (as an environment variable or pasted into the web UI's *API keys* panel) before invoking the Gene Agent.
+- **GeneAgent** always calls **OpenAI `gpt-5.1`** regardless of TissueAgent's model selection, so its published cascade behavior stays reproducible. No extra install. Requires `OPENAI_API_KEY` (env var or the web UI's *API keys* panel).
+
+- **CellVoyager** and **mLLMCelltype** each depend on `openai>=2.0`, which conflicts with TissueAgent's pinned `openai<2.0`, so they run in their own conda envs. Create them once:
+
+  ```bash
+  # CellVoyager
+  conda env create -n cellvoyager -f src/agents/agent_registry/cellvoyager_agent/upstream/environment.yml
+
+  # mLLMCelltype
+  conda create -n mllmcelltype -y python=3.11
+  conda run -n mllmcelltype pip install "mllmcelltype[openai,anthropic]"
+  ```
+
+  Either `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (OpenAI preferred) must be resolvable through the key registry. mLLMCelltype falls back to importing the pinned submodule in-process if its conda env is absent (convenient for smoke tests; the isolated env is the supported path).
+
+- **TxAgent** serves a fine-tuned 8B model in-process via vLLM and therefore **requires a CUDA GPU** plus a multi-GB HuggingFace weight download. On a GPU host, set it up with:
+
+  ```bash
+  conda create -n txagent -y python=3.10
+  conda run -n txagent pip install txagent tooluniverse
+  export HF_TOKEN=...   # only if the model repo is gated
+  ```
+
+  On a machine without a suitable GPU, the tool returns a structured `requires_gpu` / `unavailable` status and **does not fabricate a clinical answer** — it only produces a recommendation on real GPU hardware.
 
 ### Artifacts
 
-Each Gene Agent invocation writes to `data/gene_agent/<request_id>/` — a final summary, a claims-and-verification log, and the initial GPT response. The absolute paths are returned in the tool output so downstream agents and the user can reference them.
+Each invocation writes to the active project's `outputs/<agent_id>/<request_id>/` directory (GeneAgent historically under `data/gene_agent/<request_id>/`). The absolute paths are returned in the tool output so downstream agents and the user can reference them.
 
 ### Adding your own external agent
 
