@@ -200,9 +200,7 @@ class LocalKernelGateway:
     def ensure_running(self) -> None:
         """Start a local Kernel Gateway if one isn't already reachable."""
         if _gateway_reachable():
-            logging.info(
-                "Adopting existing Kernel Gateway at %s.", KERNEL_GATEWAY_URL
-            )
+            logging.info("Adopting existing Kernel Gateway at %s.", KERNEL_GATEWAY_URL)
             self._adopted_external = True
             return
 
@@ -244,9 +242,7 @@ class LocalKernelGateway:
                 return
             time.sleep(0.5)
         self.stop()
-        raise TimeoutError(
-            f"Local Kernel Gateway did not become healthy within {timeout}s"
-        )
+        raise TimeoutError(f"Local Kernel Gateway did not become healthy within {timeout}s")
 
     def stop(self) -> None:
         """Terminate the spawned gateway (no-op for an adopted external one)."""
@@ -311,6 +307,10 @@ class KernelClient:
         # ``set_workspace()`` updates this; lazy chdir keeps a missing
         # workspace from breaking startup.
         self._workspace: Path | None = None
+        # True while execute() is running our own plumbing (kernel cwd seeding,
+        # the version probe) rather than agent code. Those cells are excluded
+        # from the analysis notebook, and it stops the probe recursing.
+        self._internal_exec = False
 
     def set_workspace(self, path: Path, *, force_restart: bool = False) -> None:
         """Point future kernel executions at *path* as their working dir.
@@ -352,9 +352,7 @@ class KernelClient:
             ws = websocket.create_connection(ws_url, timeout=30)
         except (websocket.WebSocketException, OSError) as e:
             logging.error(f"Failed to connect to kernel websocket: {e}")
-            return ExecutionResult(
-                text=f"[ERROR] Kernel websocket unavailable: {e}", error=True
-            )
+            return ExecutionResult(text=f"[ERROR] Kernel websocket unavailable: {e}", error=True)
 
         timed_out = False
         had_error = False
@@ -418,15 +416,51 @@ class KernelClient:
                     )
                 except Exception as interrupt_err:
                     logging.warning(f"Failed to interrupt kernel {kernel_id}: {interrupt_err}")
-                output_parts.append(
-                    f"\n[ERROR] Execution timed out after {EXECUTION_TIMEOUT}s."
-                )
+                output_parts.append(f"\n[ERROR] Execution timed out after {EXECUTION_TIMEOUT}s.")
                 had_error = True
         finally:
             ws.close()
 
-        text = truncate_output("".join(output_parts), MAX_OUTPUT_CHARS)
+        full_text = "".join(output_parts)
+
+        # Log to the analysis notebook *before* truncating: the record must show
+        # what the cell actually printed, not the 3k-char digest the model sees.
+        self._log_to_notebook(code, full_text, images, language, had_error)
+
+        # spill=True: this is where analysis results land. A truncated DataFrame
+        # dump used to lose its middle rows permanently, leaving re-running the
+        # cell as the only recovery — expensive, and not always deterministic.
+        text = truncate_output(full_text, MAX_OUTPUT_CHARS, spill=True)
         return ExecutionResult(text=text, images=images, error=had_error)
+
+    def _log_to_notebook(
+        self,
+        code: str,
+        text: str,
+        images: list[str],
+        language: str,
+        had_error: bool,
+    ) -> None:
+        """Append this execution to the project's analysis.ipynb.
+
+        Skipped for internal plumbing (kernel cwd seeding, the version probe):
+        that is not analysis and must not appear in the record — and it would
+        otherwise recurse back through ``execute``.
+        """
+        if self._internal_exec:
+            return
+        from agents.agent_registry.coding_agent import notebook_log
+
+        if not notebook_log._notebook_path().exists():
+            # First cell of this project: seed the notebook with a provenance
+            # header + package versions captured from the kernel itself.
+            self._internal_exec = True
+            try:
+                notebook_log.record_environment(lambda c, lang: self.execute(c, language=lang))
+            finally:
+                self._internal_exec = False
+
+        notebook_log.append_cell(code, text, images, language, had_error)
 
     def _get_or_start_kernel(self, language: str) -> str:
         """Return an existing kernel id or start a new one."""
@@ -449,6 +483,12 @@ class KernelClient:
         kernel_id = resp.json()["id"]
         self._kernels[language] = kernel_id
         logging.info(f"Started {language} kernel: {kernel_id}")
+
+        # Must happen here, on the freshly-started kernel: until it chdirs into
+        # the active project, every relative path the agent writes resolves to
+        # the gateway's launch cwd (DATA_DIR) instead of the project dir, so
+        # savefig('outputs/figures/x.png') fails with FileNotFoundError.
+        self._seed_kernel(language)
 
         return kernel_id
 
@@ -483,10 +523,16 @@ class KernelClient:
         else:
             return
 
+        # Suppress notebook logging: chdir boilerplate is plumbing, not analysis,
+        # and would head every notebook with a cell the agent never wrote.
+        previous = self._internal_exec
+        self._internal_exec = True
         try:
             self.execute(seed, language=language)
         except Exception as e:
             logging.warning(f"Failed to seed {language} kernel cwd: {e}")
+        finally:
+            self._internal_exec = previous
 
     def shutdown_kernels(self) -> None:
         """Delete all active kernels (for cleanup between agent runs)."""

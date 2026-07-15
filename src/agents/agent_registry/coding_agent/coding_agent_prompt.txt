@@ -50,6 +50,7 @@ Read user inputs from `project/uploads/` and shared inputs from `library/`. Writ
 - You may install R packages via r(): install.packages("<pkg>")
 - Installed packages persist across sessions.
 - When printing unique values or large lists, limit output to first 20 items with ellipsis.
+- Long output is truncated in the middle. When the notice cites a saved path, the full output is on disk: read that path (with offset/limit to page through it) instead of re-running the cell.
 
 ## Error Handling
 - If inputs are missing or assumptions fail, do not guess. Stop and return a clear constraint violation.

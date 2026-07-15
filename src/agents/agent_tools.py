@@ -96,7 +96,7 @@ def _glob(pattern: str) -> str:
     matches = sorted({str(p.relative_to(DATA_DIR)) for p in _iter_visible_files(pattern)})
     if not matches:
         return f"No matches for '{pattern}'."
-    return truncate_output("\n".join(matches), MAX_OUTPUT_CHARS)
+    return truncate_output("\n".join(matches), MAX_OUTPUT_CHARS, spill=True)
 
 
 # Cap grep at 10 MB per file. Larger files are skipped rather than pulled
@@ -139,7 +139,7 @@ def _grep(pattern: str, include: str = "**/*") -> str:
             continue
     if not hits:
         return "No matches found."
-    return truncate_output("\n".join(hits), MAX_OUTPUT_CHARS)
+    return truncate_output("\n".join(hits), MAX_OUTPUT_CHARS, spill=True)
 
 
 def _read(file_path: str, offset: int = 1, limit: int | None = None):
@@ -177,7 +177,17 @@ def _read(file_path: str, offset: int = 1, limit: int | None = None):
             )
         end = start + limit if limit is not None else len(lines)
         selected = "".join(lines[start:end])
-        return truncate_output(selected, MAX_OUTPUT_CHARS)
+        # No spill here: the content is already a file on disk, and the caller
+        # holds its path. Spilling would write a redundant copy and cite a worse
+        # path than the one it just used. Paging via offset/limit is the recovery
+        # mechanism — that's what the notice below points at.
+        truncated = truncate_output(selected, MAX_OUTPUT_CHARS)
+        if truncated is not selected:
+            truncated += (
+                f"\n\n[Re-read {file_path} with a larger offset to see the rest "
+                f"(showing from line {offset} of {len(lines)}).]"
+            )
+        return truncated
     except Exception as e:
         return f"Error: {e}"
 

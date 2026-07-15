@@ -144,10 +144,39 @@ def extract_block(pattern: str, text: str) -> str | None:
     return None
 
 
-def truncate_output(text: str, max_chars: int) -> str:
-    """Truncate text to max_chars, keeping the head and tail with a notice in between."""
+def truncate_output(text: str, max_chars: int, *, spill: bool = False) -> str:
+    """Truncate text to max_chars, keeping the head and tail with a notice in between.
+
+    Args:
+        text: The text to truncate.
+        max_chars: Maximum characters to keep.
+        spill: When True, write the *full* text to disk first and cite its path in
+            the truncation notice, so the dropped middle stays recoverable via the
+            ``read`` tool. Off by default: callers that truncate for display only
+            (e.g. prompt previews) would otherwise litter the workspace with files
+            nobody reads.
+
+    Returns:
+        The original text when it fits, else head + notice + tail.
+    """
     if len(text) <= max_chars:
         return text
+
     half = max_chars // 2
     removed = len(text) - max_chars
-    return f"{text[:half]}\n\n... [{removed} characters truncated] ...\n\n{text[-half:]}"
+
+    notice = f"[{removed} characters truncated]"
+    if spill:
+        # Import locally: agent_utils is imported by modules that don't need the
+        # workspace, and output_spill pulls in project-dir config at import time.
+        from agents.output_spill import spill_text_to_disk
+
+        path = spill_text_to_disk(text)
+        if path:
+            notice = (
+                f"[{removed} characters truncated — full output saved to {path} ; "
+                f"read it with the read tool (use offset/limit to page) rather than "
+                f"re-running this command]"
+            )
+
+    return f"{text[:half]}\n\n... {notice} ...\n\n{text[-half:]}"
