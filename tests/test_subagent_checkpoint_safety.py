@@ -15,6 +15,11 @@ msgpack-serialisable, so a real coding-agent invocation crashed with::
 This test locks in the fix: ``repl`` has been moved out of state into a
 closure-local holder.
 
+``CodeActState`` itself no longer exists — the coding agent was refactored onto
+the shared ``AgentState`` from ``graph.node_factories``. The invariant still
+applies to whatever state the coding agent declares, so this asserts against the
+class it actually uses rather than a name that has been deleted.
+
 Run from the repo root::
 
     OPENAI_API_KEY=dummy .venv/bin/python tests/test_subagent_checkpoint_safety.py
@@ -31,17 +36,37 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 
-def test_codeact_state_has_no_repl() -> None:
-    """Test that CodeActState does not declare a repl field that would break msgpack."""
-    from agents.agent_registry.coding_agent.model import CodeActState
+def test_coding_agent_state_is_checkpoint_safe() -> None:
+    """The coding agent's state must carry nothing msgpack can't serialise.
 
-    annotations = getattr(CodeActState, "__annotations__", {})
+    Formerly asserted against ``CodeActState``; that class is gone and the agent
+    now builds its graph on the shared ``AgentState``. Read the state class off
+    the module the agent imports, so a future rename fails loudly here instead of
+    silently stopping the check.
+    """
+    import agents.agent_registry.coding_agent.model as coding_model
+
+    state_cls = coding_model.AgentState
+    annotations = getattr(state_cls, "__annotations__", {})
+
     assert "repl" not in annotations, (
-        "CodeActState must NOT declare 'repl' — that field would carry a "
+        f"{state_cls.__name__} must NOT declare 'repl' — that field would carry a "
         "PythonREPL into the parent's checkpointer and crash msgpack. "
-        "Keep the REPL in the closure-local repl_holder instead."
+        "Keep the REPL in a closure-local holder instead."
     )
-    print("OK: codeact_state_has_no_repl")
+    # The original bug was a non-serialisable *object* in state, not the name
+    # 'repl' specifically. Pin the whole schema: every field must be a type
+    # msgpack can round-trip.
+    safe = (str, int, float, bool, list, dict, type(None))
+    for field, annotation in annotations.items():
+        if field == "messages":
+            continue  # LangGraph serialises messages itself
+        assert annotation in safe or getattr(annotation, "__origin__", None) in safe, (
+            f"{state_cls.__name__}.{field}: {annotation!r} may not be msgpack-"
+            "serialisable. Sub-graph state is checkpointed by the parent; keep "
+            "non-serialisable objects in a closure instead."
+        )
+    print("OK: coding_agent_state_is_checkpoint_safe")
 
 
 def test_hypothesis_state_has_no_repl() -> None:
@@ -159,7 +184,7 @@ def test_parent_checkpointer_does_not_choke_on_subgraph_state() -> None:
 
 
 if __name__ == "__main__":
-    test_codeact_state_has_no_repl()
+    test_coding_agent_state_is_checkpoint_safe()
     test_hypothesis_state_has_no_repl()
     test_parent_checkpointer_does_not_choke_on_subgraph_state()
     print("\nAll subagent checkpoint safety tests PASS")

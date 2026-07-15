@@ -1,8 +1,14 @@
 r"""Tests for the Milestone 4 copilot resume protocol in chat.py.
 
-The graph itself is not exercised — these tests patch ``_run_graph`` and
+The graph itself is not exercised — these tests patch ``_launch_run`` and
 focus on the dispatcher logic: gate validation, plan edits being
 persisted, feedback messages being appended, and cancel cleaning up.
+
+Patch ``_launch_run``, not ``_run_graph``: every handler calls the former,
+which detaches the latter via ``asyncio.create_task`` and passes its args
+positionally. Patching ``_run_graph`` means nothing is ever awaited and
+``call_args.kwargs`` is always empty — so ``kwargs.get("graph_input") is None``
+passes whether or not the handler ran at all.
 
 Run from the repo root::
 
@@ -14,7 +20,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 
 # Make sure OPENAI_API_KEY exists so the import chain (searcher agent
@@ -81,12 +87,16 @@ def test_plan_approved_validates_gate_and_calls_run_graph():
     _reset_session_to_paused("before_recruiter")
     _seed_plan("awaiting_plan_review")
     ws = FakeWS()
-    with patch.object(chat_module, "_run_graph", new=AsyncMock()) as mock_run:
+    with patch.object(chat_module, "_launch_run") as mock_launch:
         run(chat_module._handle_resume(ws, expected_pause="before_recruiter"))
-        mock_run.assert_awaited_once()
-        # second positional/keyword arg is graph_input=None when resuming
-        kwargs = mock_run.call_args.kwargs
-        assert kwargs.get("graph_input") is None
+        mock_launch.assert_called_once()
+        # graph_input=None means "resume from the checkpoint", as opposed to the
+        # feedback paths which re-invoke from the top with the full state.
+        assert "graph_input" in mock_launch.call_args.kwargs, (
+            "assert the kwarg is actually present — kwargs.get() returning None "
+            "would pass whether or not the handler ever called through."
+        )
+        assert mock_launch.call_args.kwargs["graph_input"] is None
     assert session.paused_at is None
     print("OK: plan_approved_validates_gate_and_calls_run_graph")
 
@@ -95,9 +105,9 @@ def test_wrong_gate_for_assignments_approved():
     """Test that providing the wrong pause gate rejects the resume and sends an error."""
     _reset_session_to_paused("before_recruiter")
     ws = FakeWS()
-    with patch.object(chat_module, "_run_graph", new=AsyncMock()) as mock_run:
+    with patch.object(chat_module, "_launch_run") as mock_run:
         run(chat_module._handle_resume(ws, expected_pause="before_manager"))
-        mock_run.assert_not_awaited()
+        mock_run.assert_not_called()
     assert "run_error" in _types_sent(ws)
     assert any(m.get("error_type") == "WrongPauseGate" for m in ws.sent)
     assert session.paused_at == "before_recruiter"  # untouched
@@ -109,9 +119,9 @@ def test_not_paused_rejects():
     session.reset()
     session.paused_at = None
     ws = FakeWS()
-    with patch.object(chat_module, "_run_graph", new=AsyncMock()) as mock_run:
+    with patch.object(chat_module, "_launch_run") as mock_run:
         run(chat_module._handle_resume(ws, expected_pause="before_recruiter"))
-        mock_run.assert_not_awaited()
+        mock_run.assert_not_called()
     assert any(m.get("error_type") == "NotPaused" for m in ws.sent)
     print("OK: not_paused_rejects")
 
@@ -141,9 +151,9 @@ actual_outputs: []
 
 **Description:** new desc
 """
-    with patch.object(chat_module, "_run_graph", new=AsyncMock()) as mock_run:
+    with patch.object(chat_module, "_launch_run") as mock_run:
         run(chat_module._handle_plan_edited(ws, {"markdown": edited}))
-        mock_run.assert_awaited_once()
+        mock_run.assert_called_once()
 
     # The new markdown should be on disk with user stamp.
     doc = plan_store.read()
@@ -162,9 +172,9 @@ def test_plan_edited_rejects_malformed_without_resuming():
     _seed_plan("awaiting_plan_review")
     before = plan_store.read_markdown()
     ws = FakeWS()
-    with patch.object(chat_module, "_run_graph", new=AsyncMock()) as mock_run:
+    with patch.object(chat_module, "_launch_run") as mock_run:
         run(chat_module._handle_plan_edited(ws, {"markdown": "not a real plan"}))
-        mock_run.assert_not_awaited()
+        mock_run.assert_not_called()
     after = plan_store.read_markdown()
     assert before == after, "plan file was clobbered by a malformed edit"
     assert any(m.get("error_type") == "PlanEditError" for m in ws.sent)
@@ -197,9 +207,9 @@ actual_outputs: []
 **Description:** d
 """
     ws = FakeWS()
-    with patch.object(chat_module, "_run_graph", new=AsyncMock()) as mock_run:
+    with patch.object(chat_module, "_launch_run") as mock_run:
         run(chat_module._handle_assignments_edited(ws, {"markdown": edited}))
-        mock_run.assert_awaited_once()
+        mock_run.assert_called_once()
     doc = plan_store.read()
     assert doc.steps[0].assigned_agent == "coding_agent"
     print("OK: assignments_edited_uses_before_manager_gate")
@@ -210,9 +220,9 @@ def test_assignments_edited_rejects_wrong_gate():
     _reset_session_to_paused("before_recruiter")  # wrong gate for assignments
     _seed_plan("awaiting_plan_review")
     ws = FakeWS()
-    with patch.object(chat_module, "_run_graph", new=AsyncMock()) as mock_run:
+    with patch.object(chat_module, "_launch_run") as mock_run:
         run(chat_module._handle_assignments_edited(ws, {"markdown": "anything"}))
-        mock_run.assert_not_awaited()
+        mock_run.assert_not_called()
     assert any(m.get("error_type") == "WrongPauseGate" for m in ws.sent)
     print("OK: assignments_edited_rejects_wrong_gate")
 
@@ -223,12 +233,11 @@ def test_plan_feedback_appends_message_cycles_thread_resets_plan():
     _seed_plan("awaiting_plan_review")
     original_thread = session.thread_id
     ws = FakeWS()
-    with patch.object(chat_module, "_run_graph", new=AsyncMock()) as mock_run:
+    with patch.object(chat_module, "_launch_run") as mock_launch:
         run(chat_module._handle_plan_feedback(ws, {"text": "narrow to T cells"}))
-        mock_run.assert_awaited_once()
+        mock_launch.assert_called_once()
         # Re-invoked from the top (graph_input=session.agent_state, not None)
-        kwargs = mock_run.call_args.kwargs
-        assert kwargs.get("graph_input") is session.agent_state
+        assert mock_launch.call_args.kwargs["graph_input"] is session.agent_state
 
     # A new HumanMessage was appended with the feedback content.
     last_msg = session.agent_state["messages"][-1]
@@ -247,9 +256,9 @@ def test_feedback_rejects_empty_text():
     _reset_session_to_paused("before_recruiter")
     _seed_plan("awaiting_plan_review")
     ws = FakeWS()
-    with patch.object(chat_module, "_run_graph", new=AsyncMock()) as mock_run:
+    with patch.object(chat_module, "_launch_run") as mock_run:
         run(chat_module._handle_plan_feedback(ws, {"text": "   "}))
-        mock_run.assert_not_awaited()
+        mock_run.assert_not_called()
     assert any(m.get("error_type") == "EmptyFeedback" for m in ws.sent)
     # Pause untouched so user can retry.
     assert session.paused_at == "before_recruiter"
@@ -261,11 +270,10 @@ def test_assignments_feedback_also_rewinds_to_planner():
     _reset_session_to_paused("before_manager")
     _seed_plan("awaiting_assignment_review")
     ws = FakeWS()
-    with patch.object(chat_module, "_run_graph", new=AsyncMock()) as mock_run:
+    with patch.object(chat_module, "_launch_run") as mock_launch:
         run(chat_module._handle_assignments_feedback(ws, {"text": "use spot agent"}))
-        mock_run.assert_awaited_once()
-        kwargs = mock_run.call_args.kwargs
-        assert kwargs.get("graph_input") is session.agent_state
+        mock_launch.assert_called_once()
+        assert mock_launch.call_args.kwargs["graph_input"] is session.agent_state
     last_msg = session.agent_state["messages"][-1]
     assert "use spot agent" in str(last_msg.content)
     print("OK: assignments_feedback_also_rewinds_to_planner")
