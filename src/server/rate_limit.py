@@ -30,7 +30,53 @@ import openai
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.runnables import Runnable, RunnableConfig
 
-RETRIABLE = (openai.RateLimitError, anthropic.RateLimitError)
+
+def _retriable_classes() -> tuple[type[BaseException], ...]:
+    """Exception classes worth retrying: transient, and likely to succeed later.
+
+    Deliberately excluded: ``APIStatusError`` — it is the *base* of
+    ``BadRequestError``/``AuthenticationError``/etc., so catching it would retry
+    deterministic 4xx failures six times over and burn quota to fail identically.
+    List concrete classes only.
+
+    ``APITimeoutError`` is a subclass of ``APIConnectionError`` in both SDKs, so
+    it is covered without being named.
+    """
+    classes: list[type[BaseException]] = [
+        # 429 — rate limited. Provider usually sends a retry-after hint.
+        openai.RateLimitError,
+        anthropic.RateLimitError,
+        # 5xx — transient server-side.
+        openai.InternalServerError,
+        anthropic.InternalServerError,
+        # Network-level, incl. APITimeoutError. No retry-after hint; the caller
+        # falls back to exponential backoff.
+        openai.APIConnectionError,
+        anthropic.APIConnectionError,
+    ]
+
+    # Anthropic 529 "overloaded" is the single most common cause of a long run
+    # dying mid-analysis. It maps to a dedicated OverloadedError that is checked
+    # *before* the >=500 branch and does NOT inherit from InternalServerError, so
+    # it is not covered above. It is absent from both `anthropic.__all__` and
+    # `anthropic._exceptions.__all__`, hence the private-path import guarded by
+    # a fallback: if a future SDK renames or promotes it, we silently lose 529
+    # retries rather than crash at import. tests/test_rate_limit.py asserts the
+    # class is actually found, so the loss is caught in CI, not in production.
+    try:
+        from anthropic._exceptions import OverloadedError
+
+        classes.append(OverloadedError)
+    except ImportError:  # pragma: no cover - depends on SDK internals
+        logging.warning(
+            "anthropic.OverloadedError not importable; 529 overload responses "
+            "will not be retried. Check the anthropic SDK version."
+        )
+
+    return tuple(classes)
+
+
+RETRIABLE = _retriable_classes()
 
 # Safety caps so a misbehaving server can't pin us forever.
 _HEADER_WAIT_MAX_SEC = 120.0
@@ -42,8 +88,14 @@ _JITTER_FRAC = 0.15
 def _extract_retry_after(exc: BaseException) -> Optional[float]:
     """Best-effort extraction of the provider's wait hint, in seconds.
 
-    Both OpenAI and Anthropic surface the underlying HTTPX response on the exception via ``.response``. We also fall
-    back to scanning the error message for explicit "try again in 8s" / "in 800ms" phrasings used by OpenAI's body text.
+    Both OpenAI and Anthropic surface the underlying HTTPX response on the
+    exception via ``.response``. We also fall back to scanning the error message
+    for explicit "try again in 8s" / "in 800ms" phrasings used by OpenAI's body
+    text.
+
+    Returns ``None`` when no hint is available — the common case for the 5xx and
+    connection errors in ``RETRIABLE``, and for ``APITimeoutError``, which has no
+    ``.response`` at all. Callers fall back to exponential backoff.
     """
     resp = getattr(exc, "response", None)
     headers = getattr(resp, "headers", None)
