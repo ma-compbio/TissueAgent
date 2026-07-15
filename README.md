@@ -366,7 +366,6 @@ TissueAgent integrates third-party research agents through a thin adapter layer:
 | **GeneAgent** | [ncbi-nlp/GeneAgent](https://github.com/ncbi-nlp/GeneAgent) | Interprets a gene list and returns a biological-process narrative verified against GO/KEGG/NCBI/PubMed | `OPENAI_API_KEY` (pinned to `gpt-5.1`) |
 | **CellVoyager** | [zou-group/CellVoyager](https://github.com/zou-group/CellVoyager) | Autonomous single-cell analysis of an `.h5ad` dataset; proposes and executes analyses, producing a Jupyter notebook + hypotheses | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`; runs in an isolated `cellvoyager` conda env |
 | **mLLMCelltype** | [cafferychen777/mLLMCelltype](https://github.com/cafferychen777/mLLMCelltype) | Multi-LLM consensus cell-type annotation from per-cluster marker genes; returns labels plus confidence (consensus proportion, entropy, per-model votes) | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`; runs in an isolated `mllmcelltype` conda env |
-| **TxAgent** | [mims-harvard/TxAgent](https://github.com/mims-harvard/TxAgent) | Therapeutic-reasoning agent (drug interactions, contraindications, dose adjustment) via multi-step tool use over the ToolUniverse | **CUDA GPU required** (H100/80GB recommended) + model weights; runs in an isolated `txagent` conda env |
 
 ### Installing the upstream code
 
@@ -403,16 +402,6 @@ If any are missing, re-run the `git submodule update` command above.
   ```
 
   Either `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (OpenAI preferred) must be resolvable through the key registry. mLLMCelltype falls back to importing the pinned submodule in-process if its conda env is absent (convenient for smoke tests; the isolated env is the supported path).
-
-- **TxAgent** serves a fine-tuned 8B model in-process via vLLM and therefore **requires a CUDA GPU** plus a multi-GB HuggingFace weight download. On a GPU host, set it up with:
-
-  ```bash
-  conda create -n txagent -y python=3.10
-  conda run -n txagent pip install txagent tooluniverse
-  export HF_TOKEN=...   # only if the model repo is gated
-  ```
-
-  On a machine without a suitable GPU, the tool returns a structured `requires_gpu` / `unavailable` status and **does not fabricate a clinical answer** — it only produces a recommendation on real GPU hardware.
 
 ### Artifacts
 
