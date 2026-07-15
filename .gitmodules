@@ -6,3 +6,11 @@
 	path = src/agents/agent_registry/cellvoyager_agent/upstream
 	url = https://github.com/zou-group/CellVoyager.git
 	ignore = dirty
+[submodule "src/agents/agent_registry/mllmcelltype_agent/upstream"]
+	path = src/agents/agent_registry/mllmcelltype_agent/upstream
+	url = https://github.com/cafferychen777/mLLMCelltype.git
+	ignore = dirty
+[submodule "src/agents/agent_registry/txagent_agent/upstream"]
+	path = src/agents/agent_registry/txagent_agent/upstream
+	url = https://github.com/mims-harvard/TxAgent.git
+	ignore = dirty

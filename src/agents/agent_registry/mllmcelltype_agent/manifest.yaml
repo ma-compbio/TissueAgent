@@ -1,0 +1,42 @@
+# Declarative metadata for the mLLMCelltype external agent.
+# See INTEGRATING.md at the repo root for the full schema.
+
+id: mllmcelltype
+name: mLLMCelltype Agent
+version: 0.1.0
+description: >
+  Wraps mLLMCelltype (Chen et al.), a multi-LLM consensus cell-type
+  annotator for scRNA-seq. Given per-cluster marker-gene lists plus a
+  species (and optional tissue), it queries one or more LLMs and returns
+  a cell-type label per cluster, with consensus proportion / Shannon
+  entropy / per-model votes when the consensus mode is used. Use it to
+  annotate clusters from a marker table (e.g. Scanpy ``rank_genes_groups``)
+  without writing annotation code by hand.
+
+upstream:
+  repo: https://github.com/cafferychen777/mLLMCelltype.git
+  # Pinned commit — bump this and re-test when upgrading.
+  commit: 34b25899983bb7e72c448a53c14e47d1079219c5
+  submodule_path: upstream
+
+# mLLMCelltype is provider-agnostic: it can drive OpenAI, Anthropic,
+# Gemini, and others. We do NOT pin a single model here — the runner
+# selects the provider/model that matches whichever API key is available
+# (OpenAI preferred, Anthropic fallback) and lets the caller override.
+# At least one of these keys must be present.
+llm:
+  required_env_vars:
+    - OPENAI_API_KEY
+    - ANTHROPIC_API_KEY  # either one is sufficient; OpenAI is preferred
+
+# Per-invocation artifacts go under <project>/outputs/mllmcelltype/<request_id>/.
+data_subdir: mllmcelltype
+
+# The single StructuredTool the manager sees.
+tool:
+  name: mllmcelltype_annotate_clusters_tool
+  description: >
+    Annotates scRNA-seq clusters from per-cluster marker-gene lists using
+    the mLLMCelltype (multi-)LLM annotator. Returns a label per cluster plus,
+    in consensus mode, per-cluster confidence (consensus proportion, entropy)
+    and per-model votes.

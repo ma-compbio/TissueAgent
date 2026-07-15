@@ -28,6 +28,10 @@ from agents.agent_registry.critic_agent.prompt import (
 from agents.agent_registry.cellvoyager_agent import agent_definition as CellVoyagerAgentDef
 from agents.agent_registry.critic_agent.tools import CriticTools
 from agents.agent_registry.gene_agent import agent_definition as GeneAgentDef
+from agents.agent_registry.mllmcelltype_agent import (
+    agent_definition as MLLMCelltypeAgentDef,
+)
+from agents.agent_registry.txagent_agent import agent_definition as TxAgentDef
 from agents.agent_registry.hypothesis_agent.prompt import HypothesisAgentDescription
 from agents.agent_registry.pdf_reader_agent.prompt import (
     PDFReaderAgentDescription,
@@ -211,6 +215,22 @@ AgentDefns: list[ReActAgent | CustomAgent] = [
         prompt=CellVoyagerAgentDef.prompt,
         tools=CellVoyagerAgentDef.tools,
         model_ctor=CellVoyagerAgentDef.model_ctor,
+    ),
+    ReActAgent(
+        id=MLLMCelltypeAgentDef.id,
+        name=MLLMCelltypeAgentDef.name,
+        description=MLLMCelltypeAgentDef.description,
+        prompt=MLLMCelltypeAgentDef.prompt,
+        tools=MLLMCelltypeAgentDef.tools,
+        model_ctor=MLLMCelltypeAgentDef.model_ctor,
+    ),
+    ReActAgent(
+        id=TxAgentDef.id,
+        name=TxAgentDef.name,
+        description=TxAgentDef.description,
+        prompt=TxAgentDef.prompt,
+        tools=TxAgentDef.tools,
+        model_ctor=TxAgentDef.model_ctor,
     ),
     ReActAgent(
         id="cell_annotator",
