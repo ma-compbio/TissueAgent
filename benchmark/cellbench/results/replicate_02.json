@@ -1,0 +1,72 @@
+{
+  "paper_count": 50,
+  "arms": {
+    "tissueagent": {
+      "macro": {
+        "proposal_precision_at_5": 0.7040000000000001,
+        "ground_truth_recall_at_5": 0.39995322651205,
+        "f1_at_5": 0.5006858253993803,
+        "paper_hit_rate": 0.94
+      },
+      "micro": {
+        "matched": 176,
+        "proposal_count": 250,
+        "ground_truth_count": 483,
+        "proposal_precision_at_5": 0.704,
+        "ground_truth_recall_at_5": 0.36438923395445133,
+        "f1_at_5": 0.48021828103683495,
+        "paper_hit_rate": 0.94
+      }
+    },
+    "cellvoyager": {
+      "macro": {
+        "proposal_precision_at_5": 0.672,
+        "ground_truth_recall_at_5": 0.36548910729793077,
+        "f1_at_5": 0.4637787161687417,
+        "paper_hit_rate": 1.0
+      },
+      "micro": {
+        "matched": 168,
+        "proposal_count": 250,
+        "ground_truth_count": 483,
+        "proposal_precision_at_5": 0.672,
+        "ground_truth_recall_at_5": 0.34782608695652173,
+        "f1_at_5": 0.4583901773533425,
+        "paper_hit_rate": 1.0
+      }
+    },
+    "combined": {
+      "macro": {
+        "proposal_precision_at_5": 0.72,
+        "ground_truth_recall_at_5": 0.39645938701821054,
+        "f1_at_5": 0.5017332942703786,
+        "paper_hit_rate": 1.0
+      },
+      "micro": {
+        "matched": 180,
+        "proposal_count": 250,
+        "ground_truth_count": 483,
+        "proposal_precision_at_5": 0.72,
+        "ground_truth_recall_at_5": 0.37267080745341613,
+        "f1_at_5": 0.4911323328785811,
+        "paper_hit_rate": 1.0
+      }
+    }
+  },
+  "paired_macro_deltas": {
+    "combined_minus_cellvoyager": {
+      "proposal_precision_at_5": 0.04799999999999993,
+      "ground_truth_recall_at_5": 0.03097027972027977,
+      "f1_at_5": 0.03795457810163688,
+      "paper_hit_rate": 0.0
+    },
+    "combined_minus_tissueagent": {
+      "proposal_precision_at_5": 0.015999999999999903,
+      "ground_truth_recall_at_5": -0.003493839493839468,
+      "f1_at_5": 0.0010474688709982694,
+      "paper_hit_rate": 0.06000000000000005
+    }
+  },
+  "replicate": "replicate_02",
+  "completed_at": "2026-07-16T07:03:02.015467+00:00"
+}

@@ -1,0 +1,25 @@
+{
+  "protocol_id": "cellbench_three_arm_v1",
+  "created_at": "2026-07-15T15:01:30.361231+00:00",
+  "dataset": "src/agents/agent_registry/cellvoyager_agent/upstream/CellBench/data/cellbench_50.csv",
+  "dataset_sha256": "60314ef059e59a06072421d226086ac0cbf662648a1e11b2f8650f4c0d72b788",
+  "overview": "src/agents/agent_registry/cellvoyager_agent/upstream/cellvoyager/prompts/DeepResearch_Analyses.txt",
+  "overview_sha256": "bd5f928be4745fe2380d513282e8d5517c30f0f704efcda0adc131b0a01d123d",
+  "paper_count": 50,
+  "replicates": 3,
+  "generation_model": "gpt-5.1",
+  "generation_reasoning_effort": "high",
+  "judge_model": "gpt-5",
+  "judge_reasoning_effort": "high",
+  "proposals_per_arm": 5,
+  "logical_calls_per_arm": 3,
+  "unique_generation_calls_per_paper": 8,
+  "judge_calls_per_paper": 3,
+  "workers": 4,
+  "generation_blind_to": [
+    "analyses_titles",
+    "analyses_full"
+  ],
+  "judge_arm_blind": true,
+  "one_to_one_matching": true
+}

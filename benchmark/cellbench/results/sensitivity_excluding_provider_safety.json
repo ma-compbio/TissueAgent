@@ -1,0 +1,63 @@
+{
+  "method": "A paper is affected when any stage records safety_context_retry or provider_safety_fallback. Per-replicate exclusion removes affected papers in that replicate. Common-clean exclusion removes the union of affected paper indices from every replicate.",
+  "affected_by_replicate": {
+    "replicate_01": [
+      {"paper_index": 12, "stages": ["cv_revision"]},
+      {"paper_index": 25, "stages": ["cv_critic", "cv_revision", "combined_critic", "combined_revision"]}
+    ],
+    "replicate_02": [
+      {"paper_index": 0, "stages": ["cv_revision"]},
+      {"paper_index": 12, "stages": ["combined_revision"]},
+      {"paper_index": 25, "stages": ["combined_revision"]}
+    ],
+    "replicate_03": [
+      {"paper_index": 12, "stages": ["combined_revision"]},
+      {"paper_index": 16, "stages": ["combined_revision"]},
+      {"paper_index": 20, "stages": ["combined_revision"]},
+      {"paper_index": 24, "stages": ["combined_revision"]},
+      {"paper_index": 25, "stages": ["cv_revision", "combined_revision"]},
+      {"paper_index": 27, "stages": ["combined_revision"]},
+      {"paper_index": 29, "stages": ["cv_revision", "combined_revision"]},
+      {"paper_index": 32, "stages": ["cv_revision", "combined_revision"]},
+      {"paper_index": 33, "stages": ["combined_revision"]},
+      {"paper_index": 36, "stages": ["combined_revision"]},
+      {"paper_index": 38, "stages": ["cv_revision", "combined_revision"]},
+      {"paper_index": 39, "stages": ["combined_revision"]},
+      {"paper_index": 42, "stages": ["cv_revision", "combined_revision"]},
+      {"paper_index": 44, "stages": ["combined_revision"]},
+      {"paper_index": 46, "stages": ["cv_revision", "combined_revision"]},
+      {"paper_index": 48, "stages": ["combined_revision"]},
+      {"paper_index": 49, "stages": ["cv_revision", "combined_revision"]}
+    ]
+  },
+  "per_replicate_exclusion": {
+    "replicate_01": {
+      "clean_paper_count": 48,
+      "f1_at_5": {"tissueagent": 0.4983597129816759, "cellvoyager": 0.4996282361251991, "combined": 0.5134550343269972},
+      "paired_f1_deltas": {"combined_minus_cellvoyager": 0.013826798201798163, "combined_minus_tissueagent": 0.015095321345321322}
+    },
+    "replicate_02": {
+      "clean_paper_count": 47,
+      "f1_at_5": {"tissueagent": 0.5214996116204148, "cellvoyager": 0.4628598297641123, "combined": 0.5109624711083056},
+      "paired_f1_deltas": {"combined_minus_cellvoyager": 0.04810264134419334, "combined_minus_tissueagent": -0.010537140512109189}
+    },
+    "replicate_03": {
+      "clean_paper_count": 33,
+      "f1_at_5": {"tissueagent": 0.4799728417491728, "cellvoyager": 0.5018976588611557, "combined": 0.5194312789348828},
+      "paired_f1_deltas": {"combined_minus_cellvoyager": 0.017533620073727163, "combined_minus_tissueagent": 0.039458437185710016}
+    }
+  },
+  "common_clean": {
+    "excluded_union_paper_indices": [0, 12, 16, 20, 24, 25, 27, 29, 32, 33, 36, 38, 39, 42, 44, 46, 48, 49],
+    "paper_count_per_replicate": 32,
+    "f1_at_5": {
+      "tissueagent": {"mean": 0.4917130702636617, "sample_sd": 0.017637311957109488, "replicate_values": [0.4830406084661999, 0.5120075616519031, 0.4800910406728821]},
+      "cellvoyager": {"mean": 0.48881201570819544, "sample_sd": 0.015329074237917526, "replicate_values": [0.48503288702097846, 0.47572596130780276, 0.505677198795805]},
+      "combined": {"mean": 0.5132504738323153, "sample_sd": 0.009557280960904364, "replicate_values": [0.5024992747998662, 0.5164695926764341, 0.5207825540206454]}
+    },
+    "paired_f1_deltas": {
+      "combined_minus_cellvoyager": {"mean": 0.02443845812411986, "sample_sd": 0.014169954995710742, "replicate_values": [0.01746638777888776, 0.04074363136863135, 0.015105355224840467]},
+      "combined_minus_tissueagent": {"mean": 0.021537403568653562, "sample_sd": 0.018203975080224713, "replicate_values": [0.01945866633366633, 0.004462031024531021, 0.04069151334776333]}
+    }
+  }
+}

@@ -27,28 +27,21 @@ demo
 ├── figure_recreation_lohoff-2b.ipynb    # notebook for figure recreation task (Figure 2b from Lohoff et. al.)
 ├── figure_recreation_lohoff-2e.ipynb    # notebook for figure recreation task (Figure 2c from Lohoff et. al.)
 ├── spot_deconvolution_visium_heart.ipynb    # notebook for cell-type deconvolution task
-├── run_hypothesis_recovery.py           # Comment #7 hypothesis-recovery benchmark runner
-├── score_hypothesis_recovery.py         # score TissueAgent vs CellVoyager runs
+├── run_cellbench_comparison.py          # CellBench three-arm comparison runner
 ├── notebook_utils.py                    # utility functions for setting up and running TissueAgent in notebooks
 └── README.md
 ```
 
-### Hypothesis-recovery benchmark (Comment #7)
+### CellBench comparison
 
-See [`benchmark/hypothesis_recovery/README.md`](../benchmark/hypothesis_recovery/README.md) and
-[`METHODS.md`](../benchmark/hypothesis_recovery/METHODS.md). Quick start:
+See [`benchmark/cellbench/README.md`](../benchmark/cellbench/README.md). Quick start:
 
 ```bash
-PYTHONPATH=src python demo/run_hypothesis_recovery.py \
-  --fixture farah_heart_merfish --arm tissueagent --seed-existing
-PYTHONPATH=src python demo/run_hypothesis_recovery.py \
-  --fixture farah_heart_merfish --arm cellvoyager --num-analyses 1 --model gpt-4o
-PYTHONPATH=src python demo/score_hypothesis_recovery.py --all --aggregate
+python demo/run_cellbench_comparison.py --replicates 3 --workers 4
 ```
 
 ### Web UI Demo
 
 https://github.com/user-attachments/assets/ef381418-cf5c-431b-9052-f931c922d2c8
-
 
 
