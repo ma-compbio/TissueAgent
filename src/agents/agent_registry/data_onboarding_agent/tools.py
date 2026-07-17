@@ -18,9 +18,10 @@ DataOnboardingTools: List[StructuredTool] = [
         func=download_spatial_data,
         name="download_spatial_data_tool",
         description=(
-            "Safely downloads one explicitly requested HTTPS file into DATA_DIR. "
+            "Safely downloads one explicitly requested HTTPS file into project/outputs. "
             "Validates redirects and resolved addresses, streams through a partial file, "
-            "enforces size limits, verifies an optional publisher checksum, and records SHA-256 provenance."
+            "enforces size limits, verifies a publisher checksum when supplied, and records "
+            "SHA-256 provenance."
         ),
     ),
     StructuredTool.from_function(
@@ -28,7 +29,8 @@ DataOnboardingTools: List[StructuredTool] = [
         name="extract_spatial_archive_tool",
         description=(
             "Safely extracts one ZIP, TAR, TAR.GZ, TGZ, or single GZIP archive. "
-            "Rejects path traversal, links, executable content, excessive entries, and excessive expansion."
+            "Rejects path traversal, links, executable content, excessive entries, and excessive "
+            "expansion."
         ),
     ),
     StructuredTool.from_function(
@@ -43,10 +45,12 @@ DataOnboardingTools: List[StructuredTool] = [
         func=convert_spatial_data,
         name="convert_spatial_data_tool",
         description=(
-            "Converts a supported local spatial-transcriptomics source to H5AD in DATA_DIR. "
+            "Converts a supported local spatial-transcriptomics source to H5AD under "
+            "project/outputs while preserving source metadata. "
             "Supports H5AD, Loom, Seurat RDS/H5Seurat, 10x MEX/H5, delimited matrices, "
-            "CosMx, MERSCOPE, Visium, Visium HD, Xenium, compatible Stereo-seq, and the "
-            "Zenodo 8327576 mouse CNS CSV layout. Conversion never installs dependencies."
+            "CosMx, MERSCOPE, Visium, Visium HD, Xenium, and compatible Stereo-seq. "
+            "Unsupported formats return a visible error for Coding Agent escalation. "
+            "Conversion never installs dependencies."
         ),
     ),
     StructuredTool.from_function(
@@ -54,7 +58,7 @@ DataOnboardingTools: List[StructuredTool] = [
         name="validate_spatial_data_tool",
         description=(
             "Validates an H5AD's shape, unique identifiers, metadata, spatial coordinates, "
-            "expected dimensions, and held-out ground-truth separation."
+            "and expected dimensions."
         ),
     ),
 ]

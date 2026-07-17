@@ -1,6 +1,7 @@
 """File-access tools (glob, grep, read, write) for agents.
 
-These tools operate within the DATA_DIR workspace and are used by sub-agents to interact with project files.
+These tools operate within the DATA_DIR workspace and are used by sub-agents to interact with
+project files.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from typing import Literal
 from langchain.tools import StructuredTool
 
 from agents.agent_utils import truncate_output
+from agents.workspace_paths import resolve_project_output, workspace_relative
 from config import ACTIVE_PROJECT_DIR, DATA_DIR, LIBRARY_DIR, MAX_OUTPUT_CHARS, NOTEBOOK_DIR
 
 ### file read tools
@@ -132,9 +134,7 @@ def _grep(pattern: str, include: str = "**/*") -> str:
             with path.open("r", encoding="utf-8") as fh:
                 for lineno, line in enumerate(fh, 1):
                     if compiled.search(line):
-                        hits.append(
-                            f"{path.relative_to(DATA_DIR)}:{lineno}: {line.rstrip()}"
-                        )
+                        hits.append(f"{path.relative_to(DATA_DIR)}:{lineno}: {line.rstrip()}")
         except (UnicodeDecodeError, PermissionError, OSError):
             continue
     if not hits:
@@ -187,29 +187,29 @@ def _write(
     contents: str,
     mode: Literal["overwrite", "append", "error_if_exists"] = "overwrite",
 ) -> str:
-    """Persist plain-text contents to a file inside DATA_DIR.
+    """Persist plain-text contents beneath the active project's outputs directory.
 
     Args:
-        file_path: Target path relative to DATA_DIR (or absolute under DATA_DIR).
+        file_path: Target path relative to the active project's outputs directory.
         contents: Text payload to write.
         mode: How to write the file. `overwrite` replaces, `append` extends, `error_if_exists`
               fails if the file already exists.
     """
     try:
-        path = _resolve_artifact_path(file_path)
+        path = resolve_project_output(file_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
         mode_normalized = (mode or "overwrite").strip().lower()
         if mode_normalized not in {"overwrite", "append", "error_if_exists"}:
             raise ValueError("mode must be one of: 'overwrite', 'append', 'error_if_exists'.")
 
         if mode_normalized == "error_if_exists" and path.exists():
-            raise FileExistsError(f"Artifact '{path.relative_to(DATA_DIR)}' already exists.")
+            raise FileExistsError(f"Artifact '{workspace_relative(path)}' already exists.")
 
         write_mode = "a" if mode_normalized == "append" else "w"
         with path.open(write_mode, encoding="utf-8") as file_handle:
             file_handle.write(contents)
 
-        relative_target = path.relative_to(DATA_DIR)
-        return f"Success: wrote {len(contents)} characters to '{relative_target.as_posix()}'."
+        return f"Success: wrote {len(contents)} characters to '{workspace_relative(path)}'."
     except Exception as e:
         return f"Error: {e}"
 
@@ -238,7 +238,8 @@ read_tool = StructuredTool.from_function(
     name="read",
     description=(
         "Read a workspace file by path relative to DATA_DIR."
-        " Text files support `offset` (1-based line to start from) and `limit` (max lines to return)."
+        " Text files support `offset` (1-based line to start from) and `limit` "
+        "(max lines to return)."
         " Image files (PNG, JPEG, etc.) are returned as inline content for visual inspection."
     ),
 )
@@ -249,7 +250,8 @@ write_tool = StructuredTool.from_function(
     name="write",
     description=(
         "Create or update a UTF-8 text artifact. "
-        "Provide a relative path (e.g., 'reports/search_summary.txt') and the text to persist."
+        "Provide a path relative to active-project outputs (e.g., "
+        "'reports/search_summary.txt') and the text to persist."
     ),
 )
 

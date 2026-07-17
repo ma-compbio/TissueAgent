@@ -200,7 +200,7 @@ AgentDefns: list[ReActAgent | CustomAgent] = [
         description=DataOnboardingDescription,
         prompt=DataOnboardingPrompt,
         tools=DataOnboardingTools,
-        model_ctor=DefaultModelCtor,
+        model_ctor=WorkerModelCtor,
     ),
     ReActAgent(
         id="critic",

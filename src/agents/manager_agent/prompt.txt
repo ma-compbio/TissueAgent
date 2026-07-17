@@ -27,6 +27,11 @@ B. The previous step has just finished running. Its output is the content of the
  - If the prior step's outputs look correct, call `next_step` to accept it (it is marked done) and dispatch the next plan step.
  - If the prior step's output requires only minor adjustments (e.g. writing the agent output to a file), use the write tool to make these adjustments and dispatch the next plan step.
  - If the prior step's outputs are missing, wrong, or incomplete, call `retry_step` with revised `task_instructions` that explain what to fix.
+ - If the sub-agent explicitly reports a capability mismatch or recommends a different agent,
+   do not retry the same assigned agent and do not advance past the failed step. `retry_step` cannot
+   change the assigned agent. Emit the final failed status immediately so the Evaluator can trigger
+   a replan with the recommended agent. Never instruct a sub-agent to use tools that its reported
+   toolset does not contain.
 When no steps remain and the final execution is acceptable, emit your final response.
 
 ## Validation

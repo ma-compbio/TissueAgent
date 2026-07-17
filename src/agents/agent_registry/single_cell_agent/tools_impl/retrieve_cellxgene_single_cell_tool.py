@@ -6,28 +6,11 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from config import DATA_DIR, active_project_outputs
+from agents.workspace_paths import resolve_project_output, workspace_relative
 
 
 def _resolve_output_path(filename: str) -> Path:
-    raw_path = Path(filename).expanduser()
-    candidates = [raw_path] if raw_path.is_absolute() else [DATA_DIR.parent / raw_path, DATA_DIR / raw_path]
-    output_path = None
-    for candidate in candidates:
-        resolved = candidate.parent.resolve() / candidate.name
-        try:
-            resolved.relative_to(DATA_DIR.resolve())
-        except ValueError:
-            continue
-        output_path = resolved
-        break
-    if output_path is None:
-        raise ValueError(f"filename must resolve inside DATA_DIR: {DATA_DIR}")
-    try:
-        output_path.relative_to(DATA_DIR.resolve())
-    except ValueError as exc:
-        raise ValueError(f"filename must resolve inside DATA_DIR: {DATA_DIR}") from exc
-    return output_path
+    return resolve_project_output(filename, suffix=".h5ad")
 
 
 def _valid_h5ad(path: Path) -> bool:
@@ -53,8 +36,6 @@ def retrieve_cellxgene_single_cell(
             ``project/outputs/datasets/<filename>`` so the user
             can see the downloaded dataset in the Files panel and the
             agent can read it back from a stable relative path.
-
-    Returns:
         census_version: Pinned Census release or the stable alias.
 
     Returns:
@@ -72,7 +53,7 @@ def retrieve_cellxgene_single_cell(
                 "cache_hit": True,
                 "dataset_id": dataset_id,
                 "census_version": census_version,
-                "output_path": str(filepath.relative_to(DATA_DIR)),
+                "output_path": workspace_relative(filepath),
                 "size_bytes": filepath.stat().st_size,
             }
         return {
@@ -102,7 +83,7 @@ def retrieve_cellxgene_single_cell(
         "cache_hit": False,
         "dataset_id": dataset_id,
         "census_version": census_version,
-        "output_path": str(filepath.relative_to(DATA_DIR)),
+        "output_path": workspace_relative(filepath),
         "size_bytes": filepath.stat().st_size,
     }
 
@@ -127,7 +108,9 @@ def retrieve_cellxgene_reference_subset(
         if max_cells_per_label < 1:
             raise ValueError("max_cells_per_label must be positive.")
         for dataset_id in dataset_ids:
-            if not dataset_id or any(char not in "0123456789abcdef-" for char in dataset_id.casefold()):
+            if not dataset_id or any(
+                char not in "0123456789abcdef-" for char in dataset_id.casefold()
+            ):
                 raise ValueError(f"Invalid CELLxGENE dataset ID: {dataset_id}")
         if filepath.exists():
             if _valid_h5ad(filepath):
@@ -136,7 +119,7 @@ def retrieve_cellxgene_reference_subset(
                     "cache_hit": True,
                     "dataset_ids": dataset_ids,
                     "census_version": census_version,
-                    "output_path": str(filepath.relative_to(DATA_DIR)),
+                    "output_path": workspace_relative(filepath),
                     "size_bytes": filepath.stat().st_size,
                 }
             raise ValueError(f"Existing target is not a valid non-empty H5AD: {filepath}")
@@ -162,17 +145,24 @@ def retrieve_cellxgene_reference_subset(
         value_filter = " and ".join(clauses)
         with cellxgene_census.open_soma(census_version=census_version) as census:
             obs = census["census_data"][organism_key].obs
-            metadata = obs.read(
-                value_filter=value_filter,
-                column_names=["soma_joinid", "dataset_id", label_column],
-            ).concat().to_pandas()
+            metadata = (
+                obs.read(
+                    value_filter=value_filter,
+                    column_names=["soma_joinid", "dataset_id", label_column],
+                )
+                .concat()
+                .to_pandas()
+            )
             metadata = metadata.dropna(subset=[label_column])
             if include_labels:
                 metadata = metadata[metadata[label_column].isin(include_labels)]
-                missing_labels = sorted(set(include_labels).difference(metadata[label_column].unique()))
+                missing_labels = sorted(
+                    set(include_labels).difference(metadata[label_column].unique())
+                )
                 if missing_labels:
                     raise ValueError(
-                        "Pinned CELLxGENE datasets lack requested labels: " + ", ".join(missing_labels)
+                        "Pinned CELLxGENE datasets lack requested labels: "
+                        + ", ".join(missing_labels)
                     )
             if metadata.empty:
                 raise ValueError("Pinned CELLxGENE datasets returned no labeled primary cells.")
@@ -198,7 +188,8 @@ def retrieve_cellxgene_reference_subset(
             )
         if reference.n_obs != len(join_ids):
             raise ValueError(
-                f"CELLxGENE returned {reference.n_obs} cells; expected {len(join_ids)} selected cells."
+                f"CELLxGENE returned {reference.n_obs} cells; expected "
+                f"{len(join_ids)} selected cells."
             )
         if label_column not in reference.obs or reference.obs[label_column].isna().any():
             raise ValueError(f"CELLxGENE subset lacks complete '{label_column}' labels.")
@@ -236,7 +227,7 @@ def retrieve_cellxgene_reference_subset(
             "n_cells": reference.n_obs,
             "n_genes": reference.n_vars,
             "n_labels": int(reference.obs[label_column].nunique()),
-            "output_path": str(filepath.relative_to(DATA_DIR)),
+            "output_path": workspace_relative(filepath),
             "size_bytes": filepath.stat().st_size,
         }
     except Exception as error:

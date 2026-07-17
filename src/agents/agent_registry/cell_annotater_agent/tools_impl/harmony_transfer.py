@@ -17,12 +17,10 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 import mygene
 
-from config import (
-    DATA_DIR,
-    DATASET_DIR,
-    LIBRARY_FILES_DIR,
-    UPLOADS_DIR,
-    active_project_outputs,
+from agents.workspace_paths import (
+    resolve_project_output,
+    resolve_workspace_input,
+    workspace_relative,
 )
 
 
@@ -64,14 +62,6 @@ SPECIES_ALIASES = {
 }
 
 
-def _relative_to_data_dir(path: Path) -> str:
-    resolved = path.resolve()
-    try:
-        return str(resolved.relative_to(DATA_DIR.resolve()))
-    except ValueError:
-        return str(resolved)
-
-
 def _resolve_path(path_like: str, *, must_exist: bool) -> Path:
     """Resolve a user-provided path inside the workspace.
 
@@ -84,70 +74,17 @@ def _resolve_path(path_like: str, *, must_exist: bool) -> Path:
     active project's outputs/ directory. Absolute paths are accepted
     but must resolve inside the workspace.
     """
-    raw_path = Path(path_like).expanduser()
-    data_root = DATA_DIR.resolve()
-
-    # ----- Input lookup --------------------------------------------------
     if must_exist:
-        # Search the workspace's read-able roots in priority order.
-        outputs_root = active_project_outputs()
-        candidate_roots: list[Path] = []
-        if raw_path.is_absolute():
-            candidates = [raw_path]
-        else:
-            for root in (
-                outputs_root,
-                outputs_root.parent / "uploads"
-                    if outputs_root.name == "outputs"
-                    else None,
-                DATASET_DIR,
-                LIBRARY_FILES_DIR,
-                UPLOADS_DIR,  # legacy alias; same as LIBRARY_FILES_DIR
-                DATA_DIR,
-            ):
-                if root is None:
-                    continue
-                candidate_roots.append(root)
-            candidates = [root / raw_path for root in candidate_roots]
-
-        seen: set[Path] = set()
-        for candidate in candidates:
-            resolved_candidate = candidate.resolve()
-            if resolved_candidate in seen:
-                continue
-            seen.add(resolved_candidate)
-            try:
-                resolved_candidate.relative_to(data_root)
-            except ValueError:
-                continue
-            if resolved_candidate.exists():
-                return resolved_candidate
-
-        searched_locations = sorted({str(c) for c in seen})
-        raise FileNotFoundError(
-            f"Input '{path_like}' not found inside the workspace '{DATA_DIR}'. "
-            f"Searched: {', '.join(searched_locations)}"
-        )
-
-    # ----- Output path ---------------------------------------------------
-    if raw_path.is_absolute():
-        target = raw_path.resolve()
-    else:
-        target = (active_project_outputs() / raw_path).resolve()
-    try:
-        target.relative_to(data_root)
-    except ValueError as exc:
-        raise ValueError(
-            f"Output path '{path_like}' must be inside the workspace '{DATA_DIR}'."
-        ) from exc
-    return target
+        return resolve_workspace_input(path_like)
+    return resolve_project_output(path_like)
 
 
 def _resolve_output_h5ad_path(
     *,
     output_dir: str,
     output_path: str | None,
-    output_filename: str,
+    output_filename: str | None,
+    input_stem: str,
 ) -> Path:
     if output_path is None and str(output_dir).lower().endswith(".h5ad"):
         output_path = output_dir
@@ -159,20 +96,21 @@ def _resolve_output_h5ad_path(
         return resolved_output_path
 
     output_dir_path = _resolve_path(output_dir, must_exist=False)
+    output_filename = output_filename or f"{input_stem}_annotated.h5ad"
     filename_path = Path(output_filename)
     if filename_path.is_absolute() or filename_path.name != output_filename:
         raise ValueError("output_filename must be a file name, not a path.")
     if filename_path.suffix != ".h5ad":
         raise ValueError("output_filename must end with '.h5ad'.")
 
-    resolved_output_path = (output_dir_path / filename_path).resolve()
-    try:
-        resolved_output_path.relative_to(DATA_DIR.resolve())
-    except ValueError as exc:
-        raise ValueError(
-            f"Output path '{resolved_output_path}' must be inside DATA_DIR '{DATA_DIR}'."
-        ) from exc
-    return resolved_output_path
+    return resolve_project_output(
+        f"{workspace_relative(output_dir_path)}/{filename_path.name}", suffix=".h5ad"
+    )
+
+
+def _default_artifact_stem(input_path: Path) -> str:
+    raw_stem = f"{input_path.parent.name}_{input_path.stem}"
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", raw_stem).strip("._-") or "spatial"
 
 
 def _evenly_spaced_indices(length: int, maximum: int) -> np.ndarray:
@@ -212,9 +150,7 @@ def _inspect_expression_matrix(
         nonzero_values = finite_values[finite_values != 0]
         sampled_nonzero = int(nonzero_values.size)
         nonfinite_values = int(values.size - finite_values.size)
-        negative_fraction = (
-            float(np.mean(nonzero_values < 0)) if nonzero_values.size else 0.0
-        )
+        negative_fraction = float(np.mean(nonzero_values < 0)) if nonzero_values.size else 0.0
         integer_like_fraction = (
             float(np.mean(np.isclose(nonzero_values, np.rint(nonzero_values), atol=1e-6, rtol=0)))
             if nonzero_values.size
@@ -265,7 +201,7 @@ def _inspect_expression_matrix(
 
         return {
             "role": role,
-            "path": _relative_to_data_dir(path),
+            "path": workspace_relative(path),
             "shape": [int(dataset.n_obs), int(dataset.n_vars)],
             "matrix_dtype": str(dataset.X.dtype),
             "sampled_rows": int(len(row_indices)),
@@ -382,9 +318,9 @@ def inspect_anndata_preprocessing_tool(
 def harmony_transfer_tool(
     spatial_anndata_path: str,
     reference_anndata_path: str,
-    output_dir: str = "harmony_transfer_results",
+    output_dir: str = "cell_annotation",
     output_path: str | None = None,
-    output_filename: str = "annotated_object.h5ad",
+    output_filename: str | None = None,
     cell_type_column: str = "cell_type",
     skip_preprocessing: bool | None = None,
     preserve_all_spatial_obs: bool = True,
@@ -393,6 +329,7 @@ def harmony_transfer_tool(
     target_sum: float = 1e4,
     n_top_genes: int = 2000,
     n_pcs: int = 30,
+    min_shared_genes: int | None = None,
     harmony_key: str = "batch",
     harmony_max_iter: int = 20,
     mlp_hidden_layers: tuple = (100, 50),
@@ -411,6 +348,21 @@ def harmony_transfer_tool(
             "message": (
                 "skip_preprocessing must be set explicitly after inspecting both AnnData inputs "
                 "with inspect_anndata_preprocessing_tool."
+            ),
+        }
+    if (
+        min_shared_genes is None
+        or isinstance(min_shared_genes, bool)
+        or not isinstance(min_shared_genes, int)
+        or min_shared_genes < 2
+    ):
+        return {
+            "status": "error",
+            "stage": "validate_shared_gene_decision",
+            "error_type": "ValueError",
+            "message": (
+                "min_shared_genes must be an explicit integer of at least 2 chosen for the "
+                "assay and gene panel."
             ),
         }
     try:
@@ -432,12 +384,25 @@ def harmony_transfer_tool(
             output_dir=output_dir,
             output_path=output_path,
             output_filename=output_filename,
+            input_stem=_default_artifact_stem(spatial_path),
         )
     except ValueError as exc:
         return {"status": "error", "message": str(exc)}
 
     output_dir_path = annotated_output_path.parent
     output_dir_path.mkdir(parents=True, exist_ok=True)
+    meta_path = annotated_output_path.with_suffix(".run_meta.json")
+    if annotated_output_path.exists() or meta_path.exists():
+        return {
+            "status": "error",
+            "stage": "validate_output_path",
+            "error_type": "FileExistsError",
+            "message": (
+                "An output artifact already exists for "
+                f"{workspace_relative(annotated_output_path)}. "
+                "Choose a different output_path."
+            ),
+        }
 
     stage = "load_inputs"
     try:
@@ -505,7 +470,7 @@ def harmony_transfer_tool(
                 "spatial": spatial_mapping_stats,
                 "symbol_casing": symbol_casing_stats,
             }
-            
+
         spatial_obs_before_preprocessing = pd.Index(adata_spatial.obs_names)
 
         # Optionally preprocess datasets (recommended if inputs are raw)
@@ -520,7 +485,11 @@ def harmony_transfer_tool(
                 dataset_name="reference",
             )
             adata_spatial = _preprocess_dataset(
-                adata_spatial, min_genes, min_cells, target_sum, n_top_genes,
+                adata_spatial,
+                min_genes,
+                min_cells,
+                target_sum,
+                n_top_genes,
                 dataset_name="spatial",
             )
         else:
@@ -533,17 +502,22 @@ def harmony_transfer_tool(
 
         stage = "select_shared_genes"
         shared_genes = adata_ref.var_names.intersection(adata_spatial.var_names)
-        if len(shared_genes) < 50:
+        if len(shared_genes) < min_shared_genes:
             return {
                 "status": "error",
-                "message": f"Too few shared genes: {len(shared_genes)}. Need at least 50.",
+                "stage": stage,
+                "message": (
+                    f"Too few shared genes: {len(shared_genes)}. "
+                    f"The explicit minimum is {min_shared_genes}."
+                ),
+                "min_shared_genes": min_shared_genes,
                 "gene_mapping": gene_mapping_stats,
             }
-        
+
         # Subset to shared genes
         adata_ref = adata_ref[:, shared_genes].copy()
         adata_spatial = adata_spatial[:, shared_genes].copy()
-        
+
         # Keep labels outside AnnData.concat. Reference-only .obs columns are not
         # guaranteed to survive concat across supported AnnData versions.
         y_ref = adata_ref.obs[cell_type_column].astype(str).to_numpy(copy=True)
@@ -594,20 +568,18 @@ def harmony_transfer_tool(
             harmony_warnings = []
         else:
             harmony_convergence_status = "not_reported"
-            harmony_warnings = [
-                "Harmony did not report a convergence status through its logger."
-            ]
-        
+            harmony_warnings = ["Harmony did not report a convergence status through its logger."]
+
         # # # Extract Harmony-corrected PCA (use X_pca_harmony if available, else X_pca)
-        harmony_pca_key = 'X_pca_harmony' if 'X_pca_harmony' in adata_combined.obsm else 'X_pca'
-        
+        harmony_pca_key = "X_pca_harmony" if "X_pca_harmony" in adata_combined.obsm else "X_pca"
+
         # # Split back into reference and spatial
         reference_mask = adata_combined.obs["_harmony_dataset"] == "reference"
         spatial_mask = adata_combined.obs["_harmony_dataset"] == "spatial"
-        
+
         X_ref_pca = adata_combined.obsm[harmony_pca_key][reference_mask]
         X_spatial_pca = adata_combined.obsm[harmony_pca_key][spatial_mask]
-        
+
         if X_ref_pca.shape[0] != len(y_ref):
             raise RuntimeError(
                 "Reference embedding row count changed during integration: "
@@ -618,23 +590,23 @@ def harmony_transfer_tool(
         scaler = StandardScaler()
         X_ref_scaled = scaler.fit_transform(X_ref_pca)
         X_spatial_scaled = scaler.transform(X_spatial_pca)
-        
+
         mlp = MLPClassifier(
             hidden_layer_sizes=mlp_hidden_layers,
             max_iter=mlp_max_iter,
             random_state=mlp_random_state,
-            verbose=False
+            verbose=False,
         )
-        
+
         mlp.fit(X_ref_scaled, y_ref)
-        
+
         stage = "predict_spatial_labels"
         predicted_labels = mlp.predict(X_spatial_scaled)
         prediction_probs = mlp.predict_proba(X_spatial_scaled)
-        
+
         # Get prediction confidence (max probability)
         prediction_confidence = np.max(prediction_probs, axis=1)
-        
+
         stage = "attach_predictions"
         # Add predictions to the output object. By default, preserve the input
         # spatial object shape and mark rows that were excluded from transfer.
@@ -644,11 +616,7 @@ def harmony_transfer_tool(
             adata_output = adata_spatial
         if adata_output is None:
             raise ValueError("Internal error: missing output AnnData.")
-        exclusion_reason = (
-            f"n_genes < {min_genes}"
-            if not skip_preprocessing
-            else "not_transferred"
-        )
+        exclusion_reason = f"n_genes < {min_genes}" if not skip_preprocessing else "not_transferred"
         _apply_spatial_predictions(
             adata_output,
             pd.Index(adata_spatial.obs_names),
@@ -665,7 +633,6 @@ def harmony_transfer_tool(
         cell_type_counts = pd.Series(predicted_labels).value_counts()
 
         # Write run metadata
-        meta_path = annotated_output_path.with_suffix(".run_meta.json")
         metadata = {
             "status": "success",
             "method": "Harmony integration + MLP classifier",
@@ -679,6 +646,7 @@ def harmony_transfer_tool(
                 "target_sum": target_sum,
                 "n_top_genes": n_top_genes,
                 "n_pcs": n_pcs,
+                "min_shared_genes": min_shared_genes,
                 "effective_n_pcs": effective_n_pcs,
                 "harmony_key": harmony_key,
                 "harmony_max_iter": harmony_max_iter,
@@ -691,28 +659,26 @@ def harmony_transfer_tool(
             },
             "runtime": {
                 "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-
             },
             "inputs": {
-                "spatial_anndata_path": _relative_to_data_dir(spatial_path),
-                "reference_anndata_path": _relative_to_data_dir(reference_path),
+                "spatial_anndata_path": workspace_relative(spatial_path),
+                "reference_anndata_path": workspace_relative(reference_path),
             },
             "outputs": {
-                "annotated_object_h5ad": _relative_to_data_dir(annotated_output_path),
+                "annotated_object_h5ad": workspace_relative(annotated_output_path),
             },
             "summary": {
                 "n_cells_transferred": int(len(predicted_labels)),
                 "n_input_spatial_cells": spatial_input_n_obs,
                 "n_output_cells": int(adata_output.n_obs),
-                "n_cells_excluded_from_transfer": int(
-                    adata_output.n_obs - len(predicted_labels)
-                ),
+                "n_cells_excluded_from_transfer": int(adata_output.n_obs - len(predicted_labels)),
                 "n_spatial_cells_filtered_by_preprocessing": int(
                     len(spatial_obs_filtered_by_preprocessing)
                 ),
                 "n_unique_cell_types": int(len(cell_type_counts)),
                 "mean_prediction_confidence": float(np.mean(prediction_confidence)),
                 "n_shared_genes": int(len(shared_genes)),
+                "min_shared_genes": min_shared_genes,
                 "gene_mapping": gene_mapping_stats,
                 "harmony_convergence_status": harmony_convergence_status,
                 "warnings": harmony_warnings,
@@ -723,9 +689,9 @@ def harmony_transfer_tool(
 
         return {
             "status": "success",
-            "output_dir": _relative_to_data_dir(output_dir_path),
-            "annotated_object_h5ad": _relative_to_data_dir(annotated_output_path),
-            "run_meta_json": _relative_to_data_dir(meta_path),
+            "output_dir": workspace_relative(output_dir_path),
+            "annotated_object_h5ad": workspace_relative(annotated_output_path),
+            "run_meta_json": workspace_relative(meta_path),
             "n_cells_transferred": len(predicted_labels),
             "n_input_spatial_cells": spatial_input_n_obs,
             "n_output_cells": int(adata_output.n_obs),
@@ -737,6 +703,7 @@ def harmony_transfer_tool(
             "cell_type_counts": cell_type_counts.to_dict(),
             "mean_prediction_confidence": float(np.mean(prediction_confidence)),
             "n_shared_genes": len(shared_genes),
+            "min_shared_genes": min_shared_genes,
             "gene_mapping": gene_mapping_stats,
             "harmony_convergence_status": harmony_convergence_status,
             "warnings": harmony_warnings,
@@ -884,8 +851,6 @@ def _effective_n_pcs(adata: sc.AnnData, requested_n_pcs: int) -> int:
             "Harmony transfer requires at least two combined observations and two shared genes."
         )
     return min(requested_n_pcs, maximum)
-
-
 
 
 def map_genes(
@@ -1076,11 +1041,15 @@ def _align_symbol_casing_between_datasets(
         adata_spatial, canonical_by_upper, "spatial"
     )
 
-    return adata_ref, adata_spatial, {
-        "n_symbol_groups": int(len(canonical_by_upper)),
-        "reference": ref_stats,
-        "spatial": spatial_stats,
-    }
+    return (
+        adata_ref,
+        adata_spatial,
+        {
+            "n_symbol_groups": int(len(canonical_by_upper)),
+            "reference": ref_stats,
+            "spatial": spatial_stats,
+        },
+    )
 
 
 def _canonical_symbol_case_map(values: pd.Index) -> Dict[str, str]:
@@ -1138,9 +1107,7 @@ def _normalize_target_namespace(target_namespace: str) -> str:
         return "ensembl"
     if normalized in {"symbol", "gene_symbol", "gene_symbols"}:
         return "symbol"
-    raise ValueError(
-        "gene_mapping_target must be one of: 'symbol', 'ensembl', 'ensembl.gene'."
-    )
+    raise ValueError("gene_mapping_target must be one of: 'symbol', 'ensembl', 'ensembl.gene'.")
 
 
 def _normalize_mygene_field(field: str) -> str:

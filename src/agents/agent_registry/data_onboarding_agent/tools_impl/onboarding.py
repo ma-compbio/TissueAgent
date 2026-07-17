@@ -27,24 +27,18 @@ import pandas as pd
 import scanpy as sc
 from scipy import sparse
 
-from config import DATA_DIR, ROOT
+from agents.workspace_paths import (
+    resolve_project_output,
+    resolve_workspace_input,
+    workspace_relative,
+)
+from config import ROOT
 
 
 DEFAULT_MAX_DOWNLOAD_BYTES = 2 * 1024**3
 DEFAULT_MAX_ARCHIVE_BYTES = 20 * 1024**3
 DEFAULT_MAX_ARCHIVE_MEMBERS = 10_000
 CHUNK_SIZE = 8 * 1024**2
-GROUND_TRUTH_COLUMNS = {
-    "cell_type",
-    "cell.types",
-    "cell.subtypes",
-    "populations",
-    "Main_molecular_cell_type",
-    "Sub_molecular_cell_type",
-    "Main_molecular_tissue_region",
-    "Sub_molecular_tissue_region",
-    "Molecular_spatial_cell_type",
-}
 EXECUTABLE_SUFFIXES = {
     ".app",
     ".bat",
@@ -75,38 +69,6 @@ def _result_error(operation: str, exc: Exception, **details: Any) -> dict[str, A
     }
     result.update(details)
     return result
-
-
-def _resolve_input(path_like: str) -> Path:
-    path = Path(path_like).expanduser()
-    candidates = [path] if path.is_absolute() else [ROOT / path, DATA_DIR / path]
-    root = ROOT.resolve()
-    for candidate in candidates:
-        resolved = candidate.resolve()
-        try:
-            resolved.relative_to(root)
-        except ValueError:
-            continue
-        if resolved.exists():
-            return resolved
-    raise FileNotFoundError(f"Input '{path_like}' was not found inside workspace '{ROOT}'.")
-
-
-def _resolve_output(path_like: str, *, suffix: str | None = None) -> Path:
-    path = Path(path_like).expanduser()
-    if path.is_absolute():
-        resolved = path.resolve()
-    elif path.parts and path.parts[0] == DATA_DIR.name:
-        resolved = (ROOT / path).resolve()
-    else:
-        resolved = (DATA_DIR / path).resolve()
-    try:
-        resolved.relative_to(DATA_DIR.resolve())
-    except ValueError as exc:
-        raise ValueError(f"Output '{path_like}' must be inside DATA_DIR '{DATA_DIR}'.") from exc
-    if suffix and resolved.suffix.casefold() != suffix.casefold():
-        raise ValueError(f"Output '{path_like}' must end with '{suffix}'.")
-    return resolved
 
 
 def _sha256(path: Path) -> str:
@@ -144,7 +106,9 @@ def _validate_remote_url(url: str) -> None:
     if not parsed.hostname or parsed.username or parsed.password:
         raise ValueError("Download URL must contain a hostname and no embedded credentials.")
     try:
-        addresses = {entry[4][0] for entry in socket.getaddrinfo(parsed.hostname, parsed.port or 443)}
+        addresses = {
+            entry[4][0] for entry in socket.getaddrinfo(parsed.hostname, parsed.port or 443)
+        }
     except socket.gaierror as exc:
         raise ValueError(f"Could not resolve download host '{parsed.hostname}': {exc}") from exc
     if not addresses:
@@ -189,19 +153,23 @@ def download_spatial_data(
             raise ValueError(
                 f"Expected file size {expected_size_bytes} exceeds max_bytes={max_bytes}."
             )
-        destination = _resolve_output(output_path)
+        destination = resolve_project_output(output_path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         checksum = _parse_checksum(expected_checksum)
 
         if destination.exists():
-            size_matches = expected_size_bytes is None or destination.stat().st_size == expected_size_bytes
-            checksum_matches = checksum is None or _file_checksum(destination, checksum[0]) == checksum[1]
+            size_matches = (
+                expected_size_bytes is None or destination.stat().st_size == expected_size_bytes
+            )
+            checksum_matches = (
+                checksum is None or _file_checksum(destination, checksum[0]) == checksum[1]
+            )
             if size_matches and checksum_matches:
                 return {
                     "status": "success",
                     "operation": operation,
                     "cache_hit": True,
-                    "output_path": str(destination.relative_to(DATA_DIR)),
+                    "output_path": workspace_relative(destination),
                     "size_bytes": destination.stat().st_size,
                     "sha256": _sha256(destination),
                 }
@@ -238,13 +206,17 @@ def download_spatial_data(
                         url,
                         headers={"User-Agent": "TissueAgent-safe-downloader/1.0"},
                     )
-                    with opener.open(request, timeout=timeout_seconds) as response, partial.open("wb") as handle:
+                    with (
+                        opener.open(request, timeout=timeout_seconds) as response,
+                        partial.open("wb") as handle,
+                    ):
                         final_url = response.geturl()
                         _validate_remote_url(final_url)
                         declared_length = response.headers.get("Content-Length")
                         if declared_length and int(declared_length) > max_bytes:
                             raise ValueError(
-                                f"Server declared {declared_length} bytes, exceeding max_bytes={max_bytes}."
+                                f"Server declared {declared_length} bytes, exceeding "
+                                f"max_bytes={max_bytes}."
                             )
                         copied = 0
                         while True:
@@ -288,7 +260,7 @@ def download_spatial_data(
             "cache_hit": False,
             "requested_url": url,
             "final_url": final_url,
-            "output_path": str(destination.relative_to(DATA_DIR)),
+            "output_path": workspace_relative(destination),
             "size_bytes": destination.stat().st_size,
             "publisher_checksum": expected_checksum or "",
             "sha256": sha256,
@@ -296,7 +268,7 @@ def download_spatial_data(
         }
         provenance_path = destination.with_name(destination.name + ".download.json")
         provenance_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
-        metadata["provenance_path"] = str(provenance_path.relative_to(DATA_DIR))
+        metadata["provenance_path"] = workspace_relative(provenance_path)
         return metadata
     except Exception as exc:
         return _result_error(operation, exc, url=url, output_path=output_path)
@@ -329,8 +301,8 @@ def extract_spatial_archive(
     """Extract a data archive after validating every member."""
     operation = "extract_spatial_archive"
     try:
-        archive = _resolve_input(archive_path)
-        destination = _resolve_output(output_dir)
+        archive = resolve_workspace_input(archive_path)
+        destination = resolve_project_output(output_dir)
         if destination.exists():
             if any(destination.iterdir()) if destination.is_dir() else True:
                 raise FileExistsError(f"Extraction destination '{destination}' is not empty.")
@@ -344,14 +316,20 @@ def extract_spatial_archive(
                 with zipfile.ZipFile(archive) as handle:
                     members = handle.infolist()
                     if len(members) > max_members:
-                        raise ValueError(f"Archive contains {len(members)} members; limit is {max_members}.")
+                        raise ValueError(
+                            f"Archive contains {len(members)} members; limit is {max_members}."
+                        )
                     for member in members:
                         unix_mode = (member.external_attr >> 16) & 0o170000
                         if unix_mode == 0o120000:
-                            raise ValueError(f"Archive symlink is not allowed: '{member.filename}'.")
+                            raise ValueError(
+                                f"Archive symlink is not allowed: '{member.filename}'."
+                            )
                         permissions = (member.external_attr >> 16) & 0o777
                         if permissions & 0o111:
-                            raise ValueError(f"Executable archive member is not allowed: '{member.filename}'.")
+                            raise ValueError(
+                                f"Executable archive member is not allowed: '{member.filename}'."
+                            )
                         target = _safe_archive_target(temp_root, member.filename)
                         total_bytes += member.file_size
                         if total_bytes > max_uncompressed_bytes:
@@ -367,12 +345,20 @@ def extract_spatial_archive(
                 with tarfile.open(archive, mode="r:*") as handle:
                     members = handle.getmembers()
                     if len(members) > max_members:
-                        raise ValueError(f"Archive contains {len(members)} members; limit is {max_members}.")
+                        raise ValueError(
+                            f"Archive contains {len(members)} members; limit is {max_members}."
+                        )
                     for member in members:
-                        if member.issym() or member.islnk() or not (member.isfile() or member.isdir()):
+                        if (
+                            member.issym()
+                            or member.islnk()
+                            or not (member.isfile() or member.isdir())
+                        ):
                             raise ValueError(f"Unsupported archive member type: '{member.name}'.")
                         if member.isfile() and member.mode & 0o111:
-                            raise ValueError(f"Executable archive member is not allowed: '{member.name}'.")
+                            raise ValueError(
+                                f"Executable archive member is not allowed: '{member.name}'."
+                            )
                         target = _safe_archive_target(temp_root, member.name)
                         total_bytes += member.size
                         if total_bytes > max_uncompressed_bytes:
@@ -403,7 +389,9 @@ def extract_spatial_archive(
                 total_bytes = copied
                 extracted_files.append(target.name)
             else:
-                raise ValueError("Supported archives are ZIP, TAR, TAR.GZ, TGZ, and single GZIP files.")
+                raise ValueError(
+                    "Supported archives are ZIP, TAR, TAR.GZ, TGZ, and single GZIP files."
+                )
             temp_root.replace(destination)
         except Exception:
             shutil.rmtree(temp_root, ignore_errors=True)
@@ -412,8 +400,8 @@ def extract_spatial_archive(
         return {
             "status": "success",
             "operation": operation,
-            "archive_path": str(archive.relative_to(ROOT)),
-            "output_dir": str(destination.relative_to(DATA_DIR)),
+            "archive_path": workspace_relative(archive),
+            "output_dir": workspace_relative(destination),
             "n_files": len(extracted_files),
             "uncompressed_bytes": total_bytes,
             "files": extracted_files[:100],
@@ -445,10 +433,6 @@ def _detect_format(path: Path) -> tuple[str, list[str], list[str]]:
         return "unknown", required, missing
 
     names = {item.name for item in path.iterdir()}
-    if "metadata.csv" in names and "cluster.csv" in names and any(
-        name.endswith("raw_expression_pd.csv") for name in names
-    ):
-        return "zenodo_8327576_mouse_cns_csv", ["metadata.csv", "cluster.csv"], missing
     if "cell_by_gene.csv" in names and "cell_metadata.csv" in names:
         return "merscope", ["cell_by_gene.csv", "cell_metadata.csv"], missing
     if any(name.endswith("exprMat_file.csv") for name in names):
@@ -477,21 +461,43 @@ def inspect_spatial_data(input_path: str) -> dict[str, Any]:
     """Inspect a local file/directory without loading large expression matrices."""
     operation = "inspect_spatial_data"
     try:
-        path = _resolve_input(input_path)
+        path = resolve_workspace_input(input_path)
         detected, required, missing = _detect_format(path)
         contents = []
+        dimensions = None
+        spatial_keys: list[str] = []
+        checksum = None
         if path.is_dir():
             contents = [
-                {"name": item.name, "kind": "directory" if item.is_dir() else "file", "size_bytes": item.stat().st_size}
+                {
+                    "name": item.name,
+                    "kind": "directory" if item.is_dir() else "file",
+                    "size_bytes": item.stat().st_size,
+                }
                 for item in sorted(path.iterdir())[:200]
             ]
+        elif detected == "h5ad":
+            dataset = ad.read_h5ad(path, backed="r")
+            try:
+                dimensions = {"n_obs": int(dataset.n_obs), "n_vars": int(dataset.n_vars)}
+                spatial_keys = sorted(str(key) for key in dataset.obsm.keys())
+            finally:
+                dataset.file.close()
+            checksum = _sha256(path)
         return {
             "status": "success",
             "operation": operation,
-            "input_path": str(path.relative_to(ROOT)),
+            "input_path": workspace_relative(path),
             "kind": "directory" if path.is_dir() else "file",
             "size_bytes": path.stat().st_size if path.is_file() else None,
             "detected_format": detected,
+            "conversion_supported": detected not in {"unknown", "unknown_directory"},
+            "recommended_next_agent": (
+                "coding_agent" if detected in {"unknown", "unknown_directory"} else None
+            ),
+            "dimensions": dimensions,
+            "spatial_keys": spatial_keys,
+            "sha256": checksum,
             "required_files": required,
             "missing_files": missing,
             "contents": contents,
@@ -505,7 +511,11 @@ def _read_delimited(path: Path, delimiter: str | None, orientation: str) -> ad.A
     separator = delimiter or ("\t" if ".tsv" in "".join(path.suffixes).casefold() else ",")
     frame = pd.read_csv(path, sep=separator, index_col=0)
     if orientation == "auto":
-        orientation = "genes_by_cells" if str(frame.index.name or "").casefold() == "gene" else "cells_by_genes"
+        orientation = (
+            "genes_by_cells"
+            if str(frame.index.name or "").casefold() == "gene"
+            else "cells_by_genes"
+        )
     if orientation == "genes_by_cells":
         frame = frame.T
     elif orientation != "cells_by_genes":
@@ -581,7 +591,7 @@ def _read_seurat(path: Path, temp_dir: Path) -> ad.AnnData:
     rscript = shutil.which("Rscript")
     if not rscript:
         raise RuntimeError("Rscript is required for Seurat conversion but was not found.")
-    converter = ROOT / "scripts" / "convert_seurat_to_mtx.R"
+    converter = Path(__file__).with_name("convert_seurat_to_mtx.R")
     if not converter.exists():
         raise RuntimeError(f"Required controlled converter is missing: {converter}")
     command = [rscript, str(converter), str(path), str(temp_dir)]
@@ -623,6 +633,12 @@ def _read_seurat(path: Path, temp_dir: Path) -> ad.AnnData:
     return result
 
 
+def _source_files(path: Path) -> tuple[list[str], bool]:
+    files = [path] if path.is_file() else sorted(item for item in path.rglob("*") if item.is_file())
+    relative = [workspace_relative(item) for item in files[:500]]
+    return relative, len(files) > len(relative)
+
+
 def convert_spatial_data(
     input_path: str,
     output_path: str,
@@ -638,8 +654,8 @@ def convert_spatial_data(
     source: Path | None = None
     destination: Path | None = None
     try:
-        source = _resolve_input(input_path)
-        destination = _resolve_output(output_path, suffix=".h5ad")
+        source = resolve_workspace_input(input_path)
+        destination = resolve_project_output(output_path, suffix=".h5ad")
         destination.parent.mkdir(parents=True, exist_ok=True)
         if destination.exists() and not overwrite:
             raise FileExistsError(f"Output '{destination}' already exists; overwrite is disabled.")
@@ -647,19 +663,6 @@ def convert_spatial_data(
         selected_format = detected if input_format.casefold() == "auto" else input_format.casefold()
         if missing:
             raise FileNotFoundError(f"Missing required companion files: {', '.join(missing)}")
-
-        if selected_format == "zenodo_8327576_mouse_cns_csv":
-            from agents.agent_registry.data_onboarding_agent.tools_impl.zenodo_mouse_cns import (
-                convert_zenodo_mouse_cns_csv,
-            )
-
-            return convert_zenodo_mouse_cns_csv(
-                source,
-                destination,
-                expected_n_obs=expected_n_obs,
-                expected_n_vars=expected_n_vars,
-                overwrite=overwrite,
-            )
 
         temporary_output = destination.with_name(destination.name + ".partial")
         temporary_output.unlink(missing_ok=True)
@@ -700,7 +703,11 @@ def convert_spatial_data(
                 elif selected_format in {"seurat_rds", "h5seurat"}:
                     result = _read_seurat(source, temp_dir)
                 else:
-                    raise ValueError(f"Unsupported or ambiguous input format '{selected_format}'.")
+                    raise ValueError(
+                        f"Unsupported or ambiguous input format '{selected_format}'. "
+                        "Use the Coding Agent to convert it, then validate the resulting H5AD "
+                        "with validate_spatial_data_tool."
+                    )
 
                 result.obs_names = result.obs_names.astype(str)
                 result.var_names = result.var_names.astype(str)
@@ -722,20 +729,32 @@ def convert_spatial_data(
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
+        output_dataset = ad.read_h5ad(destination, backed="r")
+        try:
+            spatial_keys = sorted(str(key) for key in output_dataset.obsm.keys())
+        finally:
+            output_dataset.file.close()
+        source_files, source_files_truncated = _source_files(source)
+        warnings = [] if "spatial" in spatial_keys else ["No obsm['spatial'] coordinates found."]
         metadata = {
             "status": "success",
             "operation": operation,
-            "input_path": str(source.relative_to(ROOT)),
+            "input_path": workspace_relative(source),
             "input_format": selected_format,
-            "output_path": str(destination.relative_to(DATA_DIR)),
+            "detected_format": detected,
+            "output_path": workspace_relative(destination),
             "n_obs": int(n_obs),
             "n_vars": int(n_vars),
+            "spatial_keys": spatial_keys,
+            "source_files": source_files,
+            "source_files_truncated": source_files_truncated,
+            "warnings": warnings,
             "sha256": _sha256(destination),
             "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
         provenance = destination.with_suffix(".conversion.json")
         provenance.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
-        metadata["provenance_path"] = str(provenance.relative_to(DATA_DIR))
+        metadata["provenance_path"] = workspace_relative(provenance)
         return metadata
     except Exception as exc:
         return _result_error(
@@ -751,12 +770,11 @@ def validate_spatial_data(
     expected_n_obs: int | None = None,
     expected_n_vars: int | None = None,
     require_spatial: bool = False,
-    require_ground_truth_held_out: bool = False,
 ) -> dict[str, Any]:
     """Validate an H5AD without materializing its expression matrix."""
     operation = "validate_spatial_data"
     try:
-        path = _resolve_input(h5ad_path)
+        path = resolve_workspace_input(h5ad_path)
         if path.suffix.casefold() != ".h5ad":
             raise ValueError("Validation input must be an .h5ad file.")
         dataset = ad.read_h5ad(path, backed="r")
@@ -777,11 +795,6 @@ def validate_spatial_data(
             has_spatial = "spatial" in dataset.obsm
             if require_spatial and not has_spatial:
                 errors.append("Required obsm['spatial'] coordinates are missing.")
-            present_truth = sorted(GROUND_TRUTH_COLUMNS.intersection(dataset.obs.columns))
-            if require_ground_truth_held_out and present_truth:
-                errors.append(
-                    "Ground-truth columns remain in annotation input: " + ", ".join(present_truth)
-                )
             if not has_spatial:
                 warnings.append("No obsm['spatial'] coordinates were found.")
         finally:
@@ -790,11 +803,10 @@ def validate_spatial_data(
         return {
             "status": "success" if not errors else "error",
             "operation": operation,
-            "h5ad_path": str(path.relative_to(ROOT)),
+            "h5ad_path": workspace_relative(path),
             "n_obs": int(n_obs),
             "n_vars": int(n_vars),
             "has_spatial": has_spatial,
-            "ground_truth_columns_present": present_truth,
             "errors": errors,
             "warnings": warnings,
             "sha256": _sha256(path),
