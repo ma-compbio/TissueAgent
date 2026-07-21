@@ -56,5 +56,9 @@ COPILOT_QA.md
 .impeccable.md
 
 # Benchmark runtime artifacts
-benchmark/cellbench/runs/
+benchmark/spatial_cellbench/runs/
+benchmark/spatial_cellbench/slurm/*.out
 workspace/cellvoyager_agent/
+
+# Local public-paper archives used to curate Spatial CellBench
+/papers-*.zip
