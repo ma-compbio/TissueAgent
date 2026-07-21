@@ -11,7 +11,7 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-ROOT=${ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}
+ROOT=${ROOT:-${SLURM_SUBMIT_DIR:-$(cd "$SCRIPT_DIR/../../.." && pwd)}}
 PYTHON=${PYTHON:-$HOME/miniconda3/envs/tissueagent/bin/python}
 RUN_ROOT=${RUN_ROOT:-$ROOT/benchmark/spatial_cellbench/runs/formal_3paper_extension}
 STAGE=${1:-generation}
