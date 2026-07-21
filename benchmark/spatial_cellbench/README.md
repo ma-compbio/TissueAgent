@@ -67,9 +67,8 @@ sbatch --dependency=afterok:${JUDGE_JOB} --array=0 benchmark/spatial_cellbench/s
 The default run root is `benchmark/spatial_cellbench/runs/formal_3paper_extension`. Set `RUN_ROOT`
 to use a different immutable run directory. The launcher defaults to the local `tissueagent`
 Conda environment; set `PYTHON` to override it. Submit from the repository root. Do not combine
-checkpoints from another source fingerprint.
+checkpoints from another source fingerprint inside one resumable run directory.
 
-The exact estimands and contrasts are frozen in `analysis_spec.md`. The completed eight-paper
-aggregate remains under `results/` with the same three arms. New runtime checkpoints stay under
-the ignored run root; its extension `aggregate.json` is final after all 27 generation and 27
-judge units succeed.
+The exact estimands and contrasts are frozen in `analysis_spec.md`. The tracked formal aggregate
+under `results/` contains all eleven papers and records the eight-paper and three-paper source
+batches separately. Runtime checkpoints stay under the ignored run root.
