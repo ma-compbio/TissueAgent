@@ -31,9 +31,6 @@ demo
 └── README.md
 ```
 
-The completed eight-paper Spatial CellBench comparison is summarized in
-[`docs/spatial_cellbench_results.md`](../docs/spatial_cellbench_results.md).
-
 ### Web UI Demo
 
 https://github.com/user-attachments/assets/ef381418-cf5c-431b-9052-f931c922d2c8
