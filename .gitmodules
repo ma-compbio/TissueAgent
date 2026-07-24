@@ -13,3 +13,4 @@
 [submodule "src/agents/agent_registry/genegpt_agent/upstream"]
 	path = src/agents/agent_registry/genegpt_agent/upstream
 	url = https://github.com/ncbi/GeneGPT.git
+	ignore = dirty
