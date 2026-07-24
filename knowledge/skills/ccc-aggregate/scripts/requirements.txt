@@ -1,0 +1,6 @@
+# ccc_aggregate.py — consensus aggregation only (no CCC method deps).
+# The three CCC methods (liana, commot, stlearn) are the upstream skills'
+# concern; this step just reads their CSV outputs. Pure percentile-rank
+# consensus — needs only numpy + pandas.
+numpy
+pandas

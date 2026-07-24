@@ -35,6 +35,7 @@ class HypothesisState(MessagesState):
 
     status_block: str  # content of <execute> or <response> block
     skill_prompt: str  # injected skill content for system prompt
+    system_prompt: str  # fully-rendered system prompt, surfaced in the trace UI
 
 
 def create_hypothesis_agent(
@@ -99,7 +100,10 @@ def create_hypothesis_agent(
             next_node = END
 
         logging.info(f"transferring from agent_node to {next_node}")
-        return Command(goto=next_node, update={"messages": response_msg})
+        return Command(
+            goto=next_node,
+            update={"messages": response_msg, "system_prompt": full_prompt},
+        )
 
     # Closure-local holder. Persists across multiple ``agent_invocation_tool``
     # calls so the hypothesis agent's Python namespace survives manager

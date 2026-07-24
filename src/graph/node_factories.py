@@ -41,9 +41,44 @@ from server.usage_tracker import usage_tracker
 
 
 class AgentState(MessagesState):
-    """Extended message state with optional skill prompt injection."""
+    """Extended message state with optional skill prompt injection.
+
+    ``system_prompt`` holds the fully-rendered system prompt (skills already
+    substituted) that the sub-agent was actually invoked with. It is written by
+    ``create_agent_node`` on each turn and read by
+    ``message_serializer.serialize_subagent_state`` so the trace UI can show the
+    exact prompt behind a dropdown. Last-write-wins is fine: every turn renders
+    the same prompt, so the final value is representative.
+    """
 
     skill_prompt: str
+    system_prompt: str
+
+
+class OrchestratorState(MessagesState):
+    """Top-level graph state: messages + the orchestration bookkeeping channels.
+
+    These fields MUST be declared as channels here. The main graph is compiled
+    with this schema; if a field the nodes write via ``Command(update=...)`` is
+    NOT a declared channel, LangGraph silently DROPS the write. That is exactly
+    how the replan/retry caps became inert: ``replan_count`` was updated by the
+    evaluator but never persisted, so every cycle read ``0``, ``new_count`` was
+    always ``1``, ``MAX_REPLANS`` never tripped, and the graph replanned until it
+    hit the top-level ``recursion_limit``. Same failure mode applies to each
+    retry counter below. Reproduced in isolation before this fix.
+
+    Plain (non-``Annotated``) fields get the default last-write-wins reducer,
+    which is correct for these: counters are overwritten with their new value,
+    and ``replan_history`` is rewritten with the full updated list by the writer.
+    """
+
+    replan_count: int
+    replan_history: list
+    recruiter_retry_count: int
+    recruiter_validation_errors: object
+    planner_retry_count: int
+    planner_retry_phase: str
+    planner_validation_errors: object
 
 
 def create_agent_node(
@@ -125,7 +160,10 @@ def create_agent_node(
         if not next_node and exit_node is not None:
             next_node = exit_node(response, state) if callable(exit_node) else exit_node
 
-        update_payload = {"messages": [response]}
+        # Persist the rendered prompt so the trace UI can surface it. Harmless on
+        # graphs whose state schema doesn't declare ``system_prompt`` (main-graph
+        # nodes): LangGraph drops writes to undeclared channels.
+        update_payload = {"messages": [response], "system_prompt": prompt_text}
         if extra_update:
             update_payload.update(extra_update)
         if next_node is not None:
@@ -410,12 +448,24 @@ def create_agent_invocation_tool(
     """
 
     def _resolve_step_context() -> tuple[str, StepContext | None]:
-        """Resolve context for the current step: skill prompt + step metadata."""
+        """Resolve context for the current step: skill prompt + step metadata.
+
+        Also snapshots exactly this step's folder-skill assets into the workspace
+        (clearing any prior step's), so a step never sees a later step's skill
+        files on disk. Done before ``format_skill_prompt`` so the assets-root
+        note it emits resolves against freshly-materialized directories.
+        """
         if not context_resolver:
             return "", None
         ctx = context_resolver(agent_node_id)
         if ctx is None:
             return "", None
+        try:
+            from agents.skills_workspace import sync_workspace_skills
+
+            sync_workspace_skills(ctx.skills)
+        except Exception as e:
+            logging.warning("per-step skill materialization failed: %s", e)
         if not ctx.skills:
             return "", ctx
         return format_skill_prompt(ctx.skills), ctx
@@ -436,6 +486,13 @@ def create_agent_invocation_tool(
             step_id=step_ctx.step_id if step_ctx else None,
         ) as invocation_id:
             final_state = agent.invoke({"messages": [message], "skill_prompt": skill_prompt_text})
+        # Ride the step's assigned skills along with the returned state so the
+        # UI trace can show which skills were loaded for this sub-agent. Keyed
+        # into the dict (not the state tuple) so it survives save/rehydrate via
+        # the ``{**state, ...}`` spreads in server.utils, and reaches
+        # ``serialize_subagent_state`` unchanged.
+        if isinstance(final_state, dict):
+            final_state["step_skills"] = list(step_ctx.skills) if step_ctx else []
         state_queue.put((agent_name, final_state, invocation_id))
         # Hand off to the wrapping tool_node so it can pair the final state
         # with the ToolMessage.id of the manager tool that called us

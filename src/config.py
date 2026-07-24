@@ -128,7 +128,19 @@ CONTAINER_NOTEBOOK_DIR = "/workspace/notebook"
 CONTAINER_SKILLS_ROOT = f"{CONTAINER_DATA_DIR}/project/{PROJECT_SKILLS_DIRNAME}"
 
 MAX_OUTPUT_CHARS = 3000
-MAX_REPLANS = 2
+# TEMPORARY (CCC benchmark, 2026-07): lowered 2 -> 1 to fail fast during the
+# scMultiSim runs while the replan cap is freshly fixed (the cap was previously
+# inert -- see graph.OrchestratorState). Restore to 2 for normal use.
+MAX_REPLANS = 1
+
+# TEMPORARY (CCC benchmark, 2026-07): the coding agent burned its whole turn
+# budget on search_documentation / runtime introspection (e.g. inspect.getsource
+# on liana's AggregateClass instance -> TypeError) instead of executing. While
+# disabled, the required API usage lives directly in the CCC skill files.
+# Set back to True to fully restore the tool AND its prompt guidance in one flip:
+# it re-registers the tool (coding_agent/model.py) and un-strips the
+# <!--DOCSEARCH--> blocks in the coding-agent prompts (coding_agent/prompt.py).
+DOC_SEARCH_ENABLED = False
 MAX_RECRUITER_RETRIES = 2
 MAX_PLANNER_RETRIES = 2
 
@@ -145,9 +157,13 @@ MAX_PLANNER_RETRIES = 2
 MAX_EXECUTOR_RETRIES = 15
 # Hard LangGraph backstop for a coding sub-agent's inner loop — well below the
 # global RECURSION_LIMIT so a runaway loop fails fast, but high enough for a
-# legitimately multi-tool step (search docs -> run -> inspect -> rerun) plus
-# the retry budget above. Each tool call ≈ two graph turns.
-EXECUTOR_RECURSION_LIMIT = 60
+# legitimately multi-tool step (inspect -> run -> inspect -> rerun) plus the
+# retry budget above. Each tool call ≈ two graph turns.
+# Raised 60 -> 100 (2026-07): the heavier CCC ensemble steps (e.g. ccc-liana)
+# need more than 60 turns to load, run, summarize, and persist within a single
+# step. With doc-search disabled the turns now go to real execution, not
+# exploration. Restore to 60 for the lighter default workloads.
+EXECUTOR_RECURSION_LIMIT = 100
 # ``MAX_STEP_RETRIES`` is how many times the manager may ``retry_step`` a single
 # plan step before the retry is refused and it must advance or replan.
 MAX_STEP_RETRIES = 3

@@ -4,9 +4,13 @@ Skill markdown bodies are injected into sub-agent prompts by
 ``agent_utils.format_skill_prompt``; but folder-based skills also ship
 bundled assets under ``scripts/`` and ``references/`` that the sub-agent
 needs to reach at a stable, sandbox-visible path. This module snapshots
-the assigned skill folders into ``<workspace>/project/skills/`` right
-after the recruiter finalizes the plan, and chmods them read-only so
-they can't be mutated during execution.
+the assigned skill folders into ``<workspace>/project/skills/`` and chmods
+them read-only so they can't be mutated during execution.
+
+Snapshotting is lazy and per-step: :func:`sync_workspace_skills` runs right
+before each sub-agent invocation with only the *current* step's skills, so a
+step never sees a later step's skill files on disk (symmetric with the
+per-step prompt injection in ``agent_utils.format_skill_prompt``).
 
 The recruiter itself continues to read from the repo's canonical
 ``knowledge/skills/`` — this snapshot is for sub-agents only.
@@ -103,3 +107,41 @@ def materialize_skills(skill_names: set[str] | list[str]) -> list[str]:
             logging.warning("skills_workspace: chmod -w failed for %s: %s", dest_root, e)
 
     return materialized
+
+
+def _folder_skill_names(skill_names: set[str] | list[str]) -> set[str]:
+    """Subset of *skill_names* that are folder-based skills.
+
+    Only folder skills leave anything on disk under ``project/skills/`` — flat
+    single-file skills have no bundled assets and are excluded, so the caller
+    can compare this set against the materialized directory names.
+    """
+    from agents.recruiter_agent.prompt import get_skill_metadata
+
+    registry = get_skill_metadata()
+    skills_root = SKILLS_DIR.resolve()
+    out: set[str] = set()
+    for name in skill_names:
+        meta = registry.get(name)
+        if meta is not None and meta.path.parent.resolve() != skills_root:
+            out.add(name)
+    return out
+
+
+def sync_workspace_skills(skill_names: set[str] | list[str]) -> list[str]:
+    """Make the workspace skills tree hold exactly *skill_names*' folder assets.
+
+    Called before each sub-agent invocation with the current step's skills, so a
+    step never sees a later step's skill files on disk. Idempotent and cheap:
+    when the on-disk folder-skill set already matches, it skips the wipe/rebuild
+    entirely; otherwise it delegates to :func:`materialize_skills` (which clears
+    the old tree first). Passing an empty list clears the tree.
+
+    Returns the sorted list of folder-skill names now present on disk.
+    """
+    wanted = _folder_skill_names(skill_names)
+    root = active_project_skills()
+    current = {p.name for p in root.iterdir() if p.is_dir()} if root.exists() else set()
+    if current == wanted:
+        return sorted(wanted)
+    return materialize_skills(skill_names)
