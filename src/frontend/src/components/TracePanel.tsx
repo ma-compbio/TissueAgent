@@ -5,6 +5,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { SubagentTranscript, SerializedMessage, ToolCall } from "../types/messages";
 import AgentAvatar from "./AgentAvatar";
+import TraceSkills from "./TraceSkills";
 
 const API = import.meta.env.DEV ? "http://localhost:8000" : "";
 
@@ -120,6 +121,46 @@ function isCodeOutput(msg: SerializedMessage, prev: SerializedMessage | null): b
   if (msg.type !== "human") return false;
   if (!prev || prev.type !== "ai") return false;
   return !!(prev.tags && prev.tags["execute"]);
+}
+
+/** Collapsible dropdown at the top of the trace exposing the exact system
+ *  prompt the sub-agent ran with, plus the skills that were loaded. Collapsed
+ *  by default so it doesn't push the transcript down. */
+function TraceContext({
+  systemPrompt,
+  skills,
+}: {
+  systemPrompt?: string | null;
+  skills?: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const hasPrompt = !!systemPrompt;
+  const hasSkills = !!skills && skills.length > 0;
+  if (!hasPrompt && !hasSkills) return null;
+
+  return (
+    <div className="trace-context">
+      <button
+        className="trace-context-header"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+      >
+        <span className="trace-expand-icon">{open ? "▼" : "▶"}</span>
+        <span className="trace-step-label">System prompt &amp; skills</span>
+      </button>
+      {open && (
+        <div className="trace-context-body">
+          {hasPrompt && (
+            <div className="trace-system-prompt">
+              <span className="trace-step-label">system prompt</span>
+              <pre className="trace-system-prompt-content">{systemPrompt}</pre>
+            </div>
+          )}
+          {hasSkills && <TraceSkills skills={skills!} />}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** Render a single step in the trace. */
@@ -276,6 +317,10 @@ export default function TracePanel({ state, projectId, onClose }: Props) {
         </button>
       </div>
       <div className="trace-panel-body">
+        <TraceContext
+          systemPrompt={state.system_prompt}
+          skills={state.skills}
+        />
         {transcript.length === 0 ? (
           <div className="trace-empty">No trace available.</div>
         ) : (

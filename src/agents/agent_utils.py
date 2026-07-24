@@ -97,9 +97,20 @@ def format_skill_prompt(skill_names: list[str]) -> str:
         return ""
     header = (
         "## Skills\n\n"
-        "The following skill templates have been assigned to guide your approach "
-        "for this task. You may adopt parts of a skill's approach without following "
-        "it exactly, adapting it to fit the specific requirements of the current task."
+        "The following skill(s) are assigned to THIS step and define the REQUIRED "
+        "method for it. Their code templates and call signatures are AUTHORITATIVE "
+        "for the installed library versions — they were written and verified against "
+        "the exact versions in this environment.\n\n"
+        "When a skill below covers your task:\n"
+        "- Use that skill's approach and libraries. Do NOT substitute a different "
+        "library, resource, or database (e.g. do not reach for OmniPath/decoupler "
+        "when the skill specifies a LIANA resource), and do NOT reinvent its method.\n"
+        "- Copy its call signatures VERBATIM. Do NOT rediscover the API with "
+        "`help`/`dir`/`__doc__` when the skill already gives the call — that just "
+        "wastes turns and risks version drift the skill already resolved.\n"
+        "- You MAY adapt dataset-specific details and file paths to the task, but "
+        "NOT the choice of method or the library API.\n"
+        "If your task instructions and a skill conflict on *how*, follow the skill."
     )
     if strict_names:
         # A procedural skill prescribes a sequence whose later stages verify the
