@@ -27,21 +27,10 @@ demo
 ├── figure_recreation_lohoff-2b.ipynb    # notebook for figure recreation task (Figure 2b from Lohoff et. al.)
 ├── figure_recreation_lohoff-2e.ipynb    # notebook for figure recreation task (Figure 2c from Lohoff et. al.)
 ├── spot_deconvolution_visium_heart.ipynb    # notebook for cell-type deconvolution task
-├── run_cellbench_comparison.py          # CellBench three-arm comparison runner
 ├── notebook_utils.py                    # utility functions for setting up and running TissueAgent in notebooks
 └── README.md
-```
-
-### CellBench comparison
-
-See [`benchmark/cellbench/README.md`](../benchmark/cellbench/README.md). Quick start:
-
-```bash
-python demo/run_cellbench_comparison.py --replicates 3 --workers 4
 ```
 
 ### Web UI Demo
 
 https://github.com/user-attachments/assets/ef381418-cf5c-431b-9052-f931c922d2c8
-
-
