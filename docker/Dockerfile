@@ -1,4 +1,4 @@
-FROM r-base:latest
+FROM rocker/r-ver:4.4.2
 
 # System dependencies for Python, R kernel, and scientific packages.
 # The geospatial libs (gdal/geos/proj/udunits) are required by CARD's R
@@ -22,6 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgeos-dev \
     libproj-dev \
     libudunits2-dev \
+    libfontconfig1-dev \
+    libfreetype-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libtiff-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # -----------------------------------------
@@ -87,10 +92,10 @@ RUN Rscript -e "install.packages(c('remotes','BiocManager'), repos='https://clou
 # -----------------------------------------
 # Non-root user
 # -----------------------------------------
-# r-base already has a user (docker) at UID 1000; reuse it so bind-mount
-# permissions match the host user (also typically UID 1000).
-RUN usermod -l agent -d /home/agent -m docker 2>/dev/null \
-    || useradd -m -u 1000 agent; \
+# Bind-mount permissions match the host user (typically UID 1000). Ubuntu 24.04
+# base ships a default `ubuntu` user at 1000, so free that UID before claiming it.
+RUN userdel -r ubuntu 2>/dev/null || true; \
+    useradd -m -u 1000 agent; \
     mkdir -p /workspace && chown 1000:1000 /workspace
 USER 1000
 WORKDIR /workspace

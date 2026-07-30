@@ -3830,6 +3830,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b8/02/5bf3639f5b77e9b183011c08541c5039ba3d04f5316c70312b48a8e003a9/pims-0.7.tar.gz", hash = "sha256:55907a4c301256086d2aa4e34a5361b9109f24e375c2071e1117b9491e82946b", size = 87779, upload-time = "2024-06-10T19:20:42.842Z" }
 
 [[package]]
+name = "pip"
+version = "26.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/91/47e7d486260f618783899587af63ccf7980fb60245c3e63dd4571c6b57ad/pip-26.1.2.tar.gz", hash = "sha256:f49cd134c61cf2fd75e0ce2676db03e4054504a5a4986d00f8299ae632dc4605", size = 1840799, upload-time = "2026-05-31T17:33:58.56Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5d/95/6b5cb3461ea5673ba0995989746db58eb18b91b54dbf331e72f569540946/pip-26.1.2-py3-none-any.whl", hash = "sha256:382ff9f685ee3bc25864f820aa50505825f10f5458ffff07e30a6d96e5715cab", size = 1813144, upload-time = "2026-05-31T17:33:56.772Z" },
+]
+
+[[package]]
 name = "platformdirs"
 version = "4.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -5557,6 +5566,27 @@ wheels = [
 ]
 
 [[package]]
+name = "tangram-sc"
+version = "1.0.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "pip" },
+    { name = "scanpy" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "seaborn" },
+    { name = "torch" },
+    { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/81/a9/af553595809cd11ae8718faa7a2644dcf7d751d7d09c69670e9f9ef9ac06/tangram-sc-1.0.4.tar.gz", hash = "sha256:6ced24573e288fa01a8070e3c7600058de51296bac1702515db87c310da6ac13", size = 31341, upload-time = "2023-02-09T00:01:40.399Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a7/e6/92b364b9eeeb547735b72a7c1b8312eca4937865882614835a74779fdbd5/tangram_sc-1.0.4-py3-none-any.whl", hash = "sha256:12c1fa121d0ad237465fdad544d5cbe611ad411b5ca89218c6bb68da0723d60c", size = 31320, upload-time = "2023-02-09T00:01:38.817Z" },
+]
+
+[[package]]
 name = "tenacity"
 version = "9.1.2"
 source = { registry = "https://pypi.org/simple" }
@@ -5756,6 +5786,7 @@ dependencies = [
     { name = "sentence-transformers" },
     { name = "spatialdata-io" },
     { name = "squidpy" },
+    { name = "tangram-sc" },
     { name = "tiledbsoma" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "watchdog" },
@@ -5814,6 +5845,7 @@ requires-dist = [
     { name = "sentence-transformers", specifier = ">=2.2.0" },
     { name = "spatialdata-io", specifier = "==0.1.5" },
     { name = "squidpy", specifier = ">=1.6.2" },
+    { name = "tangram-sc", specifier = ">=1.0.4" },
     { name = "tiledbsoma", specifier = "==1.17.1" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34.0" },
     { name = "watchdog", specifier = ">=6.0.0" },
