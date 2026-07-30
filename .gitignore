@@ -45,6 +45,9 @@ node_modules/
 # direnv
 .direnv/
 .envrc
+.env
+.key
+.claude_resources.json
 
 # AI assistant scratch (local-only planning notes)
 AGENTS.md
@@ -52,6 +55,10 @@ COPILOT_PLAN.md
 COPILOT_QA.md
 .impeccable.md
 
-# Benchmark directory
-benchmark/
+# Benchmark runtime artifacts
+benchmark/spatial_cellbench/runs/
+benchmark/spatial_cellbench/slurm/*.out
 workspace/cellvoyager_agent/
+
+# Local public-paper archives used to curate Spatial CellBench
+/papers-*.zip
