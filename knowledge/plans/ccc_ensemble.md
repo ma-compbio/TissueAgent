@@ -2,103 +2,93 @@
 name: ccc_ensemble
 status: enabled
 description: >
-  Ensemble cell-cell communication on spatial transcriptomics: run LIANA+,
-  COMMOT, and stLearn on ONE shared ligand-receptor resource and one immutable
-  base object, then combine per-(LR, sender, receiver) results with a
-  within-method percentile-rank consensus. Produces a consensus table per
-  spatial regime, a high-confidence shortlist, per-method coverage, and figures.
+  Ensemble cell-cell communication on spatial transcriptomics: run LIANA+
+  (non-spatial expression consensus) and COMMOT (spatial optimal transport) on
+  ONE shared monomeric ligand-receptor resource and one immutable base object,
+  then combine per-LR results with a within-method percentile-rank consensus.
+  Produces a single ranked ensemble table of ligand-receptor pairs supported by
+  BOTH the expression and spatial axes.
 ---
 
 ## Inputs
-- AnnData (.h5ad) with `.obsm['spatial']` (or `obs['x','y']`), human or mouse gene symbols,
-  and a cell-type column (discrete labels or deconvolution proportions) in `.obs`.
+- AnnData (.h5ad) for **one spatial section** with `.obsm['spatial']` (native-unit coords, not
+  standardized), raw counts, human or mouse **gene symbols**, and a discrete cell-type / domain
+  label column in `.obs` (≥2 categories, ≥10 cells each). If no labels ship with the data,
+  derive spatial domains by unsupervised clustering in Step 1.
 
 ## Outputs
-- ccc_consensus_contact.csv / ccc_consensus_diffusion.csv — consensus over
-  `(ligand, receptor, source, target)` triples per regime (contact = `1.5 × median_nn`;
-  diffusion = `3 × median_nn`, in native coordinate units). Ligand/receptor are single genes
-  (shared monomeric resource). Columns include `engines_sig, n_sig, n_capable, any_spatial,
-  lr_spatial_support, consensus_pct, tier`.
-- ccc_high_confidence.csv — triples with `tier ∈ {high, supported}`, tagged with `regime`.
-- ccc_panel_coverage.csv + ccc_panel_overlap.json — per-method operable universe and
-  pairwise/3-way overlap (incl. Jaccard). Makes explicit how much the methods could even agree.
-- figures/ccc_consensus_dotplot.png — top-N consensus triples, one panel per regime.
-- figures/ccc_method_overlap.png — UpSet/Venn of per-method significant sets.
-- figures/ccc_sender_receiver_chord.png — sender→receiver chord from the shortlist.
+- **ccc_ensemble.csv** — the final ranked table, one row per LR pair scored by **both** tools,
+  sorted by `ensemble_score` descending. Columns: `ligand, receptor, liana_score,
+  commot_score, liana_pct, commot_pct, ensemble_score`. Ligand/receptor are single genes
+  (shared monomeric resource); `ensemble_score ∈ [0,1]` is the mean of the two tools'
+  percentile ranks. The top rows are the high-confidence ensemble calls.
+- Intermediates: `ensemble_ccc.py` (shared library), `ccc_base.h5ad` (immutable base),
+  `ccc_lr_common.csv` (shared resource), `liana_scores.csv`, `commot_scores.csv`,
+  `logs/ccc_data_prep.json`.
 
 ## Step sketch
-Prep + shared resource → LIANA (rank_aggregate + bivariate) → COMMOT (two regimes) →
-stLearn (direct or gridded) → percentile-rank consensus + plots (5 steps).
+Prep + shared library + shared resource → LIANA (rank_aggregate) → COMMOT (spatial OT) →
+percentile-rank ensemble (4 steps).
+
+## ⚠️ Fixed, validated pipeline — do not deviate
+This ensemble is **exactly** LIANA+ ⊕ COMMOT combined by percentile-rank consensus, reproduced
+from a validated analysis. The method code lives in `ensemble_ccc.py` (written verbatim in
+Step 1); every step imports from it and uses the driver in its skill **exactly**. Do **not**:
+add or swap methods (no stLearn, no bivariate, no cluster-level permutation tests), add a
+second COMMOT regime, change scores or the 50/50 percentile weighting, add p-values/FDR, or add
+any evaluation/benchmark metrics. If a step fails, fix the environment or the inputs — never
+the method.
 
 ## Architecture (read once)
-The three methods' native databases overlap far less than their names suggest
-(CellChatDB↔connectomeDB ≈ 0.17 Jaccard), so running each on its own DB makes the "consensus"
-a database artifact. This ensemble avoids that by harmonizing **one shared LIANA-consensus
-resource** across all three methods (built in step 1), and by keeping all spatial thresholds
-in the **native coordinate units** the methods actually consume (multiples of `median_nn`) —
-neither COMMOT nor stLearn nor LIANA converts pixels to µm. Because everyone tests the same
-single-gene pairs, aggregation is a clean within-method percentile-rank consensus (step 5),
-not a database reconciliation.
+The two methods measure genuinely different quantities, and that is the point:
+- **LIANA+ `rank_aggregate`** — non-spatial expression consensus. Rewards specific, strong LR
+  co-expression across cell groups; blind to physical location.
+- **COMMOT `spatial_communication`** — spatial optimal transport. Scores an LR pair only if
+  ligand can be routed to nearby receptor within a distance threshold; spatially precise but
+  ignores cell-group specificity and can route weak signal.
+
+The ensemble promotes a pair only when **both** axes agree, which strips LIANA's
+spatially-incoherent hits and COMMOT's low-expression hits. Both tools run on **one shared
+monomeric LR resource** (built in Step 1) — their native databases overlap only ~0.17 Jaccard,
+so without a shared resource "consensus" would measure database agreement, not method
+agreement. All spatial thresholds stay in the **native coordinate units** the methods consume
+(a multiple of `median_nn`); COMMOT does not convert pixels to µm.
 
 ## Details
-- **Step 1 — [[ccc-data-prep]].** Writes the **immutable** `ccc_base.h5ad` (log1p `.X`,
-  `layers['counts']`, `layers['norm_no_log']`, `_ccc_cell_type`, `imagecol`/`imagerow`), the
-  **shared resource** (`ccc_lr_common.csv`, monomeric — stLearn can't represent complexes), and
-  `logs/ccc_data_prep.json` with `median_nn` (native units), `resolution_mode` (observation
-  unit, not product name), `sample_col`, `has_deconv`, `small_panel`. Refuses standardized
-  coordinates and <2-category / <10-cell labels. Every downstream skill **copies** the base
-  and writes its own outputs — nothing overwrites `ccc_base.h5ad`.
+- **Step 1 — [[ccc-data-prep]].** Writes the verbatim **shared library** `ensemble_ccc.py`; the
+  **immutable** `ccc_base.h5ad` (log1p `.X`, `layers['counts']`, `obs['_ct']`, native-unit
+  `obsm['spatial']`); the **shared resource** `ccc_lr_common.csv` (monomeric, expression-
+  filtered, capped at `MAX_PAIRS`); and `logs/ccc_data_prep.json` with `species`, `median_nn`
+  (native units), `small_panel`, `dis_mult`. Subsets to LR-candidate genes and, for COMMOT
+  tractability, to a contiguous central patch (`crop_central`, `CROP_N`). Every downstream skill
+  **copies** the base — nothing overwrites it.
+- **Step 2 — [[ccc-liana]].** `run_liana` → LIANA+ `rank_aggregate` on the shared resource
+  (`use_raw=False`), scoring each pair `liana_score = 1 - min magnitude_rank`. Emits
+  `liana_scores.csv` (`ligand, receptor, liana_score`).
+- **Step 3 — [[ccc-commot]].** `run_commot` → COMMOT `spatial_communication` on the shared
+  resource at a single `dis_thr = 1.5 × median_nn`, scoring each routed pair by total OT flow.
+  No global random subsampling (it invalidates the OT solution). Emits `commot_scores.csv`
+  (`ligand, receptor, commot_score`).
+- **Step 4 — [[ccc-aggregate]].** `build_ensemble` → over the pairs scored by **both** tools,
+  percentile-rank each score and take the mean. Emits the final `ccc_ensemble.csv`, sorted by
+  `ensemble_score`.
 
-- **Step 2 — [[ccc-liana]].** `rank_aggregate` (directed cell-type consensus, **non-spatial**,
-  `use_raw=False`) and, on spatial input, `bivariate` at two bandwidths (contact `1.5×`,
-  diffusion `3×` `median_nn`) — LR-level spatial hotspots (Moran's), no direction. `bivariate`
-  **returns** a new AnnData (scores in `.X`, `.layers['pvals']`, per-LR `.var`) — not
-  `.uns['local_scores']`. Emits `liana_ccc.csv` (standardized long) + `liana_universe.csv`.
-  `expr_prop` drops to 0.05 for small (<1000-gene) panels.
+## Evaluation criteria (of the run, not the method)
+- `file_exists(ccc_ensemble.csv)` and it is non-empty (both `*_scores.csv` had overlapping LR
+  pairs; empty ⇒ a run failure upstream, not a null result).
+- `ensemble_ccc.py` was written verbatim and imports cleanly; `ccc_base.h5ad`,
+  `ccc_lr_common.csv`, `liana_scores.csv`, `commot_scores.csv` all exist.
+- Every ensemble row has both `liana_score` and `commot_score` populated (the universe is the
+  intersection by design) and single-gene ligand/receptor.
+- `logs/ccc_data_prep.json` has `median_nn` populated; COMMOT used `dis_thr = dis_mult ×
+  median_nn`.
+- The cell/domain column used by LIANA is `_ct`.
 
-- **Step 3 — [[ccc-commot]].** `spatial_communication` on the shared `df_ligrec` at two
-  `dis_thr` (contact/diffusion), then per-**LR** `cluster_communication(lr_pair=…,
-  n_permutations=500)` (not pathway-level — that ties ranks) with BH correction. No global
-  random subsampling (it invalidates the OT solution) — run per section/ROI if large. Emits
-  `commot_ccc.csv` (with `contrib_dist`) + `commot_universe.csv`.
-
-- **Step 4 — [[ccc-stlearn]].** Version preflight (modern ≥1.x CCI API; upgrade if the
-  runtime has old 0.2.x). Shared resource as `"lig_rec"` strings (no `load_lrs`). Direct on
-  `spot_multicell`; on `single_cell` **grid raw counts first** then normalize (no log1p).
-  `run` + `adj_pvals` + `run_cci`. Cell-type-pair support is **undirected** — corroborates the
-  pair; direction comes from LIANA/COMMOT. Emits `stlearn_ccc.csv` (with `contrib_dist`) +
-  `stlearn_universe.csv`.
-
-- **Step 5 — [[ccc-aggregate]].** Loads the three standardized CSVs, applies the single-cell
-  autocrine-spillover filter (`--resolution-mode`/`--median-nn` from the prep log),
-  percentile-ranks within each method, collapses LIANA's two modes to one `liana` engine,
-  counts votes per engine, and writes the per-regime consensus + shortlist + coverage. The
-  result is a **descriptive consensus rank**, not an RRA/FDR p-value. Then plot per regime
-  (dotplot, UpSet, chord; PNG dpi=200 + PDF). Run `ccc_aggregate.py --selftest` first.
-
-## Evaluation criteria
-- file_exists(ccc_consensus_contact.csv) OR file_exists(ccc_consensus_diffusion.csv) — at
-  least one regime has rows (both empty ⇒ run failure upstream, not a null result).
-- file_exists(ccc_panel_coverage.csv) AND file_exists(ccc_panel_overlap.json); the 3-way
-  overlap is reported (if small, the summary says the consensus leans on the largest universe).
-- file_exists(ccc_high_confidence.csv) and the three figures.
-- Every consensus triple has `n_sig ≥ 2` distinct engines (`engines_sig` never a single
-  engine — LIANA's two modes count once), and `any_spatial` or `lr_spatial_support` is True,
-  and single-gene ligand/receptor.
-- Each method wrote its `<method>_universe.csv`, so `n_capable` is real.
-- The cell-type column used by all three methods is `_ccc_cell_type`.
-- `logs/ccc_data_prep.json` has `median_nn` populated (and on Visium, `median_nn_um` either in
-  the ~70–160 µm band or null); `logs/ccc_commot.json` records `n_permutations >= 500`;
-  `logs/ccc_stlearn.json` records the modern-API version, `gridded`, and `spot_mixtures`.
-- On `single_cell`, the autocrine filter ran: consensus CSVs carry
-  `n_triples_pre_autocrine ≥ n_triples_post_autocrine` and `autocrine_filter ∈
-  {distance_aware, categorical_all_autocrine}`.
-
-## The three benchmark datasets
-- **Human lymph-node Visium** — `spot_multicell`, human, `consensus`. Discrete labels or
-  cell2location proportions (set `has_deconv`); dominant-label cell-type calls are approximate.
-- **Human DLPFC Visium** — `spot_multicell`, human. Published layer labels (one-hot, not true
-  deconvolution) → `spot_mixtures=False`; interpret as spot-domain communication.
-- **Mouse hypothalamus MERFISH** — `single_cell`, mouse. Coordinates already µm →
-  `median_nn_um = median_nn`. Grid stLearn; autocrine filter active. Use `mouseconsensus`; the
-  shared resource bypasses stLearn's human connectomeDB (record the mouse handling).
+## The three reference datasets (one section each)
+- **Human lymph-node Visium** — `spot`, human, `consensus`. No labels ship → derive domains by
+  unsupervised clustering (e.g. KMeans on PCA of HVGs) in Step 1.
+- **Human DLPFC Visium** — `spot`, human. Subset to one section (e.g. `sample_name == 151673`);
+  map Ensembl var_names to symbols; use `layer_guess` cortical layers as domain labels.
+- **Mouse hypothalamus MERFISH** — `single_cell`, mouse. Subset to one animal/Bregma slice;
+  drop `control`/blank features; use `Cell_class` labels; use the `mouseconsensus` resource.
+</content>

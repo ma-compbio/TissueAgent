@@ -1,277 +1,354 @@
 ---
 name: ccc-data-prep
-description: Preprocess a spatial transcriptomics AnnData once for the CCC ensemble (LIANA+, COMMOT, stLearn), build ONE shared ligand-receptor resource all three methods use, and calibrate spatial scale in the coordinate units the methods actually consume. Writes an immutable base object every downstream skill copies (never mutates), plus a calibration record.
+description: Step 1 of the ccc_ensemble workflow. Writes the verbatim shared library `ensemble_ccc.py`, preprocesses a spatial transcriptomics AnnData once into an immutable base object (log1p .X, `_ct` labels, native-unit spatial coords), and builds the ONE shared monomeric ligand-receptor resource that both LIANA+ and COMMOT run on. Emits ccc_base.h5ad, ccc_lr_common.csv, and a calibration log.
 applies_to: [coding_agent]
-tags: [ccc, ligand-receptor, spatial, preprocessing]
+tags: [ccc, ligand-receptor, spatial, preprocessing, ensemble]
 status: enable
 ---
 
-# CCC Data Prep (shared setup for the ensemble)
+# CCC Data Prep — shared setup for the LIANA+COMMOT ensemble
+
+## ⚠️ This is a fixed, validated pipeline — do not deviate
+
+The ensemble is **LIANA+ ⊕ COMMOT** combined by percentile-rank consensus. The code
+below is copied from a validated analysis and must be reproduced **verbatim**. Do **not**
+add methods (no stLearn, no bivariate, no cluster-level permutation tests), do **not** add
+regimes (there is a single COMMOT distance), do **not** add evaluation/metrics, and do
+**not** "improve" or refactor the library functions. If a step fails, fix the *environment
+or the inputs*, never the method code.
 
 ## When to use
 
 Run this **once** at the start of a `ccc_ensemble` workflow, before [[ccc-liana]],
-[[ccc-commot]], and [[ccc-stlearn]]. It does three jobs the whole ensemble depends on:
+[[ccc-commot]], and [[ccc-aggregate]]. It does three jobs the whole ensemble depends on:
 
-1. **One immutable base object** (`ccc_base.h5ad`) with the layers every method needs.
-   Each method skill loads it, copies it, and writes its *own* outputs — nothing
-   downstream overwrites the base. (The methods mutate `.X` and `.uns` in incompatible
-   ways; sharing one file corrupts results depending on run order.)
-2. **One shared LR resource** so all three methods test the *same* interactions.
-   Their native databases overlap far less than their names suggest
-   (CellChatDB↔connectomeDB ≈ 0.17 Jaccard), so without this the "consensus" is
-   mostly a database artifact. We harmonize to the LIANA consensus resource.
-3. **Spatial calibration in the coordinate units the methods consume.** COMMOT's
-   `dis_thr`, stLearn's `distance`, and LIANA's `bandwidth` are all in the units of
-   `adata.obsm['spatial']` — none of them convert pixels to microns. So we compute the
-   median nearest-neighbour distance **in those same units** and downstream radii are
-   multiples of it. (Physical µm is computed only for a sanity check / reporting.)
-
-Don't use this outside the ensemble — for a single-method run use that method's own recipe.
-
-## Route by data type (all three methods branch on this)
-
-| Data | resolution_mode | Cell-type input | What CCC can claim |
-|---|---|---|---|
-| Segmented single cells (Xenium, MERFISH, seqFISH) | `single_cell` | labels | directional cell-type CCC (grid stLearn) |
-| Spots + deconvolution proportions (Visium) | `spot_multicell` | proportions | probabilistic cell-type attribution |
-| Spots + discrete labels (Visium, DLPFC layers) | `spot_multicell` | one label/spot | spot-domain communication (dominant-label = approximate) |
-| Spots, no labels | `spot_multicell` | none | spatial LR association only, **not** cell-type CCC |
-
-`resolution_mode` describes the **observation unit**, not the product name: Visium HD
-can be 2/8/16 µm bins; a "MERFISH" object may hold molecules, cells, or regions — inspect
-the data, don't assume from the platform string.
+1. **Writes `ensemble_ccc.py`** — the shared library every downstream step imports
+   (`run_liana`, `run_commot`, `build_ensemble`, plus the resource/spatial helpers).
+   Reproduce it verbatim from the block below.
+2. **Writes the immutable base object** (`ccc_base.h5ad`): `.X` = log1p-normalized (both
+   LIANA and COMMOT consume `.X`), `obs['_ct']` = discrete cell/domain labels,
+   `obsm['spatial']` = float `(n,2)` native-unit coordinates. Each downstream skill
+   **copies** this and writes its own outputs — nothing overwrites the base.
+3. **Builds the one shared LR resource** (`ccc_lr_common.csv`) both tools run on. Their
+   native databases overlap only ~0.17 Jaccard, so without a shared resource "consensus"
+   would measure database agreement, not method agreement. It is monomeric (single-gene
+   pairs), expression-filtered, and capped at `MAX_PAIRS`.
 
 ## Input
 
-- **Spatial h5ad** — `.obsm['spatial']` populated (or `obs['x','y']`); raw counts in
-  `.X` or `layers['counts']`.
+- **Spatial h5ad** — `.obsm['spatial']` populated (or `obs['x','y']`); raw counts in `.X`
+  or `layers['counts']`; human or mouse **gene symbols** (map Ensembl IDs first).
 - **species** — `"human"` or `"mouse"` (explicit; never inferred from gene casing).
-- **platform** — `visium | visium_hd | xenium | merfish | seqfish | slide_seq | st`. A hint
-  for `resolution_mode` and the coordinate unit; confirm against the data.
-- **cell_type_col** — `.obs` column of discrete labels (≥2 categories, ≥10 cells each), OR
-  a deconvolution-proportion matrix (spots × cell types) aligned to `obs_names`.
-- **sample_col** *(if present)* — batch/section/FOV column. Sections with overlapping
-  coordinate systems **must** be analysed separately; recorded here so methods split on it.
+- **platform** — `visium | xenium | merfish | seqfish | ...` (a hint; inspect the data).
+- **cell_type_col** — `.obs` column of discrete labels (≥2 categories, ≥10 cells each).
+  If the data ships no labels, derive spatial domains by unsupervised clustering (e.g.
+  KMeans on PCA of HVGs) *before* building the resource.
 
-## Output (project `outputs/`)
+## Output (project working dir)
 
-- `ccc_base.h5ad` — immutable. `.X` = log1p-normalized (LIANA+/COMMOT); `layers['counts']`
-  = raw; `layers['norm_no_log']` = `normalize_total` **without** log1p (stLearn);
-  `obs['_ccc_cell_type']` = cleaned labels; `obs['imagecol']/['imagerow']` = spatial x/y
-  (stLearn needs these); `uns['spatial']` present if Visium.
-- `ccc_lr_common.csv` — the **shared monomeric** LR resource (`ligand,receptor`): LIANA
-  consensus pairs, no complexes, both genes on the panel. This is the single universe all
-  three methods run on. It is monomeric because stLearn's `L_R` format can't represent
-  heteromeric complexes, so the common denominator across the three engines is single genes.
+- `ensemble_ccc.py` — the verbatim shared library (below).
+- `ccc_base.h5ad` — immutable. `.X` log1p-normalized; `layers['counts']` raw;
+  `obs['_ct']` cleaned categorical labels; `obsm['spatial']` float `(n,2)`.
+- `ccc_lr_common.csv` — shared monomeric resource, columns `ligand,receptor`.
 - `logs/ccc_data_prep.json` — calibration record every downstream skill reads:
 
   ```json
   {
-    "species": "human|mouse",
-    "platform": "visium|xenium|merfish|...",
-    "resolution_mode": "spot_multicell|single_cell",
-    "coord_unit": "um|pixel|normalized",
-    "median_nn": 118.0,          // in obsm['spatial'] UNITS — methods use this
-    "median_nn_um": 105.0,       // physical µm for sanity/reporting; null if unknown
-    "spot_diameter_um": 55.0,    // 55 Visium, 2 Visium HD, null imaging
-    "cell_type_col": "_ccc_cell_type",
-    "has_deconv": false,         // true iff a proportion matrix is in uns['_ccc_deconv']
-    "sample_col": null,          // batch/section column, or null for a single section
-    "n_samples": 1,
-    "n_cells": 4035, "n_genes": 351, "n_categories": 8,
-    "min_cells_per_category": 45,
-    "small_panel": true,         // n_genes < 1000 (targeted imaging) -> widen expr filters
-    "n_lr_common": 812,
-    "stlearn_species": "human"   // connectomeDB2020 is human-derived; see Mouse note
+    "species": "human|mouse", "platform": "visium|merfish|...",
+    "median_nn": 118.0,        // in obsm['spatial'] UNITS — COMMOT's dis_thr derives from this
+    "small_panel": false,      // n_genes < 1000 (targeted imaging) -> widen expr filter
+    "n_obs": 2000, "n_pairs": 50,
+    "crop_n": 2000, "max_pairs": 50, "dis_mult": 1.5
   }
   ```
 
 ## Success criteria
 
-- `ccc_base.h5ad` loads with the three layers and `_ccc_cell_type` (≥2 categories, ≥10
-  cells each).
-- `obsm['spatial']` is float `(n_obs, 2)`, no NaN; `median_nn > 0`.
-- On Visium, `median_nn_um` (when computed) lands in the ~70–160 µm band — else the
-  pixel→µm conversion is wrong; leave it null rather than reporting a false µm.
-- `ccc_lr_common.csv` has ≥20 pairs (else check species / gene symbols / panel coverage).
-- `logs/ccc_data_prep.json` has `median_nn`, `resolution_mode`, `sample_col` populated.
+- `ensemble_ccc.py` exists and imports cleanly (`from ensemble_ccc import run_liana`).
+- `ccc_base.h5ad` loads with `.X` log1p, `layers['counts']`, `obs['_ct']` (≥2 categories,
+  ≥10 cells each), `obsm['spatial']` float `(n,2)` with no NaN.
+- `median_nn > 0`; `ccc_lr_common.csv` has ≥4 pairs (else check species / gene symbols /
+  panel coverage).
+- `logs/ccc_data_prep.json` has `species`, `median_nn`, `small_panel` populated.
 
-## Workflow
+## Shared library — write this VERBATIM to `ensemble_ccc.py`
 
-1. **Preflight.** Print package versions once (`liana`, `stlearn`, `commot`, `scanpy`,
-   `anndata`) so the run log records the API surface — these libraries evolve.
-2. Load; find raw counts (prefer `layers['counts']`; else `.X` if values are integer-*like*
-   — nonneg + finite + `==round`, not merely integer dtype, since counts often ship float32).
-3. **Spatial.** Build `obsm['spatial']` float `(n,2)` from `obs['x','y']` if absent. Detect
-   pre-normalized coords (`|mean|<1` and `max<10` on both axes → standardized) and **refuse**
-   — radii on standardized coords are meaningless; re-pull raw coordinates.
-4. **Calibration in native units.** `median_nn` = median 1-NN Euclidean distance on a
-   sample (≤2000 cells) of `obsm['spatial']` **as stored**. This is what methods use.
-   Then, only for reporting, convert to µm when the factor is known:
-   - Visium pixel coords → µm via `spot_diameter_um / spot_diameter_fullres`
-     (`.uns['spatial'][lib]['scalefactors']`; 55 µm Visium / 2 µm Visium HD). There is
-     **no** `microns_per_pixel` key and `tissue_hires_scalef` is pixel→image, not µm.
-   - Imaging (Xenium/MERFISH/seqFISH) coords are already µm → `median_nn_um = median_nn`.
-   - Unknown → leave `median_nn_um = null` (never guess; downstream uses native `median_nn`).
-5. **Cell types.** Copy `cell_type_col` → `_ccc_cell_type` (strings; replace `\s|/` with `_`)
-   and **check for collisions** — if cleaning maps two original labels onto one, abort with
-   the offending pair (don't silently merge). If deconvolution proportions were given, stash
-   them in `uns['_ccc_deconv']` (reindexed to `obs_names`, rows sum to 1) and set `_ccc_cell_type`
-   to the argmax label; set `has_deconv=True`.
-6. **Genes.** If `var_names` look like Ensembl (`ENSG`/`ENSMUSG`), map to symbols with
-   `mygene` (`scopes='ensembl.gene'`, strip version suffixes), **sum** counts for duplicate
-   mapped symbols, drop unmapped. Assert `var_names.is_unique` (do NOT `make_unique()` —
-   suffixed names stop matching the LR resource).
-7. **QC + layers.** `filter_genes(min_cells=3)`, `filter_cells(min_genes=10)`. Set
-   `small_panel = n_genes < 1000` (targeted panels: warn, don't fail). Reset `.X` from
-   `counts`, then build `layers['norm_no_log']` (normalize_total only) and `.X`
-   (normalize_total + log1p). Set `obs['imagecol']/['imagerow']` from `obsm['spatial']`.
-8. **Shared LR resource.** From `li.rs.select_resource('consensus'|'mouseconsensus')`, build
-   the monomeric common core (no `_`, both genes on panel) → `ccc_lr_common.csv`.
-9. Write `ccc_base.h5ad` and `logs/ccc_data_prep.json`.
+Do not edit any function body. (This is the analysis library with the evaluation-only
+functions removed — the method itself is unchanged.)
 
-## Code template
+```python
+"""
+ensemble_ccc.py — shared library for the LIANA+ ⊕ COMMOT ensemble CCC workflow.
+
+Two methodologically complementary tools on ONE shared ligand-receptor resource:
+  * LIANA+ rank_aggregate  — non-spatial cell-group expression consensus.
+  * COMMOT spatial_communication — spatial optimal-transport signalling flow.
+The ensemble promotes an LR pair only when BOTH axes agree (mean of percentile ranks).
+
+Write this file verbatim in Step 1; every downstream step imports from it. Do NOT edit.
+"""
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+import scipy.sparse as sp
+from sklearn.neighbors import NearestNeighbors
+
+
+# ---------------------------------------------------------------------------------------
+# Spatial helpers
+# ---------------------------------------------------------------------------------------
+def median_nn_distance(coords):
+    """Median nearest-neighbour distance in the units of obsm['spatial'].
+
+    COMMOT's dis_thr lives in these native units, so the radius is a multiple of this scalar.
+    """
+    nn = NearestNeighbors(n_neighbors=2).fit(coords)
+    d, _ = nn.kneighbors(coords)
+    return float(np.median(d[:, 1]))
+
+
+def crop_central(adata, target):
+    """Keep the `target` cells nearest the tissue centroid (a contiguous central patch).
+
+    COMMOT's optimal-transport solve costs several seconds PER LR pair and grows with cell
+    count. Rather than randomly thinning cells (which changes local ligand/receptor supply and
+    corrupts the OT solution), analyse one contiguous full-density window: the `target` cells
+    closest to the section centroid. Local neighbourhoods are preserved exactly.
+    """
+    if adata.n_obs <= target:
+        return adata
+    coords = np.asarray(adata.obsm["spatial"], float)
+    c = coords.mean(0)
+    d = np.linalg.norm(coords - c, axis=1)
+    keep = np.argsort(d)[:target]
+    return adata[keep].copy()
+
+
+# ---------------------------------------------------------------------------------------
+# Shared ligand-receptor resource
+# ---------------------------------------------------------------------------------------
+# LIANA's select_resource reads a CSV that can DEADLOCK if first called after scanpy's
+# neighbors/leiden numba path has run. prime_resources() is called once at startup, before
+# any clustering, so every later lookup hits this cache and never re-reads the CSV.
+_RESOURCE_CACHE = {}
+
+
+def _get_resource(species):
+    key = "mouseconsensus" if species == "mouse" else "consensus"
+    if key not in _RESOURCE_CACHE:
+        import liana as li
+        _RESOURCE_CACHE[key] = li.rs.select_resource(key)[["ligand", "receptor"]].copy()
+    return _RESOURCE_CACHE[key]
+
+
+def prime_resources():
+    """Pre-load both species resources while the process is still numba-clean."""
+    _get_resource("human")
+    _get_resource("mouse")
+
+
+def consensus_lr_genes(species):
+    """All single-gene ligand/receptor symbols in the species consensus resource."""
+    res = _get_resource(species)
+    res = res[~res.ligand.str.contains("_") & ~res.receptor.str.contains("_")]
+    return set(res.ligand) | set(res.receptor)
+
+
+def slim_to_lr_genes(adata, species):
+    """Subset to genes that could ever participate in a monomeric LR pair (RAM guard)."""
+    keep = [g for g in adata.var_names if g in consensus_lr_genes(species)]
+    return adata[:, keep].copy()
+
+
+def build_shared_resource(adata, species, min_expr_frac=0.05, max_pairs=300):
+    """Build the single monomeric LR resource both tools run on.
+
+      1. LIANA's curated consensus resource for the species.
+      2. Keep only monomeric (single-gene) pairs -- the common denominator across tools.
+      3. Keep pairs whose ligand AND receptor are both on the panel and expressed in at
+         least `min_expr_frac` of cells (so both tools can actually score them).
+      4. Cap at `max_pairs` most-expressed pairs to bound COMMOT's per-pair obsp memory.
+    """
+    res = _get_resource(species).copy()
+    res = res[~res.ligand.str.contains("_") & ~res.receptor.str.contains("_")]
+
+    var = set(adata.var_names)
+    res = res[res.ligand.isin(var) & res.receptor.isin(var)].drop_duplicates()
+
+    X = adata.X
+    frac = np.asarray((X > 0).mean(axis=0)).ravel()
+    fr = pd.Series(frac, index=adata.var_names)
+    ok = (fr[res.ligand].values >= min_expr_frac) & (fr[res.receptor].values >= min_expr_frac)
+    res = res[ok].copy()
+
+    if len(res) > max_pairs:
+        res["_e"] = fr[res.ligand].values + fr[res.receptor].values
+        res = res.sort_values("_e", ascending=False).head(max_pairs).drop(columns="_e")
+    res = res.reset_index(drop=True)
+    return res
+
+
+# ---------------------------------------------------------------------------------------
+# Method 1: LIANA+ rank_aggregate  (non-spatial expression consensus)
+# ---------------------------------------------------------------------------------------
+def run_liana(adata, resource, expr_prop=0.1, seed=1337, n_perms=100):
+    """Run LIANA+ rank_aggregate on the shared resource; return LR-level scores.
+
+    liana_score = 1 - min magnitude_rank over all (source,target) cell-group pairs
+    (higher = stronger). use_raw=False is critical -- LIANA defaults True and would silently
+    use a stale .raw. n_perms is low on purpose: the magnitude_rank is deterministic (from
+    expression means), so permutations barely affect the ranking axis but are the slow step.
+    """
+    import liana as li
+    li.mt.rank_aggregate(
+        adata, groupby="_ct", resource=resource[["ligand", "receptor"]],
+        use_raw=False, expr_prop=expr_prop, min_cells=10, n_perms=n_perms,
+        seed=seed, verbose=False,
+    )
+    lr = adata.uns["liana_res"]
+    g = (lr.assign(mag=lr["magnitude_rank"])
+           .groupby(["ligand_complex", "receptor_complex"])["mag"].min()
+           .reset_index())
+    g.columns = ["ligand", "receptor", "min_mag_rank"]
+    g["liana_score"] = 1.0 - g["min_mag_rank"]     # higher = better
+    return g[["ligand", "receptor", "liana_score"]], lr
+
+
+# ---------------------------------------------------------------------------------------
+# Method 2: COMMOT  (spatial optimal-transport signalling)
+# ---------------------------------------------------------------------------------------
+def run_commot(adata, resource, dis_thr):
+    """Run COMMOT spatial_communication on the shared resource; return LR-level scores.
+
+    commot_score = total routed OT flow (sum of the per-pair spot x spot matrix) -- a clean
+    magnitude needing no permutation test. dis_thr is in native spatial units (a multiple of
+    median_nn), because COMMOT does not convert pixels/um. Higher = more communication.
+    """
+    import commot as ct
+    df = resource[["ligand", "receptor"]].copy()
+    df["pathway"] = "unannotated"
+    db = "shared"
+    ct.tl.spatial_communication(
+        adata, database_name=db, df_ligrec=df, dis_thr=dis_thr,
+        heteromeric=False, pathway_sum=False, cost_type="euc",
+    )
+    rows = []
+    for lig, rec in df[["ligand", "receptor"]].itertuples(index=False):
+        key = f"commot-{db}-{lig}-{rec}"
+        if key not in adata.obsp:      # COMMOT did not route this pair (no signal)
+            continue
+        rows.append(dict(ligand=lig, receptor=rec,
+                         commot_score=float(adata.obsp[key].sum())))
+    out = pd.DataFrame(rows)
+    # free the (potentially large) per-pair obsp matrices immediately
+    for k in [k for k in list(adata.obsp.keys()) if k.startswith("commot-")]:
+        del adata.obsp[k]
+    for k in [k for k in list(adata.obsm.keys()) if k.startswith("commot-")]:
+        del adata.obsm[k]
+    for k in [k for k in list(adata.uns.keys()) if k.startswith("commot-")]:
+        del adata.uns[k]
+    return out
+
+
+# ---------------------------------------------------------------------------------------
+# Ensemble: percentile-rank consensus over the shared universe
+# ---------------------------------------------------------------------------------------
+def build_ensemble(liana_df, commot_df, resource):
+    """Combine LIANA and COMMOT into a consensus ranking.
+
+    Universe U = shared-resource pairs scored by BOTH tools. Within U each tool's score is
+    converted to a percentile rank (0..1, robust to scale), and the ensemble score is the mean
+    of the two percentile ranks -- a standard rank aggregation that promotes pairs strong on
+    BOTH axes.
+    """
+    uni = resource[["ligand", "receptor"]].merge(liana_df, on=["ligand", "receptor"]) \
+                                          .merge(commot_df, on=["ligand", "receptor"])
+    uni = uni.dropna(subset=["liana_score", "commot_score"]).reset_index(drop=True)
+    uni["liana_pct"] = uni["liana_score"].rank(pct=True)
+    uni["commot_pct"] = uni["commot_score"].rank(pct=True)
+    uni["ensemble_score"] = 0.5 * (uni["liana_pct"] + uni["commot_pct"])
+    return uni
+```
+
+## Prep driver — adjust only the marked INPUT constants
 
 ```python
 import json, os
-from importlib.metadata import version
-import numpy as np, pandas as pd, scanpy as sc, liana as li
-from sklearn.neighbors import NearestNeighbors
+import numpy as np, pandas as pd, scanpy as sc
+from ensemble_ccc import (median_nn_distance, prime_resources, slim_to_lr_genes,
+                          crop_central, build_shared_resource)
 
-ADATA_IN   = "uploads/spatial.h5ad"   # adjust
-CELL_TYPE  = "cell_type"              # adjust ('_ccc_cell_type' will be derived)
-SPECIES    = "human"                  # or "mouse" — explicit
-PLATFORM   = "visium"                 # visium | visium_hd | xenium | merfish | seqfish | slide_seq | st
-COORD_UNIT = "pixel"                  # um (imaging) | pixel (raw Visium) | normalized
-SAMPLE_COL = None                     # e.g. 'library_id' if multiple sections share coords
+# ---- INPUTS (adjust these only) ----
+ADATA_IN   = "uploads/spatial.h5ad"   # spatial h5ad with raw counts + obsm['spatial']
+CELL_TYPE  = "cell_type"              # .obs column of discrete labels ('_ct' is derived)
+SPECIES    = "human"                  # "human" or "mouse" — explicit, never inferred
+PLATFORM   = "visium"                 # visium | xenium | merfish | seqfish | ...
+CROP_N     = 2000                     # contiguous central-patch cap (COMMOT tractability)
+MAX_PAIRS  = 50                       # cap on the shared LR universe (COMMOT ~sec/pair)
 
-SINGLE_CELL = {"xenium", "merfish", "seqfish"}
-SPOT_UM     = {"visium": 55.0, "visium_hd": 2.0}
-
-# 1. preflight
-for p in ["liana", "stlearn", "commot", "scanpy", "anndata"]:
-    try: print(p, version(p))
-    except Exception: pass
+prime_resources()                     # load LR CSVs before any clustering/numba (avoids deadlock)
 
 adata = sc.read_h5ad(ADATA_IN)
+adata.var_names_make_unique()
+# If var_names are Ensembl IDs (ENSG/ENSMUSG), remap to symbols FIRST (e.g. adata.var['gene_symbol'])
+# and var_names_make_unique() again — LIANA/COMMOT match on symbols, not Ensembl IDs.
 
-# 2. counts (integer-LIKE, not integer dtype)
-def looks_like_counts(X):
-    v = X.data if hasattr(X, "data") else np.asarray(X).ravel()
-    v = v[:100000]
-    return np.isfinite(v).all() and (v >= 0).all() and np.allclose(v, np.round(v))
-if "counts" not in adata.layers:
-    if looks_like_counts(adata.X):
-        adata.layers["counts"] = adata.X.copy()
-    else:
-        raise ValueError("No raw counts found (layers['counts'] absent, .X not count-like)")
+adata.layers["counts"] = adata.X.copy()
+sc.pp.normalize_total(adata, target_sum=10000.0)
+sc.pp.log1p(adata)                                  # .X is now log1p-normalized (LIANA + COMMOT use .X)
 
-# 3. spatial + refuse pre-normalized coords
-if "spatial" not in adata.obsm:
-    adata.obsm["spatial"] = adata.obs[["x", "y"]].to_numpy(float)
-coords = np.asarray(adata.obsm["spatial"], float)
-assert coords.shape == (adata.n_obs, 2) and np.isfinite(coords).all()
-if (np.abs(coords.mean(0)) < 1).all() and np.abs(coords).max() < 10:
-    raise ValueError("Coordinates look standardized (|mean|<1, max<10) — re-pull raw coords.")
+# cell/domain labels -> _ct (exactly the column run_liana groups on).
+# If no labels ship with the data, derive spatial domains by unsupervised clustering first.
+adata.obs["_ct"] = adata.obs[CELL_TYPE].astype(str).astype("category")
+assert adata.obs["_ct"].nunique() >= 2, "need >=2 cell/domain categories"
+assert adata.obs["_ct"].value_counts().min() >= 10, "need >=10 cells per category"
 
-resolution_mode = "single_cell" if PLATFORM in SINGLE_CELL else "spot_multicell"
+adata.obsm["spatial"] = np.asarray(adata.obsm["spatial"], float)
+assert adata.obsm["spatial"].shape == (adata.n_obs, 2) and np.isfinite(adata.obsm["spatial"]).all()
 
-# 4. calibrate in NATIVE units; µm only for reporting
-rng = np.random.default_rng(1337)
-samp = coords[rng.choice(coords.shape[0], min(2000, coords.shape[0]), replace=False)]
-d, _ = NearestNeighbors(n_neighbors=2).fit(coords).kneighbors(samp)
-median_nn = float(np.median(d[:, 1]))               # <-- methods use THIS
-
-median_nn_um, spot_um = None, SPOT_UM.get(PLATFORM)
-if COORD_UNIT == "um":
-    median_nn_um = median_nn
-elif COORD_UNIT == "pixel":
-    lib = next(iter(adata.uns.get("spatial", {}).values()), {})
-    dia_px = lib.get("scalefactors", {}).get("spot_diameter_fullres")
-    if dia_px and spot_um:
-        median_nn_um = median_nn * spot_um / float(dia_px)
-        if PLATFORM == "visium" and not (70 < median_nn_um < 160):
-            median_nn_um = None            # conversion suspect — report native only
-
-# 5. cell types (+ collision check, + optional deconvolution)
-lab = (adata.obs[CELL_TYPE].astype(str)
-       .str.replace(r"[\s/|]+", "_", regex=True))
-collisions = (adata.obs[CELL_TYPE].astype(str).groupby(lab).nunique())
-assert (collisions <= 1).all(), f"label cleaning merges categories: {collisions[collisions>1]}"
-adata.obs["_ccc_cell_type"] = lab.astype("category")
-assert adata.obs["_ccc_cell_type"].nunique() >= 2
-assert adata.obs["_ccc_cell_type"].value_counts().min() >= 10, "need >=10 cells/type"
-has_deconv = "_ccc_deconv" in adata.uns   # set upstream if proportions were provided
-
-# 6. genes — assume symbols here; map Ensembl first if needed (see workflow step 6)
-assert adata.var_names.is_unique, "collapse duplicate symbols before CCC (no make_unique)"
-
-# 7. QC + layers (reset .X from counts so we never double-normalize)
-sc.pp.filter_genes(adata, min_cells=3)
-sc.pp.filter_cells(adata, min_genes=10)
 small_panel = adata.n_vars < 1000
-adata.X = adata.layers["counts"].copy()
-adata.layers["norm_no_log"] = sc.pp.normalize_total(adata, target_sum=1e4, inplace=False)["X"]
-sc.pp.normalize_total(adata, target_sum=1e4); sc.pp.log1p(adata)
-adata.obs["imagecol"] = adata.obsm["spatial"][:, 0]   # stLearn expects these
-adata.obs["imagerow"] = adata.obsm["spatial"][:, 1]
+adata = slim_to_lr_genes(adata, SPECIES)            # keep only LR-candidate genes (RAM guard)
+adata = crop_central(adata, CROP_N)                 # contiguous central patch; NEVER random-subsample
+median_nn = median_nn_distance(np.asarray(adata.obsm["spatial"], float))
 
-# 8. shared LR resource
-res = li.rs.select_resource("consensus" if SPECIES == "human" else "mouseconsensus")
-res = res[["ligand", "receptor"]].astype(str).drop_duplicates()
-genes = set(adata.var_names.astype(str))
-mono = res[~res.ligand.str.contains("_") & ~res.receptor.str.contains("_")
-           & res.ligand.isin(genes) & res.receptor.isin(genes)].reset_index(drop=True)
-assert len(mono) >= 20, "very few measurable LR pairs — check species / symbols / panel"
-mono.to_csv("ccc_lr_common.csv", index=False)
+resource = build_shared_resource(adata, SPECIES,
+                                 min_expr_frac=0.03 if small_panel else 0.05,
+                                 max_pairs=MAX_PAIRS)
+resource[["ligand", "receptor"]].to_csv("ccc_lr_common.csv", index=False)
 
-# 9. write
 os.makedirs("logs", exist_ok=True)
 adata.write("ccc_base.h5ad")
-json.dump({
-    "species": SPECIES, "platform": PLATFORM, "resolution_mode": resolution_mode,
-    "coord_unit": COORD_UNIT, "median_nn": median_nn, "median_nn_um": median_nn_um,
-    "spot_diameter_um": spot_um, "cell_type_col": "_ccc_cell_type",
-    "has_deconv": bool(has_deconv), "sample_col": SAMPLE_COL,
-    "n_samples": int(adata.obs[SAMPLE_COL].nunique()) if SAMPLE_COL else 1,
-    "n_cells": int(adata.n_obs), "n_genes": int(adata.n_vars),
-    "n_categories": int(adata.obs["_ccc_cell_type"].nunique()),
-    "min_cells_per_category": int(adata.obs["_ccc_cell_type"].value_counts().min()),
-    "small_panel": bool(small_panel),
-    "n_lr_common": int(len(mono)),
-    "stlearn_species": SPECIES,
-}, open("logs/ccc_data_prep.json", "w"), indent=2)
-print(f"ccc_base.h5ad {adata.shape}; median_nn={median_nn:.1f} (µm={median_nn_um}); "
-      f"LR common={len(mono)}")
+json.dump({"species": SPECIES, "platform": PLATFORM, "median_nn": median_nn,
+           "small_panel": bool(small_panel), "n_obs": int(adata.n_obs),
+           "n_pairs": int(len(resource)), "crop_n": CROP_N, "max_pairs": MAX_PAIRS,
+           "dis_mult": 1.5},
+          open("logs/ccc_data_prep.json", "w"), indent=2)
+print(f"ccc_base {adata.shape}; median_nn={median_nn:.1f}; shared LR pairs={len(resource)}")
 ```
 
 ## Multi-sample data
 
-If `sample_col` is set, sections may share a coordinate frame. Every downstream method
-**runs per section** and concatenates results tagged with the sample — never build a
-spatial graph across sections (it invents cross-section neighbours). Do not pool
-biological replicates before inference; compare CCC at the sample level.
+CCC must be run **per physical section** — mixing sections mixes coordinate systems. If the
+object holds multiple sections/animals/FOVs sharing a coordinate frame, subset to **one
+coherent section first** (as the analysis subset MERFISH to Animal 1 / one Bregma slice and
+DLPFC to one `sample_name`). Do not pool sections before inference.
 
 ## Common issues
 
-- **µm labels on pixel coords (the classic bug).** Don't label a threshold "µm" then apply
-  it to pixel coordinates. This skill keeps `median_nn` in the stored units and derives all
-  radii from it — correct regardless of pixel/µm. `median_nn_um` is reporting-only.
-- **Double normalization.** `.X` may already be log-normalized on input. We reset `.X` from
-  `layers['counts']` before normalizing, so `norm_no_log` and `.X` are both derived from raw.
-- **Ensembl IDs → ~0 LR pairs.** All three LR resources use symbols; map Ensembl first, sum
-  duplicates, never `make_unique()`.
-- **Standardized atlas coords.** seqFISH/MERFISH atlas h5ads ship mean-centered coords —
-  unusable for radius calibration; refuse and re-pull raw.
-- **Mouse + stLearn.** connectomeDB2020 is human-derived. LIANA uses `mouseconsensus` and
-  COMMOT has native mouse CellChatDB, but stLearn's mouse LR set is casing-converted, not a
-  real orthology map. Either map the shared resource to mouse and record it, or drop stLearn
-  and run a 2-method consensus (recorded in the log). The shared `mouseconsensus` resource is
-  safer than stLearn's auto-conversion.
+- **Ensembl IDs → ~0 LR pairs.** The consensus resource uses symbols; map Ensembl to symbols
+  first, then `var_names_make_unique()`.
+- **`prime_resources()` deadlock if skipped.** Call it once at the very top, before any
+  clustering/leiden/KMeans, or LIANA's first `select_resource` can deadlock under numba.
+- **Standardized coords.** If `obsm['spatial']` is mean-centered/scaled, radii are meaningless —
+  re-pull raw coordinates before calibrating `median_nn`.
+- **Very few pairs.** Usually a species mismatch (human resource on mouse data) or a sparse
+  imaging panel — the driver already drops `min_expr_frac` to 0.03 for `small_panel`.
 
 ## References
 
 - LIANA+ resources: `li.rs.select_resource`, `li.rs.show_resources()`.
-- Related skills: [[ccc-liana]], [[ccc-commot]], [[ccc-stlearn]], [[ccc-aggregate]];
-  parent plan `ccc_ensemble`.
+- Related skills: [[ccc-liana]], [[ccc-commot]], [[ccc-aggregate]]; parent plan `ccc_ensemble`.
+</content>
+</invoke>
