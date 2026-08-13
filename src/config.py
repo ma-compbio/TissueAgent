@@ -15,7 +15,16 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 from pathlib import Path
 
-ROOT = Path(__file__).parent.parent
+# Root of the process's *mutable state* — workspace/, projects/, plan_scratch/,
+# sessions/ and nothing else (code and knowledge assets resolve from the package,
+# not from here, so relocating this cannot break imports).
+#
+# ``TISSUEAGENT_STATE_ROOT`` exists so several agent processes can run at once.
+# They would otherwise share one workspace/: the benchmark harness wipes
+# workspace/library/datasets/ before every run, so two concurrent runs delete
+# each other's inputs. Give each worker its own state root and they are
+# independent. Unset — the normal case — this is the repo root, as before.
+ROOT = Path(os.environ.get("TISSUEAGENT_STATE_ROOT") or Path(__file__).parent.parent)
 
 # Top-level workspace. ``DATA_DIR`` is the agent-visible filesystem —
 # everything inside it is reachable through agent tools and the Jupyter
@@ -119,7 +128,11 @@ DefaultModelCtor = model_ctor_for_role("orchestration")
 # Docker sandbox (Jupyter Kernel Gateway)
 # ---------------------------------------------------------------------------
 KERNEL_GATEWAY_HOST = "127.0.0.1"
-KERNEL_GATEWAY_PORT = 8888
+# Overridable for the same reason as TISSUEAGENT_STATE_ROOT: concurrent workers
+# each need their own gateway, and the second one to start would otherwise fail
+# to bind 8888 — or, worse, silently attach to the first worker's kernels and
+# execute its code in the wrong workspace. One port per worker.
+KERNEL_GATEWAY_PORT = int(os.environ.get("TISSUEAGENT_GATEWAY_PORT") or 8888)
 KERNEL_GATEWAY_URL = f"http://{KERNEL_GATEWAY_HOST}:{KERNEL_GATEWAY_PORT}"
 DOCKER_IMAGE_NAME = "tissueagent-sandbox"
 DOCKER_CONTAINER_NAME = "tissueagent-sandbox"

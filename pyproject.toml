@@ -58,7 +58,11 @@ dependencies = [
     "plotnine>=0.15.0",
     "ruff>=0.15.6",
     "pre-commit>=4.5.1",
-    "ipython>=8.37.0",
+    # Upper bound is load-bearing: scanpy 1.10.3's set_figure_params() calls
+    # IPython.display.set_matplotlib_formats, which IPython 9 removed. Left
+    # unbounded, pip resolves 9.x and every sc.set_figure_params() in an agent
+    # cell raises AttributeError. Lift only together with scanpy >= 1.11.
+    "ipython>=8.37.0,<9",
     "ipykernel>=7.1.0",
     "mygene==3.2.2",
     "harmonypy==0.0.10",

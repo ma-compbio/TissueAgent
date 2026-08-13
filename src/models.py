@@ -1,6 +1,7 @@
 """Model registry and runtime-configurable selection for TissueAgent.
 
-Defines the supported OpenAI, Anthropic, and OpenRouter chat models, the
+Defines the supported OpenAI, Anthropic, OpenRouter and self-hosted chat
+models, the
 global selection state (which model the *orchestration* agents and the
 *worker* sub-agents should use), the per-provider API key store, and a
 factory that produces a fresh ``BaseChatModel`` instance for each agent
@@ -24,14 +25,14 @@ from __future__ import annotations
 
 import os
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from collections.abc import Callable
 from typing import Any, Dict, List, Literal, Optional
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
 
-Provider = Literal["openai", "anthropic", "openrouter"]
+Provider = Literal["openai", "anthropic", "openrouter", "local"]
 Role = Literal["orchestration", "worker"]
 
 
@@ -52,6 +53,18 @@ class ModelSpec:
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
+# Self-hosted, OpenAI-API-compatible endpoint (vLLM, SGLang). Point this at the
+# server with TISSUEAGENT_LOCAL_BASE_URL; the benchmark shards run on a CPU node
+# and reach a GPU node over the cluster network, so the default localhost value
+# is only right for a single-machine setup.
+LOCAL_BASE_URL_ENV = "TISSUEAGENT_LOCAL_BASE_URL"
+DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:8000/v1"
+
+
+def get_local_base_url() -> str:
+    """Return the base URL for the `local` provider."""
+    return (os.environ.get(LOCAL_BASE_URL_ENV) or "").strip() or DEFAULT_LOCAL_BASE_URL
+
 # Order matters: first entry per provider is shown first in the UI.
 SUPPORTED_MODELS: List[ModelSpec] = [
     # --- OpenAI (direct) ---
@@ -60,6 +73,13 @@ SUPPORTED_MODELS: List[ModelSpec] = [
         provider="openai",
         api_model="gpt-5.1",
         label="GPT-5.1 (default)",
+        reasoning_effort="high",
+    ),
+    ModelSpec(
+        id="gpt-5.5",
+        provider="openai",
+        api_model="gpt-5.5",
+        label="GPT-5.5",
         reasoning_effort="high",
     ),
     ModelSpec(
@@ -137,6 +157,41 @@ SUPPORTED_MODELS: List[ModelSpec] = [
         api_model="anthropic/claude-sonnet-4-6",
         label="Claude Sonnet 4.6 · via OpenRouter",
     ),
+    # --- Self-hosted (vLLM / SGLang), OpenAI-API-compatible ---
+    #
+    # `api_model` must match the server's --served-model-name exactly; vLLM
+    # rejects a request whose "model" field it does not recognise.
+    #
+    # reasoning_effort is deliberately None on every entry here. Two reasons,
+    # both load-bearing:
+    #   1. vLLM rejects `reasoning_effort` as an unknown field — it is an
+    #      OpenAI-platform parameter, not part of the chat-completions schema
+    #      these servers implement.
+    #   2. get_model_spec() only applies TISSUEAGENT_REASONING_EFFORT to specs
+    #      whose effort is not None, so leaving it None makes the EFFORT knob a
+    #      no-op here rather than letting metrics.json claim a setting that
+    #      never reached the model.
+    # Qwen's thinking mode is a different knob entirely — pass it through
+    # build_chat_model's **overrides as
+    # extra_body={"chat_template_kwargs": {"enable_thinking": True}}.
+    ModelSpec(
+        id="local/qwen3-32b",
+        provider="local",
+        api_model="qwen3-32b",
+        label="Qwen3 32B · self-hosted",
+    ),
+    ModelSpec(
+        id="local/qwen3-vl-32b",
+        provider="local",
+        api_model="qwen3-vl-32b",
+        label="Qwen3-VL 32B Instruct · self-hosted",
+    ),
+    ModelSpec(
+        id="local/qwen3-235b",
+        provider="local",
+        api_model="qwen3-235b",
+        label="Qwen3 235B-A22B · self-hosted",
+    ),
 ]
 
 _MODELS_BY_ID: Dict[str, ModelSpec] = {m.id: m for m in SUPPORTED_MODELS}
@@ -148,6 +203,10 @@ PROVIDER_ENV_VAR: Dict[Provider, str] = {
     "openai": "OPENAI_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
     "openrouter": "OPENROUTER_API_KEY",
+    # A self-hosted server needs no credential, but the OpenAI SDK refuses to
+    # construct a client without one. build_chat_model falls back to a
+    # placeholder, so this var only matters if you put the server behind auth.
+    "local": "TISSUEAGENT_LOCAL_API_KEY",
 }
 
 
@@ -163,11 +222,37 @@ def list_models() -> List[Dict[str, Any]]:
     ]
 
 
+REASONING_EFFORT_ENV = "TISSUEAGENT_REASONING_EFFORT"
+_VALID_REASONING_EFFORTS = ("minimal", "low", "medium", "high")
+
+
 def get_model_spec(model_id: str) -> ModelSpec:
-    """Return the ModelSpec for the given model_id, raising ValueError if unknown."""
+    """Return the ModelSpec for the given model_id, raising ValueError if unknown.
+
+    ``TISSUEAGENT_REASONING_EFFORT`` overrides the catalog's effort for models
+    that have one. Applied here rather than in :func:`build_chat_model` because
+    this is the single lookup both the model factory and the benchmark metrics
+    dump go through — overriding anywhere else lets the effort a run *used*
+    drift from the effort its ``metrics.json`` *claims*, which would silently
+    mislabel a whole sweep.
+
+    Models whose catalog effort is ``None`` (Anthropic) are left alone: the
+    provider ignores the argument, so recording one would assert a setting that
+    never reached the API.
+    """
     if model_id not in _MODELS_BY_ID:
         raise ValueError(f"Unknown model id: {model_id!r}")
-    return _MODELS_BY_ID[model_id]
+    spec = _MODELS_BY_ID[model_id]
+
+    override = (os.environ.get(REASONING_EFFORT_ENV) or "").strip().lower()
+    if override and spec.reasoning_effort is not None:
+        if override not in _VALID_REASONING_EFFORTS:
+            raise ValueError(
+                f"{REASONING_EFFORT_ENV}={override!r} is not one of "
+                f"{_VALID_REASONING_EFFORTS}"
+            )
+        spec = replace(spec, reasoning_effort=override)
+    return spec
 
 
 # ---------------------------------------------------------------------------
@@ -339,6 +424,24 @@ def build_chat_model(model_id: str, **overrides: Any) -> BaseChatModel:
         key = get_api_key("openrouter")
         if key:
             kwargs["api_key"] = key
+        kwargs.update(overrides)
+        return ChatOpenAI(**kwargs)
+
+    if spec.provider == "local":
+        # A self-hosted vLLM/SGLang server speaking the OpenAI chat-completions
+        # API. Same shape as the openrouter branch, with two differences: the
+        # base URL is read at call time (the server's host is only known once
+        # slurm has placed the job), and reasoning_effort is never forwarded
+        # because these servers reject the field outright.
+        from langchain_openai import ChatOpenAI
+
+        kwargs = {
+            "model": spec.api_model,
+            "base_url": get_local_base_url(),
+        }
+        overrides.pop("reasoning_effort", None)
+        # vLLM ignores the value but the SDK requires a non-empty string.
+        kwargs["api_key"] = get_api_key("local") or "EMPTY"
         kwargs.update(overrides)
         return ChatOpenAI(**kwargs)
 

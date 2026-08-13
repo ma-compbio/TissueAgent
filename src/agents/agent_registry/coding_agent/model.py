@@ -130,12 +130,23 @@ def create_coding_agent(
             "back so the manager can retry the step with new instructions or replan."
         )
 
-    def _update_retry_counter(result: ExecutionResult) -> str | None:
+    def _update_retry_counter(result: ExecutionResult, language: str = "python") -> str | None:
         """Track consecutive failures; return a stop-directive when over budget.
 
         Returns ``None`` while within budget. A successful execution resets the
-        counter to zero.
+        counter to zero — which is why the run-level history is mirrored into
+        ``executor_tracker`` here, before it is thrown away. Recording is
+        strictly observational and never allowed to affect the run.
         """
+        try:
+            from graph.ui_events import _get_subagent_context
+            from server.executor_tracker import executor_tracker
+
+            _, _, step_id = _get_subagent_context()
+            executor_tracker.record_execution(language, bool(result.error), step_id)
+        except Exception as e:  # metrics must never break code execution
+            logging.debug("executor_tracker: could not record execution: %s", e)
+
         if result.error:
             _exec_state["consecutive_errors"] += 1
             if _exec_state["consecutive_errors"] >= MAX_EXECUTOR_RETRIES:
@@ -169,7 +180,7 @@ def create_coding_agent(
         result = kernel_client.execute(code, language="r")
         logging.info(f"r tool output:\n{result.text}")
         _emit_output("R Output:\n", result)
-        over_budget = _update_retry_counter(result)
+        over_budget = _update_retry_counter(result, language="r")
         if over_budget is not None:
             return f"{result.text}\n\n{over_budget}"
         return _format_execution_result(result)
@@ -225,6 +236,12 @@ def create_coding_agent(
         # Fresh retry budget for each step invocation (the tool closures persist
         # across invocations, so the counter must be reset here).
         _exec_state["consecutive_errors"] = 0
+        try:
+            from server.executor_tracker import executor_tracker
+
+            executor_tracker.begin_step()
+        except Exception as e:  # metrics must never break a dispatch
+            logging.debug("executor_tracker: could not mark step boundary: %s", e)
         message = HumanMessage(prompt)
 
         skill_prompt_text = ""

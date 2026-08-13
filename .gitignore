@@ -55,10 +55,74 @@ COPILOT_PLAN.md
 COPILOT_QA.md
 .impeccable.md
 
-# Benchmark runtime artifacts
+# Benchmark: track what defines a run and what it concluded, never the payloads.
+#
+# Written as ignore-everything-then-re-include because git does not descend into
+# an excluded directory: each level must be opened with `dir/*` before any child
+# of it can be un-ignored. Keep that shape when adding a benchmark.
+#
+# biomysterybench/upstream/, spatialbench/ and compbiobench-runner/ are separate
+# clones carrying their own .git — they stay out entirely. They are not
+# submodules, and 4.6G of LFS-backed data zips does not belong in this history.
+#
+# `benchmark/*` matches direct children only, so upstream/ — one level deeper
+# since the 2026-07-25 consolidation — needs its own `biomysterybench/*` line to
+# stay excluded. Without it the whole HF clone becomes trackable.
+benchmark/*
+!benchmark/*.py
+!benchmark/biomysterybench/
+benchmark/biomysterybench/*
+!benchmark/biomysterybench/biomysterybench_expr/
+
+# Spatial CellBench is tracked in full — `benchmark/*` above would otherwise
+# hide the whole tree — minus its runtime artifacts.
+!benchmark/spatial_cellbench/
 benchmark/spatial_cellbench/runs/
 benchmark/spatial_cellbench/slurm/*.out
+
+# The problem set, the harness, and the graded results. `slurm/make_prompt.py`
+# matters more than its size suggests: the preamble it emits is what separates
+# one prompt version from another, and results are only comparable within a version.
+benchmark/biomysterybench/biomysterybench_expr/*
+!benchmark/biomysterybench/biomysterybench_expr/*.md
+!benchmark/biomysterybench/biomysterybench_expr/*.csv
+!benchmark/biomysterybench/biomysterybench_expr/grade.py
+!benchmark/biomysterybench/biomysterybench_expr/slurm/
+benchmark/biomysterybench/biomysterybench_expr/slurm/logs/
+
+# Per-run archives: metrics.json, grade.json and the agent's own write-up —
+# ~190K for the whole sweep. The terminal trace, chat dump, tables, figures and
+# notebook run to megabytes per run and stay local; mine them in place. Note
+# that metrics.json carries the verbatim prompt, so the prompt version a run uses is
+# recoverable from the committed data alone.
+#
+# Both archive layouts are covered, and depth-agnostically, because they differ:
+# run_problem.sh writes tissueagent_runs/<id>/ while run_one.sh:34 writes
+# runs/<model>/<id>/<seed>/. `grade.py` rglobs for metrics.json and accepts
+# either, so a depth-specific rule here would silently drop a whole model×seed
+# sweep out of the history. `**/` re-opens every directory below the archive
+# root — git cannot re-include a file whose parent directory is excluded — and
+# only then are the three keepers un-ignored.
+# The trailing `*` on tissueagent_runs matches retired sweeps too — they are
+# renamed in place to tissueagent_runs_<date>_<version>/ rather than deleted
+# (e.g. tissueagent_runs_2026-07-25_v0/). A retired version's metrics must stay
+# in history or the version comparison in results.md becomes unverifiable.
+!benchmark/biomysterybench/biomysterybench_expr/tissueagent_runs*/
+!benchmark/biomysterybench/biomysterybench_expr/runs/
+benchmark/biomysterybench/biomysterybench_expr/tissueagent_runs*/**
+benchmark/biomysterybench/biomysterybench_expr/runs/**
+!benchmark/biomysterybench/biomysterybench_expr/tissueagent_runs*/**/
+!benchmark/biomysterybench/biomysterybench_expr/runs/**/
+!benchmark/biomysterybench/biomysterybench_expr/**/metrics.json
+!benchmark/biomysterybench/biomysterybench_expr/**/grade.json
+!benchmark/biomysterybench/biomysterybench_expr/**/attempts.jsonl
+!benchmark/biomysterybench/biomysterybench_expr/**/reports/**/*.md
+
 workspace/cellvoyager_agent/
 
 # Local public-paper archives used to curate Spatial CellBench
 /papers-*.zip
+
+# Per-worker state roots for parallel benchmark shards (run_shard.sbatch).
+# Same content as workspace/ + projects/ + plan_scratch/, one set per worker.
+.bench_workers/
