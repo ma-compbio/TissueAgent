@@ -1,6 +1,6 @@
 """Message sanitization, normalization, and content-formatting utilities."""
 
-from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
 # additional_kwargs keys that carry provider-specific data the API rejects on
 # a return trip (e.g. reasoning traces). Everything else — including UI-only
@@ -14,6 +14,53 @@ _STRIP_AI_KWARG_KEYS = frozenset({
     "tool_use_id",
     "refusal",
 })
+
+
+def normalize_trailing_assistant(messages: list[BaseMessage]) -> list[BaseMessage]:
+    """Fold a trailing assistant turn into a user turn for prefill-free providers.
+
+    Anthropic removed assistant-turn prefill starting with the 4.6 generation: a
+    ``messages`` array whose last entry is ``role: "assistant"`` returns a 400. Our
+    LangGraph nodes append each agent's ``AIMessage`` to state, and several filters
+    (notably :func:`message_filters.filter_for_recruiter`) project histories that end
+    on exactly that shape — so every Anthropic run 400s without this normalization.
+    OpenAI accepts the trailing assistant turn, which is why this only runs on the
+    Anthropic path.
+
+    Two shapes are deliberately left alone:
+
+    * A trailing ``AIMessage`` *with* ``tool_calls`` — that is a mid-tool-loop state
+      whose ToolMessages have not been appended yet. Rewriting it would orphan the
+      tool_call ids and break the tool protocol.
+    * An empty list — callers such as ``filter_for_manager`` already inject their own
+      synthetic ``HumanMessage``; adding a second one here would double it up.
+
+    Returns a new list; the input is never mutated (LangGraph shares state refs).
+    """
+    if not messages:
+        return messages
+    last = messages[-1]
+    if not isinstance(last, AIMessage):
+        return messages
+    if getattr(last, "tool_calls", None):
+        return messages
+
+    text = last.content if isinstance(last.content, str) else str(last.content)
+    text = text.strip()
+    if not text:
+        # Nothing to carry forward — drop the empty turn rather than sending an
+        # empty user message, which providers also reject.
+        return list(messages[:-1])
+
+    # Preserve the content as context rather than discarding it: downstream agents
+    # (e.g. the recruiter reading the planner's plan) depend on this text.
+    carried = HumanMessage(
+        content=(
+            f"Output from the previous agent"
+            f"{f' ({last.name})' if getattr(last, 'name', None) else ''}:\n\n{text}"
+        )
+    )
+    return list(messages[:-1]) + [carried]
 
 
 def sanitize_message(message: BaseMessage) -> BaseMessage:

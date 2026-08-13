@@ -60,6 +60,11 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 LOCAL_BASE_URL_ENV = "TISSUEAGENT_LOCAL_BASE_URL"
 DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:8000/v1"
 
+# langchain_anthropic's own default is 1024 tokens — low enough that ordinary
+# agent turns truncate. Set well clear of that without streaming (the SDK guards
+# non-streamed requests above ~16k to avoid HTTP timeouts).
+ANTHROPIC_DEFAULT_MAX_TOKENS = 16000
+
 
 def get_local_base_url() -> str:
     """Return the base URL for the `local` provider."""
@@ -104,6 +109,22 @@ SUPPORTED_MODELS: List[ModelSpec] = [
         reasoning_effort="medium",
     ),
     # --- Anthropic (direct) ---
+    #
+    # Current generation first (the UI shows the first entry per provider first).
+    # The 4.7 / 4.6 entries below are still valid API ids and stay for anyone
+    # pinning them; they are simply a generation behind.
+    ModelSpec(
+        id="claude-opus-5",
+        provider="anthropic",
+        api_model="claude-opus-5",
+        label="Claude Opus 5",
+    ),
+    ModelSpec(
+        id="claude-sonnet-5",
+        provider="anthropic",
+        api_model="claude-sonnet-5",
+        label="Claude Sonnet 5",
+    ),
     ModelSpec(
         id="claude-opus-4-7",
         provider="anthropic",
@@ -400,7 +421,11 @@ def build_chat_model(model_id: str, **overrides: Any) -> BaseChatModel:
     if spec.provider == "anthropic":
         from langchain_anthropic import ChatAnthropic
 
-        kwargs = {"model": spec.api_model}
+        # langchain_anthropic defaults max_tokens to 1024, which truncates agent
+        # turns that plan, call tools, and write reports mid-response. The OpenAI
+        # path leaves the ceiling to the provider, so this only shows up on Claude.
+        # Overridable via `overrides` below.
+        kwargs = {"model": spec.api_model, "max_tokens": ANTHROPIC_DEFAULT_MAX_TOKENS}
         # Drop OpenAI-only kwargs callers may pass.
         for k in ("reasoning_effort",):
             overrides.pop(k, None)

@@ -19,6 +19,34 @@ from config import ACTIVE_PROJECT_DIR, DATA_DIR, LIBRARY_DIR, MAX_OUTPUT_CHARS, 
 ### file read tools
 
 
+# Magic-byte signatures for the image formats providers accept. Extension-based
+# detection (``mimetypes.guess_type``) is not enough: plotting code routinely
+# writes PNG bytes to a ``.jpg`` path, and Anthropic validates the declared media
+# type against the actual bytes and rejects the mismatch with a 400 ("the image
+# appears to be a image/png image"). OpenAI accepts it, which is why this only
+# surfaces on Claude. Sniff the content and let the bytes win.
+_IMAGE_MAGIC: tuple[tuple[bytes, str], ...] = (
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"GIF87a", "image/gif"),
+    (b"GIF89a", "image/gif"),
+)
+
+
+def _sniff_image_mime(raw: bytes, fallback: str | None) -> str | None:
+    """Return the media type implied by *raw*'s magic bytes, else *fallback*.
+
+    WEBP needs a two-part check ("RIFF" container + "WEBP" form type), so it is
+    handled separately from the simple prefix table above.
+    """
+    for signature, mime in _IMAGE_MAGIC:
+        if raw.startswith(signature):
+            return mime
+    if raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":
+        return "image/webp"
+    return fallback
+
+
 # Roots the agent is allowed to traverse. Anything else inside DATA_DIR
 # (or outside it) is unreachable through these tools — defense in depth
 # on top of the DATA_DIR boundary check in _resolve_artifact_path.
@@ -157,7 +185,10 @@ def _read(file_path: str, offset: int = 1, limit: int | None = None):
 
         mime, _ = mimetypes.guess_type(str(path))
         if mime and mime.startswith("image/"):
-            b64 = base64.b64encode(path.read_bytes()).decode()
+            raw = path.read_bytes()
+            # Trust the bytes over the extension — see _sniff_image_mime.
+            mime = _sniff_image_mime(raw, mime)
+            b64 = base64.b64encode(raw).decode()
             return [
                 {"type": "text", "text": f"Image: {file_path}"},
                 {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},

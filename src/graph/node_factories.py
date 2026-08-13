@@ -27,7 +27,11 @@ from langgraph.types import Command
 
 from agents.agent_utils import format_skill_prompt
 from config import DATA_DIR
-from graph.message_utils import sanitize_message, standardize_message_format
+from graph.message_utils import (
+    normalize_trailing_assistant,
+    sanitize_message,
+    standardize_message_format,
+)
 from graph.ui_events import (
     _get_subagent_context,
     emit_message,
@@ -44,6 +48,31 @@ class AgentState(MessagesState):
     """Extended message state with optional skill prompt injection."""
 
     skill_prompt: str
+
+
+def _rejects_assistant_prefill(model: BaseChatModel) -> bool:
+    """True when *model*'s provider 400s on a message list ending in an assistant turn.
+
+    Anthropic removed assistant-turn prefill in the 4.6 generation, so every Claude
+    model in our catalog rejects that shape. OpenAI (direct, and OpenRouter's
+    OpenAI-compatible gateway) still accepts it.
+
+    Detected from the bound model instance rather than the global selection so the
+    answer stays correct for sub-agents that were built with an explicit override.
+    Note this reads the *class*, not the model id: ``ChatAnthropic`` is only ever
+    constructed for the ``anthropic`` provider in :func:`models.build_chat_model`,
+    while OpenRouter-hosted Claude models go through ``ChatOpenAI`` and genuinely do
+    accept the trailing turn.
+
+    ``bind_tools()`` wraps the model in a ``RunnableBinding``, and every agent node
+    receives the *bound* model — so the wrapper chain must be unwrapped first or this
+    check silently returns False for exactly the models it exists to catch.
+    """
+    seen = 0
+    while (inner := getattr(model, "bound", None)) is not None and seen < 10:
+        model = inner
+        seen += 1
+    return any(base.__name__.startswith("ChatAnthropic") for base in type(model).__mro__)
 
 
 def create_agent_node(
@@ -92,6 +121,8 @@ def create_agent_node(
         messages = list(map(sanitize_message, state["messages"]))
         if message_filter_fn:
             messages = message_filter_fn(messages)
+        if _rejects_assistant_prefill(agent_model):
+            messages = normalize_trailing_assistant(messages)
         prompt_text = prompt(state) if callable(prompt) else prompt
         system_prompt = SystemMessage(prompt_text)
         t0 = time.perf_counter()
