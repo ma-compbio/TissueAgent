@@ -17,7 +17,11 @@ def _build_template_index() -> str:
     lines: list[str] = []
     for p in sorted(PLANS_DIR.glob("*.md")):
         frontmatter = parse_yaml_frontmatter(p.read_text())
-        if frontmatter is None or frontmatter.get("status") != "enabled":
+        if frontmatter is None:
+            continue
+        # Accept both spellings: plans conventionally use "enabled", skills "enable".
+        # Absent status defaults to enabled so a new template is never silently dropped.
+        if str(frontmatter.get("status", "enabled")).strip().lower() not in ("enabled", "enable"):
             continue
         name = frontmatter.get("name", p.stem)
         desc = frontmatter.get("description", "").strip()

@@ -35,6 +35,17 @@ def _format_plan(doc: PlanDocument) -> str:
         if step.description:
             lines.append(f"  description: {step.description}")
         lines.append(f"  assigned_agent: {step.assigned_agent or '(unassigned)'}")
+        # The assigned skills must be visible here: without them the manager cannot
+        # tell that the sub-agent already has a prescribed procedure, so it restates
+        # the method in its own words and silently overrides the skill.
+        if step.skills:
+            lines.append("  assigned_skills: " + ", ".join(step.skills))
+            lines.append(
+                "    ^ this step's sub-agent already has the above skill(s) in its prompt, "
+                "with the full procedure. Give it inputs/paths/goal only — do NOT restate "
+                "or replace the method, and do not accept the step until the skill's own "
+                "verification stage has actually run."
+            )
         if step.expected_artifacts:
             lines.append(
                 "  expected_artifacts: " + ", ".join(step.expected_artifacts)

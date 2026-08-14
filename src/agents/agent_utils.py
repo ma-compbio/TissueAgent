@@ -64,6 +64,7 @@ def format_skill_prompt(skill_names: list[str]) -> str:
     materialized_root = active_project_skills()
     skills_root = SKILLS_DIR.resolve()
     sections = []
+    strict_names: list[str] = []
     for name in skill_names:
         meta = skills.get(name)
         if meta is None:
@@ -79,6 +80,11 @@ def format_skill_prompt(skill_names: list[str]) -> str:
                 body = text
         else:
             body = text
+        # `strict: true` marks a procedural skill whose steps must be followed in
+        # order (see the header built below).
+        fm = parse_yaml_frontmatter(text) or {}
+        if str(fm.get("strict", "")).strip().lower() in ("true", "yes", "1"):
+            strict_names.append(name)
         assets_note = ""
         is_folder_skill = meta.path.parent.resolve() != skills_root
         if is_folder_skill and (materialized_root / name).exists():
@@ -95,6 +101,23 @@ def format_skill_prompt(skill_names: list[str]) -> str:
         "for this task. You may adopt parts of a skill's approach without following "
         "it exactly, adapting it to fit the specific requirements of the current task."
     )
+    if strict_names:
+        # A procedural skill prescribes a sequence whose later stages verify the
+        # earlier ones; adopting "parts" of it silently drops the verification and
+        # ships an unchecked deliverable. Override the permissive default for these.
+        listed = ", ".join(f"`{n}`" for n in strict_names)
+        header += (
+            f"\n\n**Exception — {listed}: follow the workflow exactly, in order, "
+            "without skipping steps.** These are procedures, not suggestions: their "
+            "later steps verify the earlier ones, so a skipped step means an "
+            "unverified result. Run every step the skill lists, including its "
+            "self-check and reflection stages, and use the values the skill tells you "
+            "to measure rather than substituting your own choice. If a step genuinely "
+            "cannot run (a missing dependency, a target the method does not fit), say "
+            "so explicitly in your summary and name the step you skipped and why — "
+            "never skip one silently, and never report the task complete as though a "
+            "skipped check had passed."
+        )
     return header + "\n\n" + "\n\n---\n\n".join(sections)
 
 

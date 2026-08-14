@@ -252,6 +252,14 @@ def create_coding_agent(
                 from agents.agent_utils import format_skill_prompt
 
                 skill_prompt_text = format_skill_prompt(step_ctx.skills)
+        # Skill injection is invisible in the transcript otherwise, so a skill that
+        # silently fails to reach the sub-agent looks identical to one it ignored.
+        logging.info(
+            "skill injection: resolver=%s skills=%s chars=%d",
+            "yes" if context_resolver else "no",
+            (step_ctx.skills if step_ctx else None),
+            len(skill_prompt_text),
+        )
 
         with subagent_invocation(
             "Coding Agent",

@@ -59,8 +59,9 @@ def _skill_from_file(p: Path) -> SkillMeta | None:
     fm = parse_yaml_frontmatter(p.read_text())
     if fm is None:
         return None
+    # Accept both spellings: skills conventionally use "enable", plans "enabled".
     status = str(fm.get("status", "enable")).strip().lower()
-    if status != "enable":
+    if status not in ("enable", "enabled"):
         return None
     name = fm.get("name", p.stem)
     return SkillMeta(
