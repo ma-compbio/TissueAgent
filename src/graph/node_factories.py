@@ -50,6 +50,44 @@ class AgentState(MessagesState):
     skill_prompt: str
 
 
+# Anthropic silently declines to cache a prefix shorter than the model minimum
+# (1024 tokens for the current Sonnet/Opus tiers) — no error, just zeros in
+# input_token_details. Marking a short prompt costs a cache-write premium with no
+# reads to amortize it, so only mark prompts comfortably past the floor. Chars,
+# not tokens, to avoid a tokenizer round-trip on every node build (~4 chars/token,
+# so this is ~1150 tokens — clear of the 1024 minimum without being so high that
+# it excludes the agents that actually benefit).
+_MIN_CACHEABLE_PROMPT_CHARS = 4600
+
+
+def _build_system_message(prompt_text: str, cacheable: bool) -> SystemMessage:
+    """Wrap *prompt_text* in a SystemMessage, marking it cacheable when worthwhile.
+
+    Anthropic prompt caching is a prefix match: the first call writes the prefix at
+    ~1.25x input price, every later call with byte-identical bytes reads it at ~0.1x
+    and skips prefill. Our agent nodes resend a large static system prompt on every
+    turn of a tool loop (the coding agent alone did 24 turns x ~1.4k tokens in the
+    Fig2b run), which is exactly the shape this pays off on.
+
+    The *cacheable* gate is about the wire format, not about who benefits: OpenAI
+    caches prompts over ~1024 tokens automatically (~50% input discount, no opt-in,
+    best-effort eviction) and rejects Anthropic's ``cache_control`` field, so its
+    prompts must stay plain strings. Anthropic's caching is opt-in and does nothing
+    without the explicit breakpoint below — which is why only that path is marked.
+    """
+    if not cacheable or len(prompt_text) < _MIN_CACHEABLE_PROMPT_CHARS:
+        return SystemMessage(prompt_text)
+    return SystemMessage(
+        content=[
+            {
+                "type": "text",
+                "text": prompt_text,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
+    )
+
+
 def _rejects_assistant_prefill(model: BaseChatModel) -> bool:
     """True when *model*'s provider 400s on a message list ending in an assistant turn.
 
@@ -117,14 +155,18 @@ def create_agent_node(
         preview_text = prompt
     logging.info(f"System prompt for `{agent_node_id}`:\n{preview_text}")
 
+    # Provider traits are fixed for the life of the node (the graph is rebuilt when
+    # the model selection changes), so resolve once here rather than per turn.
+    is_anthropic = _rejects_assistant_prefill(agent_model)
+
     def agent_node(state: MessagesState) -> Command:
         messages = list(map(sanitize_message, state["messages"]))
         if message_filter_fn:
             messages = message_filter_fn(messages)
-        if _rejects_assistant_prefill(agent_model):
+        if is_anthropic:
             messages = normalize_trailing_assistant(messages)
         prompt_text = prompt(state) if callable(prompt) else prompt
-        system_prompt = SystemMessage(prompt_text)
+        system_prompt = _build_system_message(prompt_text, cacheable=is_anthropic)
         t0 = time.perf_counter()
         response = standardize_message_format(
             cast(AIMessage, agent_model.invoke([system_prompt] + messages))

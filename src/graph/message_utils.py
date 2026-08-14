@@ -97,6 +97,9 @@ def sanitize_message(message: BaseMessage) -> BaseMessage:
             tool_calls=message.tool_calls or [],
             name=getattr(message, "name", None),
             additional_kwargs=filtered_kwargs,
+            # Preserved for the same reason as in standardize_message_format:
+            # rebuilding the message must not silently discard token accounting.
+            usage_metadata=getattr(message, "usage_metadata", None),
         )
     if isinstance(message.content, list):
         # For non-AI messages (Human/Tool), ensure list items have type.
@@ -154,8 +157,16 @@ def standardize_message_format(message: AIMessage) -> AIMessage:
                 other_parts.append(item)
 
         combined_tool_calls = tool_calls or message.tool_calls or []
+        # Carry usage_metadata across the rebuild. Anthropic returns list content on
+        # every thinking-enabled response, so dropping it here zeroed out token
+        # accounting for whole agents (planner/recruiter reported 0 tokens despite
+        # real calls) and made metrics.json undercount the run.
         return AIMessage(
-            "\n".join(text_parts).strip(), id=message.id, tool_calls=combined_tool_calls
+            "\n".join(text_parts).strip(),
+            id=message.id,
+            tool_calls=combined_tool_calls,
+            usage_metadata=getattr(message, "usage_metadata", None),
+            response_metadata=getattr(message, "response_metadata", None) or {},
         )
     return message
 

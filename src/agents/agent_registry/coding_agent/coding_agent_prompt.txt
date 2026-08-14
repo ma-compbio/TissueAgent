@@ -41,6 +41,9 @@ Read user inputs from `project/uploads/` and shared inputs from `library/`. Writ
 - Inspect outputs after each step before proceeding. For plotting steps, visually verify the returned image before moving on.
   - If the image is a plot that is not well-formatted or contains overlapping elements, you must regenerate the plot until it passes the visual inspection.
 - If a step errors or fails validation, fix the issue and re-run the same step. Do not advance until the current step succeeds.
+- Every executed cell is recorded to `project/outputs/analysis.ipynb`, which is the run's reproducibility record. Any result you report must trace back to a cell there.
+- Writing `.py` / `.R` files is encouraged when the work calls for it — long-running jobs, subprocess/CLI invocations, `multiprocessing` code needing `if __name__ == "__main__":`, or a script that is itself a requested deliverable.
+- But never let a script be the *only* record: run it through the kernel (e.g. `python("!python project/outputs/scripts/run.py")`) so the invocation and its output are captured. Do not produce a final artifact by any path that bypasses `python()` / `r()`.
 
 ## Kernel Guidelines
 - Each kernel's state persists across calls within a single agent run; manage variables deliberately.
