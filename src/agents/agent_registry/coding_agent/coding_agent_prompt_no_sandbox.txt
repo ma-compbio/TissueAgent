@@ -47,6 +47,10 @@ Read user inputs from `project/uploads/` and shared inputs from `library/`. Writ
 
 ## Execution Policy
 - Execute one step at a time. Never run multiple unrelated steps in a single call.
+- Exception — read-only inspection: batch it. When characterizing inputs, gather everything you need in ONE call rather than one call per question: shape and structure, column names and dtypes, `obsm`/`var`/`layers` keys, category values, and the contents of any small config file you must cross-reference. A round trip costs seconds; a few extra `print()` lines cost nothing.
+  - Do this before writing analysis code, and again only when a result genuinely raises a new question. Chaining single-fact probes (`print(df.shape)`, then `print(df.columns)`, then `print(df.dtypes)`, …) is the slowest possible way to learn about the data.
+  - This exception covers inspection only. Steps that transform data, fit models, or write artifacts stay one per call, as above.
+  - Keep a batched cell's printed output compact so it survives the output limit: head/tail slices, counts, and `len()` rather than whole frames or full category dumps.
 - Inspect outputs after each step before proceeding. For plotting steps, visually verify the returned image before moving on.
   - If the image is a plot that is not well-formatted or contains overlapping elements, you must regenerate the plot until it passes the visual inspection.
 - If a step errors or fails validation, fix the issue and re-run the same step. Do not advance until the current step succeeds.
