@@ -111,9 +111,9 @@ def test_usage_totals():
     usage_tracker.reset()
 
 
-def test_plan_block_counts_retries(tmp_dir: Path):
+def test_plan_block_counts_retries(tmp_path: Path):
     print("test_plan_block_counts_retries")
-    store = PlanStore(plan_dir=tmp_dir)
+    store = PlanStore(plan_dir=tmp_path)
     store.write(
         PlanDocument(
             status="running",
@@ -142,12 +142,12 @@ def test_plan_block_counts_retries(tmp_dir: Path):
     check(len(block["steps"]) == 3, "per-step detail kept for audit")
 
 
-def test_plan_block_after_reset(tmp_dir: Path):
+def test_plan_block_after_reset(tmp_path: Path):
     print("test_plan_block_after_reset")
     # A DIRECT run never writes a plan. The store lives outside the project
     # dir, so without the reset in run() it still holds the *previous* task's
     # plan and the dump reports those steps as if they were this run's.
-    store = PlanStore(plan_dir=tmp_dir)
+    store = PlanStore(plan_dir=tmp_path)
     store.write(PlanDocument(status="running", user_request="u", steps=[PlanStep(id=1, title="stale")]))
     store.reset()
     original = plan_store_mod.plan_store
@@ -355,10 +355,10 @@ def test_terminal_state_classification():
     check(cli._terminal_state_for(ValueError("boom")) == "crashed", "anything else -> crashed")
 
 
-def test_write_metrics(tmp_dir: Path):
+def test_write_metrics(tmp_path: Path):
     print("test_write_metrics")
-    project = tmp_dir / "project"
-    out = tmp_dir / "archive" / "metrics.json"
+    project = tmp_path / "project"
+    out = tmp_path / "archive" / "metrics.json"
     original = config.ACTIVE_PROJECT_DIR
     config.ACTIVE_PROJECT_DIR = project
     try:

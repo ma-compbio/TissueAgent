@@ -364,6 +364,11 @@ def _plan_block() -> dict:
             "id": s.id,
             "title": s.title,
             "assigned_agent": s.assigned_agent,
+            # Recorded because which skills the recruiter attached is a real
+            # variable in how a step behaves — without it, a run where a skill
+            # was assigned is indistinguishable from one where it wasn't, and
+            # the only way to tell was inspecting the on-disk skill snapshot.
+            "skills": list(s.skills),
             "status": s.status,
             "retry_count": s.retry_count,
         }
