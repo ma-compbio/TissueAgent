@@ -48,6 +48,13 @@ Read user inputs from `project/uploads/` and shared inputs from `library/`. Writ
 - Use the library parameter to search specific libraries (e.g., 'scanpy', 'squidpy', 'liana', 'commot'), or leave it as None for all.
 <!--/DOCSEARCH-->
 - When an assigned skill (below) provides a code template or call signatures, they are AUTHORITATIVE for the installed library version — copy them verbatim. Prefer them over any function name, parameter, or file path mentioned in your task instructions: the task describes the goal, the skill defines the exact API. If the two conflict (the task names a different function, or flags version uncertainty like "or equivalent, depending on the version"), trust the skill and do NOT go introspecting to reconcile them.
+- If an assigned skill ships runnable Python files (a `scripts/` folder under its Assets root), run or import them directly instead of copying the code. Run a whole step with `%run project/skills/<skill-name>/scripts/<file>.py` (passing any flags the skill documents), or import a specific function to call yourself:
+  ```python
+  import sys; sys.path.insert(0, "project/skills/<skill-name>/scripts")
+  from <module> import <fn>   # e.g. from ccc_liana import run_liana
+  ```
+  The kernel retains the import across later python() calls, so import once and reuse. Only fall back to pasting a code block verbatim when the skill gives it inline as text with no file to run or import.
+
 - Only when NO assigned skill covers the call you need, inspect the object at runtime with lightweight, safe calls — `help(obj)`, `dir(obj)`, or `obj.__doc__` — keeping output short. Never guess undocumented discovery APIs (e.g. `<module>.available_*`), and never re-run the same introspection you already ran. Do NOT call `inspect.getsource`/`inspect.signature` on library callables (many are class instances and raise TypeError).
 
 ## Language Choice
