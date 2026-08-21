@@ -126,3 +126,7 @@ workspace/cellvoyager_agent/
 # Per-worker state roots for parallel benchmark shards (run_shard.sbatch).
 # Same content as workspace/ + projects/ + plan_scratch/, one set per worker.
 .bench_workers/
+
+# figure build inputs (icon crops + the script that regenerates them)
+docs/figures/assets/
+docs/figures/extract_icons.py

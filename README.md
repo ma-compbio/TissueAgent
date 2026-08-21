@@ -11,7 +11,7 @@ TissueAgent is a role-based multi-agent framework that turns open-ended natural-
 - Built-in collaboration with external specialized agents to extend capabilities for domain-specific tasks.
 - Support for diverse spatial transcriptomics workflows such as figure reproduction, cell type annotation, cell-cell communication, differential gene expression, and cell type deconvolution.
 
-![TISSUEAGENT overview figure](docs/figures/tissueagent_overall_design.png)
+![TISSUEAGENT overview figure](docs/figures/tissueagent_overall_design_v1.png)
 
 ## Execution modes
 
