@@ -42,6 +42,7 @@ from graph.message_filters import (
 )
 from graph.node_factories import (
     AgentState,
+    OrchestratorState,
     create_agent_invocation_tool,
     create_agent_node,
     create_step_context_resolver,
@@ -418,7 +419,11 @@ def create_tissueagent_graph(
         message_filter_fn=filter_for_execution_phase,
     )
 
-    graph = StateGraph(MessagesState)
+    # OrchestratorState (not bare MessagesState): declares replan_count and the
+    # retry counters as channels so their Command(update=...) writes persist.
+    # With bare MessagesState those writes were dropped and every replan/retry
+    # cap was inert -- see OrchestratorState docstring.
+    graph = StateGraph(OrchestratorState)
 
     graph.add_edge(START, planner_node_id)
 

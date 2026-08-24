@@ -34,8 +34,33 @@ export interface SubagentTranscript {
   agent_name: string;
   avatar: string;
   transcript: SerializedMessage[] | null;
+  /** Kebab-case names of the skills loaded into this step's sub-agent.
+   *  Populated from the plan step's assigned skills; empty for steps that
+   *  loaded none, and absent on legacy sessions saved before this existed. */
+  skills?: string[];
+  /** Fully-rendered system prompt the sub-agent ran with (skills already
+   *  substituted). Absent on legacy sessions saved before this existed. */
+  system_prompt?: string | null;
   raw_state: string | null;
   invocation_id?: string | null;
+}
+
+/** Detail for a single skill, fetched lazily from `/api/skills/{name}`. */
+export interface SkillDetail {
+  name: string;
+  description: string;
+  applies_to: string[];
+  /** True for folder-based skills that ship bundled scripts/ + references/. */
+  is_dir: boolean;
+  /** Full markdown body of the skill's own file. */
+  content: string;
+  /** Repo-relative folder path, e.g. "knowledge/skills/figure-reproduce".
+   *  Only present for folder skills. */
+  dir_path?: string;
+  /** Skill markdown filename within the folder (e.g. "figure-reproduce.md"). */
+  main_file?: string;
+  /** File tree under the skill folder, paths relative to it. Folder skills only. */
+  files?: BrowseEntry[];
 }
 
 export interface HistoryData {

@@ -69,6 +69,8 @@ dependencies = [
     "tiledbsoma==1.17.1",
     "docker>=7.0.0",
     "websocket-client>=1.7.0",
+    "stlearn>=0.2.5",
+    "commot>=0.0.3",
 ]
 
 [project.scripts]

@@ -2,9 +2,21 @@
 
 Compiles the LangGraph agent on startup, registers event queues, and mounts REST + WebSocket routes.
 
-Run with::
+Run from the repo root with::
 
-    cd src && uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
+    python -m uvicorn server.main:app --reload --reload-dir src --host 0.0.0.0 --port 8000
+
+``python -m`` (from the repo root) puts the repo root on ``sys.path`` so the top-level
+``knowledge`` package imports; the editable install already exposes ``src/`` for
+``server``/``agents``/``graph``. Do NOT use ``--app-dir src`` — it replaces the repo
+root on the path rather than adding to it, breaking ``import knowledge``.
+
+``--reload-dir src`` is important: it scopes the autoreloader to application code only.
+Without it uvicorn watches the whole repo, and since ``*.py`` is the only thing the
+reloader tracks, every agent run that materializes a folder skill shipping a bundled
+script (e.g. ``knowledge/skills/ccc-aggregate/scripts/ccc_aggregate.py`` gets copied
+into ``workspace/project/skills/``) — or that writes any ``.py`` under ``workspace/`` —
+restarts the backend mid-run.
 """
 
 import matplotlib
@@ -39,6 +51,7 @@ from server.routes import (
     files,
     plan,
     sessions,
+    skills,
 )
 from server.routes import (
     models as models_route,
@@ -226,6 +239,7 @@ app.include_router(models_route.router)
 app.include_router(plan.router)
 app.include_router(sessions.router)
 app.include_router(settings_route.router)
+app.include_router(skills.router)
 
 # Serve React build in production (if dist/ exists)
 _frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"

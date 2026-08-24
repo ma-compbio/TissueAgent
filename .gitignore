@@ -130,3 +130,7 @@ workspace/cellvoyager_agent/
 # figure build inputs (icon crops + the script that regenerates them)
 docs/figures/assets/
 docs/figures/extract_icons.py
+
+data/
+
+.rlib/

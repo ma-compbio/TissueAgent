@@ -102,6 +102,18 @@ const WS_URL =
     ? `ws://${window.location.hostname}:8000/ws/chat`
     : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws/chat`;
 
+// The transcript array only ever grows during a session; every message also
+// becomes live DOM in ChatView. Left unbounded, a long run drives the
+// QtWebEngine renderer to OOM (SIGTRAP). Keep only the most recent messages —
+// older turns scroll out of view and aren't worth the memory. The full
+// transcript is still persisted server-side and replayable via history.
+const MAX_MESSAGES = 1500;
+
+/** Keep the last MAX_MESSAGES entries, returning the same array if under cap. */
+function capMessages(msgs: SerializedMessage[]): SerializedMessage[] {
+  return msgs.length > MAX_MESSAGES ? msgs.slice(-MAX_MESSAGES) : msgs;
+}
+
 export function useWebSocket(): UseWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -210,7 +222,7 @@ export function useWebSocket(): UseWebSocketReturn {
       switch (data.type) {
         case "history": {
           const history = data.data as HistoryData;
-          setMessages(history.messages);
+          setMessages(capMessages(history.messages));
           setSubagentStates(history.subagent_states);
           setLiveTraces({});
           // A history replay is definitionally a fresh page-load view of
@@ -221,7 +233,7 @@ export function useWebSocket(): UseWebSocketReturn {
         }
         case "message": {
           const msg = data.data as SerializedMessage;
-          setMessages((prev) => [...prev, msg]);
+          setMessages((prev) => capMessages([...prev, msg]));
           if (msg.type === "human") {
             setIsRunning(true);
             setElapsed(null);

@@ -195,10 +195,16 @@ def create_coding_agent(
         ),
     )
 
+    # search_documentation is gated by config.DOC_SEARCH_ENABLED so the tool and
+    # its prompt guidance (coding_agent/prompt.py) turn on/off together. It is
+    # temporarily disabled for the CCC benchmark; the API context now lives in
+    # the CCC skill files. Flip the flag to True to restore both.
+    from config import DOC_SEARCH_ENABLED
+
     tools = [
         python_tool,
         r_tool,
-        search_documentation_tool,
+        *([search_documentation_tool] if DOC_SEARCH_ENABLED else []),
         *file_read_write_tools,
     ]
 
@@ -252,14 +258,21 @@ def create_coding_agent(
                 from agents.agent_utils import format_skill_prompt
 
                 skill_prompt_text = format_skill_prompt(step_ctx.skills)
-        # Skill injection is invisible in the transcript otherwise, so a skill that
-        # silently fails to reach the sub-agent looks identical to one it ignored.
-        logging.info(
-            "skill injection: resolver=%s skills=%s chars=%d",
-            "yes" if context_resolver else "no",
-            (step_ctx.skills if step_ctx else None),
-            len(skill_prompt_text),
-        )
+        # Per-invocation observability: the system prompt is only previewed at
+        # build time (with an empty skill_prompt), so without this line there is
+        # no way to tell from the logs whether a step's assigned skills actually
+        # reached the executor. Warn loudly if a running step has skills but the
+        # injection came back empty (a silent skill-delivery regression).
+        if step_ctx and step_ctx.skills and not skill_prompt_text:
+            logging.warning(
+                "coding_agent: step %s assigned skills %s but skill_prompt is EMPTY "
+                "(skill body not injected)", step_ctx.step_id, step_ctx.skills)
+        else:
+            logging.info(
+                "coding_agent: injecting skills %s (%d chars) for step %s",
+                (step_ctx.skills if step_ctx else []),
+                len(skill_prompt_text),
+                (step_ctx.step_id if step_ctx else None))
 
         with subagent_invocation(
             "Coding Agent",
