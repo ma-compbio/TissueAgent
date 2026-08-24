@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import ReactMarkdown from "react-markdown";
@@ -45,6 +46,79 @@ interface Props {
   selectedTraceId: string | null;
 }
 
+// Prism turns each code block into a large tree of <span> nodes. Over a long
+// session, big blocks (compiler command lines, install logs, tool dumps)
+// accumulate in the DOM and balloon the renderer's memory until Chromium
+// traps with SIGTRAP. Above this size we skip highlighting and render plain
+// preformatted text (a single cheap text node) instead.
+const MAX_HIGHLIGHT_CHARS = 8000;
+// Above this size, keep the block collapsed by default so a single huge dump
+// doesn't sit in the DOM (even off-screen) as a giant node.
+const MAX_INLINE_CHARS = 20000;
+
+/** A code block that degrades gracefully as content grows. */
+function CodeBlock({ code, language }: { code: string; language: string }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Small enough to highlight safely.
+  if (code.length <= MAX_HIGHLIGHT_CHARS) {
+    return (
+      <SyntaxHighlighter
+        language={language}
+        style={oneLight}
+        customStyle={{ fontSize: "0.85rem", borderRadius: "0.4rem" }}
+      >
+        {code}
+      </SyntaxHighlighter>
+    );
+  }
+
+  const collapsed = code.length > MAX_INLINE_CHARS && !expanded;
+  const shown = collapsed ? code.slice(0, MAX_INLINE_CHARS) : code;
+
+  return (
+    <div style={{ marginTop: "0.25rem" }}>
+      <pre
+        className="plain-code-block"
+        style={{
+          fontSize: "0.85rem",
+          background: "#f8f9fa",
+          borderRadius: "0.4rem",
+          padding: "0.6rem 0.75rem",
+          margin: 0,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          overflowX: "auto",
+          maxHeight: expanded ? "none" : "24rem",
+        }}
+      >
+        {shown}
+        {collapsed ? "\n…" : ""}
+      </pre>
+      {code.length > MAX_INLINE_CHARS && (
+        <button
+          type="button"
+          className="code-toggle"
+          onClick={() => setExpanded((v) => !v)}
+          style={{
+            marginTop: "0.35rem",
+            fontSize: "0.75rem",
+            cursor: "pointer",
+            background: "none",
+            border: "none",
+            padding: 0,
+            color: "#3b82f6",
+          }}
+        >
+          {expanded
+            ? "Show less"
+            : `Show more (${code.length.toLocaleString()} chars)`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** Render a tagged content block (<execute>, <scratchpad>, etc.) */
 function TagBlock({ tag, content }: { tag: string; content: string }) {
   const styles: Record<string, React.CSSProperties> = {
@@ -60,13 +134,7 @@ function TagBlock({ tag, content }: { tag: string; content: string }) {
     <div style={{ marginTop: "0.5rem" }}>
       <span className="tag-label">{tag}</span>
       {isCode ? (
-        <SyntaxHighlighter
-          language="python"
-          style={oneLight}
-          customStyle={{ fontSize: "0.85rem", borderRadius: "0.4rem" }}
-        >
-          {content}
-        </SyntaxHighlighter>
+        <CodeBlock language="python" code={content} />
       ) : (
         <div className="tag-block" style={styles[tag] || {}}>
           {content}
@@ -87,16 +155,7 @@ function FormattedContent({ text }: { text: string }) {
         if (fenceMatch) {
           const lang = fenceMatch[1] || "text";
           const code = fenceMatch[2].trim();
-          return (
-            <SyntaxHighlighter
-              key={i}
-              language={lang}
-              style={oneLight}
-              customStyle={{ fontSize: "0.85rem", borderRadius: "0.4rem" }}
-            >
-              {code}
-            </SyntaxHighlighter>
-          );
+          return <CodeBlock key={i} language={lang} code={code} />;
         }
         if (part.trim()) {
           return (
