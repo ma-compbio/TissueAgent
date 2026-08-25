@@ -31,7 +31,14 @@ from agents.agent_defns import (
 )
 from agents.agent_utils import substitute_shared_prompts, truncate_output
 from agents.planner_agent.prompt import PlannerReplanPrompt
-from config import MAX_PLANNER_RETRIES, MAX_RECRUITER_RETRIES, MAX_REPLANS
+from config import (
+    MANAGER_STEP_RESERVE,
+    MAX_PLANNER_RETRIES,
+    MAX_RECRUITER_RETRIES,
+    MAX_REPLANS,
+    REPLAN_STEP_COST,
+    REPORTER_STEP_RESERVE,
+)
 from agents.manager_agent.tools import create_manager_step_tools
 from graph.message_filters import (
     filter_for_execution_phase,
@@ -42,6 +49,7 @@ from graph.message_filters import (
 )
 from graph.node_factories import (
     AgentState,
+    BudgetAction,
     OrchestratorState,
     create_agent_invocation_tool,
     create_agent_node,
@@ -255,6 +263,22 @@ def create_tissueagent_graph(
     manager_node_id = assign_agent_node_id(ManagerAgent.id)
     manager_tool_node_id = assign_tool_node_id(ManagerAgent.id)
 
+    def remaining_steps(state) -> int | None:
+        value = state.get("remaining_steps")
+        return int(value) if value is not None else None
+
+    def manager_budget_guard(state) -> BudgetAction | None:
+        remaining = remaining_steps(state)
+        if remaining is not None and remaining <= MANAGER_STEP_RESERVE:
+            return BudgetAction(
+                goto=evaluator_node_id,
+                message=(
+                    "Execution stopped because the remaining graph budget is reserved for "
+                    "evaluation and reporting. Evaluate the artifacts produced so far."
+                ),
+            )
+        return None
+
     ### Evaluator agent
 
     evaluator_model = model_proc_fn(EvaluatorAgent.model_ctor().bind_tools(EvaluatorAgent.tools))
@@ -263,6 +287,19 @@ def create_tissueagent_graph(
     evaluator_node_id = assign_agent_node_id(EvaluatorAgent.id)
     evaluator_tool_node_id = assign_tool_node_id(EvaluatorAgent.id)
 
+    def evaluator_budget_guard(state) -> BudgetAction | None:
+        remaining = remaining_steps(state)
+        if remaining is not None and remaining <= REPLAN_STEP_COST:
+            return BudgetAction(
+                goto=reporter_node_id,
+                message=(
+                    "Evaluation and replanning stopped because insufficient graph budget "
+                    "remains for another execution cycle. Report the available artifacts and "
+                    "any remaining limitations."
+                ),
+            )
+        return None
+
     ### Reporter agent
 
     reporter_model = model_proc_fn(ReporterAgent.model_ctor().bind_tools(ReporterAgent.tools))
@@ -270,6 +307,17 @@ def create_tissueagent_graph(
     reporter_prompt = substitute_shared_prompts(ReporterAgent.prompt)
     reporter_node_id = assign_agent_node_id(ReporterAgent.id)
     reporter_tool_node_id = assign_tool_node_id(ReporterAgent.id)
+
+    def reporter_budget_guard(state) -> BudgetAction | None:
+        remaining = remaining_steps(state)
+        if remaining is not None and remaining <= REPORTER_STEP_RESERVE:
+            return BudgetAction(
+                directive=(
+                    "The graph step budget is nearly exhausted. Give the final report now; "
+                    "do not call any tools."
+                )
+            )
+        return None
 
     # Create graph nodes
 
@@ -356,6 +404,7 @@ def create_tissueagent_graph(
         manager_tool_node_id,
         evaluator_node_id,
         message_filter_fn=filter_for_manager(manager_node_id),
+        budget_guard=manager_budget_guard,
     )
 
     ### Evaluator node
@@ -405,6 +454,7 @@ def create_tissueagent_graph(
         exit_node=evaluator_router,
         state_update_fn=evaluator_state_update,
         message_filter_fn=filter_for_execution_phase,
+        budget_guard=evaluator_budget_guard,
     )
 
     ### Reporter node
@@ -417,6 +467,7 @@ def create_tissueagent_graph(
         reporter_tool_node_id,
         END,
         message_filter_fn=filter_for_execution_phase,
+        budget_guard=reporter_budget_guard,
     )
 
     # OrchestratorState (not bare MessagesState): declares replan_count and the

@@ -23,6 +23,7 @@ from langchain_core.messages import (
 )
 from langgraph.graph import MessagesState
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.managed import RemainingSteps
 from langgraph.types import Command
 
 from agents.agent_utils import format_skill_prompt
@@ -74,6 +75,12 @@ class OrchestratorState(MessagesState):
     Plain (non-``Annotated``) fields get the default last-write-wins reducer,
     which is correct for these: counters are overwritten with their new value,
     and ``replan_history`` is rewritten with the full updated list by the writer.
+
+    ``remaining_steps`` is LangGraph's own managed value, not one of ours: it is
+    recomputed every super-step as ``recursion_limit - step`` and is read-only.
+    Declaring it here is what lets the budget guards in :mod:`graph.graph` see
+    how much of the graph budget is left and land the run on the reporter
+    instead of letting it die with ``GraphRecursionError``.
     """
 
     replan_count: int
@@ -83,6 +90,7 @@ class OrchestratorState(MessagesState):
     planner_retry_count: int
     planner_retry_phase: str
     planner_validation_errors: object
+    remaining_steps: RemainingSteps
 
 
 # Anthropic silently declines to cache a prefix shorter than the model minimum
@@ -148,6 +156,43 @@ def _rejects_assistant_prefill(model: BaseChatModel) -> bool:
     return any(base.__name__.startswith("ChatAnthropic") for base in type(model).__mro__)
 
 
+@dataclass
+class BudgetAction:
+    """What a node should do when the graph's step budget is running out.
+
+    Returned by a ``budget_guard`` (see :func:`create_agent_node`). Two shapes:
+
+    * ``goto`` set — the node skips the LLM call entirely, emits ``message`` as its
+      own turn, and routes straight to ``goto``. Costs one super-step instead of
+      the two-or-more a tool-calling turn would.
+    * ``directive`` only — the node still calls the LLM, but appends ``directive``
+      to the system prompt and strips any tool calls off the response, forcing the
+      turn to be terminal. Use this where the LLM's actual words matter (the
+      reporter's report) and only its tool loop needs to stop.
+
+    Both fields may be set; ``goto`` wins.
+    """
+
+    goto: str | None = None
+    message: str = ""
+    directive: str = ""
+
+
+def _strip_tool_calls(response: AIMessage) -> None:
+    """Remove tool calls from *response* so the turn terminates.
+
+    Clears every place LangChain keeps them: the normalized ``tool_calls`` list,
+    the parse failures in ``invalid_tool_calls``, and the raw provider payload in
+    ``additional_kwargs``. Missing any one of them leaves an assistant turn that
+    requests tools with no ToolMessage to answer it, which Anthropic and OpenAI
+    both reject on the next request.
+    """
+    response.tool_calls = []
+    response.invalid_tool_calls = []
+    response.additional_kwargs.pop("tool_calls", None)
+    response.additional_kwargs.pop("function_call", None)
+
+
 def create_agent_node(
     agent_node_id: str,
     agent_model: BaseChatModel,
@@ -156,6 +201,7 @@ def create_agent_node(
     exit_node: str | Callable[[AIMessage, MessagesState], str] | None = None,
     state_update_fn: Callable[[AIMessage, MessagesState], dict[str, Any] | None] | None = None,
     message_filter_fn: Callable[[list[BaseMessage]], list[BaseMessage]] | None = None,
+    budget_guard: Callable[[MessagesState], "BudgetAction | None"] | None = None,
 ) -> Callable[[MessagesState], Command]:
     """Build a LangGraph agent node that invokes an LLM and routes the result.
 
@@ -176,6 +222,11 @@ def create_agent_node(
             extra state updates to merge into the command payload.
         message_filter_fn: Optional callable that projects the full message history down to the
             subset relevant to this agent. Applied before the LLM call without mutating graph state.
+        budget_guard: Optional callable that inspects the state's ``remaining_steps`` before the
+            LLM call and returns a :class:`BudgetAction` when the graph is about to run out of
+            budget. This is what turns a ``GraphRecursionError`` into a finished run: the guard
+            short-circuits an agent's tool loop while enough super-steps remain to reach the
+            reporter. Returns ``None`` on every normal turn.
 
     Returns:
         A callable suitable for use as a LangGraph node function.
@@ -195,12 +246,29 @@ def create_agent_node(
     is_anthropic = _rejects_assistant_prefill(agent_model)
 
     def agent_node(state: MessagesState) -> Command:
+        action = budget_guard(state) if budget_guard else None
+        if action is not None and action.goto:
+            # Out of budget: skip the model entirely. One super-step, one message,
+            # and control moves on to a node that can still finish the run.
+            forced = AIMessage(content=action.message)
+            forced.name = agent_node_id
+            logging.warning(
+                "%s: step budget exhausted (remaining_steps=%s) — routing to %s",
+                agent_node_id,
+                state.get("remaining_steps"),
+                action.goto,
+            )
+            emit_message(forced)
+            return Command(goto=action.goto, update={"messages": [forced]})
+
         messages = list(map(sanitize_message, state["messages"]))
         if message_filter_fn:
             messages = message_filter_fn(messages)
         if is_anthropic:
             messages = normalize_trailing_assistant(messages)
         prompt_text = prompt(state) if callable(prompt) else prompt
+        if action is not None and action.directive:
+            prompt_text = f"{prompt_text}\n\n{action.directive}"
         system_prompt = _build_system_message(prompt_text, cacheable=is_anthropic)
         t0 = time.perf_counter()
         response = standardize_message_format(
@@ -208,6 +276,22 @@ def create_agent_node(
         )
         elapsed = time.perf_counter() - t0
         response.name = agent_node_id
+
+        if action is not None and action.directive and getattr(response, "tool_calls", []):
+            # The directive told it to answer without tools and it called them anyway.
+            # Honouring the calls would cost two more super-steps we do not have, so
+            # drop them and let this turn be the agent's last.
+            logging.warning(
+                "%s: dropped %d tool call(s) — no step budget left to run them",
+                agent_node_id,
+                len(response.tool_calls),
+            )
+            _strip_tool_calls(response)
+            if not response.content:
+                response.content = (
+                    "Stopping here: the graph step budget ran out before this tool "
+                    "call could be run."
+                )
 
         # state_update_fn runs BEFORE emit_message so any mutation of
         # response.content (e.g. evaluator forcing a REPORT verdict when the

@@ -335,7 +335,7 @@ def _model_block() -> dict:
         model_id = selection.get(role)
         entry = {"model_id": model_id, "provider": None, "api_model": None, "reasoning_effort": None}
         try:
-            spec = model_registry.get_model_spec(model_id)
+            spec = model_registry.get_model_spec(model_id, role=role)
             entry.update(
                 provider=spec.provider,
                 api_model=spec.api_model,

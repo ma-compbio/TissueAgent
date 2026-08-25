@@ -202,11 +202,13 @@ def test_replans_successful():
     )
     check(thrash["replans_successful"] == 1, "a replan followed by another replan is not successful")
 
-    # Cap hit: the third REPLAN is rewritten to REPORT in state, so the message
-    # log shows 2 REPLANs while replan_count says 3. That final REPORT is the
-    # loop being cut off — not the second replan succeeding.
+    # Cap hit: the over-limit REPLAN is rewritten to REPORT in state, so the
+    # message log shows MAX_REPLANS REPLANs while replan_count is one higher.
+    # That final REPORT is the loop being cut off — not the last replan
+    # succeeding. Built from MAX_REPLANS rather than hard-coded to two verdicts,
+    # so the fixture stays self-consistent when the cap is retuned.
     capped = cli._replan_outcomes(
-        [_verdict("REPLAN"), _verdict("REPLAN"), _verdict("REPORT")],
+        [_verdict("REPLAN")] * config.MAX_REPLANS + [_verdict("REPORT")],
         replan_count=config.MAX_REPLANS + 1,
     )
     check(capped["forced_report_at_cap"] is True, "cap-hit run detected from the state/verdict delta")

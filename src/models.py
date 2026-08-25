@@ -244,18 +244,51 @@ def list_models() -> List[Dict[str, Any]]:
 
 
 REASONING_EFFORT_ENV = "TISSUEAGENT_REASONING_EFFORT"
+ORCHESTRATION_REASONING_EFFORT_ENV = "TISSUEAGENT_ORCHESTRATION_REASONING_EFFORT"
+WORKER_REASONING_EFFORT_ENV = "TISSUEAGENT_WORKER_REASONING_EFFORT"
 _VALID_REASONING_EFFORTS = ("minimal", "low", "medium", "high")
 
 
-def get_model_spec(model_id: str) -> ModelSpec:
+def _reasoning_effort_for_role(role: Role | None) -> str | None:
+    """Return the configured effort for a model role, if it has one.
+
+    The orchestration agents make many short decisions, so medium reasoning is
+    the latency-oriented default. Worker agents, including the coding agent,
+    retain high reasoning for analysis and figure reproduction. The legacy
+    global setting remains a fallback for installations that already use it.
+    """
+    if role is None:
+        configured = (os.environ.get(REASONING_EFFORT_ENV) or "").strip().lower()
+    else:
+        role_env = (
+            ORCHESTRATION_REASONING_EFFORT_ENV
+            if role == "orchestration"
+            else WORKER_REASONING_EFFORT_ENV
+        )
+        default = "medium" if role == "orchestration" else "high"
+        configured = (
+            os.environ.get(role_env)
+            or os.environ.get(REASONING_EFFORT_ENV)
+            or default
+        ).strip().lower()
+    if not configured:
+        return None
+    if configured not in _VALID_REASONING_EFFORTS:
+        raise ValueError(
+            f"reasoning effort {configured!r} is not one of {_VALID_REASONING_EFFORTS}"
+        )
+    return configured
+
+
+def get_model_spec(model_id: str, role: Role | None = None) -> ModelSpec:
     """Return the ModelSpec for the given model_id, raising ValueError if unknown.
 
-    ``TISSUEAGENT_REASONING_EFFORT`` overrides the catalog's effort for models
-    that have one. Applied here rather than in :func:`build_chat_model` because
-    this is the single lookup both the model factory and the benchmark metrics
-    dump go through — overriding anywhere else lets the effort a run *used*
-    drift from the effort its ``metrics.json`` *claims*, which would silently
-    mislabel a whole sweep.
+    Role-specific environment variables override the catalog's effort for models
+    that have one: ``TISSUEAGENT_ORCHESTRATION_REASONING_EFFORT`` defaults to
+    ``medium`` and ``TISSUEAGENT_WORKER_REASONING_EFFORT`` defaults to ``high``.
+    ``TISSUEAGENT_REASONING_EFFORT`` remains their shared fallback. Applied here
+    rather than in :func:`build_chat_model` so benchmark metrics record the
+    effort a run actually used.
 
     Models whose catalog effort is ``None`` (Anthropic) are left alone: the
     provider ignores the argument, so recording one would assert a setting that
@@ -265,13 +298,8 @@ def get_model_spec(model_id: str) -> ModelSpec:
         raise ValueError(f"Unknown model id: {model_id!r}")
     spec = _MODELS_BY_ID[model_id]
 
-    override = (os.environ.get(REASONING_EFFORT_ENV) or "").strip().lower()
+    override = _reasoning_effort_for_role(role)
     if override and spec.reasoning_effort is not None:
-        if override not in _VALID_REASONING_EFFORTS:
-            raise ValueError(
-                f"{REASONING_EFFORT_ENV}={override!r} is not one of "
-                f"{_VALID_REASONING_EFFORTS}"
-            )
         spec = replace(spec, reasoning_effort=override)
     return spec
 
@@ -398,13 +426,18 @@ def get_key_status() -> Dict[str, Dict[str, Any]]:
 # Factory
 # ---------------------------------------------------------------------------
 
-def build_chat_model(model_id: str, **overrides: Any) -> BaseChatModel:
+def build_chat_model(
+    model_id: str,
+    *,
+    role: Role | None = None,
+    **overrides: Any,
+) -> BaseChatModel:
     """Instantiate a fresh chat model for *model_id*.
 
     ``overrides`` are forwarded to the underlying constructor. Provider- specific arguments not understood by the other
     provider are dropped.
     """
-    spec = get_model_spec(model_id)
+    spec = get_model_spec(model_id, role=role)
 
     if spec.provider == "openai":
         from langchain_openai import ChatOpenAI
@@ -481,6 +514,6 @@ def model_ctor_for_role(role: Role, **overrides: Any) -> Callable[..., BaseChatM
     """
 
     def ctor() -> BaseChatModel:
-        return build_chat_model(get_model_id(role), **overrides)
+        return build_chat_model(get_model_id(role), role=role, **overrides)
 
     return ctor

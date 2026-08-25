@@ -106,7 +106,10 @@ PLAN_SCRATCH_DIR = ROOT / "plan_scratch"
 # migration only — do not reference for new writes.
 LEGACY_SESSIONS_DIR = ROOT / "sessions"
 SESSIONS_DIR = LEGACY_SESSIONS_DIR  # back-compat alias for plan_store etc.
-RECURSION_LIMIT = 100
+# Figure reproduction routinely needs several inspect/render/compare passes. Keep
+# the global budget finite, but make it large enough for that normal workflow and
+# configurable for deployments with tighter latency or cost budgets.
+RECURSION_LIMIT = int(os.environ.get("TISSUEAGENT_RECURSION_LIMIT", "200"))
 LOG_TO_TERMINAL = True
 LOG_TO_FILE = (
     ROOT
@@ -172,11 +175,42 @@ MAX_EXECUTOR_RETRIES = 15
 # global RECURSION_LIMIT so a runaway loop fails fast, but high enough for a
 # legitimately multi-tool step (inspect -> run -> inspect -> rerun) plus the
 # retry budget above. Each tool call ≈ two graph turns.
-# Raised 60 -> 100 (2026-07): the heavier CCC ensemble steps (e.g. ccc-liana)
-# need more than 60 turns to load, run, summarize, and persist within a single
-# step. With doc-search disabled the turns now go to real execution, not
-# exploration. Restore to 60 for the lighter default workloads.
-EXECUTOR_RECURSION_LIMIT = 100
+# Figure-reproduction steps need repeated inspection, rendering, and fidelity
+# comparison, so their inner agent budget is deliberately independent from the
+# top-level orchestration budget. Override it only when a deployment needs a
+# stricter per-step cost ceiling.
+EXECUTOR_RECURSION_LIMIT = int(os.environ.get("TISSUEAGENT_EXECUTOR_RECURSION_LIMIT", "160"))
 # ``MAX_STEP_RETRIES`` is how many times the manager may ``retry_step`` a single
 # plan step before the retry is refused and it must advance or replan.
 MAX_STEP_RETRIES = 3
+
+# ---------------------------------------------------------------------------
+# Graph step-budget reserves
+# ---------------------------------------------------------------------------
+# ``RECURSION_LIMIT`` is a budget of LangGraph *super-steps* shared by every node
+# in the main graph, and each agent turn that calls a tool spends two of them
+# (agent node -> tool node -> back). Nothing used to reserve any of it for the
+# tail of the pipeline, so an agent that kept calling tools would spend the last
+# super-step mid-loop and the run died with ``GraphRecursionError``: no
+# evaluation, no report, no final answer, even when the deliverable was already
+# on disk. Observed on both BioFigBench UnitedNet fig_7_c runs (2026-07-28) — one
+# spent 49 of its 52 manager turns paging the same 1219-line script with ``read``.
+#
+# The reserves below are read against LangGraph's managed ``remaining_steps``
+# value by the budget guards in ``graph.graph``. They are relative to whatever
+# ``recursion_limit`` a caller passes, so raising the limit does not invalidate
+# them.
+#
+# Keep enough for the evaluator to assess (one turn, plus a couple of tool
+# round-trips) and the reporter to write the report.
+MANAGER_STEP_RESERVE = 14
+# Keep enough for the reporter alone: its own turn plus a tool round-trip or two.
+EVALUATOR_STEP_RESERVE = 6
+# The reporter is the last node, so it only needs to reserve its own final turn.
+REPORTER_STEP_RESERVE = 3
+# A replan restarts the whole planner -> recruiter -> manager -> evaluator cycle.
+# Below this many remaining super-steps a REPLAN verdict cannot possibly finish,
+# so the evaluator reports on what exists instead of burning the rest of the
+# budget re-planning. Roughly: planner + recruiter (~6) + a couple of dispatched
+# steps (~12) + the evaluator/reporter tail (``MANAGER_STEP_RESERVE``).
+REPLAN_STEP_COST = 32

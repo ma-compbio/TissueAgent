@@ -79,5 +79,8 @@ Lint config: line length 100, Google docstring convention, rules `E,F,D`.
 
 ## Commits & PRs
 
-Follow the existing concise commit style (see `git log`). Don't push, open
-PRs, or run destructive git operations without an explicit ask.
+Only the repo owner commits and pushes. Never run `git commit`, `git push`,
+`gh pr create`, or any destructive git operation — not even when asked to
+"save" or "wrap up" work. Leave changes in the working tree and say what's
+ready; the owner reviews and commits. Follow the existing concise commit style
+(see `git log`) when drafting a message for them.
