@@ -26,6 +26,60 @@ from graph.node_factories import AgentState, create_agent_node, create_tool_node
 from graph.ui_events import emit_message, stash_completed_subagent, subagent_invocation
 
 
+def new_exec_state() -> dict[str, int]:
+    """Fresh per-step failure counters for the code-execution tools."""
+    return {"consecutive_errors": 0, "step_errors": 0}
+
+
+def apply_failure_budgets(exec_state: dict, *, had_error: bool) -> str | None:
+    """Update the failure counters and return a stop-directive once one trips.
+
+    Two budgets, because one is not enough:
+
+    * ``consecutive_errors`` (``MAX_EXECUTOR_RETRIES``) fast-fails a hard stuck
+      loop, and is zeroed by any success.
+    * ``step_errors`` (``MAX_EXECUTOR_STEP_ERRORS``) counts every failure in the
+      step and is **never** refunded by a success. Without it, a debug-thrash
+      loop — execute, fail, glob, read, execute, fail — never accumulates enough
+      *consecutive* failures to trip the first budget, and the step runs until
+      LangGraph's ``recursion_limit`` aborts it, discarding the sub-agent's
+      context and its partial work.
+
+    Returns ``None`` while within budget.
+    """
+    from config import MAX_EXECUTOR_RETRIES, MAX_EXECUTOR_STEP_ERRORS
+
+    if not had_error:
+        exec_state["consecutive_errors"] = 0
+        return None
+
+    exec_state["consecutive_errors"] += 1
+    exec_state["step_errors"] += 1
+
+    if exec_state["consecutive_errors"] >= MAX_EXECUTOR_RETRIES:
+        reason = (
+            f"{exec_state['consecutive_errors']} consecutive code executions "
+            f"have failed (limit MAX_EXECUTOR_RETRIES={MAX_EXECUTOR_RETRIES})"
+        )
+    # Checked second so a hard stuck loop reports the more specific reason.
+    elif exec_state["step_errors"] >= MAX_EXECUTOR_STEP_ERRORS:
+        reason = (
+            f"{exec_state['step_errors']} code executions have failed during "
+            f"this step (limit MAX_EXECUTOR_STEP_ERRORS="
+            f"{MAX_EXECUTOR_STEP_ERRORS}); successes in between do not refund "
+            "this budget"
+        )
+    else:
+        return None
+
+    return (
+        f"[EXECUTOR RETRY LIMIT] {reason}. Do NOT run more code for this step. "
+        "Stop, summarize what you attempted and the errors you hit, and hand "
+        "control back so the manager can retry the step with new instructions "
+        "or replan."
+    )
+
+
 def create_coding_agent(
     state_queue: Queue,
     kernel_client: KernelClient,
@@ -44,13 +98,11 @@ def create_coding_agent(
     graph = StateGraph(AgentState)
     id = "coding_agent"
 
-    # Per-invocation counter of consecutive failed code executions. Reset at the
-    # start of each step invocation (see ``_agent_invocation_tool``) and bumped
-    # by the python/r tools; once it reaches ``MAX_EXECUTOR_RETRIES`` the tools
+    # Per-step failure counters, bumped by the python/r tools via
+    # ``apply_failure_budgets`` and reset at the start of each step invocation
+    # (see ``_agent_invocation_tool``). Once either budget trips, the tools
     # refuse to run more code and instruct the agent to stop and summarize.
-    from config import MAX_EXECUTOR_RETRIES
-
-    _exec_state = {"consecutive_errors": 0}
+    _exec_state = new_exec_state()
 
     ### Documentation tool
 
@@ -120,16 +172,6 @@ def create_coding_agent(
                 msg.additional_kwargs["trace_image_paths"] = paths
         emit_message(msg)
 
-    def _retry_budget_message() -> str:
-        """Directive returned once the consecutive-failure budget is spent."""
-        return (
-            f"[EXECUTOR RETRY LIMIT] {_exec_state['consecutive_errors']} consecutive "
-            f"code executions have failed (limit MAX_EXECUTOR_RETRIES="
-            f"{MAX_EXECUTOR_RETRIES}). Do NOT run more code for this step. Stop, "
-            "summarize what you attempted and the errors you hit, and hand control "
-            "back so the manager can retry the step with new instructions or replan."
-        )
-
     def _update_retry_counter(result: ExecutionResult, language: str = "python") -> str | None:
         """Track consecutive failures; return a stop-directive when over budget.
 
@@ -147,13 +189,7 @@ def create_coding_agent(
         except Exception as e:  # metrics must never break code execution
             logging.debug("executor_tracker: could not record execution: %s", e)
 
-        if result.error:
-            _exec_state["consecutive_errors"] += 1
-            if _exec_state["consecutive_errors"] >= MAX_EXECUTOR_RETRIES:
-                return _retry_budget_message()
-        else:
-            _exec_state["consecutive_errors"] = 0
-        return None
+        return apply_failure_budgets(_exec_state, had_error=bool(result.error))
 
     def python(code: str) -> str | list:
         logging.info(f"python tool executing:\n{code}")
@@ -239,9 +275,11 @@ def create_coding_agent(
     def agent_invocation_tool(prompt: str) -> str:
         """Run the coding agent graph on a prompt and return the final message."""
         logging.info(f"Invoking agent `{id}`")
-        # Fresh retry budget for each step invocation (the tool closures persist
-        # across invocations, so the counter must be reset here).
-        _exec_state["consecutive_errors"] = 0
+        # Fresh retry budgets for each step invocation (the tool closures persist
+        # across invocations, so the counters must be reset here). This is the
+        # only place ``step_errors`` is cleared — that is what makes it a
+        # per-step ceiling rather than a per-streak one.
+        _exec_state.update(new_exec_state())
         try:
             from server.executor_tracker import executor_tracker
 

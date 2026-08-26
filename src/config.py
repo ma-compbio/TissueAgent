@@ -178,6 +178,16 @@ MAX_PLANNER_RETRIES = 2
 # to run more code and tell it to stop and summarize. A successful execution
 # resets the counter. See coding_agent.model.
 MAX_EXECUTOR_RETRIES = 15
+# ``MAX_EXECUTOR_STEP_ERRORS`` is the same budget counted *per step* and NOT
+# reset by a success. The consecutive counter above is blind to the failure
+# mode that actually kills runs: a debug-thrash loop (execute -> fail -> glob ->
+# read -> execute -> fail ...) never accumulates 15 failures in a row, because
+# every interleaved success zeroes it. The loop then runs until LangGraph's
+# recursion_limit aborts the whole step, losing the sub-agent's context and the
+# partial work with it. This ceiling ends such a step deliberately instead, so
+# it hands a summary back to the manager. Set well above MAX_EXECUTOR_RETRIES:
+# a step legitimately debugging its way to a result must not trip it.
+MAX_EXECUTOR_STEP_ERRORS = 25
 # Hard LangGraph backstop for a coding sub-agent's inner loop — well below the
 # global RECURSION_LIMIT so a runaway loop fails fast, but high enough for a
 # legitimately multi-tool step (inspect -> run -> inspect -> rerun) plus the
