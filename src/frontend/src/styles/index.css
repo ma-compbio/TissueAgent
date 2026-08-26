@@ -2337,8 +2337,56 @@ code, pre, .num {
 .trace-tool-calls {
   margin-top: 0.3rem;
   display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+.trace-tool-call {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 100%;
+}
+
+.trace-tool-call-header {
+  display: flex;
+  align-items: center;
   gap: 0.3rem;
-  flex-wrap: wrap;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.trace-tool-call-header:disabled {
+  cursor: default;
+}
+
+/* The manager's delegated instructions to a sub-agent. Indented under the
+   dispatch pill and accented so it reads as an outgoing message. */
+.trace-dispatch-instructions {
+  margin-left: 0.75rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--accent-color, #6366f1);
+}
+
+.trace-dispatch-content {
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.trace-dispatch-content > *:first-child {
+  margin-top: 0.15rem;
+}
+
+.trace-dispatch-content > *:last-child {
+  margin-bottom: 0;
 }
 
 .trace-empty {

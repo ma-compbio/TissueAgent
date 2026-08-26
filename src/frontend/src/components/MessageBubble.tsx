@@ -220,6 +220,36 @@ function SubagentCard({
   );
 }
 
+/** Routes on which the planner answers the user itself and the graph goes
+ *  straight to END — no recruiter, manager, or reporter ever runs. On these the
+ *  planner's own message body IS the final answer, so it must be surfaced the
+ *  same way the reporter's is. See `planner_router` in graph/graph.py. */
+const TERMINAL_PLANNER_ROUTES = new Set(["DIRECT", "CLARIFY"]);
+
+/** Return the planner's answer text when a run terminated on DIRECT/CLARIFY.
+ *
+ *  Returns null for any other run — including a ROUTE: PLAN planner run, whose
+ *  body is the raw JSON plan and must stay folded inside the trace. Only the
+ *  last AI message is considered, since that is the one the router acted on;
+ *  earlier turns in the same run may be retries or tool-calling rounds. */
+export function extractTerminalPlannerAnswer(
+  run: AgentRun,
+): string | null {
+  if (run.agentName !== "planner_agent") return null;
+  for (let i = run.messages.length - 1; i >= 0; i--) {
+    const msg = run.messages[i];
+    if (msg.type !== "ai") continue;
+    // Mid-run tool-calling turns carry no route header; keep looking back.
+    if (msg.tool_calls && msg.tool_calls.length > 0) continue;
+    if (!msg.route || !TERMINAL_PLANNER_ROUTES.has(msg.route.toUpperCase())) {
+      return null;
+    }
+    const text = msg.body?.trim() || msg.content?.trim() || "";
+    return text || null;
+  }
+  return null;
+}
+
 /** Extract the final response text from an agent run's messages. */
 export function extractFinalResponse(messages: SerializedMessage[]): string | null {
   for (let i = messages.length - 1; i >= 0; i--) {
@@ -283,6 +313,10 @@ export function AgentRunCard({
 }) {
   // Planner and recruiter output raw JSON that isn't useful as a preview —
   // hide the summary for them and let the user open the trace to see it.
+  // Exception: a planner run that ended on DIRECT/CLARIFY answered the user in
+  // prose instead of emitting a plan, and that answer is rendered below the
+  // card as a FinalAnswerBox — so suppress the summary there too, rather than
+  // showing the same text twice.
   const suppressSummary =
     run.agentName === "planner_agent" || run.agentName === "recruiter_agent";
 

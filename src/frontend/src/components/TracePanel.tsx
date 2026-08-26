@@ -14,6 +14,11 @@ const CODE_TOOLS: Record<string, string> = {
   r: "r",
 };
 
+/** Manager tools that dispatch a plan step to a sub-agent. Their
+ *  `task_instructions` arg IS the manager's message to that sub-agent, so it is
+ *  rendered inline rather than hidden behind the generic args dropdown. */
+const DISPATCH_TOOLS = new Set(["next_step", "retry_step"]);
+
 interface Props {
   state: SubagentTranscript;
   /** Active project id — required to resolve project-scoped image URLs. */
@@ -163,6 +168,67 @@ function TraceContext({
   );
 }
 
+/** Render one tool call made by an AI step.
+ *
+ *  For the manager's dispatch tools (`next_step` / `retry_step`) the
+ *  `task_instructions` argument is the actual message handed to the sub-agent,
+ *  so it is shown expanded by default — previously the trace rendered only the
+ *  tool name, which made the delegation look like it carried no content. Any
+ *  remaining args (and all args of other tools) stay behind a collapsed
+ *  dropdown so ordinary tool calls keep their compact one-line form.
+ */
+function TraceToolCall({ call }: { call: ToolCall }) {
+  const isDispatch = DISPATCH_TOOLS.has(call.name);
+  const [open, setOpen] = useState(false);
+
+  const args = (call.args ?? {}) as Record<string, unknown>;
+  const instructions =
+    isDispatch && typeof args.task_instructions === "string"
+      ? args.task_instructions
+      : null;
+
+  // Args still worth showing in the dropdown: everything for a normal tool,
+  // everything but the already-rendered instructions for a dispatch tool.
+  const restArgs = Object.fromEntries(
+    Object.entries(args).filter(
+      ([k, v]) =>
+        !(instructions !== null && k === "task_instructions") &&
+        v !== null &&
+        v !== undefined,
+    ),
+  );
+  const hasRest = Object.keys(restArgs).length > 0;
+
+  return (
+    <div className="trace-tool-call">
+      <button
+        className="trace-tool-call-header"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        disabled={!hasRest}
+      >
+        <span className="tool-call-pill">→ {call.name}</span>
+        {hasRest && (
+          <span className="trace-expand-icon">{open ? "▼" : "▶"}</span>
+        )}
+      </button>
+      {instructions && (
+        <div className="trace-dispatch-instructions">
+          <span className="trace-step-label">instructions to sub-agent</span>
+          <div className="trace-dispatch-content">
+            <Markdown>{instructions}</Markdown>
+          </div>
+        </div>
+      )}
+      {open && hasRest && (
+        <pre className="trace-tool-content">
+          {JSON.stringify(restArgs, null, 2)}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 /** Render a single step in the trace. */
 function TraceStep({
   msg,
@@ -219,9 +285,7 @@ function TraceStep({
         {hasToolCalls && (
           <div className="trace-tool-calls">
             {msg.tool_calls!.map((tc, i) => (
-              <span key={i} className="tool-call-pill">
-                → {tc.name}
-              </span>
+              <TraceToolCall key={tc.id ?? i} call={tc} />
             ))}
           </div>
         )}
