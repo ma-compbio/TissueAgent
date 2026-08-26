@@ -57,7 +57,7 @@ def format_skill_prompt(skill_names: list[str]) -> str:
     if not skill_names:
         return ""
     from agents.recruiter_agent.prompt import get_skill_metadata
-    from config import CONTAINER_SKILLS_ROOT, active_project_skills
+    from config import PROJECT_SKILLS_REL, active_project_skills
     from knowledge import SKILLS_DIR
 
     skills = get_skill_metadata()
@@ -87,11 +87,29 @@ def format_skill_prompt(skill_names: list[str]) -> str:
             strict_names.append(name)
         assets_note = ""
         is_folder_skill = meta.path.parent.resolve() != skills_root
-        if is_folder_skill and (materialized_root / name).exists():
+        if is_folder_skill:
+            # Workspace-relative, NOT an absolute container path. The sandbox
+            # bind-mounts DATA_DIR at /workspace and seeds the kernel's cwd to
+            # the workspace root, so `project/skills/...` resolves identically
+            # with the sandbox on or off — and it is the only form the file
+            # tools accept: `glob`/`read` reject absolute paths outright
+            # ("Non-relative patterns are unsupported"). Both coding-agent
+            # prompts already cite this same relative form.
             assets_note = (
-                f"**Assets root:** `{CONTAINER_SKILLS_ROOT}/{name}/` (read-only). "
+                f"**Assets root:** `{PROJECT_SKILLS_REL}/{name}/` (read-only). "
                 "Any `scripts/` or `references/` paths cited below resolve under this root.\n\n"
             )
+            if not (materialized_root / name).exists():
+                # The snapshot should have been made by sync_workspace_skills
+                # right before this call. Losing it silently is what makes a
+                # sub-agent hand-roll a skill's bundled scripts, so say so
+                # loudly rather than dropping the note and moving on.
+                logging.warning(
+                    "Skill '%s' ships bundled assets but %s is missing — "
+                    "sub-agent will not be able to run its scripts.",
+                    name,
+                    materialized_root / name,
+                )
         sections.append(f"### Skill: {name}\n\n{assets_note}{body}")
     if not sections:
         return ""

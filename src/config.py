@@ -143,6 +143,13 @@ CONTAINER_DATA_DIR = "/workspace"
 CONTAINER_NOTEBOOK_DIR = "/workspace/notebook"
 CONTAINER_SKILLS_ROOT = f"{CONTAINER_DATA_DIR}/project/{PROJECT_SKILLS_DIRNAME}"
 
+# Workspace-relative form of the same location, and the one to hand to agents.
+# The sandbox bind-mounts DATA_DIR at CONTAINER_DATA_DIR and the kernel cwd is
+# seeded to the workspace root, so this resolves with the sandbox on or off;
+# the absolute container form above does not (the file tools reject absolute
+# paths, and it is meaningless to a local kernel).
+PROJECT_SKILLS_REL = f"project/{PROJECT_SKILLS_DIRNAME}"
+
 MAX_OUTPUT_CHARS = 3000
 # TEMPORARY (CCC benchmark, 2026-07): lowered 2 -> 1 to fail fast during the
 # scMultiSim runs while the replan cap is freshly fixed (the cap was previously
