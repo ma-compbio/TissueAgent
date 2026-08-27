@@ -149,24 +149,24 @@ This requires a multi-step analysis pipeline.
 Example C: Cell type annotation for spatial transcriptomics dataset
 ROUTE: PLAN
 
-The user wants cell type annotation via harmony integration.
+The user wants adaptive cell type annotation.
 
 ```json
 {
-  "user_request": "Run the cell annotation agent to infer cell types for the spatial transcriptomics dataset using harmony integration",
+  "user_request": "Run the cell annotation agent to infer cell types for the spatial transcriptomics dataset",
   "steps": [
     {
       "step_number": 1,
-      "title": "Locate reference atlas",
-      "description": "Use the Single Cell Agent to locate and retrieve a closely matched labeled CELLxGENE reference into project outputs.",
-      "reasoning": "The cell annotater needs a compatible reference atlas for label transfer.",
+      "title": "Prepare candidate reference evidence",
+      "description": "Use the Single Cell Agent to locate and retrieve a bounded, closely matched labeled CELLxGENE reference into project outputs.",
+      "reasoning": "A real candidate reference lets Cell Annotater assess Harmony while CellTypist and GPTCellType remain reference-independent.",
       "expected_artifacts": ["project/outputs/references/reference_dataset.h5ad"]
     },
     {
       "step_number": 2,
       "title": "Run cell annotation",
-      "description": "Run one preprocessing inspection and one Harmony label transfer on the spatial dataset and retrieved reference, preserving all observations.",
-      "reasoning": "The specialized agent performs runtime inspection and Harmony transfer in one bundled step.",
+      "description": "In one Cell Annotater step, inspect method suitability, choose exactly one of Harmony, CellTypist, or GPTCellType, and run it while preserving all observations.",
+      "reasoning": "The specialized agent keeps method reasoning and the selected backend together and records the evidence-based choice.",
       "expected_artifacts": [
         "project/outputs/cell_annotation/spatial_annotated.h5ad",
         "project/outputs/cell_annotation/spatial_annotated.run_meta.json"
@@ -175,7 +175,7 @@ The user wants cell type annotation via harmony integration.
   ],
   "provenance": {
     "template_names": ["cell_annotation"],
-    "justification": "The cell_annotation template supplies the required reference-retrieval and bundled annotation steps."
+    "justification": "The cell_annotation template supplies candidate-reference preparation and one bundled adaptive annotation step."
   }
 }
 ```

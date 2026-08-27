@@ -1,7 +1,7 @@
 """Global configuration constants and directory paths for TissueAgent.
 
-Defines the canonical directory layout (workspace, dataset, uploads, PDFs, notebooks, sessions, logs) and runtime
-settings such as the graph recursion limit and log file location.
+Defines the canonical directory layout (workspace, dataset, uploads, PDFs, notebooks, sessions,
+logs) and runtime settings such as the graph recursion limit and log file location.
 """
 
 # TODO (dm): need to clean up this file. Most of these settings are either unnecessary or should be
@@ -143,11 +143,11 @@ MAX_PLANNER_RETRIES = 2
 # to run more code and tell it to stop and summarize. A successful execution
 # resets the counter. See coding_agent.model.
 MAX_EXECUTOR_RETRIES = 15
-# Hard LangGraph backstop for a coding sub-agent's inner loop — well below the
-# global RECURSION_LIMIT so a runaway loop fails fast, but high enough for a
-# legitimately multi-tool step (search docs -> run -> inspect -> rerun) plus
-# the retry budget above. Each tool call ≈ two graph turns.
-EXECUTOR_RECURSION_LIMIT = 60
+# Hard LangGraph backstop for a coding sub-agent's inner loop. Large, resumable
+# conversions can legitimately require dozens of bounded execution calls in
+# addition to discovery and validation. Each tool call is about two graph turns;
+# execution-error retries remain independently bounded above.
+EXECUTOR_RECURSION_LIMIT = 120
 # ``MAX_STEP_RETRIES`` is how many times the manager may ``retry_step`` a single
 # plan step before the retry is refused and it must advance or replan.
 MAX_STEP_RETRIES = 3

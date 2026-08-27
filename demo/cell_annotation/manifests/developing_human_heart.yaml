@@ -1,0 +1,47 @@
+schema_version: "1.0"
+dataset_id: developing_human_heart
+title: Developing human heart MERFISH
+species: human
+tissue: developing human heart
+disease: healthy
+developmental_stage: embryonic and fetal
+query:
+  kind: local_h5ad
+  path: demo/data/cell_annotation/overall_merfish.h5ad
+  size_bytes: 370287574
+  sha256: 3af2b996834d23f73e77ac197e8c4a9d604dbb67ffe024af9f5d2e6bd41ddecf
+  expected_n_obs: 228635
+  expected_n_vars: 238
+  strip_obs_columns: [leiden, zone_cluster, communities, purity]
+  strip_obsm_keys: [X_pca, X_umap]
+  strip_obsp_keys: [connectivities, distances]
+  strip_uns_keys:
+    - communities_colors
+    - leiden
+    - leiden_colors
+    - neighbors
+    - pca
+    - populations_colors
+    - umap
+    - zone_cluster_colors
+  selection_blind_allowed_metadata:
+    obs: [sample_id, batch, n_counts, complexity]
+    obsm: [spatial]
+    obsp: []
+    uns: [sample_id_colors, species]
+ground_truth:
+  column: populations
+  held_out_columns: [populations]
+reference_audit:
+  require_agent_generated: true
+  require_live_discovery: true
+  require_zero_observation_id_overlap: true
+baselines:
+  celltypist:
+    mode: builtin
+    model: Healthy_Adult_Heart.pkl
+  gptcelltype:
+    tissue_name: heart
+    species_name: human
+    model: gpt-5.1
+mapping: demo/cell_annotation/mappings/developing_human_heart.json

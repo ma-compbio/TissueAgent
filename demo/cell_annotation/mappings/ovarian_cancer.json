@@ -1,0 +1,71 @@
+{
+  "target_labels": [
+    "malignant",
+    "fibroblast",
+    "endothelial",
+    "monocyte/macrophage",
+    "B cell",
+    "T/NK cell",
+    "Unassigned"
+  ],
+  "ground_truth_mapping": {
+    "Malignant": "malignant",
+    "Fibroblast": "fibroblast",
+    "Endothelial": "endothelial",
+    "Monocyte": "monocyte/macrophage",
+    "B.cell": "B cell",
+    "TNK.cell": "T/NK cell"
+  },
+  "common_prediction_mapping": {
+    "malignant cell": "malignant",
+    "Malignant": "malignant",
+    "epithelial cell": "malignant",
+    "Epithelial cells": "malignant",
+    "fibroblast": "fibroblast",
+    "Fibroblast": "fibroblast",
+    "Fibroblasts": "fibroblast",
+    "endothelial cell": "endothelial",
+    "Endothelial": "endothelial",
+    "Endothelial cells": "endothelial",
+    "monocyte": "monocyte/macrophage",
+    "Monocyte": "monocyte/macrophage",
+    "Monocytes": "monocyte/macrophage",
+    "mononuclear phagocyte": "monocyte/macrophage",
+    "macrophage": "monocyte/macrophage",
+    "Macrophages": "monocyte/macrophage",
+    "B cell": "B cell",
+    "B.cell": "B cell",
+    "B cells": "B cell",
+    "T cell": "T/NK cell",
+    "TNK.cell": "T/NK cell",
+    "T cells": "T/NK cell",
+    "NK cell": "T/NK cell",
+    "NK cells": "T/NK cell",
+    "Unknown": "Unassigned",
+    "unknown": "Unassigned"
+  },
+  "method_prediction_mapping": {
+    "tissueagent": {},
+    "celltypist": {},
+    "gptcelltype": {
+      "Plasma B cells": "B cell",
+      "T cells": "T/NK cell",
+      "Fibroblasts": "fibroblast",
+      "Macrophages": "monocyte/macrophage",
+      "Steroidogenic stromal cells": "fibroblast",
+      "Activated macrophages": "monocyte/macrophage",
+      "Epithelial cells (PAX8+ Müllerian / ovarian surface epithelium)": "malignant",
+      "Ovarian stromal cells": "fibroblast",
+      "Perivascular smooth muscle–like stromal cells": "fibroblast",
+      "Secretory epithelial cells (folate-receptor–positive)": "malignant",
+      "Endothelial / perivascular cells with mast-cell–like features": "endothelial",
+      "Activated T cells (including Tfh-like CXCL13+ subset)": "T/NK cell",
+      "Secretory epithelial cells (mesothelin+)": "malignant",
+      "Vascular/stromal endothelial cells": "endothelial",
+      "Follicular/epithelial progenitor-like cells": "malignant",
+      "Secretory epithelial cells": "malignant",
+      "Secretory/mesothelial-like epithelial cells": "malignant",
+      "Secretory epithelial cells (tumor-associated / mesothelin+, TACSTD2+)": "malignant"
+    }
+  }
+}

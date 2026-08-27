@@ -17,13 +17,20 @@ alongside the sub-agent's own summary.
 
 from __future__ import annotations
 
-from typing import Optional
+import hashlib
+import json
+import re
+from typing import Any, Optional
 
 from langchain.tools import StructuredTool
 from pydantic import BaseModel, Field
 
 from agents.agent_tools import glob_tool, grep_tool, read_tool, write_tool
-from config import MAX_STEP_RETRIES
+from agents.cell_annotation_context import (
+    bind_cell_annotation_context,
+    get_bound_cell_annotation_context,
+)
+from config import ACTIVE_PROJECT_DIR, DATA_DIR, MAX_STEP_RETRIES
 from graph.node_factories import run_heuristic_validation
 from graph.ui_events import emit_message
 from langchain_core.messages import AIMessage
@@ -36,7 +43,8 @@ class StepArgs(BaseModel):
     task_instructions: str = Field(
         description=(
             "Free-text instructions delegated to the sub-agent assigned to this step. "
-            "Mention any prior-step artifacts that are relevant inputs by their workspace-relative paths."
+            "Mention any prior-step artifacts that are relevant inputs by their "
+            "workspace-relative paths."
         ),
     )
     expected_artifacts: Optional[list[str]] = Field(
@@ -113,6 +121,92 @@ def _invoke_via_transfer_tool(
     return str(result)
 
 
+def _preserve_cell_annotator_user_request(
+    step: PlanStep,
+    task_instructions: str,
+    user_request: str,
+    uploaded_anndata_paths: list[str],
+) -> str:
+    if step.assigned_agent != "cell_annotator_agent":
+        return task_instructions
+    additions: list[str] = []
+    if user_request.strip():
+        additions.append(
+            "Exact original user request — preserve its input/output paths and biological "
+            f"context in every tool call:\n{user_request.strip()}"
+        )
+        context = (
+            get_bound_cell_annotation_context()
+            or _cell_annotation_context_from_user_request(user_request)
+        )
+        if context:
+            canonical_context = json.dumps(
+                context,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            )
+            context_arguments: dict[str, Any] = {
+                **context,
+                "annotation_context_sha256": hashlib.sha256(
+                    canonical_context.encode("utf-8")
+                ).hexdigest(),
+            }
+            additions.append(
+                "Orchestrator-bound inspect_cell_annotation_methods_tool annotation-context "
+                "arguments — these values are injected as the authoritative contract. If you "
+                "also populate them in the tool call, pass every value verbatim and never "
+                "replace a listed value with null:\n"
+                + json.dumps(context_arguments, sort_keys=True)
+            )
+            species = context.get("species", "").casefold()
+            mapping_species = (
+                "mouse"
+                if "mouse" in species or "mus musculus" in species
+                else "human"
+                if "human" in species or "homo sapiens" in species
+                else None
+            )
+            if mapping_species is not None:
+                additions.append(
+                    "If Harmony is selected, the required gene_mapping_species argument is "
+                    f"{mapping_species!r}; do not use 'auto' when species is known."
+                )
+    if uploaded_anndata_paths:
+        additions.append(
+            "Exact active-project uploaded AnnData paths — use these paths verbatim; do not "
+            "invent aliases:\n- "
+            + "\n- ".join(uploaded_anndata_paths)
+        )
+    if not additions:
+        return task_instructions
+    return "\n\n".join(additions) + f"\n\nTask instructions:\n{task_instructions.rstrip()}"
+
+
+def _cell_annotation_context_from_user_request(user_request: str) -> dict[str, Any]:
+    context: dict[str, Any] = {
+        field: value
+        for field, value in re.findall(
+            r"\b(species|tissue|disease|developmental_stage)='([^']*)'",
+            user_request,
+        )
+    }
+    scope_marker = "Annotation scope contract:"
+    if scope_marker in user_request:
+        scope_text = user_request.split(scope_marker, 1)[1].lstrip()
+        scope, _ = json.JSONDecoder().raw_decode(scope_text)
+        if not isinstance(scope, dict):
+            raise ValueError("Annotation scope contract must be a JSON object.")
+        context["annotation_scope"] = scope
+    return context
+
+
+def _active_project_uploaded_anndata_paths() -> list[str]:
+    uploads = ACTIVE_PROJECT_DIR / "uploads"
+    paths = sorted([*uploads.rglob("*.h5ad"), *uploads.rglob("*.h5mu")])
+    return [path.relative_to(DATA_DIR).as_posix() for path in paths if path.is_file()]
+
+
 def create_manager_step_tools(
     invocation_tools_by_agent: dict[str, StructuredTool],
 ) -> list[StructuredTool]:
@@ -125,9 +219,23 @@ def create_manager_step_tools(
     """
 
     def _dispatch(step: PlanStep, args: StepArgs) -> str:
-        result = _invoke_via_transfer_tool(
-            step, args.task_instructions, invocation_tools_by_agent
+        user_request = plan_store.read().user_request
+        task_instructions = _preserve_cell_annotator_user_request(
+            step,
+            args.task_instructions,
+            user_request,
+            _active_project_uploaded_anndata_paths(),
         )
+        bound_context = None
+        if step.assigned_agent == "cell_annotator_agent":
+            bound_context = (
+                get_bound_cell_annotation_context()
+                or _cell_annotation_context_from_user_request(user_request)
+            )
+        with bind_cell_annotation_context(bound_context):
+            result = _invoke_via_transfer_tool(
+                step, task_instructions, invocation_tools_by_agent
+            )
         expected = (
             list(args.expected_artifacts)
             if args.expected_artifacts is not None

@@ -284,7 +284,13 @@ saved as projects, so a CLI run also shows up in the web UI's project list.
 
 ### Cell annotation reviewer benchmark
 
-The direct CellTypist and GPTCellType comparisons are isolated optional dependencies:
+The production Cell Annotator first gathers leakage-safe query/reference evidence and official
+CellTypist model descriptions, then chooses one of Harmony, CellTypist, or GPTCellType. All three
+backends preserve the query observation order and write a common `cell_annotation_*` output schema
+plus method-specific provenance.
+
+Production CellTypist support is installed by the standard `uv sync`. The direct benchmark's
+OmicVerse GPTCellType comparison remains an isolated optional dependency:
 
 ```bash
 uv sync --frozen --extra cell-annotation-benchmarks

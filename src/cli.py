@@ -67,7 +67,9 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--model",
         default=None,
-        help="Model id to use for both roles (e.g. 'gpt-5.1'). Defaults to the configured selection.",
+        help=(
+            "Model id to use for both roles (e.g. 'gpt-5.1'). Defaults to the configured selection."
+        ),
     )
     p.add_argument(
         "--dataset",
@@ -92,7 +94,10 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--json",
         action="store_true",
-        help="Emit a JSON object to stdout (answer, project_id, elapsed, artifacts) instead of plain text.",
+        help=(
+            "Emit a JSON object to stdout (answer, project_id, elapsed, artifacts) "
+            "instead of plain text."
+        ),
     )
     return p
 
@@ -126,7 +131,8 @@ def _drain_trace(queue, stop_event: threading.Event, quiet: bool) -> None:
         if text:
             print(f"{header} {text}", flush=True)
         for tc in tool_calls:
-            print(f"{prefix}  → {tc.get('name')}({', '.join(tc.get('args', {}) or [])})", flush=True)
+            args = ", ".join(tc.get("args", {}) or [])
+            print(f"{prefix}  → {tc.get('name')}({args})", flush=True)
 
     while not (stop_event.is_set() and queue.empty()):
         try:
@@ -255,7 +261,7 @@ def run(prompt: str, args: argparse.Namespace) -> dict:
     from langchain_core.messages import HumanMessage
 
     from config import RECURSION_LIMIT
-    from server.session_manager import session, _new_thread_id
+    from server.session_manager import _new_thread_id
     from server.utils import stringify_chat_content
 
     session, code_backend = _bootstrap(args)
@@ -266,10 +272,18 @@ def run(prompt: str, args: argparse.Namespace) -> dict:
         # mint a new id. Outputs land under this project dir — kernel cwd, file
         # tools, and persistence all key off it.
         try:
-            from server.utils import write_active_project_id, clear_active_project_dir
+            from server.utils import (
+                clear_active_project_dir,
+                read_active_project_id,
+                switch_active_project,
+                write_active_project_id,
+            )
             from datetime import datetime
 
-            clear_active_project_dir()
+            if read_active_project_id() is None:
+                clear_active_project_dir()
+            else:
+                switch_active_project(None)
             project_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             write_active_project_id(project_id)
             session.project_id = project_id
@@ -286,7 +300,10 @@ def run(prompt: str, args: argparse.Namespace) -> dict:
                 raise SystemExit(f"error: {e}")
             if staged:
                 listing = ", ".join(staged)
-                prompt = f"{prompt}\n\n[Staged input files (readable via the read tool / code): {listing}]"
+                prompt = (
+                    f"{prompt}\n\n"
+                    f"[Staged input files (readable via the read tool / code): {listing}]"
+                )
 
         session.thread_id = _new_thread_id()
         user_message = HumanMessage(content=prompt)
@@ -358,6 +375,7 @@ def run(prompt: str, args: argparse.Namespace) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run TissueAgent once from parsed command-line arguments."""
     args = _build_arg_parser().parse_args(argv)
 
     # Keep the default log stream on stderr so stdout carries the answer cleanly.

@@ -39,6 +39,12 @@ You receive the output of an automatic verifier as the end of every plan in the 
 
 ## Task Instruction Guidelines
 - Communicate the task goal and any constraints from the plan clearly to the sub-agent.
+- Preserve every explicit input and output file path from the user request verbatim in the
+  relevant sub-agent instructions. Never replace a known file path with its parent directory or
+  ask the sub-agent to rediscover a file whose exact path is already available.
+- Preserve every explicit biological context field from the user request in the relevant
+  sub-agent instructions, including species, tissue, disease, developmental stage, and any
+  structured annotation scope. Do not omit, broaden, merge, or paraphrase these fields.
 - If the sub-agent needs outputs from a previous step, mention them explicitly by workspace-relative path inside `task_instructions`.
 - If needed, use the file inspection tools to give precise paths to necessary inputs.
 - Focus on *what* needs to be accomplished, not *how*. Trust the sub-agent to choose its own approach.

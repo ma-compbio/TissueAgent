@@ -1,0 +1,81 @@
+schema_version: "1.0"
+dataset_id: human_skin_atlas
+title: Normal adult human skin MERFISH atlas
+species: human
+tissue: skin of body
+disease: healthy
+source:
+  publication_doi: 10.1038/s41588-026-02552-8
+  zenodo_record: 16795569
+query:
+  kind: local_h5ad
+  path: demo/data/cell_annotation/human_skin_atlas/merfish.integrated_annotated.h5ad
+  expected_n_obs: 1201886
+  expected_n_vars: 562
+  size_bytes: 3280003238
+  sha256: 3ec024bc1bdce54ab71c9cbc721999b14519c9984e13864c917682b8fe1c0883
+  read_strategy: hdf5_csr_subset
+  max_materialized_cells: 25000
+  quick_sampling: stratified_blocks
+  quick_block_size: 500
+  preserve_obs_columns:
+    - donor_id
+    - donor_sex
+    - donor_age
+    - anatomic_site
+    - sample_id
+    - gene_panel
+    - region_name
+    - run_region
+    - batch
+    - n_counts
+    - transcript_count
+    - gene_count
+  preserve_var_columns: [gene_symbol, gene_panel]
+  spatial_obsm_key: spatial
+  matrix_reconstruction:
+    kind: inverse_scale_log1p_with_library_size
+    mean_column: mean
+    std_column: std
+    library_size_obs_column: n_counts
+    normalized_target_sum: 36.0
+    target_sum_tolerance: 0.00001
+    negative_tolerance: 0.0000001
+    integer_tolerance: 0.00001
+ground_truth:
+  column: cell_type.detailed
+  held_out_columns:
+    - labels_scanvi
+    - scrna_predicted_id
+    - cell_type.broad
+    - cell_category
+    - cell_type.detailed
+reference:
+  kind: cellxgene_subset
+  dataset_ids:
+    - f0f0d7c4-3bec-428e-9539-c99d36548d96
+  census_version: "2025-11-08"
+  organism: Homo sapiens
+  path: workspace/project/outputs/references/human_skin_cellxgene_subset.h5ad
+  cell_type_column: cell_type
+  max_cells_per_label: 500
+  random_state: 42
+  tissues: [dermis, skin epidermis]
+  diseases: [normal]
+  note: A pinned, label-balanced subset of an independent normal adult skin single-cell dataset covers epidermal, stromal, vascular, neural, and immune populations.
+tissueagent:
+  min_cells: 10
+  n_pcs: 30
+  min_shared_genes: 100
+  harmony_max_iter: 30
+  classifier: knn
+  knn_neighbors: 51
+  preserve_all_spatial_obs: true
+celltypist:
+  mode: builtin
+  model: Adult_Human_Skin.pkl
+gptcelltype:
+  tissue_name: skin
+  species_name: human
+  model: gpt-5.1
+mapping: demo/cell_annotation/mappings/human_skin_atlas.json

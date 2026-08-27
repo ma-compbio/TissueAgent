@@ -42,8 +42,9 @@ _JITTER_FRAC = 0.15
 def _extract_retry_after(exc: BaseException) -> Optional[float]:
     """Best-effort extraction of the provider's wait hint, in seconds.
 
-    Both OpenAI and Anthropic surface the underlying HTTPX response on the exception via ``.response``. We also fall
-    back to scanning the error message for explicit "try again in 8s" / "in 800ms" phrasings used by OpenAI's body text.
+    Both OpenAI and Anthropic surface the underlying HTTPX response on the exception via
+    ``.response``. We also scan the error message for explicit "try again in 8s" or
+    "in 800ms" phrasings used by OpenAI's body text.
     """
     resp = getattr(exc, "response", None)
     headers = getattr(resp, "headers", None)
@@ -94,6 +95,24 @@ def _compute_wait(exc: BaseException, attempt: int) -> Tuple[float, str]:
     return wait, "backoff"
 
 
+def _is_non_retriable_rate_limit(exc: BaseException) -> bool:
+    """Return whether a 429 reports a billing or quota condition that waiting cannot fix."""
+    codes = {
+        "billing_hard_limit_reached",
+        "billing_not_active",
+        "insufficient_quota",
+    }
+    direct_code = getattr(exc, "code", None)
+    if direct_code in codes:
+        return True
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        error = body.get("error", body)
+        if isinstance(error, dict) and error.get("code") in codes:
+            return True
+    return any(f"'code': '{code}'" in str(exc) for code in codes)
+
+
 class _RetryWrapper(Runnable):
     """Wraps a chat model with header-driven rate-limit retries."""
 
@@ -133,6 +152,9 @@ class _RetryWrapper(Runnable):
             try:
                 return self._inner.invoke(input, config=config, **kwargs)
             except RETRIABLE as exc:
+                if _is_non_retriable_rate_limit(exc):
+                    logging.warning("Non-retriable provider quota error; giving up immediately.")
+                    raise
                 if attempt >= self._max_attempts:
                     logging.warning(
                         "Rate limit: exhausted %d attempts, giving up.",
@@ -158,6 +180,9 @@ class _RetryWrapper(Runnable):
             try:
                 return await self._inner.ainvoke(input, config=config, **kwargs)
             except RETRIABLE as exc:
+                if _is_non_retriable_rate_limit(exc):
+                    logging.warning("Non-retriable provider quota error; giving up immediately.")
+                    raise
                 if attempt >= self._max_attempts:
                     logging.warning(
                         "Rate limit: exhausted %d attempts, giving up.",

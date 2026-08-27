@@ -47,6 +47,15 @@ Read user inputs from `project/uploads/` and shared inputs from `library/`. Writ
 
 ## Execution Policy
 - Execute one step at a time. Never run multiple unrelated steps in a single call.
+- Each Python or R call has a fifteen-minute execution limit. Inspect file dimensions before loading
+  large inputs, and choose bounded, resumable chunks that comfortably fit within one call.
+- For very wide tables, chunk columns or rows and persist completed parts under
+  `project/outputs/`; do not build enormous per-column dtype mappings or retry the same timed-out
+  whole-file operation.
+- For transposed delimited matrices with a very wide header and comparatively few data rows, do
+  not use pandas merely to count or select columns. Read the header line directly, then stream one
+  data row at a time into sparse coordinates (for example with `numpy.fromstring`), and persist one
+  resumable sparse part per source file before combining parts.
 - Inspect outputs after each step before proceeding. For plotting steps, visually verify the returned image before moving on.
   - If the image is a plot that is not well-formatted or contains overlapping elements, you must regenerate the plot until it passes the visual inspection.
 - If a step errors or fails validation, fix the issue and re-run the same step. Do not advance until the current step succeeds.

@@ -1,0 +1,51 @@
+schema_version: "1.0"
+dataset_id: ovarian_cancer
+title: High-grade serous ovarian cancer ST_Test1 CosMx cohort
+species: human
+tissue: ovary and omentum
+disease: high-grade serous ovarian cancer
+query:
+  kind: seurat_rds
+  path: demo/data/cell_annotation/ovarian_cancer_seurat_objects/ST_Test1_so.rds
+  converted_path: demo/data/cell_annotation/intermediates/benchmarks/ovarian_cancer/full.h5ad
+  size_bytes: 249199288
+  sha256: 5eb5a35def62f4e231031b175024d4840aae272a06a4f0654d2407d096342549
+  expected_n_obs: 85821
+  expected_n_vars: 6195
+ground_truth:
+  column: cell.types
+  held_out_columns: [cell.types, cell.subtypes]
+reference:
+  kind: local_seurat_reference
+  source_path: demo/data/cell_annotation/ovarian_cancer_seurat_objects/ST_Test2_HGSC113_so.rds
+  source_size_bytes: 68820116
+  source_sha256: f6488ed83ca59e806d490954c2346b7ab92c59b1d7d2fa7c4be02e50de3b762f
+  converted_full_path: demo/data/cell_annotation/intermediates/references/ovarian_hgsc113_full.h5ad
+  path: demo/data/cell_annotation/intermediates/references/ovarian_hgsc113_balanced_reference.h5ad
+  expected_n_obs: 98482
+  expected_n_vars: 1000
+  cell_type_column: cell.types
+  max_cells_per_label: 1000
+  random_state: 42
+  include_labels:
+    - Malignant
+    - Fibroblast
+    - Endothelial
+    - Monocyte
+    - B.cell
+    - TNK.cell
+  note: A label-balanced subset of the independent HGSC113 Test2 cohort provides disease- and platform-matched reference cells without using any ST_Test1 query cells.
+tissueagent:
+  min_cells: 10
+  n_pcs: 30
+  min_shared_genes: 50
+  harmony_max_iter: 20
+  preserve_all_spatial_obs: true
+celltypist:
+  mode: train_reference
+  label_column: cell.types
+gptcelltype:
+  tissue_name: ovary
+  species_name: human
+  model: gpt-5.1
+mapping: demo/cell_annotation/mappings/ovarian_cancer.json

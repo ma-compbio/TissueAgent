@@ -17,6 +17,7 @@ dependencies = [
     "langchain-community==0.3.24",
     "langgraph==0.3.20",
     "pyyaml>=6.0",
+    "requests>=2.32.5",
     "matplotlib==3.9.4",
     "numpy>=2.0.2",
     "pandas==2.2.3",
@@ -61,6 +62,7 @@ dependencies = [
     "ipykernel>=7.1.0",
     "mygene==3.2.2",
     "harmonypy==0.0.10",
+    "celltypist==1.7.1",
     "tiledbsoma==1.17.1",
     "docker>=7.0.0",
     "websocket-client>=1.7.0",
@@ -70,7 +72,6 @@ dependencies = [
 
 [project.optional-dependencies]
 cell-annotation-benchmarks = [
-    "celltypist==1.7.1",
     "omicverse==2.2.3",
 
 ]
