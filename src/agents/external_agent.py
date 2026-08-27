@@ -27,7 +27,7 @@ from pathlib import Path
 from collections.abc import Callable
 from typing import Any
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
 
 

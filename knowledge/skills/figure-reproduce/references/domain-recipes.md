@@ -144,3 +144,60 @@ Use `search_documentation` (or `--help`) to confirm the exact call. If unsure wh
 family the target is, name what you see: *how many axes carry meaning*, *is size or
 color encoding a variable*, *is there clustering/dendrograms*, *is there a
 background image*. That description picks the recipe.
+
+---
+
+## Full worked template (moved from the skill body)
+
+```python
+import matplotlib.pyplot as plt
+from pathlib import Path
+
+out = Path("outputs/figures"); out.mkdir(parents=True, exist_ok=True)
+
+# ── colors come from colormap.yaml (step 5), never from library defaults ─────
+import yaml
+palette = yaml.safe_load(open("colormap.yaml"))   # {category: "#RRGGBB"}, ordered
+order   = list(palette)                            # the target's category order
+# build_colormap.py stamped the source tier in the file's header comment — if it
+# says "5-default", these are NOT the target's colors: say so in the repro note.
+
+# For a continuous panel, take the colormap from the measured spec instead:
+#   spec = yaml.safe_load(open("spec.yaml"))
+#   cmap = spec["colorbar"]["best"]                # e.g. "RdBu_r" — mind the _r
+
+# ── domain-agnostic table example ────────────────────────────────────────────
+import pandas as pd
+df = pd.read_csv("uploads/plotted_data.csv")
+print(df.shape, list(df.columns), df.dtypes.to_dict())   # confirm fields first
+sub = df[df["group"].isin(order)]             # ONLY the subset the panel shows
+fig, ax = plt.subplots(figsize=(4, 4))
+for g in order:                               # loop IN ORDER → legend + z-order match
+    d = sub[sub["group"] == g]
+    ax.scatter(d["x"], d["y"], s=6, c=palette[g], label=g, linewidths=0)
+ax.set_xlabel("UMAP 1"); ax.set_ylabel("UMAP 2")   # labels VERBATIM from the target
+ax.legend(title="group")
+plt.savefig(out / "reproduced.png", dpi=200, bbox_inches="tight")
+plt.savefig(out / "reproduced.pdf", bbox_inches="tight")      # vector copy
+sub.to_csv(out / "reproduced_points.csv", index=False)         # audit/reuse
+
+# Continuous color instead of categories? Use the identified colormap, not a default:
+#   cmap = spec["colorbar"]["best"]           # e.g. "RdBu_r" — note the _r
+#   ax.scatter(d["x"], d["y"], c=d["value"], cmap=cmap, vmin=lo, vmax=hi)
+
+# ── omics example (light): a spatial scatter colored by cell type ────────────
+# import scanpy as sc
+# adata = sc.read_h5ad("uploads/dataset.h5ad")
+# print(adata.shape, list(adata.obs.columns), list(adata.obsm.keys()))
+# adata.obs["cell_type"] = adata.obs["cell_type"].cat.reorder_categories(order)
+# adata.uns["cell_type_colors"] = [palette[c] for c in order]   # exact palette
+# sc.pl.embedding(adata, basis="spatial", color="cell_type", show=False)
+# plt.gca().set_aspect("equal"); plt.axis("off")
+# plt.savefig(out / "reproduced.png", dpi=200, bbox_inches="tight")
+```
+
+**Never** `color="blue"` / `"tab:blue"` / `C0`, and never an unexamined default
+`cmap`. Every color in the reproduction should trace to a value you measured.
+
+Concrete per-plot recipes (scatter/UMAP, heatmap, dotplot, bar/violin, spatial):
+`references/domain-recipes.md`.

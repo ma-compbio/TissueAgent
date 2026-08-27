@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 
 from agents.agent_tools import file_read_write_tools
 from agents.reporter_agent.tools_impl.jupyternb_generator_tool import (

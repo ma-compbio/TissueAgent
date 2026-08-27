@@ -56,3 +56,38 @@ whose **symptom** matches and apply the **fix**. Pair this with the
 3. **Reproduce the panel, not just the data** — verbatim labels, exact subset, matching visual form.
 4. **Set seeds; accept qualitative matches** for stochastic methods.
 5. **Never fabricate.** Honest-failure with a named gap beats a faked match.
+
+---
+
+## Quick list (moved from the skill body)
+
+- **Missing field → can't reproduce as-is.** The target colors by a
+  column/embedding the dataset lacks. Compute it if the data supports it (run the
+  relevant analysis first), or reproduce the closest supported variant and say so.
+- **Identifier mismatch.** A figure keyed by gene/feature won't plot if names use a
+  different ID scheme — map identifiers first.
+- **Category/palette mismatch.** Categories render in a different order or different
+  colors than the target. Don't fix this by eye: run
+  `scripts/extract_reference_spec.py` and set the category order and color map from
+  its YAML. Naming a color from a downsampled image ("looks blue" → `tab:blue`) is
+  the single most common source of this error, and grayscale metrics can't see it.
+- **Wrong colormap direction.** `RdBu` vs `RdBu_r` is a frequent miss on continuous
+  panels and inverts the figure's meaning. Identify it with `--colorbar-box` rather
+  than guessing.
+- **Paraphrased labels.** Axis/legend/tick text rewritten rather than copied
+  (`"expression"` for `"Expression (log2 CPM)"`). The `compare_figures.py` text diff
+  flags these as near-misses when OCR is available; otherwise copy them verbatim.
+- **Wrong plot primitive.** A "heatmap" in a paper may be a clustermap, matrixplot,
+  or dotplot — match the actual encoding.
+- **Missing input file.** Before declaring a data/script input missing, **search
+  for it by basename** across the mounted roots — authors often hard-code a path
+  that ships at a different location. See the playbook.
+- **Blank/None image.** On a `python` kernel a missing backend produces no inline
+  image — ensure it is reachable. On a shell-only engine figures are *never*
+  inline; that is expected, not a failure. Check the file on disk is a valid
+  non-empty image and use `scripts/compare_figures.py` to judge it.
+- **Over-matching.** Don't tweak data or thresholds just to make the picture look
+  identical — reproduce what the data legitimately yields and document differences.
+
+The full symptom → fix taxonomy (code, data, environment, methodology — including
+stochastic embeddings and figure-duplication traps): `references/debugging-playbook.md`.

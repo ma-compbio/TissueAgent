@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 
 # --- Mandatory deps: Pillow + numpy. Everything else is optional. -----------------
@@ -502,6 +503,307 @@ def b_level_from_text(td: dict | None) -> str | None:
     return "B1"
 
 
+# ---------------------------------------------------------------------------------
+# PASS 2 -- geometry / canvas / orientation / layout
+#
+# Pass 1 (pHash, SSIM, ORB) resizes both images to a SQUARE before comparing, and
+# does it in grayscale. That makes it structurally blind to a whole class of
+# defects that are cheap to fix and change what the figure means:
+#
+#   * canvas shape   -- a portrait target reproduced as landscape scores identically
+#   * background     -- a black axes facecolor behind a white-background target
+#   * orientation    -- a mirrored/flipped panel just reads as "different everywhere"
+#   * layout         -- an added legend block, or content cropped/offset differently
+#
+# Observed in a real run: reference 380x494 (aspect 0.769) vs reproduction 1193x905
+# (aspect 1.318), black canvas vs white, plus a large legend the target does not
+# have -- and pass 1 reported none of it. These functions measure each directly, so
+# the agent gets a *diagnosis* instead of one low number.
+# ---------------------------------------------------------------------------------
+def _bg_color(a: np.ndarray) -> np.ndarray:
+    """Median of three INBOARD probes -- the panel background, not the page margin.
+
+    Corners are unreliable: ``bbox_inches="tight"`` keeps a white figure margin
+    around a black axes, so both images can show white corners while their panel
+    backgrounds differ completely.
+    """
+    h, w, _ = a.shape
+    probes = np.stack([a[h // 2, w // 20], a[h // 20, w // 2], a[h // 2, w - w // 20]])
+    return np.median(probes, axis=0)
+
+
+def _content_mask(a: np.ndarray, bg: np.ndarray, tol: int = 40) -> np.ndarray:
+    """Boolean mask of pixels that differ from the background."""
+    return np.abs(a.astype(int) - bg.astype(int)).sum(2) > tol
+
+
+def _plot_solidity(sub: np.ndarray) -> float | None:
+    """How solid the inked area is: 1.0 = a filled sheet, low = sparse stipple.
+
+    Total ink coverage cannot tell these apart -- a dense sheet of small markers
+    and a sparse scatter of large ones can cover the same fraction of the panel
+    (measured 0.27 vs 0.20 on a pair that look nothing alike). What separates
+    them is coverage *within* the inked area at a small scale: a solid sheet
+    leaves no gaps between markers, stipple is ink/gap/ink.
+
+    The region is resampled to a fixed size first, so the answer does not depend
+    on the figure's resolution.
+    """
+    if sub.size == 0:
+        return None
+    grid, tile = 400, 8
+    small = np.asarray(
+        Image.fromarray((sub * 255).astype(np.uint8)).resize((grid, grid), Image.BILINEAR)
+    ) > 127
+    n = grid // tile
+    tiles = small[: n * tile, : n * tile].reshape(n, tile, n, tile).mean(axis=(1, 3))
+    inked = tiles[tiles > 0.02]          # ignore blank background tiles
+    if inked.size == 0:
+        return None
+    return round(float(inked.mean()), 4)
+
+
+def canvas_metrics(img: Image.Image) -> dict:
+    """Size, aspect, background colour, content bounding box and fill fraction."""
+    a = np.asarray(img.convert("RGB"))
+    h, w, _ = a.shape
+    bg = _bg_color(a)
+    mask = _content_mask(a, bg)
+    out = {
+        "width": int(w),
+        "height": int(h),
+        "aspect_w_over_h": round(w / h, 4),
+        "background_rgb": [int(v) for v in bg],
+        "background_is_dark": bool(bg.mean() < 128),
+        "content_fill_fraction": round(float(mask.mean()), 4),
+    }
+    ys, xs = np.nonzero(mask)
+    if xs.size:
+        x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max()
+        out["content_bbox_norm"] = [
+            round(float(x0 / w), 3), round(float(y0 / h), 3),
+            round(float(x1 / w), 3), round(float(y1 / h), 3),
+        ]
+        out["content_aspect_w_over_h"] = round(float((x1 - x0) / max(y1 - y0, 1)), 4)
+    else:
+        out["content_bbox_norm"] = None
+        out["content_aspect_w_over_h"] = None
+    out["side_panel"] = _side_panel_split(img)
+    # Ink coverage inside the plot region only -- content_fill_fraction spans the
+    # whole canvas, so a legend column or wide margins would distort it.
+    px0, py0, px1, py1 = out["side_panel"]["plot_bbox"]
+    sub = mask[py0:py1, px0:px1]
+    out["plot_fill_fraction"] = round(float(sub.mean()), 4) if sub.size else None
+    out["plot_solidity"] = _plot_solidity(sub)
+    out["side_panel"].pop("bbox", None)      # pixel boxes are noise in the JSON
+    out["side_panel"].pop("plot_bbox", None)
+    return out
+
+
+def column_density(img: Image.Image, bins: int = 20) -> list[float]:
+    """Non-background density per vertical slice.
+
+    A legend block shows up as a run of high-density bins pushed against one edge
+    and separated from the main content mass -- which is how an added legend (or a
+    colorbar the target lacks) becomes visible to a metric at all.
+    """
+    a = np.asarray(img.convert("RGB"))
+    h, w, _ = a.shape
+    mask = _content_mask(a, _bg_color(a))
+    return [
+        round(float(mask[:, i * w // bins:(i + 1) * w // bins].mean()), 3)
+        for i in range(bins)
+    ]
+
+
+def _shape_corr(a: np.ndarray, b: np.ndarray) -> float:
+    """Normalised cross-correlation of two equal-shaped arrays (-1..1)."""
+    a = (a - a.mean()) / (a.std() + 1e-9)
+    b = (b - b.mean()) / (b.std() + 1e-9)
+    return float((a * b).mean())
+
+
+def _side_panel_split(img: Image.Image) -> dict:
+    """Locate a side panel (legend / colorbar / caption) beside the plot.
+
+    A figure that carries a legend separates it from the plot by a vertical
+    gutter of near-empty columns. That gutter is the reliable signal -- density
+    is not: legend *text* is sparse (measured ~0.14 peak on a real 22-entry
+    legend), so a "dense block at the edge" test never fires for it.
+
+    Returns a dict with the content bbox, whether a side panel was found, and
+    which side of the split holds the plot.
+    """
+    a = np.asarray(img.convert("RGB"))
+    mask = _content_mask(a, _bg_color(a))
+    ys, xs = np.nonzero(mask)
+    if xs.size == 0:
+        h, w, _ = a.shape
+        return {"bbox": (0, 0, w, h), "has_side_panel": False,
+                "plot_bbox": (0, 0, w, h), "panel_fraction": 0.0}
+
+    x0, x1 = int(xs.min()), int(xs.max()) + 1
+    y0, y1 = int(ys.min()), int(ys.max()) + 1
+    bbox = (x0, y0, x1, y1)
+    col = mask[y0:y1, x0:x1].mean(axis=0)
+
+    best_len = best_at = run = 0
+    if col.size > 20:
+        for i, e in enumerate(col < 0.01):
+            run = run + 1 if e else 0
+            if run > best_len:
+                best_len, best_at = run, i - run + 1
+
+    # Split on a real gutter that is not at the very edge. The bar is deliberately
+    # low (2% of width): a page may separate panel from legend with a thin margin,
+    # and on a real paper figure that gutter measured ~2% -- a 5% bar missed it.
+    has_split = (
+        col.size > 20
+        and best_len > 0.02 * col.size
+        and 0.15 * col.size < best_at < 0.85 * col.size
+    )
+    if not has_split:
+        return {"bbox": bbox, "has_side_panel": False, "plot_bbox": bbox,
+                "panel_fraction": 0.0}
+
+    left_den = float(col[:best_at].sum())
+    right_den = float(col[best_at + best_len:].sum())
+    if left_den >= right_den:                       # plot on the left
+        plot_bbox = (x0, y0, x0 + best_at, y1)
+        panel_cols = col.size - (best_at + best_len)
+    else:                                           # plot on the right
+        plot_bbox = (x0 + best_at + best_len, y0, x1, y1)
+        panel_cols = best_at
+    return {
+        "bbox": bbox,
+        "has_side_panel": True,
+        "plot_bbox": plot_bbox,
+        "panel_fraction": round(panel_cols / col.size, 3),
+    }
+
+
+def _content_crop(img: Image.Image) -> Image.Image:
+    """Crop to the plot itself, dropping any legend/caption column beside it.
+
+    Comparing whole pages averages the plot together with its chrome, which
+    dilutes any signal about the plot -- observed live: a genuinely y-flipped
+    reproduction scored only +0.016 for its correct flip against a full page
+    (below threshold, so reported clean) and +0.045 against the panel alone.
+    """
+    return img.crop(_side_panel_split(img)["plot_bbox"])
+
+
+def orientation_test(orig: Image.Image, repro: Image.Image) -> dict:
+    """Score the reproduction against the target as-is and under each flip.
+
+    If a flipped variant beats "as-is" by a clear margin, the reproduction's
+    orientation is wrong -- typically a missing ``invert_yaxis()`` or an
+    ``origin="upper"``. This turns "is the y-axis right?" from a judgement call
+    into a measurement.
+
+    Both images are cropped to their content first: a legend column or inset in
+    the target otherwise drowns out the panel and masks a real flip.
+    """
+    orig, repro = _content_crop(orig), _content_crop(repro)
+    go = to_gray_array(orig, 256)
+    variants = {
+        "as_is": repro,
+        "flip_vertical": repro.transpose(Image.FLIP_TOP_BOTTOM),
+        "flip_horizontal": repro.transpose(Image.FLIP_LEFT_RIGHT),
+        "flip_both": repro.transpose(Image.ROTATE_180),
+    }
+    scores = {k: round(_shape_corr(go, to_gray_array(v, 256)), 4) for k, v in variants.items()}
+    best = max(scores, key=scores.get)
+    margin = round(scores[best] - scores["as_is"], 4)
+    return {
+        "scores": scores,
+        "best_variant": best,
+        "margin_over_as_is": margin,
+        # A tiny margin is noise, but the bar must stay low: a dense scatter is
+        # nearly symmetric under a flip, so even a genuinely inverted panel wins
+        # by only a few hundredths. Measured on a real y-flipped reproduction the
+        # correct flip led by 0.045 -- a 0.05 bar called that clean.
+        "orientation_suspect": bool(best != "as_is" and margin > 0.02),
+    }
+
+
+def geometry_findings(o: dict, r: dict, orient: dict,
+                      od: list[float], rd: list[float]) -> list[str]:
+    """Human-readable defects from the pass-2 measurements. Empty == clean."""
+    out: list[str] = []
+    if o["aspect_w_over_h"] and r["aspect_w_over_h"]:
+        rel = abs(r["aspect_w_over_h"] - o["aspect_w_over_h"]) / o["aspect_w_over_h"]
+        if rel > 0.10:
+            out.append(
+                f"CANVAS SHAPE: target aspect {o['aspect_w_over_h']} vs reproduction "
+                f"{r['aspect_w_over_h']} ({rel:.0%} off). Set figsize to the target's "
+                "proportions; add ax.set_aspect('equal') for spatial panels."
+            )
+    if o["background_is_dark"] != r["background_is_dark"]:
+        out.append(
+            f"BACKGROUND: target bg {o['background_rgb']} vs reproduction "
+            f"{r['background_rgb']}. You set a facecolor the target does not have."
+        )
+    if orient.get("orientation_suspect"):
+        out.append(
+            f"ORIENTATION: '{orient['best_variant']}' scores "
+            f"{orient['margin_over_as_is']:+.3f} better than as-is. The panel is "
+            "likely flipped -- check invert_yaxis() / origin='upper'."
+        )
+    # Legend / colorbar presence, from the gutter split rather than density: a
+    # legend is sparse TEXT (~0.14 peak measured on a real 22-entry legend), so a
+    # "dense block at the edge" test never fires for one. Checked BOTH ways --
+    # omitting a legend the target has is the more damaging error, and a
+    # one-directional check reported "clean" on a reproduction that dropped a
+    # legend occupying 46% of the reference's width.
+    o_panel, r_panel = o.get("side_panel", {}), r.get("side_panel", {})
+    if o_panel.get("has_side_panel") and not r_panel.get("has_side_panel"):
+        out.append(
+            f"LAYOUT: the target reserves {o_panel.get('panel_fraction', 0):.0%} of "
+            "its width for a legend/colorbar and the reproduction has none. Draw "
+            "the legend (matching its entries and order), or say in the note why "
+            "it is omitted."
+        )
+    elif r_panel.get("has_side_panel") and not o_panel.get("has_side_panel"):
+        out.append(
+            f"LAYOUT: the reproduction reserves {r_panel.get('panel_fraction', 0):.0%} "
+            "of its width for a legend/colorbar that the target does not have. "
+            "Remove it, or place it as the target does."
+        )
+
+    # Marker density: a dense sheet of cells reproduced as sparse stipple is a
+    # glaring visual difference that no similarity metric reports -- pHash and
+    # SSIM see a broadly similar shape either way, and total ink coverage is
+    # nearly equal (measured 0.27 vs 0.20 on a pair that look nothing alike).
+    # Solidity separates them: 0.72 (solid sheet) vs 0.28 (stipple).
+    osol, rsol = o.get("plot_solidity"), r.get("plot_solidity")
+    if osol and rsol and abs(osol - rsol) > 0.20:
+        thinner = "reproduction" if rsol < osol else "target"
+        out.append(
+            f"MARKER DENSITY: inked area is {osol:.2f} solid in the target vs "
+            f"{rsol:.2f} in the reproduction -- the {thinner} reads as sparse "
+            "stipple where the other reads as a packed sheet. Adjust marker size "
+            "(`s=`), alpha, or figure DPI so markers touch as they do in the target."
+        )
+
+    if o["content_aspect_w_over_h"] and r["content_aspect_w_over_h"]:
+        rel = abs(r["content_aspect_w_over_h"] - o["content_aspect_w_over_h"]) / o["content_aspect_w_over_h"]
+        if rel > 0.15:
+            out.append(
+                f"CONTENT SHAPE: plotted content is {o['content_aspect_w_over_h']} "
+                f"(target) vs {r['content_aspect_w_over_h']} (reproduction) -- the "
+                "data region itself is stretched or cropped differently."
+            )
+    return out
+
+
+def b_level_from_geometry(findings: list[str]) -> str:
+    """Any structural defect caps the ladder; two or more caps it hard."""
+    if not findings:
+        return "B5"
+    return "B1" if len(findings) >= 2 else "B2"
+
+
 def combine_b_levels(levels: dict) -> tuple[str, str]:
     """Floor the B-level across all present signals; report what set the cap.
 
@@ -536,6 +838,37 @@ def write_side_by_side(orig: Image.Image, repro: Image.Image, out_path: str) -> 
     canvas.save(out_path)
 
 
+def write_geometry_diff(orig: Image.Image, repro: Image.Image, out_path: str) -> None:
+    """Pass-2 companion image: both figures LETTERBOXED, not rescaled to match.
+
+    ``write_side_by_side`` scales both panels to a common height so content can be
+    compared element by element -- which necessarily *normalises away* the very
+    defect pass 2 measures. A portrait target and a landscape reproduction look
+    equally tall there, so the shape error is invisible in the one image the agent
+    is told to open.
+
+    Here each figure keeps its own proportions inside an identical box, on a mid
+    gray ground so letterbox padding is visibly distinct from a white or black
+    panel background. Aspect, canvas colour and how much of the frame the data
+    occupies are then all readable at a glance.
+    """
+    box_h = max(orig.height, repro.height)
+    box_w = max(orig.width, repro.width)
+
+    def letterbox(img: Image.Image) -> Image.Image:
+        scale = min(box_w / img.width, box_h / img.height)
+        w, h = max(1, round(img.width * scale)), max(1, round(img.height * scale))
+        cell = Image.new("RGB", (box_w, box_h), (128, 128, 128))
+        cell.paste(img.resize((w, h), Image.BILINEAR), ((box_w - w) // 2, (box_h - h) // 2))
+        return cell
+
+    gap = 10
+    canvas = Image.new("RGB", (box_w * 2 + gap, box_h), (128, 128, 128))
+    canvas.paste(letterbox(orig), (0, 0))
+    canvas.paste(letterbox(repro), (box_w + gap, 0))
+    canvas.save(out_path)
+
+
 # ---------------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------------
@@ -547,6 +880,8 @@ def main() -> int:
     parser.add_argument("original", help="path to the original / target figure")
     parser.add_argument("reproduced", help="path to the reproduced figure")
     parser.add_argument("--out", default="./compare_diff.png", help="side-by-side PNG output path")
+    parser.add_argument("--geometry-out", default=None,
+                        help="pass-2 letterboxed comparison PNG (default: <out>_geometry.png)")
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     parser.add_argument("--no-color", action="store_true", help="skip the palette comparison")
     parser.add_argument("--no-text", action="store_true", help="skip the OCR text diff")
@@ -570,14 +905,35 @@ def main() -> int:
     else:
         td, text_status = text_diff(orig, repro)
 
+    # ---- PASS 2: geometry / canvas / orientation / layout -------------------
+    # Always runs. These are the defects pass 1 cannot see, and they are exactly
+    # the ones an agent talks itself out of ("background is black, as in the
+    # reference" -- when the reference was measurably white).
+    canvas_orig = canvas_metrics(orig)
+    canvas_repro = canvas_metrics(repro)
+    orient = orientation_test(orig, repro)
+    dens_orig = column_density(orig)
+    dens_repro = column_density(repro)
+    geom_findings = geometry_findings(
+        canvas_orig, canvas_repro, orient, dens_orig, dens_repro
+    )
+    geom_level = b_level_from_geometry(geom_findings)
+
     ssim_level = b_level_from_ssim(ssim)
     color_level = b_level_from_color(mean_de)
     text_level = b_level_from_text(td)
     b_prior, limited_by = combine_b_levels({
         "ssim": ssim_level, "color": color_level, "text": text_level,
+        "geometry": geom_level,
     })
 
     write_side_by_side(orig, repro, args.out)
+    # Pass 2 gets its OWN image: the pass-1 view rescales both panels to a common
+    # height, which hides exactly the shape defect pass 2 reports.
+    geom_out = args.geometry_out or re.sub(r"(\.[^.]+)$", r"_geometry\1", args.out)
+    if geom_out == args.out:  # no extension to split on
+        geom_out = args.out + "_geometry.png"
+    write_geometry_diff(orig, repro, geom_out)
 
     which = {
         "phash": phash_path,
@@ -598,8 +954,19 @@ def main() -> int:
             "palette_pairs_matched": n_pairs,
             "palette_detail": color_detail if isinstance(color_detail, dict) else None,
             "text_diff": td,
+            "pass2_geometry": {
+                "canvas_original": canvas_orig,
+                "canvas_reproduced": canvas_repro,
+                "orientation": orient,
+                "column_density_original": dens_orig,
+                "column_density_reproduced": dens_repro,
+                "findings": geom_findings,
+                "clean": not geom_findings,
+                "diff_image": geom_out,
+            },
             "b_levels": {
                 "ssim": ssim_level, "color": color_level, "text": text_level,
+                "geometry": geom_level,
                 "combined": b_prior, "limited_by": limited_by,
             },
             "b_level_prior": b_prior,
@@ -654,9 +1021,23 @@ def main() -> int:
                 print(f"      MISSING  : {', '.join(td['missing_from_repro'][:6])}")
         else:
             print(f"  Text diff              : (n/a - {text_status})")
+        print("  --- PASS 2: geometry / canvas / orientation / layout ---")
+        print(f"  Canvas   target {canvas_orig['width']}x{canvas_orig['height']} "
+              f"(aspect {canvas_orig['aspect_w_over_h']}, bg {canvas_orig['background_rgb']})")
+        print(f"           repro  {canvas_repro['width']}x{canvas_repro['height']} "
+              f"(aspect {canvas_repro['aspect_w_over_h']}, bg {canvas_repro['background_rgb']})")
+        print(f"  Geometry diff image     : {geom_out}  (letterboxed -- shapes NOT normalised)")
+        print(f"  Orientation best variant: {orient['best_variant']} "
+              f"(margin over as-is {orient['margin_over_as_is']:+.3f})")
+        if geom_findings:
+            for f in geom_findings:
+                print(f"      DEFECT: {f}")
+        else:
+            print("      no geometry/canvas/orientation/layout defects detected")
         print("  ---")
         print(f"  B-level PRIOR          : {b_prior}   (min across signals; limited by: {limited_by})")
-        print(f"      ssim->{ssim_level}   color->{color_level or 'n/a'}   text->{text_level or 'n/a'}")
+        print(f"      ssim->{ssim_level}   color->{color_level or 'n/a'}   "
+              f"text->{text_level or 'n/a'}   geometry->{geom_level}")
         print("  NOTE: the B-level is the MINIMUM across the available ladders, so a high")
         print("        SSIM can no longer mask a wrong palette or rewritten labels. A signal")
         print("        that could NOT be computed is excluded -- absence is not a pass.")

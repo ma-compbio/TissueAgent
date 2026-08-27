@@ -6,7 +6,7 @@ import logging
 from queue import Queue
 
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 from langchain_core.messages import HumanMessage
 from langgraph.graph import END, START, StateGraph
 

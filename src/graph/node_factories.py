@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from queue import Queue
 from typing import Any, cast
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import (
     AIMessage,

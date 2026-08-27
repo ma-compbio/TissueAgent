@@ -5,7 +5,7 @@ Replace the placeholder name and import path. Tool names must be globally unique
 
 from __future__ import annotations
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 
 # from agents.agent_registry.my_agent.runner import run_my_agent
 

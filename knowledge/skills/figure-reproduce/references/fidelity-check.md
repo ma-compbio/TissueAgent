@@ -165,3 +165,93 @@ tweak data or thresholds to force a pixel match: that's over-matching (§6).
   plot** as the target of record (if you regenerate that reference from the repo's
   own code, note it's a consistency check, not an independent match); if the panel
   isn't derivable from the data at all, **honest-failure** — say so.
+
+---
+
+## The two metric passes
+
+**The script reports TWO passes — you must read both before concluding.**
+
+   - **Pass 1** (pHash / SSIM / ORB / palette dE / text) compares the images in
+     grayscale after resizing both to a *square*. It is sensitive to content but
+     structurally blind to shape, canvas and orientation.
+   - **Pass 2** (`pass2_geometry` in the JSON) measures what pass 1 cannot:
+     canvas size and aspect, panel **background colour** (probed inboard, since
+     `bbox_inches="tight"` makes corners lie), an **orientation flip test** that
+     re-scores the reproduction mirrored to see if a flip fits better, **content
+     bbox/extent**, and **column density** — which exposes a legend or colorbar
+     block the target does not have.
+
+   Pass 2 emits a `findings` list. **A non-empty `findings` is a defect list, not
+   advice:** fix each entry and re-render, or name it explicitly in the repro note
+   as an accepted deviation. `"clean": true` is what lets you move on. Pass 2 also
+   feeds the `geometry` ladder into the B-level minimum, so a wrong-shaped or
+   wrong-background figure can no longer report a good B-level on pass-1 strength
+   alone. **Concluding on pass 1 while pass 2 lists defects is a failed step.**
+
+---
+
+## Structural defects and how to test for them
+
+**Structural defects (never "good enough" — fix or explain why you cannot):**
+
+   > **orientation** — the panel is flipped/mirrored/rotated vs the target, or an
+   > axis runs the wrong way (image-convention y-axis, `invert_yaxis()`,
+   > `origin="upper"`, a transposed matrix) · **canvas/background** — the panel
+   > background is a different colour from the target's (a dark facecolor behind a
+   > light-background figure recolours every gap between markers and tanks SSIM on
+   > its own) · **canvas shape** — the figure's width:height ratio differs from the
+   > target's (portrait reproduced as landscape, or a squashed/stretched panel);
+   > **the metrics cannot see this**, because `compare_figures.py` resizes both
+   > images to a square before comparing · **wrong plot primitive** · **wrong panel
+   > count or facet layout** · **a category present in one figure and absent in the
+   > other** · **axes swapped** · **a colormap running in the opposite
+   > direction**.
+
+   These change what the figure *means*, are usually a one-line fix, and are
+   exactly what a global metric hides: pHash/SSIM read a mirrored panel as
+   "different everywhere", producing a uniformly bad score with no clue why — which
+   is indistinguishable from "hard to match" unless you name it from the
+   side-by-side. If your list says the orientation is wrong and you stop anyway,
+   you have shipped the wrong figure with a low score attached.
+
+   **Orientation is not a judgement call — test it.** Re-render with the axis
+   flipped (or the transform removed) and re-run the metrics. Whichever version
+   scores better *is* the right orientation. That is one cheap attempt, and it
+   settles the question with a measurement instead of an opinion.
+
+   **Background is not a judgement call either — sample it.** Do not assert the
+   backgrounds match from looking; read the pixels of both images:
+
+   ```python
+   from PIL import Image; import numpy as np
+   for p in (target_path, repro_path):
+       a = np.array(Image.open(p).convert("RGB")); h, w, _ = a.shape
+       # Corners alone are NOT enough: bbox_inches="tight" leaves a white figure
+       # margin around the axes, so a black *axes* canvas still shows white
+       # corners. Probe inboard, where the panel background actually is.
+       print(p, "corner:", a[0, 0], "inboard:", a[h // 2, w // 10], a[h // 10, w // 2])
+   ```
+
+   If the inboard samples differ in kind — the target near-white and yours
+   near-black, or vice versa — you set a facecolor the target does not have:
+   **fix it and re-render**. This is the cheapest large SSIM win available, and it
+   is one that eyeballing a dense scatter reliably gets wrong: a black canvas can
+   *look* like the shadowed gaps between markers in a crowded panel.
+
+   **Canvas shape is a blind spot in the metrics — measure it yourself.** Every
+   similarity signal in `compare_figures.py` resizes both images to a square
+   first, so a portrait target reproduced as a landscape figure scores exactly the
+   same as one with the right proportions. Nothing will tell you; check it:
+
+   ```python
+   from PIL import Image
+   for p in (target_path, repro_path):
+       w, h = Image.open(p).size
+       print(p, f"{w}x{h}", "aspect w/h = %.3f" % (w / h))
+   ```
+
+   If the two ratios differ by more than ~10%, set `figsize` to the target's
+   proportions (and `ax.set_aspect("equal")` for spatial panels, so the tissue is
+   not stretched) and re-render. A figure of the right shape also crops and
+   composes like the target, which improves every other signal at once.

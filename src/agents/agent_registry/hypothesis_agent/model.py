@@ -11,7 +11,7 @@ from queue import Queue
 import re
 
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 from langgraph.types import Command
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, MessagesState, START, StateGraph

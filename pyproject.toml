@@ -9,18 +9,22 @@ description = "autonomous AI agent for spatial transcriptomics research"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "langchain==0.3.25",
-    "langchain-core==0.3.64",
-    "langchain-ollama==0.3.0",
-    "langchain-openai==0.3.10",
-    "langchain-anthropic>=0.3.15",
-    "langchain-community==0.3.24",
-    "langgraph==0.3.20",
+    "langchain>=1.3.17,<2",
+    "langchain-core>=1.6.0,<2",
+    "langchain-ollama>=1.1.0,<2",
+    "langchain-openai>=1.6.0,<2",
+    "langchain-anthropic>=1.6.1,<2",
+    "langchain-community>=0.4.2",
+    "langgraph>=1.2.11,<2",
+    # Harness for the experimental deepagents-backed coding agent
+    # (agents/agent_registry/coding_agent_deepagent). Requires the langchain 1.x
+    # line above — no deepagents release supports langchain 0.3.x.
+    "deepagents==0.7.9",
     "pyyaml>=6.0",
     "matplotlib==3.9.4",
     "numpy>=2.0.2",
     "pandas==2.2.3",
-    "pydantic==2.10.6",
+    "pydantic>=2.13.4",
     "scanpy==1.10.3",
     "scipy==1.13.1",
     "seaborn==0.13.2",
@@ -34,10 +38,14 @@ dependencies = [
     "google-search-results==2.4.2",
     "pymed==0.8.9",
     "watchdog>=6.0.0",
-    "anthropic==0.52.0",
+    "anthropic>=0.125.0",
     "openai>=1.73.0",
     "nbformat>=5.10.4",
-    "langchain-chroma==0.2.4",
+    # OCR for figure-reproduce: without it the reference-spec extractor can see
+    # a legend's swatches but not its labels, so colors cannot be bound to
+    # category names. Needs the `tesseract` binary too (brew install tesseract).
+    "pytesseract>=0.3.10",
+    "langchain-chroma>=1.1.0,<2",
     "langchain-experimental>=0.3.0",
     "colorama>=0.4.6",
     "dask==2024.8.0",
@@ -54,7 +62,10 @@ dependencies = [
     "decoupler>=2.1.1",
     "notebook>=7.4.7",
     "marimo>=0.17.2",
-    "ggplot>=0.11.5",
+    # ``stlearn`` has no upper bound on bokeh and pip backtracks to bokeh 2.3.0,
+    # whose build calls configparser.SafeConfigParser (removed in py3.12) and
+    # fails. Floor bokeh at a wheel-shipping 3.x so resolution stops there.
+    "bokeh>=3.7,<4",
     "plotnine>=0.15.0",
     "ruff>=0.15.6",
     "pre-commit>=4.5.1",
@@ -64,6 +75,12 @@ dependencies = [
     # cell raises AttributeError. Lift only together with scanpy >= 1.11.
     "ipython>=8.37.0,<9",
     "ipykernel>=7.1.0",
+    # The coding agent talks to a Jupyter Kernel Gateway for every code cell —
+    # in Docker via ContainerManager, and as a local subprocess via
+    # LocalKernelGateway when the sandbox is off. It was previously undeclared,
+    # so a fresh environment had no gateway and every `--no-docker` run failed
+    # to execute code.
+    "jupyter-kernel-gateway>=3.0.1",
     "mygene==3.2.2",
     "harmonypy==0.0.10",
     "tiledbsoma==1.17.1",

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 
 from agents.agent_registry.mllmcelltype_agent.runner import (
     run_mllmcelltype_annotation,

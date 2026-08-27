@@ -23,17 +23,46 @@ description: >
 - `reports/<name>_repro_note.md` — fields used, params, B-level, named deviations
 
 ## Step Sketch
-Prepare inputs + measure the target spec → resolve the colormap → render → compare against the target and repair (4 steps; prepend analysis steps if the figure's fields must be computed first)
+Reproduce and verify the figure end to end (**1 step**, dispatched to `coding_agent`; prepend analysis steps only if the figure's fields must be computed first)
 
 ## Details
-- Apply the `figure-reproduce` skill to **every** step. It supplies the method for each; the plan supplies only the boundaries, the input paths, and the artifacts. Do not restate the method in step descriptions.
-- **Step 1 — Prepare inputs and define the figure spec**, agent `coding_agent`: inventory the dataset (coords/embedding, the categorical color column and its order) and measure the target's spec (palette, category order, colormap incl. `_r`, on-panel text). Artifacts: `tables/<name>_spec.yaml`, `tables/<name>_inventory.*`.
-- **Step 2 — Resolve the colormap**, agent `coding_agent`: produce one `tables/colormap.yaml` from the most trustworthy source available (supplied file → colors stored in the dataset → the reference's legend → refuse). Artifact: `tables/colormap.yaml`.
-  - This step is a **gate**. If no trustworthy source exists the step fails *before* anything is rendered — that is the intended behaviour. The fix is to supply a palette source, not to let the executor invent one.
-- **Step 3 — Render the figure**, agent `coding_agent`: plot from `tables/colormap.yaml` with an explicit category order, labels copied verbatim, and any background/histology underlay preserved. Artifacts: `figures/<name>.png`, the vector copy, `tables/<name>_plot_data.csv` (categories in plotted order).
-- **Step 4 — Compare against the target and repair**, agent `coding_agent`: run the fidelity comparison, open the side-by-side diff, name the differences, and apply a bounded repair/polish pass. Artifacts: `tables/compare_metrics.json`, `figures/compare_diff.png`, `reports/<name>_repro_note.md`.
-  - Step 4 contains a **bounded loop** (re-render → re-compare). Keep it inside this one step; the skill owns the loop and its retry budget.
-- Do **not** collapse these into a single step. Each boundary exists because it emits an artifact the verifier can check; a figure reproduction with no checkpoint ships unverified.
+- Assign the `figure-reproduce` skill to the step. The skill owns the **method and
+  its ordering**; this plan supplies only the input paths and the artifacts to
+  emit. Do not restate the method in the step description.
+- **Step 1 — Reproduce the target figure and verify it**, agent `coding_agent`:
+  follow the `figure-reproduce` skill end to end — inventory the dataset, measure
+  the target's spec, resolve the colormap, render, compare against the target, and
+  apply the skill's bounded repair loop. Artifacts: `figures/<name>.png`, the
+  vector copy, `tables/<name>_plot_data.csv`, `tables/colormap.yaml`,
+  `tables/compare_metrics.json`, `figures/compare_diff.png`,
+  `reports/<name>_repro_note.md`.
+- **Why one step.** The skill already sequences this work and its later stages
+  verify its earlier ones, so splitting it across dispatches duplicated that
+  ordering and paid a full manager round-trip per boundary. The checkpoints are
+  not lost: they move from step boundaries to **artifacts**. Every file listed
+  above is still required, and `colormap.yaml` in particular is still a gate —
+  rendering before it exists means the palette was invented, which the repro note
+  and `compare_metrics.json` will expose.
+- **The colormap remains a hard gate.** Resolve it from the most trustworthy
+  source available (supplied file → colors stored in the dataset → the reference's
+  legend → refuse). If no trustworthy source exists, **fail before rendering**
+  rather than inventing one. A default palette (tier 5) is not a low-fidelity
+  reproduction — it is a differently-coloured plot of the same data — so the
+  correct outcome is a "Constraint violation:" report naming the missing source.
+  **Do not `retry_step` a palette refusal**: retrying cannot conjure a source the
+  data does not contain, and only pressures the sub-agent into `--allow-default`.
+  Surface it to the user; the fix is to supply a palette file or a legended
+  reference. A step that ends this way is correctly reported as blocked, not
+  failed-and-retried.
+- **A missing repro note fails the step.** `reports/<name>_repro_note.md` is
+  where deviations and the fidelity result are recorded; without it the run
+  asserts nothing about its own quality. Observed: a run produced every other
+  artifact and no `reports/` directory at all, and was still reported finished.
+- **Do not accept the step on artifact existence alone.** `figures/<name>.png`
+  appearing proves only that something rendered. The step is complete when
+  `compare_metrics.json` exists *and* the repro note reports the comparison
+  outcome. A note admitting the colors do not match the reference is a **failed**
+  step: retry it naming the stage that was skipped.
 - Do **not** write descriptions telling the executor to *choose*, *tune*, or *pick* a color palette. The skill derives the palette by **measuring** it; an instruction to select one contradicts the skill and produces wrong colors. State the goal ("colors match the reference's cell-type palette") and let the skill supply the method.
 - The final figure should be iterated to near publication quality: readable labels, no overlapping or obscured elements, and — when a reference is provided — matching style.
 - Never fabricate data to match a figure. If the dataset lacks a field the figure needs, reproduce the closest supported variant and name the gap.

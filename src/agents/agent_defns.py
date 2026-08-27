@@ -7,10 +7,11 @@ Reporter) plus the specialized sub-agents listed in :data:`AgentDefns`.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
 
 import agents.agent_registry.coding_agent.model as CodingAgent
@@ -161,12 +162,42 @@ ReporterAgent = ReActAgent(
     model_ctor=DefaultModelCtor,
 )
 
+
+def _coding_agent_ctor() -> Callable[..., StructuredTool]:
+    """Pick the coding-agent implementation for this process.
+
+    ``TISSUEAGENT_CODING_AGENT=deepagent`` selects the experimental
+    ``deepagents``-backed variant; anything else (the default) keeps the stock
+    agent. An env var rather than a CLI flag so the CLI, the web server and the
+    benchmark harness all honour it without threading a roster override through
+    every construction path.
+
+    Falls back to the stock agent with a loud warning if deepagents is not
+    installed, so a mis-set env var degrades instead of breaking startup.
+    """
+    import os
+
+    if os.environ.get("TISSUEAGENT_CODING_AGENT", "").strip().lower() != "deepagent":
+        return CodingAgent.create_coding_agent
+    try:
+        import agents.agent_registry.coding_agent_deepagent.model as DeepCodingAgent
+    except ImportError as e:
+        logging.warning(
+            "TISSUEAGENT_CODING_AGENT=deepagent but the deepagents variant could "
+            "not be imported (%s); falling back to the stock coding agent.",
+            e,
+        )
+        return CodingAgent.create_coding_agent
+    logging.info("Coding agent: using the deepagents-backed variant.")
+    return DeepCodingAgent.create_coding_agent_deep
+
+
 AgentDefns: list[ReActAgent | CustomAgent] = [
     CustomAgent(
         id="coding",
         name="Coding Agent",
         description=CodingAgentDescription,
-        ctor=CodingAgent.create_coding_agent,
+        ctor=_coding_agent_ctor(),
     ),
     ReActAgent(
         id="pdf_reader",

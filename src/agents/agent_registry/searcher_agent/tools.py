@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 
 from agents.agent_registry.searcher_agent.tools_impl.google_scholar_search_tool import (
     GoogleScholarAPIEngine,

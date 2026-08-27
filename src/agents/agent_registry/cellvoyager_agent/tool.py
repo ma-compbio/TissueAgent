@@ -2,7 +2,7 @@
 
 from typing import List
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 
 from agents.agent_registry.cellvoyager_agent.runner import run_cellvoyager_analysis
 

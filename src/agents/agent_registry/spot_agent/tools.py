@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
 from agents.agent_registry.spot_agent.tools_impl.cell2location_visium_deconvolution_tool import (

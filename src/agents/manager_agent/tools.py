@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
 from agents.agent_tools import glob_tool, grep_tool, read_tool, write_tool

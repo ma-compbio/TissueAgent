@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 from typing import Literal
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 
 from agents.agent_utils import truncate_output
 from config import ACTIVE_PROJECT_DIR, DATA_DIR, LIBRARY_DIR, MAX_OUTPUT_CHARS, NOTEBOOK_DIR
