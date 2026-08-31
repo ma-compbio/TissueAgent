@@ -293,9 +293,48 @@ def create_coding_agent(
         if context_resolver:
             step_ctx = context_resolver("coding_agent")
             if step_ctx and step_ctx.skills:
+                # Materialize the step's folder-skill assets (scripts/, references/)
+                # under project/skills/ BEFORE building the prompt, so the "Assets
+                # root" note format_skill_prompt emits resolves against files that are
+                # actually on disk. The coding agent is the one that %runs these
+                # scripts, so this must happen on its dispatch path — not only on the
+                # generic node_factories path. Without it the skill body is injected
+                # but the scripts never reach the executor, and the agent silently
+                # reimplements the method from prose.
+                from agents.skills_workspace import (
+                    _folder_skill_names,
+                    sync_workspace_skills,
+                )
+
+                try:
+                    sync_workspace_skills(step_ctx.skills)
+                except Exception as e:  # skill delivery must not break a dispatch
+                    logging.warning(
+                        "coding_agent: skill materialization failed for step %s "
+                        "(%s): scripts/ assets will be missing on disk",
+                        step_ctx.step_id, e)
+
                 from agents.agent_utils import format_skill_prompt
 
                 skill_prompt_text = format_skill_prompt(step_ctx.skills)
+
+                # Guard: a folder skill ships runnable scripts the agent is told to
+                # %run. If its snapshot dir did not land under project/skills/, the
+                # agent will find nothing and reimplement from prose (a silent
+                # skill-delivery regression that produced empty outputs before).
+                from config import active_project_skills
+
+                skills_root = active_project_skills()
+                expected_dirs = _folder_skill_names(step_ctx.skills)
+                missing_on_disk = sorted(
+                    name for name in expected_dirs
+                    if not (skills_root / name).is_dir()
+                )
+                if missing_on_disk:
+                    logging.warning(
+                        "coding_agent: step %s folder skills %s were NOT materialized "
+                        "to %s (scripts/ assets unavailable to the executor)",
+                        step_ctx.step_id, missing_on_disk, skills_root)
         # Per-invocation observability: the system prompt is only previewed at
         # build time (with an empty skill_prompt), so without this line there is
         # no way to tell from the logs whether a step's assigned skills actually
