@@ -74,17 +74,17 @@ def get_local_base_url() -> str:
 SUPPORTED_MODELS: List[ModelSpec] = [
     # --- OpenAI (direct) ---
     ModelSpec(
-        id="gpt-5.1",
-        provider="openai",
-        api_model="gpt-5.1",
-        label="GPT-5.1 (default)",
-        reasoning_effort="high",
-    ),
-    ModelSpec(
         id="gpt-5.5",
         provider="openai",
         api_model="gpt-5.5",
-        label="GPT-5.5",
+        label="GPT-5.5 (default)",
+        reasoning_effort="high",
+    ),
+    ModelSpec(
+        id="gpt-5.1",
+        provider="openai",
+        api_model="gpt-5.1",
+        label="GPT-5.1",
         reasoning_effort="high",
     ),
     ModelSpec(
@@ -217,7 +217,7 @@ SUPPORTED_MODELS: List[ModelSpec] = [
 
 _MODELS_BY_ID: Dict[str, ModelSpec] = {m.id: m for m in SUPPORTED_MODELS}
 
-DEFAULT_MODEL_ID = "gpt-5.1"
+DEFAULT_MODEL_ID = "gpt-5.5"
 
 # Map providers to the env-var name the underlying SDK consults.
 PROVIDER_ENV_VAR: Dict[Provider, str] = {
@@ -246,7 +246,13 @@ def list_models() -> List[Dict[str, Any]]:
 REASONING_EFFORT_ENV = "TISSUEAGENT_REASONING_EFFORT"
 ORCHESTRATION_REASONING_EFFORT_ENV = "TISSUEAGENT_ORCHESTRATION_REASONING_EFFORT"
 WORKER_REASONING_EFFORT_ENV = "TISSUEAGENT_WORKER_REASONING_EFFORT"
-_VALID_REASONING_EFFORTS = ("minimal", "low", "medium", "high")
+# "none" is a real setting, not an absence: newer OpenAI reasoning models reject
+# `reasoning_effort` outright when function tools are bound on
+# /v1/chat/completions ("Function tools with reasoning_effort are not supported
+# ... set reasoning_effort to 'none'"). Since every agent here binds tools, those
+# models are unreachable unless the parameter can be suppressed. Selecting "none"
+# omits the kwarg entirely -- see build_chat_model.
+_VALID_REASONING_EFFORTS = ("none", "minimal", "low", "medium", "high")
 
 
 def _reasoning_effort_for_role(role: Role | None) -> str | None:
@@ -443,7 +449,11 @@ def build_chat_model(
         from langchain_openai import ChatOpenAI
 
         kwargs: Dict[str, Any] = {"model": spec.api_model}
-        if spec.reasoning_effort is not None:
+        if spec.api_model == "gpt-5.5":
+            kwargs["use_responses_api"] = True
+        # "none" means "do not send the parameter at all" -- the only way to bind
+        # function tools on models that refuse an explicit reasoning_effort.
+        if spec.reasoning_effort is not None and spec.reasoning_effort != "none":
             kwargs["reasoning_effort"] = spec.reasoning_effort
         key = get_api_key("openai")
         if key:
@@ -477,7 +487,7 @@ def build_chat_model(
             "model": spec.api_model,
             "base_url": OPENROUTER_BASE_URL,
         }
-        if spec.reasoning_effort is not None:
+        if spec.reasoning_effort is not None and spec.reasoning_effort != "none":
             kwargs["reasoning_effort"] = spec.reasoning_effort
         key = get_api_key("openrouter")
         if key:

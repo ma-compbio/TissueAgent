@@ -115,7 +115,7 @@ pd.DataFrame({"x": xy[:, 0], "y": xy[:, 1], color: adata.obs[color].values}) \
 ## References
 
 - Driven by the coding agent (id `coding`) tools: `python`, `r`, `search_documentation`
-  (`src/agents/agent_registry/coding_agent/model.py`).
+  (`src/agents/agent_registry/coding_agent_cache/model.py`).
 - Target extraction from papers: `pdf_reader` agent.
 - Related plan template: `spatial_scatter` (`knowledge/plans/spatial_scatter.md`) — a concrete
   figure recipe with coords/color/checks.

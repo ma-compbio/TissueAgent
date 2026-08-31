@@ -165,7 +165,37 @@ def emit_subagent_state(
         logging.debug("UI event queue full; dropping subagent_state event")
 
 
-def emit_message(message: BaseMessage) -> None:
+def emit_subagent_token(stream_id: str, source: str, text: str) -> None:
+    """Push a transient text token into the active sub-agent trace."""
+    if not text:
+        return
+    invocation_id, agent_name, _ = _get_subagent_context()
+    queue = _get_ui_event_queue()
+    if invocation_id is None or queue is None:
+        return
+    try:
+        queue.put_nowait(
+            (
+                "subagent_token",
+                {
+                    "invocation_id": invocation_id,
+                    "agent_name": agent_name,
+                    "stream_id": stream_id,
+                    "source": source,
+                    "text": text,
+                },
+            )
+        )
+    except Full:
+        logging.debug("UI event queue full; dropping subagent_token event")
+
+
+def emit_message(
+    message: BaseMessage,
+    *,
+    stream_id: str | None = None,
+    source: str | None = None,
+) -> None:
     """Log a message's metadata and content, and push it to the UI queue.
 
     Writes a structured log entry with the message type, name, ID, content, and any tool calls. If a
@@ -174,6 +204,8 @@ def emit_message(message: BaseMessage) -> None:
 
     Args:
         message: Any LangChain message (human, AI, tool, etc.).
+        stream_id: Optional transient draft identity completed by this message.
+        source: Optional main-agent or delegated-subagent label.
     """
     msg_type = getattr(message, "type", type(message).__name__)
     msg_name = getattr(message, "name", None)
@@ -204,9 +236,14 @@ def emit_message(message: BaseMessage) -> None:
         return
     inv_id, sa_name, _ = _get_subagent_context()
     if inv_id is not None:
+        data = {"invocation_id": inv_id, "agent_name": sa_name, "message": message}
+        if stream_id is not None:
+            data["stream_id"] = stream_id
+        if source is not None:
+            data["source"] = source
         payload = (
             "subagent_message",
-            {"invocation_id": inv_id, "agent_name": sa_name, "message": message},
+            data,
         )
     else:
         payload = ("message", message)

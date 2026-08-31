@@ -44,7 +44,7 @@ def test_coding_agent_state_is_checkpoint_safe() -> None:
     the module the agent imports, so a future rename fails loudly here instead of
     silently stopping the check.
     """
-    import agents.agent_registry.coding_agent.model as coding_model
+    import agents.agent_registry.coding_agent_cache.model as coding_model
 
     state_cls = coding_model.AgentState
     annotations = getattr(state_cls, "__annotations__", {})

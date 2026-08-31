@@ -12,7 +12,7 @@ Observed in logs/2026-08-13_22-30-50: 52 python executions, 33 errors, two
 """
 
 from config import MAX_EXECUTOR_RETRIES, MAX_EXECUTOR_STEP_ERRORS
-from agents.agent_registry.coding_agent.model import (
+from agents.agent_registry.coding_agent_cache.model import (
     apply_failure_budgets,
     new_exec_state,
 )

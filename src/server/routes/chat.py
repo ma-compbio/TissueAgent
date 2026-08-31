@@ -974,14 +974,22 @@ async def _drain_queues(ws: WebSocket):
                 })
 
             elif event_type == "subagent_message":
+                data = {
+                    "invocation_id": payload["invocation_id"],
+                    "agent_name": payload["agent_name"],
+                    "message": serialize_message(payload["message"]),
+                }
+                if payload.get("stream_id") is not None:
+                    data["stream_id"] = payload["stream_id"]
+                if payload.get("source") is not None:
+                    data["source"] = payload["source"]
                 await ws.send_json({
                     "type": "subagent_message",
-                    "data": {
-                        "invocation_id": payload["invocation_id"],
-                        "agent_name": payload["agent_name"],
-                        "message": serialize_message(payload["message"]),
-                    },
+                    "data": data,
                 })
+
+            elif event_type == "subagent_token":
+                await ws.send_json({"type": "subagent_token", "data": payload})
 
             elif event_type == "subagent_end":
                 await ws.send_json({

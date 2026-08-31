@@ -17,7 +17,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-import agents.agent_registry.coding_agent.notebook_log as notebook_log
+import agents.agent_registry.coding_agent_cache.notebook_log as notebook_log
 
 
 @pytest.fixture

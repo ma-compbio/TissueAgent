@@ -1,403 +1,244 @@
-"""Coding agent with isolated Python/R execution via Docker sandbox."""
+"""Canonical coding agent built on the ``deepagents`` harness.
+
+The cached persistent-kernel implementation remains available at
+:mod:`agents.agent_registry.coding_agent_cache.model` and can be selected with
+``TISSUEAGENT_CODING_AGENT=cache``.
+
+What the agent gets
+-------------------
+``ls`` / ``read_file`` / ``write_file`` / ``edit_file`` / ``delete`` / ``glob`` /
+``grep`` / ``execute`` / ``task``, plus a skills index. ``edit_file`` and
+``task`` have no equivalent in the stock agent.
+
+Deliberate differences from the stock coding agent
+--------------------------------------------------
+* **Execution is shell, not a Jupyter kernel.** ``execute`` runs
+  ``subprocess.run(shell=True)`` locally through ``LocalShellBackend`` — no
+  sandbox service, no API key. The consequence is that **execution is
+  stateless**: each call is a fresh process, so nothing survives between calls
+  (verified: ``export FOO=42`` then ``echo $FOO`` returns empty). A large
+  ``.h5ad`` must be re-read per invocation, or the work written as a script.
+* **No R tool.** Neither environment ships an ``ir`` kernel, so an ``r()`` tool
+  would only ever fail; offering it invites the model to waste turns.
+* **No ``analysis.ipynb``, no inline plot capture, no executor failure budget.**
+  All three are implemented inside ``KernelClient.execute``, which is not in
+  this variant's path. Figures reach the user as files under
+  ``project/outputs/`` rather than as trace images.
+* **Skills are model-selected, not recruiter-injected.** deepagents indexes each
+  skill's ``name``/``description`` at startup and the model reads the body on
+  demand. Our ``strict: true`` guarantee therefore does not apply here — that is
+  the trade being evaluated.
+
+The graph integration contract is identical to the stock agent's, so the two are
+interchangeable without touching ``graph.py``, ``cli.py`` or the manager.
+"""
 
 from __future__ import annotations
 
 import logging
+import os
+import sys
+from pathlib import Path
 from queue import Queue
 
-
-from langchain_core.tools import StructuredTool
 from langchain_core.messages import HumanMessage
-from langgraph.graph import END, START, StateGraph
+from langchain_core.tools import StructuredTool
 
-from agents.agent_registry.coding_agent.sandbox import ExecutionResult, KernelClient
-from agents.agent_registry.coding_agent.tools_impl.documentation_index import (
-    DocumentationIndex,
+from graph.ui_events import (
+    emit_message,
+    emit_subagent_token,
+    stash_completed_subagent,
+    subagent_invocation,
 )
-from agents.agent_registry.coding_agent.params import (
-    coding_agent_model_ctor,
-    doc_filepaths,
-)
-import agent_settings
-from agents.agent_registry.coding_agent.prompt import CodingAgentPrompt
-from config import DATA_DIR, ROOT
-from agents.agent_tools import file_read_write_tools
-from graph.node_factories import AgentState, create_agent_node, create_tool_node
-from graph.ui_events import emit_message, stash_completed_subagent, subagent_invocation
+
+# The ``CustomAgent`` id is "coding" but the node id — and so the transfer-tool
+# name the manager dispatches through — is "coding_agent". Keep both literals
+# identical to the stock agent so the variants are swappable.
+AGENT_NODE_ID = "coding_agent"
+AGENT_DISPLAY_NAME = "Coding Agent"
+
+# Where ``sync_workspace_skills`` materializes this step's folder skills, as a
+# path *relative to the backend root* (DATA_DIR). deepagents resolves skill
+# sources through the backend's filesystem tools, where an absolute host path
+# outside DATA_DIR fails with ``path_not_found``.
+WORKSPACE_SKILLS_SOURCE = "/project/skills"
 
 
-def new_exec_state() -> dict[str, int]:
-    """Fresh per-step failure counters for the code-execution tools."""
-    return {"consecutive_errors": 0, "step_errors": 0}
+def _shell_env() -> dict[str, str]:
+    """PATH override so the agent's shell reaches *this* interpreter's env.
 
-
-def apply_failure_budgets(exec_state: dict, *, had_error: bool) -> str | None:
-    """Update the failure counters and return a stop-directive once one trips.
-
-    Two budgets, because one is not enough:
-
-    * ``consecutive_errors`` (``MAX_EXECUTOR_RETRIES``) fast-fails a hard stuck
-      loop, and is zeroed by any success.
-    * ``step_errors`` (``MAX_EXECUTOR_STEP_ERRORS``) counts every failure in the
-      step and is **never** refunded by a success. Without it, a debug-thrash
-      loop — execute, fail, glob, read, execute, fail — never accumulates enough
-      *consecutive* failures to trip the first budget, and the step runs until
-      LangGraph's ``recursion_limit`` aborts it, discarding the sub-agent's
-      context and its partial work.
-
-    Returns ``None`` while within budget.
+    ``LocalShellBackend`` defaults to ``inherit_env=False``, under which the
+    shell cannot even find ``python3`` (exit 127). Merely inheriting is not
+    enough either: on a conda install ``which python3`` then resolves to *base*,
+    where scanpy and friends are absent. Prepending the running interpreter's
+    ``bin`` directory is what makes ``python3 -c "import scanpy"`` work.
     """
-    from config import MAX_EXECUTOR_RETRIES, MAX_EXECUTOR_STEP_ERRORS
-
-    if not had_error:
-        exec_state["consecutive_errors"] = 0
-        return None
-
-    exec_state["consecutive_errors"] += 1
-    exec_state["step_errors"] += 1
-
-    if exec_state["consecutive_errors"] >= MAX_EXECUTOR_RETRIES:
-        reason = (
-            f"{exec_state['consecutive_errors']} consecutive code executions "
-            f"have failed (limit MAX_EXECUTOR_RETRIES={MAX_EXECUTOR_RETRIES})"
-        )
-    # Checked second so a hard stuck loop reports the more specific reason.
-    elif exec_state["step_errors"] >= MAX_EXECUTOR_STEP_ERRORS:
-        reason = (
-            f"{exec_state['step_errors']} code executions have failed during "
-            f"this step (limit MAX_EXECUTOR_STEP_ERRORS="
-            f"{MAX_EXECUTOR_STEP_ERRORS}); successes in between do not refund "
-            "this budget"
-        )
-    else:
-        return None
-
-    return (
-        f"[EXECUTOR RETRY LIMIT] {reason}. Do NOT run more code for this step. "
-        "Stop, summarize what you attempted and the errors you hit, and hand "
-        "control back so the manager can retry the step with new instructions "
-        "or replan."
-    )
+    bindir = str(Path(sys.executable).parent)
+    return {"PATH": bindir + os.pathsep + os.environ.get("PATH", "")}
 
 
 def create_coding_agent(
     state_queue: Queue,
-    kernel_client: KernelClient,
+    kernel_client=None,
     context_resolver=None,
 ):
-    """Build and return the coding agent as a StructuredTool.
+    """Build the deepagents-backed coding agent as a ``StructuredTool``.
 
     Args:
-        state_queue: Queue to which finished agent states are posted for UI consumption.
-        kernel_client: Client for executing code on the Docker sandbox kernels.
-        context_resolver: Optional callable that resolves skill/artifact context for a step.
+        state_queue: Queue finished sub-agent states are posted to for the UI.
+            Receives ``(agent_id, final_state, invocation_id)``.
+        kernel_client: Accepted for signature compatibility with the stock
+            agent and **unused** — this variant executes through the shell.
+            ``graph.py`` filters ctor kwargs by ``inspect.signature``, so the
+            parameter must stay for the shared call site to keep working.
+        context_resolver: Optional ``Callable[[str], StepContext | None]``
+            resolving the currently-running plan step.
 
     Returns:
-        A StructuredTool that invokes the coding agent graph with a text prompt.
+        A ``StructuredTool`` named ``coding_agent_transfer_tool`` taking a
+        single ``prompt`` argument.
     """
-    graph = StateGraph(AgentState)
-    id = "coding_agent"
+    # Imported lazily so this module stays importable (and the app bootable)
+    # where deepagents is absent; only building the agent needs it.
+    from deepagents import create_deep_agent
+    from deepagents.backends import LocalShellBackend
 
-    # Per-step failure counters, bumped by the python/r tools via
-    # ``apply_failure_budgets`` and reset at the start of each step invocation
-    # (see ``_agent_invocation_tool``). Once either budget trips, the tools
-    # refuse to run more code and instruct the agent to stop and summarize.
-    _exec_state = new_exec_state()
+    from agents.agent_registry.coding_agent.prompt import CodingAgentPrompt
+    from agents.agent_registry.coding_agent_cache.params import coding_agent_model_ctor
+    from config import DATA_DIR
 
-    ### Documentation tool
+    backend = LocalShellBackend(
+        root_dir=str(DATA_DIR),
+        virtual_mode=True,
+        inherit_env=True,
+        env=_shell_env(),
+    )
+    model = coding_agent_model_ctor()
 
-    documentation_index = DocumentationIndex(doc_filepaths)
+    def _system_prompt() -> str:
+        """Base prompt, with the kernel-specific guidance replaced.
 
-    def search_documentation(
-        name: str | None = None,
-        keyword: str | None = None,
-        library: str | None = None,
-    ) -> str:
-        """Search API documentation for spatial transcriptomics libraries.
-
-        Provide exactly one of `name` or `keyword`:
-        - name: Look up a specific method by name (supports fuzzy matching).
-        - keyword: Find methods related to a topic.
-        - library: Optional filter ('scanpy', 'squidpy', 'liana', or 'commot').
+        The stock prompt documents ``python()``/``r()`` tools and the
+        ``{{skill_prompt}}`` injection point, neither of which exists here.
+        Rather than fork the whole prompt, we keep its domain guidance (paths,
+        workspace policy, output schema) and overwrite the parts that would
+        instruct the model to call tools it does not have.
         """
-        if name and keyword:
-            return "Error: provide either 'name' or 'keyword', not both."
-        if name:
-            results = documentation_index.lookup_by_name(name, library=library)
-            return documentation_index.format_results(results, verbose=True)
-        if keyword:
-            results = documentation_index.search_by_keyword(keyword, library=library)
-            return documentation_index.format_results(results, verbose=False)
-        return "Error: provide either 'name' or 'keyword'."
-
-    search_documentation_tool = StructuredTool.from_function(
-        func=search_documentation,
-        name="search_documentation",
-        description=(
-            "Search API documentation for spatial transcriptomics libraries."
-            " Use `name` for a specific method (fuzzy matching supported),"
-            " or `keyword` to find methods by topic."
-            " Optional `library` filter: 'scanpy', 'squidpy', 'liana', or 'commot'."
-        ),
-    )
-
-    ### Code execution tools (Docker sandbox)
-
-    def _format_execution_result(result: ExecutionResult) -> str | list:
-        """Convert an ExecutionResult into a plain string or multimodal content list."""
-        if not result.images:
-            return result.text
-        parts: list[dict] = [{"type": "text", "text": result.text}]
-        for data_uri in result.images:
-            parts.append({"type": "image_url", "image_url": {"url": data_uri}})
-        return parts
-
-    def _emit_output(prefix: str, result: ExecutionResult) -> None:
-        """Emit a code-output message to the UI trace.
-
-        Carries any inline plots as project-relative file *paths* (in
-        ``additional_kwargs``), not base64 — the pixels are spilled to disk
-        and the frontend loads them from ``/api/files/download``. Keeping the
-        content text-only preserves ``should_hide_message`` (these stay hidden
-        from the main chat) and keeps the persisted ``.chat.json`` small.
-        """
-        msg = HumanMessage(prefix + result.text)
-        if result.images:
-            from agents.agent_registry.coding_agent.image_spill import (
-                spill_images_to_disk,
-            )
-
-            paths = spill_images_to_disk(result.images)
-            if paths:
-                msg.additional_kwargs["trace_image_paths"] = paths
-        emit_message(msg)
-
-    def _update_retry_counter(result: ExecutionResult, language: str = "python") -> str | None:
-        """Track consecutive failures; return a stop-directive when over budget.
-
-        Returns ``None`` while within budget. A successful execution resets the
-        counter to zero — which is why the run-level history is mirrored into
-        ``executor_tracker`` here, before it is thrown away. Recording is
-        strictly observational and never allowed to affect the run.
-        """
-        try:
-            from graph.ui_events import _get_subagent_context
-            from server.executor_tracker import executor_tracker
-
-            _, _, step_id = _get_subagent_context()
-            executor_tracker.record_execution(language, bool(result.error), step_id)
-        except Exception as e:  # metrics must never break code execution
-            logging.debug("executor_tracker: could not record execution: %s", e)
-
-        return apply_failure_budgets(_exec_state, had_error=bool(result.error))
-
-    def python(code: str) -> str | list:
-        logging.info(f"python tool executing:\n{code}")
-        result = kernel_client.execute(code, language="python")
-        logging.info(f"python tool output:\n{result.text}")
-        _emit_output("Python Output:\n", result)
-        over_budget = _update_retry_counter(result)
-        if over_budget is not None:
-            return f"{result.text}\n\n{over_budget}"
-        return _format_execution_result(result)
-
-    python_tool = StructuredTool.from_function(
-        func=python,
-        name="python",
-        description=(
-            "Execute Python code in a persistent Jupyter kernel and return its output."
-            " The kernel retains state (variables, imports, definitions) across calls."
-            " Use print() to surface values you need to inspect."
-        ),
-    )
-
-    def r(code: str) -> str | list:
-        logging.info(f"r tool executing:\n{code}")
-        result = kernel_client.execute(code, language="r")
-        logging.info(f"r tool output:\n{result.text}")
-        _emit_output("R Output:\n", result)
-        over_budget = _update_retry_counter(result, language="r")
-        if over_budget is not None:
-            return f"{result.text}\n\n{over_budget}"
-        return _format_execution_result(result)
-
-    r_tool = StructuredTool.from_function(
-        func=r,
-        name="r",
-        description=(
-            "Execute R code in a persistent Jupyter kernel and return its output."
-            " The kernel retains state (variables, libraries, definitions) across calls."
-            " Use cat() or print() to surface values you need to inspect."
-        ),
-    )
-
-    # search_documentation is gated by config.DOC_SEARCH_ENABLED so the tool and
-    # its prompt guidance (coding_agent/prompt.py) turn on/off together. It is
-    # temporarily disabled for the CCC benchmark; the API context now lives in
-    # the CCC skill files. Flip the flag to True to restore both.
-    from config import DOC_SEARCH_ENABLED
-
-    tools = [
-        python_tool,
-        r_tool,
-        *([search_documentation_tool] if DOC_SEARCH_ENABLED else []),
-        *file_read_write_tools,
-    ]
-
-    ### Build the graph
-
-    model = coding_agent_model_ctor().bind_tools(tools)
-
-    agent_node_id = "coding_agent_node"
-    tool_node_id = "tool_node"
-
-    def _prompt(state) -> str:
-        base = CodingAgentPrompt(
-            sandbox_enabled=agent_settings.get_sandbox_enabled(),
-        )
-        skill_text = state.get("skill_prompt", "")
-        return base.replace("{{skill_prompt}}", skill_text)
-
-    agent_node = create_agent_node(
-        agent_node_id, model, _prompt,
-        tool_node_id, END,
-    )
-    tool_node = create_tool_node(tools)
-
-    graph.add_node(agent_node_id, agent_node)
-    graph.add_node(tool_node_id, tool_node)
-
-    graph.add_edge(START, agent_node_id)
-    graph.add_edge(tool_node_id, agent_node_id)
-
-    agent = graph.compile()
+        base = CodingAgentPrompt(sandbox_enabled=False)
+        return base.replace("{{skill_prompt}}", _SHELL_EXECUTION_NOTE)
 
     def agent_invocation_tool(prompt: str) -> str:
-        """Run the coding agent graph on a prompt and return the final message."""
-        logging.info(f"Invoking agent `{id}`")
-        # Fresh retry budgets for each step invocation (the tool closures persist
-        # across invocations, so the counters must be reset here). This is the
-        # only place ``step_errors`` is cleared — that is what makes it a
-        # per-step ceiling rather than a per-streak one.
-        _exec_state.update(new_exec_state())
+        """Run the deep agent on a prompt and return its final message."""
+        logging.info("Invoking agent `%s` (deepagents)", AGENT_NODE_ID)
         try:
             from server.executor_tracker import executor_tracker
 
             executor_tracker.begin_step()
         except Exception as e:  # metrics must never break a dispatch
             logging.debug("executor_tracker: could not mark step boundary: %s", e)
-        message = HumanMessage(prompt)
 
-        skill_prompt_text = ""
-        step_ctx = None
-        if context_resolver:
-            step_ctx = context_resolver("coding_agent")
-            if step_ctx and step_ctx.skills:
-                from agents.agent_utils import format_skill_prompt
+        step_ctx = context_resolver(AGENT_NODE_ID) if context_resolver else None
 
-                skill_prompt_text = format_skill_prompt(step_ctx.skills)
-        # Per-invocation observability: the system prompt is only previewed at
-        # build time (with an empty skill_prompt), so without this line there is
-        # no way to tell from the logs whether a step's assigned skills actually
-        # reached the executor. Warn loudly if a running step has skills but the
-        # injection came back empty (a silent skill-delivery regression).
-        if step_ctx and step_ctx.skills and not skill_prompt_text:
-            logging.warning(
-                "coding_agent: step %s assigned skills %s but skill_prompt is EMPTY "
-                "(skill body not injected)", step_ctx.step_id, step_ctx.skills)
-        else:
+        # Materialize this step's folder skills into the workspace so the
+        # middleware can index them: deepagents reads skill sources *through*
+        # the backend, which cannot see outside DATA_DIR. Passing an empty list
+        # clears the tree, so an unskilled step correctly sees no skills.
+        skills = list(step_ctx.skills) if step_ctx else []
+        try:
+            from agents.skills_workspace import sync_workspace_skills
+
+            from config import active_project_skills
+
+            materialized = sync_workspace_skills(skills)
+            # ``sync_workspace_skills([])`` rmtree's the whole tree, which would
+            # leave the skills source path missing and make the middleware warn
+            # "path_not_found" on every skill-less step. Recreate the (empty)
+            # directory so an empty index is reported as empty rather than as a
+            # load failure — otherwise a real failure is indistinguishable from
+            # the normal no-skills case.
+            active_project_skills().mkdir(parents=True, exist_ok=True)
             logging.info(
-                "coding_agent: injecting skills %s (%d chars) for step %s",
-                (step_ctx.skills if step_ctx else []),
-                len(skill_prompt_text),
-                (step_ctx.step_id if step_ctx else None))
+                "coding_agent: materialized skills %s for step %s",
+                materialized,
+                step_ctx.step_id if step_ctx else None,
+            )
+        except Exception as e:
+            logging.warning("per-step skill materialization failed: %s", e)
+
+        system_prompt = _system_prompt()
+
+        # Rebuilt per invocation: the skills index is read at agent-build time,
+        # and each step materializes a different set. Construction is cheap next
+        # to a single LLM round-trip.
+        agent = create_deep_agent(
+            model=model,
+            system_prompt=system_prompt,
+            backend=backend,
+            skills=[WORKSPACE_SKILLS_SOURCE],
+        )
 
         with subagent_invocation(
-            "Coding Agent",
+            AGENT_DISPLAY_NAME,
             step_id=step_ctx.step_id if step_ctx else None,
         ) as invocation_id:
+            from agents.agent_registry.coding_agent.tracing import consume_deep_agent_stream
             from config import EXECUTOR_RECURSION_LIMIT
 
-            final_state = agent.invoke(
-                {"messages": [message], "skill_prompt": skill_prompt_text},
-                config={"recursion_limit": EXECUTOR_RECURSION_LIMIT},
+            final_state = consume_deep_agent_stream(
+                agent,
+                {"messages": [HumanMessage(prompt)]},
+                {"recursion_limit": EXECUTOR_RECURSION_LIMIT},
+                on_token=emit_subagent_token,
+                on_message=lambda message, stream_id, source: emit_message(
+                    message,
+                    stream_id=stream_id,
+                    source=source,
+                ),
             )
-        state_queue.put((id, final_state, invocation_id))
-        # Hand off to the wrapping tool_node so it pairs this final state with
-        # the dispatching ToolMessage.id and emits a subagent_state event
-        # inline — otherwise the live-trace card lingers until run_complete
-        # instead of flipping to the finished card when the agent is done.
-        stash_completed_subagent(id, final_state, invocation_id)
+
+        # deepagents owns its state schema, so the fields our trace UI reads are
+        # not written for us. Attach them so the trace card shows the prompt the
+        # agent ran with and this step's skill chips.
+        if isinstance(final_state, dict):
+            final_state["system_prompt"] = system_prompt
+            final_state["step_skills"] = skills
+
+        state_queue.put((AGENT_NODE_ID, final_state, invocation_id))
+        # Must run on this thread before returning: the wrapping tool_node pops
+        # it right after emitting the dispatching ToolMessage, which is what
+        # flips the live trace card to the finished card inline.
+        stash_completed_subagent(AGENT_NODE_ID, final_state, invocation_id)
         return final_state["messages"][-1].content
 
-    tool = StructuredTool.from_function(
+    return StructuredTool.from_function(
         func=agent_invocation_tool,
-        name="coding_agent_transfer_tool",
-        description=f"Transfer control to {id}",
+        name=f"{AGENT_NODE_ID}_transfer_tool",
+        description=f"Transfer control to {AGENT_NODE_ID}",
     )
-    tool._agent = agent  # type: ignore[attr-defined]
-    return tool
 
-PRESETS: dict[int, dict] = {
-    1: {
-        "setup": f"cp datasets/dataset_lohoff_et_al_seqfish.h5ad {DATA_DIR}/datasets",
-        "prompt": (
-            "I have uploaded a spatial transcriptomics dataset in datasets/dataset_lohoff_et_al_seqfish.h5ad."
-            "Help me plot a spatial scatterplot colored by cell type, saved to figures/spatial_scatter.png."
-        ),
-    },
-}
 
-if __name__ == "__main__":
-    import argparse
-    import subprocess
-    import sys
+# Replaces the stock prompt's ``{{skill_prompt}}`` block. The stock text tells
+# the model to call python()/r(); this variant has neither, so it needs to know
+# how code actually runs — and, critically, that nothing persists between calls.
+_SHELL_EXECUTION_NOTE = """\
+## Running code
 
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
+You have no Python/R kernel. Run code with the `execute` tool, which runs a
+shell command from the workspace root (e.g. `python3 script.py`, or
+`python3 -c "..."` for a one-liner).
 
-    parser = argparse.ArgumentParser(description="Run the coding agent directly.")
-    parser.add_argument("--preset", type=int, default=0, help="Preset number (0 = interactive prompt)")
-    parser.add_argument(
-        "--disable-docker",
-        action="store_true",
-        help="Skip Docker sandbox startup; connect to a local Jupyter Kernel Gateway instead",
-    )
-    parser.add_argument("prompt", nargs="*", help="Prompt text (ignored when --preset is used)")
-    args = parser.parse_args()
+**Each `execute` call is a fresh process — nothing persists between calls.**
+Variables, imports and loaded datasets are gone the moment a command returns.
+So for anything beyond a trivial check:
 
-    from agents.agent_registry.coding_agent.sandbox import ContainerManager
-    from server.utils import reset_data_directories
-    reset_data_directories()
+- Write a self-contained script under `project/outputs/scripts/` with
+  `write_file`, then run it with `execute`. Amend it with `edit_file` and re-run
+  rather than pasting ever-longer `-c` one-liners.
+- Have scripts persist what the next step needs (a `.csv`, a `.h5ad`, a `.json`)
+  instead of assuming state carries over.
+- Save figures to files under `project/outputs/figures/`; plots are not captured
+  inline. Inspect a written figure by reading it back if you need to check it.
 
-    if args.preset > 0:
-        preset = PRESETS.get(args.preset)
-        if preset is None:
-            print(f"Unknown preset {args.preset}. Available: {list(PRESETS.keys())}")
-            sys.exit(1)
-        if "setup" in preset:
-            logging.info(f"Running preset setup: {preset['setup']}")
-            subprocess.run(preset["setup"], shell=True, check=True, cwd=str(ROOT))
-        prompt = preset["prompt"]
-    elif args.prompt:
-        prompt = " ".join(args.prompt)
-    else:
-        prompt = input("Prompt: ")
-
-    if args.disable_docker:
-        agent_settings.set_sandbox_enabled(False)
-        logging.info("Docker sandbox disabled — expecting a local Jupyter Kernel Gateway.")
-        container_mgr = None
-    else:
-        container_mgr = ContainerManager()
-        container_mgr.ensure_running()
-
-    client = KernelClient()
-    queue = Queue()
-    tool = create_coding_agent(queue, client)
-
-    try:
-        result = tool.invoke({"prompt": prompt})
-        print(result)
-    finally:
-        if container_mgr is not None:
-            container_mgr.stop()
+Use `python3` (not `python`). Prefer `read_file`/`write_file`/`edit_file`/`glob`/
+`grep` over shelling out to `cat`, `sed` or `find`.
+"""

@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from agents.agent_registry.coding_agent.tools_impl.retrieval_index import RetrievalIndex
+from agents.agent_registry.coding_agent_cache.tools_impl.retrieval_index import RetrievalIndex
 
 
 class TutorialIndex(RetrievalIndex):

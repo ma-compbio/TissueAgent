@@ -35,7 +35,7 @@ from langgraph.checkpoint.memory import MemorySaver
 import agent_settings
 import models as model_registry
 from config import ACTIVE_PROJECT_DIR, KERNEL_GATEWAY_URL, PROJECT_CHAT_FILENAME
-from agents.agent_registry.coding_agent.sandbox import (
+from agents.agent_registry.coding_agent_cache.sandbox import (
     ContainerManager,
     KernelClient,
     LocalKernelGateway,

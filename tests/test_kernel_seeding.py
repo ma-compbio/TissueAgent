@@ -22,7 +22,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from agents.agent_registry.coding_agent.sandbox import KernelClient
+from agents.agent_registry.coding_agent_cache.sandbox import KernelClient
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def client(monkeypatch):
     resp.json.return_value = {"id": "kernel-123"}
     resp.raise_for_status.return_value = None
     monkeypatch.setattr(
-        "agents.agent_registry.coding_agent.sandbox.requests.post", lambda *a, **k: resp
+        "agents.agent_registry.coding_agent_cache.sandbox.requests.post", lambda *a, **k: resp
     )
     return kc
 

@@ -354,6 +354,7 @@ function TraceStep({
 
 export default function TracePanel({ state, projectId, onClose }: Props) {
   const transcript = state.transcript || [];
+  const streamingDrafts = Object.entries(state.streaming_drafts ?? {});
 
   // Build a map from tool_call_id -> ToolCall for quick lookup when rendering tool messages
   const toolCallMap = new Map<string, ToolCall>();
@@ -386,7 +387,9 @@ export default function TracePanel({ state, projectId, onClose }: Props) {
           skills={state.skills}
         />
         {transcript.length === 0 ? (
-          <div className="trace-empty">No trace available.</div>
+          streamingDrafts.length === 0 && (
+            <div className="trace-empty">No trace available.</div>
+          )
         ) : (
           transcript.map((msg, i) => (
             <TraceStep
@@ -398,6 +401,15 @@ export default function TracePanel({ state, projectId, onClose }: Props) {
             />
           ))
         )}
+        {streamingDrafts.map(([streamId, draft]) => (
+          <div className="trace-streaming-draft" key={streamId}>
+            <span className="trace-step-label">{draft.source}</span>
+            <div className="trace-streaming-content">
+              {draft.text}
+              <span className="trace-streaming-cursor" aria-hidden="true" />
+            </div>
+          </div>
+        ))}
         {state.raw_state && (
           <div className="trace-raw">
             <pre>{state.raw_state}</pre>

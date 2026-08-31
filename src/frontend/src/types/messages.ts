@@ -29,6 +29,17 @@ export interface SerializedMessage {
   image_paths?: string[];
 }
 
+export interface SubagentToken {
+  stream_id: string;
+  source: string;
+  text: string;
+}
+
+export interface StreamingDraft {
+  source: string;
+  text: string;
+}
+
 export interface SubagentTranscript {
   tool_id: string;
   agent_name: string;
@@ -43,6 +54,8 @@ export interface SubagentTranscript {
   system_prompt?: string | null;
   raw_state: string | null;
   invocation_id?: string | null;
+  /** Transient live text keyed by DeepAgent stream identity. Never persisted. */
+  streaming_drafts?: Record<string, StreamingDraft>;
 }
 
 /** Detail for a single skill, fetched lazily from `/api/skills/{name}`. */
@@ -103,7 +116,8 @@ export type ServerEvent =
   | { type: "message"; data: SerializedMessage }
   | { type: "subagent_state"; data: SubagentTranscript }
   | { type: "subagent_start"; data: { invocation_id: string; agent_name: string; avatar: string } }
-  | { type: "subagent_message"; data: { invocation_id: string; agent_name: string; message: SerializedMessage } }
+  | { type: "subagent_token"; data: { invocation_id: string; agent_name: string } & SubagentToken }
+  | { type: "subagent_message"; data: { invocation_id: string; agent_name: string; message: SerializedMessage; stream_id?: string; source?: string } }
   | { type: "subagent_end"; data: { invocation_id: string; agent_name: string } }
   | { type: "run_complete"; elapsed_seconds: number }
   | { type: "run_error"; error_type: string; detail: string }

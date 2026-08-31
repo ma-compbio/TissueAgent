@@ -449,7 +449,7 @@ class KernelClient:
         """
         if self._internal_exec:
             return
-        from agents.agent_registry.coding_agent import notebook_log
+        from agents.agent_registry.coding_agent_cache import notebook_log
 
         if not notebook_log._notebook_path().exists():
             # First cell of this project: seed the notebook with a provenance

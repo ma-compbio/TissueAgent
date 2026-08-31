@@ -2013,6 +2013,30 @@ code, pre, .num {
   color: var(--live-accent-strong);
 }
 
+.trace-streaming-draft {
+  margin: 0.55rem 0;
+}
+
+.trace-streaming-content {
+  margin-top: 0.25rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.trace-streaming-cursor {
+  display: inline-block;
+  width: 0.45rem;
+  height: 1em;
+  margin-left: 0.15rem;
+  vertical-align: -0.12em;
+  background: currentColor;
+  animation: trace-streaming-blink 1s steps(2, start) infinite;
+}
+
+@keyframes trace-streaming-blink {
+  50% { opacity: 0; }
+}
+
 /* Final answer box — shown below reporter agent run card */
 .final-answer-box {
   margin-top: 0.5rem;

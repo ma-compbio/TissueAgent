@@ -7,7 +7,7 @@ only recourse is to re-run the cell and hope it prints less. Instead we write th
 full text under the active project and put its path in the truncation notice, so
 the agent can ``read`` the part it needs.
 
-This is the text counterpart of :mod:`agents.agent_registry.coding_agent.image_spill`,
+This is the text counterpart of :mod:`agents.agent_registry.coding_agent_cache.image_spill`,
 which does the same for inline plot images. **The two use different path
 conventions on purpose**, because they serve different consumers:
 

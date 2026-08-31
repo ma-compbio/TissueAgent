@@ -243,7 +243,7 @@ def dominant_colors(img: Image.Image, max_colors: int = 10):
     Two-stage, because an exact-value histogram alone only works on flat/vector
     output. A published raster (JPEG-ish, small anti-aliased markers) can carry ~as
     many distinct RGBs as it has data pixels -- measured 0.82 distinct-per-pixel on
-    the Lohoff 2b reference -- so every individual share falls under the floor and
+    a real published spatial panel -- so every individual share falls under the floor and
     the histogram returns NOTHING. That silently removed the palette gate on exactly
     the figures it exists to judge, so fall back to LAB clustering.
     """
@@ -728,7 +728,8 @@ def orientation_test(orig: Image.Image, repro: Image.Image) -> dict:
 
 
 def geometry_findings(o: dict, r: dict, orient: dict,
-                      od: list[float], rd: list[float]) -> list[str]:
+                      od: list[float], rd: list[float],
+                      palette_de: float | None = None) -> list[str]:
     """Human-readable defects from the pass-2 measurements. Empty == clean."""
     out: list[str] = []
     if o["aspect_w_over_h"] and r["aspect_w_over_h"]:
@@ -771,6 +772,19 @@ def geometry_findings(o: dict, r: dict, orient: dict,
             "Remove it, or place it as the target does."
         )
 
+    # Palette: dE is computed in pass 1 but lives outside `findings`, so the repair
+    # loop never saw it -- a reproduction in entirely the wrong colours was
+    # reported "clean". Surface it here so wrong colour is as actionable as wrong
+    # shape. ~15 is well past "imperceptible" (2.3) and past normal JPEG drift.
+    if palette_de is not None and palette_de > 15:
+        out.append(
+            f"PALETTE: mean colour distance to the target is dE {palette_de:.1f} "
+            "(<2.3 is imperceptible) -- the categories are drawn in the wrong "
+            "colours. Resolve the palette from the reference legend "
+            "(`build_colormap.py --reference <fig> --legend-box x0,y0,x1,y1`) "
+            "rather than a default, then re-render."
+        )
+
     # Marker density: a dense sheet of cells reproduced as sparse stipple is a
     # glaring visual difference that no similarity metric reports -- pHash and
     # SSIM see a broadly similar shape either way, and total ink coverage is
@@ -782,8 +796,9 @@ def geometry_findings(o: dict, r: dict, orient: dict,
         out.append(
             f"MARKER DENSITY: inked area is {osol:.2f} solid in the target vs "
             f"{rsol:.2f} in the reproduction -- the {thinner} reads as sparse "
-            "stipple where the other reads as a packed sheet. Adjust marker size "
-            "(`s=`), alpha, or figure DPI so markers touch as they do in the target."
+            "stipple where the other reads as a packed sheet. Solidity scales roughly "
+            f"with marker area, so try `s=` about {max(osol, rsol) / min(osol, rsol):.1f}x "
+            "its current value (or raise DPI), then re-measure."
         )
 
     if o["content_aspect_w_over_h"] and r["content_aspect_w_over_h"]:
@@ -915,7 +930,7 @@ def main() -> int:
     dens_orig = column_density(orig)
     dens_repro = column_density(repro)
     geom_findings = geometry_findings(
-        canvas_orig, canvas_repro, orient, dens_orig, dens_repro
+        canvas_orig, canvas_repro, orient, dens_orig, dens_repro, mean_de
     )
     geom_level = b_level_from_geometry(geom_findings)
 

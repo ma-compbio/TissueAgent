@@ -245,7 +245,7 @@ def _bootstrap(args: argparse.Namespace):
     """
     import agent_settings
     from config import KERNEL_GATEWAY_URL
-    from agents.agent_registry.coding_agent.sandbox import (
+    from agents.agent_registry.coding_agent_cache.sandbox import (
         ContainerManager,
         KernelClient,
         LocalKernelGateway,

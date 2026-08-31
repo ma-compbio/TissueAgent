@@ -40,6 +40,11 @@ If either target figure or dataset is unavailable, report the missing requiremen
 - `project/outputs/tables/compare_metrics.json`
 - `project/outputs/reports/<name>_repro_note.md`
 
+Every render and every comparison is saved under an attempt suffix
+(`<name>_attempt1.png`, `compare_metrics_attempt1.json`, …) so the repair
+trajectory is auditable. Copy the accepted attempt to the plain `<name>` above;
+do not overwrite an earlier attempt.
+
 ## Invariants
 
 1. Generate the figure by running analysis/plotting code on the data.
@@ -59,8 +64,9 @@ Do not report success unless all are true:
 
 - [ ] figure rendered from supplied data
 - [ ] plotted-data CSV written
-- [ ] palette provenance verified
-- [ ] automated comparison executed
+- [ ] palette provenance tier verified and reconciled with plotted categories
+- [ ] automated comparison executed after every render, each saved under its
+      own attempt suffix
 - [ ] no unresolved structural defects
 - [ ] ≤5 render attempts
 - [ ] residual differences documented
@@ -68,6 +74,15 @@ Do not report success unless all are true:
 
 
 ## Workflow
+
+The bundled scripts live under `project/skills/figure-reproduce/scripts/`. Run
+them by full path, e.g.:
+
+```
+python3 project/skills/figure-reproduce/scripts/build_colormap.py --help
+```
+
+A bare filename will not resolve. Run each script rather than reimplementing it.
 
 ### 1. Acquire and inspect the target
 
@@ -78,10 +93,14 @@ Record:
 - orientation/aspect
 - background/underlay
 - categorical vs continuous encoding
-- legend/colorbar
+- legend/colorbar, or whether category color lives in the marks
 - visible text
 - marker style
 - unusual annotations
+
+Confirm that the target crop contains only the panel being reproduced. Re-crop a
+paper-page image that includes neighboring panels, captions, or orientation aids;
+otherwise record the extra content and discount it during comparison.
 
 ### 2. Inspect the dataset
 
@@ -89,11 +108,14 @@ Identify the exact data subset and fields required for the figure:
 coordinates/embedding, category/value field, genes/features, and
 relevant metadata.
 
+Record categorical values and their plotting order for palette reconciliation.
+
 If required information is absent, stop and report the blocker.
 
 ### 3. Measure the reference
 
-Run `extract_reference_spec.py`.
+Run `scripts/extract_reference_spec.py`. For long legends, use
+`--max-legend-entries`; `--max-colors` controls only the dominant-color summary.
 
 Resolve:
 - palette / colormap
@@ -105,7 +127,7 @@ Treat measured values as the plotting specification.
 
 ### 4. Resolve palette
 
-Run `build_colormap.py`.
+Run `scripts/build_colormap.py`.
 
 Allowed sources, highest priority first:
 1. supplied palette
@@ -113,10 +135,24 @@ Allowed sources, highest priority first:
 3. reference legend
 4. reliable reference pixels
 
+An explicit supplied palette remains authoritative. When a named reference
+legend materially disagrees, the script retains the supplied colors and records
+the conflict for the repro note.
+
 If no trustworthy palette can be resolved, report a constraint
 violation instead of silently using defaults.
 
-Confirm the written file with `build_colormap.py --verify`.
+The script measures colours; you own the pairing. Legends and datasets often
+disagree — different spellings, a class the figure shows but the data lacks, a
+scale bar counted as a swatch. When the script warns that counts differ or that
+categories went unmatched, resolve it yourself by name and record the decision:
+assign a neutral grey to categories the figure does not distinguish, and say in
+the note which are measured and which are not.
+
+Every category must end up with a colour, and no two categories may share one
+unless you state that it is deliberate.
+
+Confirm the written file with `scripts/build_colormap.py --verify`.
 
 ### 5. Render attempt 1
 
@@ -130,17 +166,30 @@ Match:
 - labels
 - orientation/aspect
 - background/underlay
+- legend styling (marker shape, size, ordering, placement)
 
-Save the plotting code and plotted-data table.
+Before drawing, assert that the resolved palette covers the post-filter table
+actually passed to the plotting call:
+
+```python
+missing = sorted(set(plotted[category_col]) - set(palette))
+assert not missing, f"no resolved colour for: {missing}"
+```
+
+Save as `<name>_attempt1.png`, plus the plotting code and plotted-data table.
 
 ### 6. Compare attempt 1
 
-Run `compare_figures.py` and save its JSON and both diff images (the
-side-by-side and the letterboxed `--geometry-out`, which preserves shape).
+Run `scripts/compare_figures.py` on `<name>_attempt1.png` and save its JSON and both
+diff images under the same attempt suffix (the side-by-side and the letterboxed
+`--geometry-out`, which preserves shape).
 
 Check both:
 - content fidelity — the similarity metrics
 - structural fidelity — `pass2_geometry.findings`; proceed only on `clean: true`
+
+If the geometry comparison remains poor, first check whether the target crop
+contains content the reproduction intentionally omits before changing plotting code.
 
 Then inspect the diff images and explicitly list the differences you
 can see, at minimum:
@@ -151,7 +200,7 @@ can see, at minimum:
 - category set/order
 - palette / colormap
 - labels
-- legend
+- legend (presence, entries, order, marker shape)
 - background
 - aspect ratio
 - marker size/density
@@ -179,15 +228,16 @@ Example:
 
 Apply the proposed changes in one batched repair pass.
 
-Re-run the plotting code and save the new figure.
+Re-run the plotting code and save the new figure as `<name>_attempt2.png`.
 
 Do not modify the target or fabricate data to improve similarity.
 
 ### 9. Compare attempt 2
 
-Run `compare_figures.py` again on the repaired figure.
+Run `scripts/compare_figures.py` on `<name>_attempt2.png`, saving its JSON and diff
+images with the `_attempt2` suffix.
 
-Inspect the new metrics and diff image.
+Inspect the new metrics and diff images.
 
 Explicitly check:
 - which previously identified differences were fixed
@@ -203,8 +253,8 @@ If meaningful differences remain and the cause is clear:
 
 1. propose the remaining change,
 2. repair,
-3. render attempt 3,
-4. run `compare_figures.py` again,
+3. render attempt 3 (`<name>_attempt3.png`),
+4. run `scripts/compare_figures.py` on it, saving with the matching suffix,
 5. inspect the result.
 
 Repeat the loop.
@@ -212,19 +262,27 @@ Repeat the loop.
 Maximum: 5 total renders.
 
 Do not perform more renders without subsequently running
-`compare_figures.py`.
+`scripts/compare_figures.py`.
+
+Stop when the remaining mismatch is caused by unavailable or different data and
+no longer responds to plotting changes. Record the limitation instead of spending
+the remaining attempts on it.
 
 
 ### 11. Finalize
 
-Verify all required artifacts exist.
+Copy the accepted attempt byte-for-byte to the plain `<name>` filenames; never
+re-render during finalization. Then verify all required artifacts exist. Keep
+every attempt on disk.
 
 Write the repro note with:
 - data fields/subset
 - important parameters
-- palette source
+- palette source tier, reconciliation result, and any unrecovered color
 - verification result
-- number of attempts
+- number of attempts, and the metric trajectory across them
+- category vocabulary differences (naming, extra/missing classes)
+- target-crop content not reproduced
 - deviations or blockers
 
 Do not report completion unless all structural defects are resolved or

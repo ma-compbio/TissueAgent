@@ -96,8 +96,8 @@ def main() -> None:
 
     from graph.node_factories import StepContext
     from graph.ui_events import register_ui_event_queue
-    from agents.agent_registry.coding_agent.model import create_coding_agent
-    from agents.agent_registry.coding_agent.sandbox import ContainerManager, KernelClient
+    from agents.agent_registry.coding_agent_cache.model import create_coding_agent
+    from agents.agent_registry.coding_agent_cache.sandbox import ContainerManager, KernelClient
 
     # Inline skill context — no plan_store write, so nothing shared with a live
     # session's plan state. This is exactly what the resolver would return for a

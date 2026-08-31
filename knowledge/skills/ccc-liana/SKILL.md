@@ -73,6 +73,6 @@ writes `liana_scores.csv`.
 
 ## References
 
-- LIANA+ tutorial (in-repo): `src/agents/agent_registry/coding_agent/tutorials/liana-examples/basic_usage.md`
+- LIANA+ tutorial (in-repo): `src/agents/agent_registry/coding_agent_cache/tutorials/liana-examples/basic_usage.md`
 - Related skills: [[ccc-data-prep]], [[ccc-commot]], [[ccc-stlearn]], [[ccc-decoupler]],
   [[ccc-aggregate]].

@@ -16,8 +16,8 @@ dependencies = [
     "langchain-anthropic>=1.6.1,<2",
     "langchain-community>=0.4.2",
     "langgraph>=1.2.11,<2",
-    # Harness for the experimental deepagents-backed coding agent
-    # (agents/agent_registry/coding_agent_deepagent). Requires the langchain 1.x
+    # Harness for the canonical deepagents-backed coding agent
+    # (agents/agent_registry/coding_agent). Requires the langchain 1.x
     # line above — no deepagents release supports langchain 0.3.x.
     "deepagents==0.7.9",
     "pyyaml>=6.0",

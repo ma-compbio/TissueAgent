@@ -16,6 +16,10 @@ import type {
   SetModeEvent,
   SubagentTranscript,
 } from "../types/messages";
+import {
+  appendCompletedTraceMessage,
+  appendStreamingToken,
+} from "../traceStreaming";
 
 interface PlanUpdatePayload {
   markdown: string;
@@ -251,21 +255,35 @@ export function useWebSocket(): UseWebSocketReturn {
               transcript: [],
               raw_state: null,
               invocation_id,
+              streaming_drafts: {},
             },
           }));
           break;
         }
-        case "subagent_message": {
-          const { invocation_id, message: msg } = data.data;
+        case "subagent_token": {
+          const { invocation_id, stream_id, source, text } = data.data;
           setLiveTraces((prev) => {
             const existing = prev[invocation_id];
             if (!existing) return prev;
             return {
               ...prev,
-              [invocation_id]: {
-                ...existing,
-                transcript: [...(existing.transcript || []), msg],
-              },
+              [invocation_id]: appendStreamingToken(existing, {
+                stream_id,
+                source,
+                text,
+              }),
+            };
+          });
+          break;
+        }
+        case "subagent_message": {
+          const { invocation_id, message: msg, stream_id } = data.data;
+          setLiveTraces((prev) => {
+            const existing = prev[invocation_id];
+            if (!existing) return prev;
+            return {
+              ...prev,
+              [invocation_id]: appendCompletedTraceMessage(existing, msg, stream_id),
             };
           });
           break;

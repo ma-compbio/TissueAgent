@@ -557,7 +557,18 @@ def main() -> int:
     ap.add_argument("--colorbar-box", help="x0,y0,x1,y1 of the colorbar strip")
     ap.add_argument("--xtick-box", help="x0,y0,x1,y1 of the x-axis tick label strip")
     ap.add_argument("--ytick-box", help="x0,y0,x1,y1 of the y-axis tick label strip")
-    ap.add_argument("--max-colors", type=int, default=16, help="max palette entries (default 16)")
+    ap.add_argument(
+        "--max-colors",
+        type=int,
+        default=16,
+        help="max entries in the dominant-color summary (default 16)",
+    )
+    ap.add_argument(
+        "--max-legend-entries",
+        type=int,
+        default=64,
+        help="max legend swatches to read (default 64)",
+    )
     ap.add_argument("--debug-crops", metavar="DIR", help="save the crops that were read, to check them")
     args = ap.parse_args()
 
@@ -615,7 +626,7 @@ def main() -> int:
         legend_box = autodetect_legend_box(img)
         box_source = "autodetected (VERIFY: pass --legend-box if this looks wrong)" if legend_box else "none"
     entries, leg_status = ([], "no legend region found") if legend_box is None else \
-        find_legend_swatches(img, legend_box, args.max_colors)
+        find_legend_swatches(img, legend_box, args.max_legend_entries)
 
     # pair each swatch with the text on its right, by vertical overlap
     if entries and legend_box:

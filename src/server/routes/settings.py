@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 import agent_settings
-from agents.agent_registry.coding_agent.sandbox import ContainerManager
+from agents.agent_registry.coding_agent_cache.sandbox import ContainerManager
 
 router = APIRouter(prefix="/api/settings")
 
