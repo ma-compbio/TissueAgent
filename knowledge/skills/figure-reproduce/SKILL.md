@@ -41,9 +41,10 @@ If either target figure or dataset is unavailable, report the missing requiremen
 - `project/outputs/reports/<name>_repro_note.md`
 
 Every render and every comparison is saved under an attempt suffix
-(`<name>_attempt1.png`, `compare_metrics_attempt1.json`, …) so the repair
-trajectory is auditable. Copy the accepted attempt to the plain `<name>` above;
-do not overwrite an earlier attempt.
+(`<name>_attempt1.png`, `compare_figures_attempt1.png`,
+`compare_figures_geometry_attempt1.png`, `compare_metrics_attempt1.json`, …) so
+the repair trajectory is auditable. Copy the accepted attempt to the plain
+`<name>` above; do not overwrite an earlier attempt.
 
 ## Invariants
 
@@ -180,9 +181,18 @@ Save as `<name>_attempt1.png`, plus the plotting code and plotted-data table.
 
 ### 6. Compare attempt 1
 
-Run `scripts/compare_figures.py` on `<name>_attempt1.png` and save its JSON and both
-diff images under the same attempt suffix (the side-by-side and the letterboxed
-`--geometry-out`, which preserves shape).
+Run `scripts/compare_figures.py` on `<name>_attempt1.png` with `--attempt 1` and
+save its JSON as `compare_metrics_attempt1.json`. The script writes distinct
+`compare_figures_attempt1.png` and `compare_figures_geometry_attempt1.png` files
+beside the reproduction by default. The first is a three-panel comparison:
+target | reproduction | 50% overlay. The second is letterboxed and preserves
+each image's shape.
+
+```bash
+python3 project/skills/figure-reproduce/scripts/compare_figures.py \
+  <target.png> project/outputs/figures/<name>_attempt1.png \
+  --attempt 1 --json > project/outputs/tables/compare_metrics_attempt1.json
+```
 
 Check both:
 - content fidelity — the similarity metrics
@@ -191,7 +201,8 @@ Check both:
 If the geometry comparison remains poor, first check whether the target crop
 contains content the reproduction intentionally omits before changing plotting code.
 
-Then inspect the diff images and explicitly list the differences you
+Then inspect both comparison images, using the overlay panel to check alignment,
+and explicitly list the differences you
 can see, at minimum:
 - plot content
 - panel count
@@ -234,8 +245,9 @@ Do not modify the target or fabricate data to improve similarity.
 
 ### 9. Compare attempt 2
 
-Run `scripts/compare_figures.py` on `<name>_attempt2.png`, saving its JSON and diff
-images with the `_attempt2` suffix.
+Run `scripts/compare_figures.py` on `<name>_attempt2.png` with `--attempt 2`,
+saving its JSON as `compare_metrics_attempt2.json`; keep the default distinct
+`compare_figures_attempt2.png` and `compare_figures_geometry_attempt2.png` names.
 
 Inspect the new metrics and diff images.
 
@@ -254,7 +266,8 @@ If meaningful differences remain and the cause is clear:
 1. propose the remaining change,
 2. repair,
 3. render attempt 3 (`<name>_attempt3.png`),
-4. run `scripts/compare_figures.py` on it, saving with the matching suffix,
+4. run `scripts/compare_figures.py` on it with `--attempt 3`, saving all outputs
+   with the matching suffix,
 5. inspect the result.
 
 Repeat the loop.

@@ -30,11 +30,13 @@ WHAT IT DOES
     direction.
 
 USAGE
-    python compare_figures.py <original_image> <reproduced_image> [--out compare_diff.png] [--json]
-                              [--no-color] [--no-text]
+    python compare_figures.py <original_image> <reproduced_image> [--attempt N] [--json]
+                              [--out compare_figures_attemptN.png] [--no-color] [--no-text]
 
-    --out       Where to write the side-by-side (original | reproduced) PNG.
-                Default: ./compare_diff.png
+    --attempt   Render-attempt number. Used for distinct default output names. When
+                omitted, it is inferred from a reproduced filename containing attemptN.
+    --out       Where to write the three-panel (target | reproduced | overlay) PNG.
+                Default: beside the reproduction as compare_figures_attemptN.png.
     --json      Emit all metrics as machine-readable JSON instead of prose.
     --no-color  Skip the palette comparison (e.g. an intentionally grayscale target).
     --no-text   Skip the OCR text diff (faster; also silences the tesseract hint).
@@ -53,6 +55,7 @@ import argparse
 import json
 import re
 import sys
+from pathlib import Path
 
 # --- Mandatory deps: Pillow + numpy. Everything else is optional. -----------------
 try:
@@ -834,10 +837,10 @@ def combine_b_levels(levels: dict) -> tuple[str, str]:
 
 
 # ---------------------------------------------------------------------------------
-# Side-by-side comparison image
+# Three-panel comparison image
 # ---------------------------------------------------------------------------------
 def write_side_by_side(orig: Image.Image, repro: Image.Image, out_path: str) -> None:
-    """Write 'original | reproduced' scaled to a common height, with a gap."""
+    """Write target, reproduction, and a 50% overlay at a common height."""
     target_h = max(orig.height, repro.height)
 
     def scale_to_h(img: Image.Image) -> Image.Image:
@@ -846,11 +849,41 @@ def write_side_by_side(orig: Image.Image, repro: Image.Image, out_path: str) -> 
 
     left = scale_to_h(orig)
     right = scale_to_h(repro)
+    overlay_w = max(left.width, right.width)
+
+    def centered_layer(img: Image.Image) -> Image.Image:
+        layer = Image.new("RGB", (overlay_w, target_h), "white")
+        layer.paste(img, ((overlay_w - img.width) // 2, 0))
+        return layer
+
+    overlay = Image.blend(centered_layer(left), centered_layer(right), 0.5)
     gap = 10
-    canvas = Image.new("RGB", (left.width + gap + right.width, target_h), "white")
+    canvas = Image.new(
+        "RGB",
+        (left.width + right.width + overlay.width + gap * 2, target_h),
+        "white",
+    )
     canvas.paste(left, (0, 0))
     canvas.paste(right, (left.width + gap, 0))
+    canvas.paste(overlay, (left.width + gap + right.width + gap, 0))
     canvas.save(out_path)
+
+
+def comparison_output_paths(
+    reproduced_path: str,
+    attempt: int | None,
+) -> tuple[str, str]:
+    """Return distinct default comparison and geometry paths for a reproduction."""
+    reproduced = Path(reproduced_path)
+    if attempt is None:
+        match = re.search(r"attempt[_-]?(\d+)", reproduced.stem, flags=re.IGNORECASE)
+        attempt = int(match.group(1)) if match else None
+
+    token = f"attempt{attempt}" if attempt is not None else reproduced.stem
+    return (
+        str(reproduced.parent / f"compare_figures_{token}.png"),
+        str(reproduced.parent / f"compare_figures_geometry_{token}.png"),
+    )
 
 
 def write_geometry_diff(orig: Image.Image, repro: Image.Image, out_path: str) -> None:
@@ -894,16 +927,33 @@ def main() -> int:
     )
     parser.add_argument("original", help="path to the original / target figure")
     parser.add_argument("reproduced", help="path to the reproduced figure")
-    parser.add_argument("--out", default="./compare_diff.png", help="side-by-side PNG output path")
+    parser.add_argument(
+        "--attempt",
+        type=int,
+        default=None,
+        help="render-attempt number used for distinct default comparison filenames",
+    )
+    parser.add_argument(
+        "--out",
+        default=None,
+        help=(
+            "three-panel target | reproduced | overlay PNG output path "
+            "(default: beside reproduction as compare_figures_attemptN.png)"
+        ),
+    )
     parser.add_argument("--geometry-out", default=None,
                         help="pass-2 letterboxed comparison PNG (default: <out>_geometry.png)")
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     parser.add_argument("--no-color", action="store_true", help="skip the palette comparison")
     parser.add_argument("--no-text", action="store_true", help="skip the OCR text diff")
     args = parser.parse_args()
+    if args.attempt is not None and args.attempt < 1:
+        parser.error("--attempt must be at least 1")
 
     orig = load_rgb(args.original)
     repro = load_rgb(args.reproduced)
+    default_out, default_geom_out = comparison_output_paths(args.reproduced, args.attempt)
+    comparison_out = args.out or default_out
 
     ham, phash_path = phash_hamming(orig, repro)
     ssim, ssim_path = compute_ssim(orig, repro)
@@ -942,12 +992,17 @@ def main() -> int:
         "geometry": geom_level,
     })
 
-    write_side_by_side(orig, repro, args.out)
+    write_side_by_side(orig, repro, comparison_out)
     # Pass 2 gets its OWN image: the pass-1 view rescales both panels to a common
     # height, which hides exactly the shape defect pass 2 reports.
-    geom_out = args.geometry_out or re.sub(r"(\.[^.]+)$", r"_geometry\1", args.out)
-    if geom_out == args.out:  # no extension to split on
-        geom_out = args.out + "_geometry.png"
+    if args.geometry_out:
+        geom_out = args.geometry_out
+    elif args.out:
+        geom_out = re.sub(r"(\.[^.]+)$", r"_geometry\1", args.out)
+        if geom_out == args.out:  # no extension to split on
+            geom_out = args.out + "_geometry.png"
+    else:
+        geom_out = default_geom_out
     write_geometry_diff(orig, repro, geom_out)
 
     which = {
@@ -995,12 +1050,13 @@ def main() -> int:
                 "authoritative."
             ),
             "which_metrics_computed": which,
-            "diff_image": args.out,
+            "diff_image": comparison_out,
             "next_step": (
-                f"read('{args.out}') -- the side-by-side is written to disk, NOT returned "
-                "inline, so it enters your context only if you open it. Compare the panels "
-                "element by element (color+binding, order, label text, marker size, aspect, "
-                "underlay, colorbar range/direction, presence/absence), name every "
+                f"read('{comparison_out}') -- the three-panel target | reproduced | overlay "
+                "comparison is written to disk, NOT returned inline, so it enters your context "
+                "only if you open it. Compare the panels element by element (color+binding, "
+                "order, label text, marker size, aspect, underlay, colorbar range/direction, "
+                "presence/absence), use the overlay to inspect alignment, and name every "
                 "difference, and assign B1-B5 from that list. Then ask what would make it "
                 "closer and batch the cheap fixes into ONE polish re-render (which counts "
                 "as a reproduction attempt). Stop when you cannot name a concrete "
@@ -1060,7 +1116,10 @@ def main() -> int:
         print("        order from extract_reference_spec.py. Your visual B1-B5 judgment is")
         print("        still authoritative -- confirm or override by eye.")
         print("  ---")
-        print(f"  NEXT: read('{args.out}') and compare the two panels ELEMENT BY ELEMENT.")
+        print(
+            f"  NEXT: read('{comparison_out}') and compare target, reproduction, and overlay "
+            "ELEMENT BY ELEMENT."
+        )
         print("        This image is on disk, NOT returned inline -- it enters your context")
         print("        only if you open it. Name every difference you can see (colors and")
         print("        their category binding, order, label text, marker size, aspect,")

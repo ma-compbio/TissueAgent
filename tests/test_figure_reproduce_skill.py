@@ -162,3 +162,30 @@ def test_existing_duplicate_color_warning_is_preserved(tmp_path, monkeypatch) ->
 
     assert builder.main() == 0
     assert "color(s) are shared by more than one category" in output_path.read_text()
+
+
+def test_compare_figure_default_names_follow_attempt(tmp_path) -> None:
+    """Each render attempt receives distinct comparison and geometry filenames."""
+    comparer = _load_script("compare_figures")
+    reproduced = tmp_path / "figure_attempt_3.png"
+
+    comparison, geometry = comparer.comparison_output_paths(str(reproduced), None)
+
+    assert comparison == str(tmp_path / "compare_figures_attempt3.png")
+    assert geometry == str(tmp_path / "compare_figures_geometry_attempt3.png")
+
+
+def test_compare_figure_contains_target_reproduction_and_overlay(tmp_path) -> None:
+    """The main comparison artifact is a three-panel layout with a blended overlay."""
+    comparer = _load_script("compare_figures")
+    target = Image.new("RGB", (20, 10), "red")
+    reproduced = Image.new("RGB", (20, 10), "blue")
+    output = tmp_path / "comparison.png"
+
+    comparer.write_side_by_side(target, reproduced, str(output))
+
+    comparison = Image.open(output).convert("RGB")
+    assert comparison.size == (80, 10)
+    assert comparison.getpixel((10, 5)) == (255, 0, 0)
+    assert comparison.getpixel((40, 5)) == (0, 0, 255)
+    assert comparison.getpixel((70, 5)) == (127, 0, 127)

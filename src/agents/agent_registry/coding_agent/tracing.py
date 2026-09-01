@@ -101,9 +101,14 @@ def consume_deep_agent_stream(
     seen_messages: set[tuple[Any, ...]] = set()
     known_streams: dict[tuple[tuple[str, ...], str], str] = {}
 
+    # This runs inside the manager graph; an implicit configurable inherits its checkpoint_ns.
+    stream_config = dict(config)
+    configurable = config.get("configurable")
+    stream_config["configurable"] = dict(configurable) if isinstance(configurable, Mapping) else {}
+
     parts = agent.stream(
         inputs,
-        config=config,
+        config=stream_config,
         stream_mode=["messages", "updates", "values"],
         subgraphs=True,
         version="v2",

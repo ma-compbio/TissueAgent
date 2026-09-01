@@ -10,6 +10,7 @@ from types import SimpleNamespace
 
 import pytest
 from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.runnables.config import ensure_config, var_child_runnable_config
 
 
 os.environ.setdefault("OPENAI_API_KEY", "dummy")
@@ -93,7 +94,7 @@ def test_stream_adapter_filters_non_visible_chunks_and_returns_root_state() -> N
     assert messages == [(completed, tokens[0][0], "Coding Agent")]
     assert agent.call == {
         "inputs": {"messages": []},
-        "config": {"recursion_limit": 25},
+        "config": {"recursion_limit": 25, "configurable": {}},
         "stream_mode": ["messages", "updates", "values"],
         "subgraphs": True,
         "version": "v2",
@@ -172,6 +173,33 @@ def test_stream_adapter_requires_a_root_final_state() -> None:
             on_token=lambda *args: None,
             on_message=lambda *args: None,
         )
+
+
+def test_stream_adapter_detaches_from_parent_checkpoint_namespace() -> None:
+    """The inner DeepAgent root must not inherit the manager graph namespace."""
+    tracing = _tracing_module()
+    root_state = {"messages": [AIMessage(content="done")]}
+
+    class ConfigAwareAgent:
+        def stream(self, inputs: dict, **kwargs):
+            effective = ensure_config(kwargs["config"])
+            checkpoint_ns = effective["configurable"].get("checkpoint_ns", "")
+            namespace = tuple(checkpoint_ns.split("|")) if checkpoint_ns else ()
+            yield {"type": "values", "ns": namespace, "data": root_state}
+
+    token = var_child_runnable_config.set({"configurable": {"checkpoint_ns": "manager|tools"}})
+    try:
+        result = tracing.consume_deep_agent_stream(
+            ConfigAwareAgent(),
+            {},
+            {"recursion_limit": 25},
+            on_token=lambda *args: None,
+            on_message=lambda *args: None,
+        )
+    finally:
+        var_child_runnable_config.reset(token)
+
+    assert result is root_state
 
 
 def test_ui_event_emitters_attach_active_invocation_metadata() -> None:

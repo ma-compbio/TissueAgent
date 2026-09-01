@@ -12,10 +12,14 @@ is how a wrong palette or a reordered legend gets waved through.
 ## 1. Run the metric prior
 
 ```bash
-python scripts/compare_figures.py <target.png> <reproduced.png> --out compare_diff.png --json
+python scripts/compare_figures.py <target.png> <name>_attempt1.png --attempt 1 --json \
+  > compare_metrics_attempt1.json
 ```
 
-It reports five metrics and writes the side-by-side diff that §2 makes you open.
+It reports five metrics and writes two attempt-specific images:
+`compare_figures_attempt1.png`, containing target | reproduction | 50% overlay,
+and `compare_figures_geometry_attempt1.png`, containing the letterboxed geometry
+view. Pass a new attempt number for every render so no comparison is overwritten.
 Three are computed on **grayscale** and are blind to color and labels:
 
 | Metric | Meaning | Direction |
@@ -59,11 +63,13 @@ measured rather than inferred.
 the legend/tick order in `spec.yaml` from `extract_reference_spec.py`, or against
 the plotted-data CSV's category sequence.
 
-## 2. Open the side-by-side and name the differences
+## 2. Open the three-panel comparison and name the differences
 
-`compare_figures.py` wrote `compare_diff.png` — the target and your reproduction at
-matched height. **`read()` it.** The file is on disk, not returned inline, so it
-never reaches your context unless you open it explicitly.
+`compare_figures.py` wrote `compare_figures_attempt1.png` — the target, reproduction,
+and 50% overlay at matched height. **`read()` it.** The file is on disk, not returned
+inline, so it never reaches your context unless you open it explicitly. Use the
+overlay to detect shifts, crop differences, orientation errors, and mismatched marks
+that are harder to judge across two separate panels.
 
 Then go through the panel deliberately. Unstructured looking produces "looks close
 enough"; this checklist produces a list you can act on:
