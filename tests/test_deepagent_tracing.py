@@ -10,7 +10,8 @@ from types import SimpleNamespace
 
 import pytest
 from langchain_core.messages import AIMessage, ToolMessage
-from langchain_core.runnables.config import ensure_config, var_child_runnable_config
+from langchain_core.runnables.config import var_child_runnable_config
+from langgraph.pregel.main import ensure_config
 
 
 os.environ.setdefault("OPENAI_API_KEY", "dummy")
@@ -92,13 +93,15 @@ def test_stream_adapter_filters_non_visible_chunks_and_returns_root_state() -> N
     assert [token[2] for token in tokens] == ["Visible ", "text"]
     assert "secret" not in "".join(token[2] for token in tokens)
     assert messages == [(completed, tokens[0][0], "Coding Agent")]
-    assert agent.call == {
-        "inputs": {"messages": []},
-        "config": {"recursion_limit": 25, "configurable": {}},
-        "stream_mode": ["messages", "updates", "values"],
-        "subgraphs": True,
-        "version": "v2",
-    }
+    assert agent.call is not None
+    assert agent.call["inputs"] == {"messages": []}
+    assert agent.call["config"]["recursion_limit"] == 25
+    assert agent.call["config"]["configurable"]["thread_id"].startswith(
+        "tissueagent-deepagent-"
+    )
+    assert agent.call["stream_mode"] == ["messages", "updates", "values"]
+    assert agent.call["subgraphs"] is True
+    assert agent.call["version"] == "v2"
 
 
 def test_stream_adapter_separates_nested_streams_and_deduplicates_messages() -> None:

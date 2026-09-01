@@ -35,8 +35,10 @@ class StepArgs(BaseModel):
 
     task_instructions: str = Field(
         description=(
-            "Free-text instructions delegated to the sub-agent assigned to this step. "
-            "Mention any prior-step artifacts that are relevant inputs by their workspace-relative paths."
+            "Step-specific context delegated to the assigned sub-agent. The original user request "
+            "and assigned plan step are prepended automatically. Mention relevant prior-step "
+            "artifacts by their workspace-relative paths; do not restate or weaken the user "
+            "request."
         ),
     )
     expected_artifacts: Optional[list[str]] = Field(
@@ -65,6 +67,36 @@ def _find_running_step(doc: PlanDocument) -> PlanStep | None:
 
 def _find_step(doc: PlanDocument, step_id: int) -> PlanStep | None:
     return next((s for s in doc.steps if s.id == step_id), None)
+
+
+def _compose_worker_prompt(
+    doc: PlanDocument,
+    step: PlanStep,
+    manager_context: str,
+) -> str:
+    """Combine immutable user requirements with the current step and manager context."""
+    request = doc.user_request.strip()
+    if not request:
+        return manager_context
+
+    step_lines = [f"Step {step.id} — {step.title}"]
+    if step.description:
+        step_lines.append(step.description)
+    if step.expected_artifacts:
+        step_lines.append("Expected artifacts: " + ", ".join(step.expected_artifacts))
+
+    return "\n\n".join(
+        [
+            "ORIGINAL USER REQUEST (verbatim; preserve every explicit requirement):\n"
+            + request,
+            "CURRENT ASSIGNED STEP (execute only this step):\n" + "\n".join(step_lines),
+            (
+                "MANAGER STEP CONTEXT (may clarify paths or prior results, but must not "
+                "weaken, replace, or omit requirements from the original request):\n"
+                + manager_context.strip()
+            ),
+        ]
+    )
 
 
 def _set_step_status(step_id: int, status: str) -> PlanDocument:
@@ -97,7 +129,9 @@ def _invoke_via_transfer_tool(
             f"Error: no transfer tool for assigned_agent '{step.assigned_agent}'. "
             f"Known agents: {known}."
         )
-    result = tool.invoke({"prompt": task_instructions})
+    doc = plan_store.read()
+    prompt = _compose_worker_prompt(doc, step, task_instructions)
+    result = tool.invoke({"prompt": prompt})
     if isinstance(result, str):
         return result
     if isinstance(result, list):

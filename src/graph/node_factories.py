@@ -90,6 +90,7 @@ class OrchestratorState(MessagesState):
     planner_retry_count: int
     planner_retry_phase: str
     planner_validation_errors: object
+    original_user_request: str
     remaining_steps: RemainingSteps
 
 

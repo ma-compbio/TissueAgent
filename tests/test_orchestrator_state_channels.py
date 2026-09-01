@@ -38,9 +38,10 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-# Counters whose loss silently disables a cap. Named explicitly so deleting one
+# State whose loss silently disables orchestration guarantees. Named explicitly so deleting one
 # from the schema fails here instead of at the next benchmark run.
 REQUIRED_CHANNELS = {
+    "original_user_request",
     "replan_count",
     "replan_history",
     "recruiter_retry_count",

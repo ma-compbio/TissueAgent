@@ -143,7 +143,41 @@ def _build_plan_from_json(data: dict) -> PlanDocument | None:
     )
 
 
-def _parse_and_persist_plan(text: str) -> "PlanDocument | None":
+def _message_text(message: HumanMessage) -> str:
+    """Return the text portions of a human message without file/image blocks."""
+    content = message.content
+    if isinstance(content, str):
+        return content.strip()
+    if not isinstance(content, list):
+        return ""
+    parts: list[str] = []
+    for item in content:
+        if isinstance(item, str):
+            parts.append(item)
+        elif isinstance(item, dict) and item.get("type") in ("text", "input_text"):
+            value = item.get("text")
+            if isinstance(value, str):
+                parts.append(value)
+    return "\n".join(parts).strip()
+
+
+def _original_user_request(state) -> str:
+    """Read the entry-point request, falling back once for direct graph callers."""
+    captured = state.get("original_user_request")
+    if isinstance(captured, str) and captured.strip():
+        return captured.strip()
+    for message in reversed(state.get("messages", [])):
+        if isinstance(message, HumanMessage):
+            text = _message_text(message)
+            if text:
+                return text
+    return ""
+
+
+def _parse_and_persist_plan(
+    text: str,
+    original_user_request: str = "",
+) -> "PlanDocument | None":
     """Extract a plan JSON block from *text*, persist it, and emit the UI event.
 
     Returns the persisted :class:`PlanDocument` on success or ``None`` when the
@@ -155,6 +189,8 @@ def _parse_and_persist_plan(text: str) -> "PlanDocument | None":
     doc = _build_plan_from_json(data)
     if doc is None:
         return None
+    if original_user_request:
+        doc.user_request = original_user_request
     plan_store.write(doc)
     _emit_plan_updated(doc)
     logging.info(
@@ -180,9 +216,16 @@ def create_planner_state_update(max_retries: int = 2):
     """
 
     def planner_state_update(response: AIMessage, state) -> dict[str, Any]:
+        original_request = _original_user_request(state)
+
+        def _with_original_request(update: dict[str, Any]) -> dict[str, Any]:
+            if original_request:
+                update["original_user_request"] = original_request
+            return update
+
         # Mid-loop tool-call turns produce no plan content; nothing to validate or persist.
         if getattr(response, "tool_calls", None):
-            return {}
+            return _with_original_request({})
         text = (response.content.strip() or "") if isinstance(response.content, str) else ""
         replan_count = int(state.get("replan_count", 0) or 0)
         is_replan = replan_count > 0
@@ -196,13 +239,13 @@ def create_planner_state_update(max_retries: int = 2):
         prior = 0 if phase_changed else int(state.get("planner_retry_count", 0) or 0)
 
         if is_replan:
-            if _parse_and_persist_plan(text) is not None:
+            if _parse_and_persist_plan(text, original_request) is not None:
                 # Success — reset retry counter for the next phase.
-                return {
+                return _with_original_request({
                     "planner_validation_errors": None,
                     "planner_retry_count": 0,
                     "planner_retry_phase": current_phase,
-                }
+                })
             if prior >= max_retries:
                 # Route to reporter with a clean error instead of raising and
                 # crashing the graph.
@@ -212,32 +255,32 @@ def create_planner_state_update(max_retries: int = 2):
                 )
                 logging.error("planner_state_update: %s", error_msg)
                 response.content = f"ROUTE: DIRECT\n\nPlanner retries exhausted: {error_msg}"
-                return {
+                return _with_original_request({
                     "planner_validation_errors": None,
                     "planner_retry_count": 0,
                     "planner_retry_phase": current_phase,
-                }
+                })
             feedback = HumanMessage(
                 content=(
                     "Your response must contain a single fenced ```json``` code block "
                     "with the plan schema (user_request, steps, provenance). Please try again."
                 )
             )
-            return {
+            return _with_original_request({
                 "messages": [response, feedback],
                 "planner_retry_count": prior + 1,
                 "planner_retry_phase": current_phase,
                 "planner_validation_errors": "replan_json_parse_failed",
-            }
+            })
 
         head = text.splitlines()[0].upper() if text else ""
 
         # DIRECT / CLARIFY — no plan expected
         if "DIRECT" in head or "CLARIFY" in head:
-            return {
+            return _with_original_request({
                 "planner_retry_count": 0,
                 "planner_retry_phase": current_phase,
-            }
+            })
 
         # Invalid format — retry with feedback
         if "PLAN" not in head:
@@ -248,10 +291,10 @@ def create_planner_state_update(max_retries: int = 2):
                 )
                 logging.error("planner_state_update: %s", error_msg)
                 response.content = f"ROUTE: DIRECT\n\nPlanner retries exhausted: {error_msg}"
-                return {
+                return _with_original_request({
                     "planner_retry_count": 0,
                     "planner_retry_phase": current_phase,
-                }
+                })
             feedback = HumanMessage(
                 content=(
                     "Your response must begin with exactly one of: "
@@ -259,14 +302,14 @@ def create_planner_state_update(max_retries: int = 2):
                     "Please try again."
                 )
             )
-            return {
+            return _with_original_request({
                 "messages": [response, feedback],
                 "planner_retry_count": prior + 1,
                 "planner_retry_phase": current_phase,
-            }
+            })
 
         # ROUTE: PLAN — parse and persist the JSON block
-        if _parse_and_persist_plan(text) is None:
+        if _parse_and_persist_plan(text, original_request) is None:
             if prior >= max_retries:
                 error_msg = (
                     "Planner failed to produce a valid JSON plan. "
@@ -274,25 +317,25 @@ def create_planner_state_update(max_retries: int = 2):
                 )
                 logging.error("planner_state_update: %s", error_msg)
                 response.content = f"ROUTE: DIRECT\n\nPlanner retries exhausted: {error_msg}"
-                return {
+                return _with_original_request({
                     "planner_retry_count": 0,
                     "planner_retry_phase": current_phase,
-                }
+                })
             feedback = HumanMessage(
                 content=(
                     "Your ROUTE: PLAN response must contain a fenced ```json``` block "
                     "with the plan schema. Please try again."
                 )
             )
-            return {
+            return _with_original_request({
                 "messages": [response, feedback],
                 "planner_retry_count": prior + 1,
                 "planner_retry_phase": current_phase,
-            }
-        return {
+            })
+        return _with_original_request({
             "planner_retry_count": 0,
             "planner_retry_phase": current_phase,
-        }
+        })
 
     return planner_state_update
 

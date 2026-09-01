@@ -909,6 +909,7 @@ def run(prompt: str, args: argparse.Namespace) -> dict:
         session.thread_id = _new_thread_id()
         user_message = HumanMessage(content=prompt)
         session.agent_state["messages"] = [user_message]
+        session.agent_state["original_user_request"] = prompt
 
         config = {
             "recursion_limit": RECURSION_LIMIT,

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Mapping
 from typing import Any
+from uuid import uuid4
 
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 
@@ -101,10 +102,13 @@ def consume_deep_agent_stream(
     seen_messages: set[tuple[Any, ...]] = set()
     known_streams: dict[tuple[tuple[str, ...], str], str] = {}
 
-    # This runs inside the manager graph; an implicit configurable inherits its checkpoint_ns.
+    # This runs inside the manager graph; a new thread coordinate detaches its checkpoint lineage.
     stream_config = dict(config)
     configurable = config.get("configurable")
-    stream_config["configurable"] = dict(configurable) if isinstance(configurable, Mapping) else {}
+    stream_configurable = dict(configurable) if isinstance(configurable, Mapping) else {}
+    stream_configurable.pop("checkpoint_ns", None)
+    stream_configurable.setdefault("thread_id", f"tissueagent-deepagent-{uuid4().hex}")
+    stream_config["configurable"] = stream_configurable
 
     parts = agent.stream(
         inputs,
