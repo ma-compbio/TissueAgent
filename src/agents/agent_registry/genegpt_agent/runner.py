@@ -94,7 +94,7 @@ def _find_url(text: str) -> str | None:
     return loose[0] if loose else None
 
 
-def _ensure_upstream_on_path() -> None:
+def _ensure_upstream_on_path() -> bool:
     if not (_UPSTREAM_DIR / "main_turbo.py").is_file():
         raise RuntimeError(
             f"GeneGPT upstream not found at {_UPSTREAM_DIR}. "
@@ -103,6 +103,8 @@ def _ensure_upstream_on_path() -> None:
     p = str(_UPSTREAM_DIR)
     if p not in sys.path:
         sys.path.insert(0, p)
+        return True
+    return False
 
 
 def _import_upstream_helpers():
@@ -114,11 +116,20 @@ def _import_upstream_helpers():
     *inside* the shim so any ``openai`` module-top access resolves against the
     patched module.
     """
-    _ensure_upstream_on_path()
-    # Force a fresh import so the module-top side effects re-run under the patch.
-    for mod in ("main_turbo", "config"):
-        sys.modules.pop(mod, None)
-    import main_turbo  # type: ignore[import-not-found]
+    added_path = _ensure_upstream_on_path()
+    app_config = sys.modules.get("config")
+    try:
+        # Force a fresh import so the module-top side effects re-run under the patch.
+        for mod in ("main_turbo", "config"):
+            sys.modules.pop(mod, None)
+        import main_turbo  # type: ignore[import-not-found]
+    finally:
+        if app_config is None:
+            sys.modules.pop("config", None)
+        else:
+            sys.modules["config"] = app_config
+        if added_path:
+            sys.path.remove(str(_UPSTREAM_DIR))
 
     return main_turbo.get_prompt_header, main_turbo.call_api
 
