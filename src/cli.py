@@ -1034,6 +1034,15 @@ def run(prompt: str, args: argparse.Namespace) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    # Subcommand dispatch on the literal first token, so the primary
+    # bare-prompt interface stays untouched. A prompt that genuinely starts
+    # with the word "optimize" must be quoted after `--` or piped via stdin.
+    if argv and argv[0] == "optimize":
+        from optimizer.cli import main as optimize_main
+
+        return optimize_main(argv[1:])
+
     args = _build_arg_parser().parse_args(argv)
 
     # Keep the default log stream on stderr so stdout carries the answer cleanly.

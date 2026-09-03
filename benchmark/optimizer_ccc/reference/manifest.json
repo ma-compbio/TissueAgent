@@ -1,0 +1,56 @@
+{
+  "merfish": {
+    "input": "opt_ccc_merfish.h5ad",
+    "cell_type": "Cell_class",
+    "species": "mouse",
+    "prep_args": {
+      "crop_n": 2000,
+      "max_pairs": 50,
+      "knn_k": 6
+    },
+    "script_hashes": {
+      "ccc_data_prep.py": "c6d4b758759f838fc7cefbb63c7bf121b490791b",
+      "ccc_liana.py": "a3215c16dc6bda95c94c77e0453fb7756b9a6921",
+      "ccc_commot.py": "bf08ad692ee742984c1e012fe537ee03fc1dfa1c",
+      "ccc_stlearn.py": "79361db601185cf8f7e08fbc13d6f375118746ce",
+      "ccc_decoupler.py": "1721920e1224f3c2e1a002230ded453de378def8",
+      "ccc_aggregate.py": "8088a7c9b7887a26b85d462822c78b017ea5cf56"
+    }
+  },
+  "dlpfc": {
+    "input": "opt_ccc_dlpfc_151673.h5ad",
+    "cell_type": "layer",
+    "species": "human",
+    "prep_args": {
+      "crop_n": 2000,
+      "max_pairs": 50,
+      "knn_k": 6
+    },
+    "script_hashes": {
+      "ccc_data_prep.py": "c6d4b758759f838fc7cefbb63c7bf121b490791b",
+      "ccc_liana.py": "a3215c16dc6bda95c94c77e0453fb7756b9a6921",
+      "ccc_commot.py": "bf08ad692ee742984c1e012fe537ee03fc1dfa1c",
+      "ccc_stlearn.py": "79361db601185cf8f7e08fbc13d6f375118746ce",
+      "ccc_decoupler.py": "1721920e1224f3c2e1a002230ded453de378def8",
+      "ccc_aggregate.py": "8088a7c9b7887a26b85d462822c78b017ea5cf56"
+    }
+  },
+  "lymph_node": {
+    "input": "opt_ccc_lymph_node.h5ad",
+    "cell_type": "domain",
+    "species": "human",
+    "prep_args": {
+      "crop_n": 2000,
+      "max_pairs": 50,
+      "knn_k": 6
+    },
+    "script_hashes": {
+      "ccc_data_prep.py": "c6d4b758759f838fc7cefbb63c7bf121b490791b",
+      "ccc_liana.py": "a3215c16dc6bda95c94c77e0453fb7756b9a6921",
+      "ccc_commot.py": "bf08ad692ee742984c1e012fe537ee03fc1dfa1c",
+      "ccc_stlearn.py": "79361db601185cf8f7e08fbc13d6f375118746ce",
+      "ccc_decoupler.py": "1721920e1224f3c2e1a002230ded453de378def8",
+      "ccc_aggregate.py": "8088a7c9b7887a26b85d462822c78b017ea5cf56"
+    }
+  }
+}

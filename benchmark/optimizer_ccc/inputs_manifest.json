@@ -1,0 +1,40 @@
+{
+  "merfish": {
+    "staged": "opt_ccc_merfish.h5ad",
+    "n_obs": 5919,
+    "n_vars": 156,
+    "cell_type": "Cell_class",
+    "label_counts": {
+      "Inhibitory": 2730,
+      "Excitatory": 1212,
+      "Astrocyte": 668,
+      "Endothelial 1": 290,
+      "Ependymal": 273,
+      "OD Mature 2": 217,
+      "OD Immature 1": 186,
+      "Microglia": 140,
+      "Endothelial 3": 107,
+      "OD Mature 1": 43,
+      "Pericytes": 25,
+      "Endothelial 2": 17,
+      "OD Mature 4": 11
+    },
+    "seed": 1337
+  },
+  "dlpfc": {
+    "staged": "opt_ccc_dlpfc_151673.h5ad",
+    "n_obs": 3611,
+    "n_vars": 33538,
+    "cell_type": "layer",
+    "label_counts": {
+      "Layer3": 989,
+      "Layer6": 692,
+      "Layer5": 673,
+      "WM": 513,
+      "Layer1": 273,
+      "Layer2": 253,
+      "Layer4": 218
+    },
+    "seed": 1337
+  }
+}

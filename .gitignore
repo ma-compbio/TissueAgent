@@ -80,6 +80,14 @@ benchmark/biomysterybench/*
 benchmark/spatial_cellbench/runs/
 benchmark/spatial_cellbench/slurm/*.out
 
+# Optimizer CCC benchmark: track the harness, manifests, and the committed
+# expert references (the accuracy oracle); never run payloads or work dirs.
+!benchmark/optimizer_ccc/
+benchmark/optimizer_ccc/runs/
+benchmark/optimizer_ccc/reference/*/work/
+benchmark/optimizer_ccc/reference/*.log
+benchmark/optimizer_ccc/reference/*/*.log
+
 # The problem set, the harness, and the graded results. `slurm/make_prompt.py`
 # matters more than its size suggests: the preamble it emits is what separates
 # one prompt version from another, and results are only comparable within a version.

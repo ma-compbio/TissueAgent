@@ -109,7 +109,11 @@ SESSIONS_DIR = LEGACY_SESSIONS_DIR  # back-compat alias for plan_store etc.
 # Figure reproduction routinely needs several inspect/render/compare passes. Keep
 # the global budget finite, but make it large enough for that normal workflow and
 # configurable for deployments with tighter latency or cost budgets.
-RECURSION_LIMIT = int(os.environ.get("TISSUEAGENT_RECURSION_LIMIT", "200"))
+# TEMPORARY (optimizer CCC benchmark, 2026-09): lowered 200 -> 100. Across the six
+# archived CCC ensemble sessions the main graph peaked at 59 messages, so 100
+# keeps ~1.7x headroom while failing runaway runs at half the old cost. Restore
+# to 200 for figure-reproduction workloads.
+RECURSION_LIMIT = int(os.environ.get("TISSUEAGENT_RECURSION_LIMIT", "100"))
 LOG_TO_TERMINAL = True
 LOG_TO_FILE = (
     ROOT
@@ -151,10 +155,12 @@ CONTAINER_SKILLS_ROOT = f"{CONTAINER_DATA_DIR}/project/{PROJECT_SKILLS_DIRNAME}"
 PROJECT_SKILLS_REL = f"project/{PROJECT_SKILLS_DIRNAME}"
 
 MAX_OUTPUT_CHARS = 3000
-# TEMPORARY (CCC benchmark, 2026-07): lowered 2 -> 1 to fail fast during the
-# scMultiSim runs while the replan cap is freshly fixed (the cap was previously
-# inert -- see graph.OrchestratorState). Restore to 2 for normal use.
-MAX_REPLANS = 1
+# TEMPORARY (optimizer CCC benchmark, 2026-09): 1 -> 0, i.e. NO replans. The
+# evaluator blocks when new_count > MAX_REPLANS (graph.py), so 0 rewrites the
+# first REPLAN verdict to REPORT: a failed round must surface as a failure the
+# optimizer can learn from, not be papered over by a replan. Restore to 2 for
+# normal use (previous temporary value was 1 — see 2026-07 note in git history).
+MAX_REPLANS = 0
 
 # TEMPORARY (CCC benchmark, 2026-07): the coding agent burned its whole turn
 # budget on search_documentation / runtime introspection (e.g. inspect.getsource
@@ -196,7 +202,11 @@ MAX_EXECUTOR_STEP_ERRORS = 25
 # comparison, so their inner agent budget is deliberately independent from the
 # top-level orchestration budget. Override it only when a deployment needs a
 # stricter per-step cost ceiling.
-EXECUTOR_RECURSION_LIMIT = int(os.environ.get("TISSUEAGENT_EXECUTOR_RECURSION_LIMIT", "160"))
+# TEMPORARY (optimizer CCC benchmark, 2026-09): lowered 160 -> 140. The worst
+# single sub-agent invocation across the archived CCC sessions used 124
+# messages (a successful debug-heavy step); 140 keeps that step viable while
+# trimming the runaway ceiling. Restore to 160 for normal use.
+EXECUTOR_RECURSION_LIMIT = int(os.environ.get("TISSUEAGENT_EXECUTOR_RECURSION_LIMIT", "140"))
 # ``MAX_STEP_RETRIES`` is how many times the manager may ``retry_step`` a single
 # plan step before the retry is refused and it must advance or replan.
 MAX_STEP_RETRIES = 3

@@ -1,0 +1,13 @@
+{
+  "species": "human",
+  "median_nn": 137.00364958642524,
+  "small_panel": false,
+  "n_obs": 2000,
+  "n_pairs": 50,
+  "crop_n": 2000,
+  "max_pairs": 50,
+  "dis_mult": 1.5,
+  "knn_k": 6,
+  "n_footprint_genes": 16990,
+  "n_pathways": 14
+}
