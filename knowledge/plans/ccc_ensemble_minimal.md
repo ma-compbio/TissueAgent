@@ -1,6 +1,6 @@
 ---
 name: ccc_ensemble
-status: disabled
+status: enabled
 description: >
   Cell-cell communication on spatial transcriptomics via a four-member
   ensemble: LIANA+ (expression consensus), COMMOT (spatial optimal transport),
