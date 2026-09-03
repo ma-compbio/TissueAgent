@@ -44,7 +44,9 @@ ACTIVE_PROJECT = REPO_ROOT / "workspace" / "project"
 def _set_status(path: Path, status: str) -> bool:
     """Rewrite the frontmatter ``status:`` line. Returns True if changed."""
     text = path.read_text()
-    end = text.index("---", 3)
+    # Split on the closing fence at line start so the newline before it —
+    # and everything after — survives the rewrite verbatim.
+    end = text.index("\n---", 3)
     head, rest = text[:end], text[end:]
     lines = head.splitlines()
     for i, line in enumerate(lines):
