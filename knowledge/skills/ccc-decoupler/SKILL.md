@@ -1,6 +1,6 @@
 ---
 name: ccc-decoupler
-description: Step 5 of the ccc_ensemble workflow. The downstream-response member. Runs the shipped run_decoupler scorer, scoring each shared-resource LR pair by whether its actively-receiving cells (receptor present AND ligand arriving over a kNN graph) co-locate with the PROGENy downstream response amplitude computed in ccc-data-prep (obs['_dact']). Writes decoupler_scores.csv for the ensemble aggregator.
+description: Step 5 of ccc_ensemble. Run the shipped decoupler/PROGENy-response scorer using Step 1 obs['_dact']; write project/outputs/decoupler_scores.csv.
 applies_to: [coding_agent]
 tags: [ccc, decoupler, progeny, downstream, pathway, ensemble]
 status: enable
@@ -8,10 +8,10 @@ status: enable
 
 # CCC — decoupler + PROGENy (downstream-response axis)
 
-Run the shipped script (do not reimplement it):
+Fast path: run this command directly; do not list/read the skill directory or script, paste code, recompute PROGENy, or create extra verification files.
 
 ```python
 %run project/skills/ccc-decoupler/scripts/ccc_decoupler.py
 ```
 
-Reads the Step 1 artifacts from `project/outputs/`; writes `project/outputs/decoupler_scores.csv`.
+Reads Step 1 outputs including `obs['_dact']`; required output: `project/outputs/decoupler_scores.csv`. If a file tool is needed, use `/project/...` paths.

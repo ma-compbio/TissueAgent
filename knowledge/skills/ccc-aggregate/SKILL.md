@@ -1,6 +1,6 @@
 ---
 name: ccc-aggregate
-description: Step 6 (final) of the ccc_ensemble workflow. Runs the shipped build_ensemble step, combining the four member LR-level score tables (LIANA+, COMMOT, stLearn, decoupler) into the ensemble by the mean of the four members' percentile ranks over the LR pairs scored by ALL members. Writes the final ranked ensemble table ccc_ensemble.csv.
+description: Final ccc_ensemble step. Run the shipped aggregator; it inner-joins the four member score tables and writes project/outputs/ccc_ensemble.csv.
 applies_to: [coding_agent]
 tags: [ccc, ligand-receptor, ensemble, consensus]
 status: enable
@@ -8,11 +8,10 @@ status: enable
 
 # CCC — Ensemble (mean-of-percentile-ranks consensus)
 
-Run the shipped script (do not reimplement it):
+Fast path: run this command directly; do not list/read the skill directory or script, paste code, change the combiner, or create extra verification files.
 
 ```python
 %run project/skills/ccc-aggregate/scripts/ccc_aggregate.py
 ```
 
-Reads the four `*_scores.csv` member tables from `project/outputs/`; writes the final
-`project/outputs/ccc_ensemble.csv`.
+Reads the four `*_scores.csv` tables; required output: `project/outputs/ccc_ensemble.csv`. If a file tool is needed, use `/project/...` paths.
