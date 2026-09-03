@@ -1,12 +1,11 @@
 ---
 name: ccc_ensemble
-status: disabled
+status: enabled
 description: >
   Cell-cell communication on spatial transcriptomics via a four-member
   ensemble: LIANA+ (expression consensus), COMMOT (spatial optimal transport),
   stLearn (spatial co-expression) and decoupler+PROGENy (downstream response).
-  Combine per-LR results into a single ranked table.
----
+  Combine per-LR results into a single ranked table.---
 
 <!--
   Deliberately minimal starting template for the knowledge-optimizer benchmark

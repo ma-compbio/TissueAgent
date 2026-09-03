@@ -1,6 +1,6 @@
 ---
 name: ccc_ensemble
-status: enabled
+status: disabled
 description: >
   Ensemble cell-cell communication on spatial transcriptomics: run four
   complementary members — LIANA+ (non-spatial expression consensus), COMMOT
@@ -8,8 +8,7 @@ description: >
   (downstream transcriptional response) — on ONE shared monomeric ligand-receptor
   resource and one immutable base object, then combine per-LR results by the mean of
   the four members' percentile ranks. Produces a single ranked ensemble table of
-  ligand-receptor pairs supported across the expression, spatial and downstream axes.
----
+  ligand-receptor pairs supported across the expression, spatial and downstream axes.---
 
 ## Inputs
 - AnnData (.h5ad) for **one spatial section** with `.obsm['spatial']` (native-unit coords, not
