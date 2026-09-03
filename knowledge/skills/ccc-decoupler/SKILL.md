@@ -10,8 +10,7 @@ status: enable
 
 ## ⚠️ How to run this
 
-This skill **ships a runnable script** — do NOT write your own decoupler step and do NOT
-paste code from this file. Run the shipped script in the kernel:
+This skill **ships a runnable script**. To save time/tokens, do **not** list/cat/read the script or this SKILL file first; do **not** write your own decoupler step or paste code. Run the shipped script in the kernel:
 
 ```python
 %run project/skills/ccc-decoupler/scripts/ccc_decoupler.py

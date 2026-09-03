@@ -10,9 +10,7 @@ status: enable
 
 ## ⚠️ How to run this (read first)
 
-This skill **ships a runnable script** — do NOT write your own version of this step and do
-NOT paste code from this file. Run the shipped script in the kernel, adjusting only the flags
-for your dataset:
+This skill **ships a runnable script**. To save time/tokens, do **not** list/cat/read the script or this SKILL file first; do **not** write your own version or paste code. Run the shipped script in the kernel, adjusting only the dataset flags:
 
 ```python
 %run project/skills/ccc-data-prep/scripts/ccc_data_prep.py \
@@ -56,23 +54,6 @@ The script reads a single, analysis-ready h5ad. Prepare it first if needed:
   unsupervised clustering first, write that column, and pass it via `--cell-type`.
 - **Multi-sample data.** CCC must be run **per physical section** — mixing sections mixes
   coordinate systems. Subset to one coherent section first and point `--adata` at it.
-
-## Why four members (read once)
-
-The four members measure genuinely different, weakly-correlated quantities — that
-decorrelation is the whole point:
-
-1. **LIANA+ `rank_aggregate`** — non-spatial cell-group **expression consensus**.
-2. **COMMOT `spatial_communication`** — **spatial optimal transport**.
-3. **stLearn `cci.lr`** — **spatial co-expression** (a local neighbourhood statistic).
-4. **decoupler + PROGENy** — **downstream transcriptional response**, built on footprint
-   genes disjoint from the LR genes, so it is orthogonal to the three co-presence/routing
-   axes by construction (per-pair Spearman ≈ 0.02–0.17 vs the others).
-
-All four run on **one shared monomeric LR resource** (built here) — their native databases
-overlap only ~0.17 Jaccard, so a shared resource is what makes "consensus" mean method
-agreement, not database agreement. All spatial thresholds stay in the **native coordinate
-units** the methods consume (a multiple of `median_nn`).
 
 ## When to use
 
@@ -135,8 +116,3 @@ to LR-candidate genes (`slim_to_lr_genes`), calibrates `median_nn`, builds the s
   (~100 genes) — record it; the decoupler axis is least reliable there.
 - **Standardized coords.** If `obsm['spatial']` is mean-centered/scaled, radii are meaningless.
 
-## References
-
-- LIANA+: `li.rs.select_resource`. decoupler + PROGENy: `dc.op.progeny`, `dc.mt.ulm`.
-- Related skills: [[ccc-liana]], [[ccc-commot]], [[ccc-stlearn]], [[ccc-decoupler]],
-  [[ccc-aggregate]]; parent plan `ccc_ensemble`.

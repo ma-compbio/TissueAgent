@@ -10,23 +10,14 @@ status: enable
 
 ## ⚠️ How to run this
 
-This skill **ships a runnable script** — do NOT write your own COMMOT step and do NOT
-paste code from this file. Run the shipped script in the kernel:
+This skill **ships a runnable script**. To save time/tokens, do **not** list/cat/read the script or this SKILL file first; do **not** write your own COMMOT step or paste code. Run the shipped script in the kernel:
 
 ```python
 %run project/skills/ccc-commot/scripts/ccc_commot.py
 ```
 
 It installs the `commot` PyPI package if needed, reads the Step 1 artifacts, routes every
-pair, and writes `commot_scores.csv`. If you need the scorer as a function instead, import
-it (do not reimplement it; `commot` must already be installed):
-
-```python
-import sys; sys.path.insert(0, "project/skills/ccc-commot/scripts")
-from ccc_commot import run_commot
-```
-
-The script is authoritative. There is **one** distance threshold, `dis_mult × median_nn`
+pair, and writes `commot_scores.csv`. The script is authoritative. There is **one** distance threshold, `dis_mult × median_nn`
 with `dis_mult` read from the JSON log (it is **1.5** — do not raise it). Do NOT add a
 second regime, add cluster-level permutation tests, change the score (summed OT flow), or
 add evaluation. If it fails, fix the environment/inputs.

@@ -10,23 +10,14 @@ status: enable
 
 ## ⚠️ How to run this
 
-This skill **ships a runnable script** — do NOT write your own stLearn step and do NOT
-paste code from this file. Run the shipped script in the kernel:
+This skill **ships a runnable script**. To save time/tokens, do **not** list/cat/read the script or this SKILL file first; do **not** write your own stLearn step or paste code. Run the shipped script in the kernel:
 
 ```python
 %run project/skills/ccc-stlearn/scripts/ccc_stlearn.py
 ```
 
 It reads the Step 1 artifacts, scores every pair, and writes `stlearn_scores.csv`. No
-`stlearn` install is needed — the statistic is plain numpy/scipy. If you need the scorer as
-a function instead, import it (do not reimplement it):
-
-```python
-import sys; sys.path.insert(0, "project/skills/ccc-stlearn/scripts")
-from ccc_stlearn import run_stlearn
-```
-
-The script is authoritative. There is **one** radius (`dis_mult × median_nn` from the JSON
+`stlearn` install is needed — the statistic is plain numpy/scipy. The script is authoritative. There is **one** radius (`dis_mult × median_nn` from the JSON
 log — the same **1.5** COMMOT uses); do NOT add a second regime, call stLearn's stock
 clustering/permutation tail, change the statistic, or add evaluation. If it fails, fix the
 environment/inputs.

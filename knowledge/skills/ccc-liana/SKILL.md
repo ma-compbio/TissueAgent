@@ -10,22 +10,13 @@ status: enable
 
 ## ⚠️ How to run this
 
-This skill **ships a runnable script** — do NOT write your own LIANA step and do NOT
-paste code from this file. Run the shipped script in the kernel:
+This skill **ships a runnable script**. To save time/tokens, do **not** list/cat/read the script or this SKILL file first; do **not** write your own LIANA step or paste code. Run the shipped script in the kernel:
 
 ```python
 %run project/skills/ccc-liana/scripts/ccc_liana.py
 ```
 
-It reads the Step 1 artifacts, scores every pair, and writes `liana_scores.csv`. If you
-need the scorer as a function instead, import it (do not reimplement it):
-
-```python
-import sys; sys.path.insert(0, "project/skills/ccc-liana/scripts")
-from ccc_liana import run_liana
-```
-
-The script is authoritative for the installed library versions. Do NOT edit it, reimplement
+It reads the Step 1 artifacts, scores every pair, and writes `liana_scores.csv`. The script is authoritative for the installed library versions. Do NOT edit it, reimplement
 the scoring by hand, swap the scoring axis, add `bivariate`, change `use_raw` (it is `False`
 on purpose), or groupby anything other than `_ct`. If it fails, fix the environment/inputs.
 
