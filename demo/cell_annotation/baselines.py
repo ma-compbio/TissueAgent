@@ -1,4 +1,4 @@
-"""Direct, non-agentic CellTypist and GPTCellType benchmark runners."""
+"""Direct cell-annotation benchmark runners."""
 
 from __future__ import annotations
 
@@ -7,6 +7,9 @@ import importlib.metadata
 import json
 import os
 import re
+import shutil
+import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -30,6 +33,18 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(8 * 1024**2), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _git_revision(path: Path) -> str:
+    completed = subprocess.run(
+        ["git", "-C", str(path), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode:
+        raise RuntimeError(f"Cannot determine git revision for {path}.")
+    return completed.stdout.strip()
 
 
 def _load_prepared(prepared: dict[str, Any] | str | Path) -> dict[str, Any]:
@@ -116,6 +131,512 @@ def _prediction_output(prepared: dict[str, Any], method: str) -> Path:
     run_dir = REPO_ROOT / prepared["run_dir"]
     run_dir.mkdir(parents=True, exist_ok=True)
     return run_dir / f"{method}_predictions.tsv"
+
+
+def _agent_task_prompt(
+    query_path: Path,
+    annotated_path: Path,
+    manifest: dict[str, Any],
+    task_prompt_template: str | None = None,
+) -> str:
+    if task_prompt_template is not None:
+        return task_prompt_template.replace("<QUERY_H5AD>", str(query_path)).replace(
+            "<ANNOTATED_H5AD>", str(annotated_path)
+        )
+    assay = "spatial AnnData" if manifest["query"].get("require_spatial", True) else "AnnData"
+    context = (
+        f"species='{manifest['species']}', tissue='{manifest['tissue']}', "
+        f"disease='{manifest['disease']}'"
+    )
+    if manifest.get("developmental_stage"):
+        context += f", developmental_stage='{manifest['developmental_stage']}'"
+    if manifest.get("study_context"):
+        context += f". Study context: {manifest['study_context'].rstrip('.')}"
+    if manifest.get("annotation_scope"):
+        context += ". Annotation scope contract: " + json.dumps(
+            manifest["annotation_scope"], ensure_ascii=False, separators=(",", ":"), sort_keys=True
+        )
+    return (
+        f"Annotate cell types in {assay} '{query_path}'. Biological context: {context}. "
+        f"Save the annotated H5AD to '{annotated_path}'."
+    )
+
+
+def _agent_execution_contract(manifest: dict[str, Any], model: str) -> str:
+    excluded_dois = manifest.get("reference_audit", {}).get("forbidden_collection_dois", [])
+    return f"""\
+Execution requirements: The input is the original selection-blind query, not an adapter-preprocessed
+object. Inspect its state and perform any preprocessing required by your workflow yourself. Do not
+modify the input file. Keep intermediate and final outputs in the specified output directory.
+Do not inspect other benchmark files, ground truth, existing predictions, or label mappings.
+Public reference and marker resources are allowed. Do not use reference datasets from these excluded
+source-study DOIs: {excluded_dois}.
+Use exactly {model!r} for the main agent, retrieval, subagents, and annotation/model subcalls.
+Preserve original observation identifiers and save predicted labels in .obs['cell_type'].
+Complete cell-type annotation rather than returning instructions; do not run tissue-niche analysis.
+"""
+
+
+def _biomni_prompt(
+    query_path: Path,
+    annotated_path: Path,
+    manifest: dict[str, Any],
+    model: str,
+    task_prompt_template: str | None = None,
+) -> str:
+    return f"""\
+{_agent_task_prompt(query_path, annotated_path, manifest, task_prompt_template)}
+
+{_agent_execution_contract(manifest, model)}
+
+Choose and execute the analysis using Biomni's tools and coding capabilities. Preprocessing,
+clustering, annotation strategy and their parameters are your decisions based on this input.
+
+Execute one step per execution block and wait for the actual tool result before reporting success.
+Biomni's solution block terminates the run. Do not use it for an intermediate plan or progress
+checklist: continue using execution blocks until the final H5AD has been saved and verified.
+Execute scientific Python directly inside the existing execution block. Do not invoke a shell,
+subprocess, second interpreter, or nested Python REPL for the analysis:
+the required model-compatibility bindings live in the existing Python process.
+Never mention XML control tags inside code, strings, or
+comments, because Biomni's router parses those as control flow even inside an execution block.
+
+Verify that the final file exists at {str(annotated_path)!r} and contains one predicted label per
+retained query observation. Use compressed H5AD output and avoid unnecessary large file copies.
+"""
+
+
+def _spatialagent_prompt(
+    query_path: Path,
+    annotated_path: Path,
+    manifest: dict[str, Any],
+    model: str,
+    task_prompt_template: str | None = None,
+) -> str:
+    return f"""\
+{_agent_task_prompt(query_path, annotated_path, manifest, task_prompt_template)}
+
+{_agent_execution_contract(manifest, model)}
+
+Follow SpatialAgent's Spatial Annotation workflow through cell-type annotation. Its configured
+celltype_annotated.h5ad output is the requested final file.
+
+SpatialAgent injects selected tool functions directly into its stateful Python REPL. In <act>
+blocks, invoke those functions directly with their argument dictionaries.
+Run one workflow step at a time. Do not import tool names as Python modules, and do not call an
+execute_python wrapper.
+The download_czi_reference tool returns a human-readable status message rather than a bare path.
+After it runs, locate the generated H5AD under save_path/czi_reference and pass that filesystem path
+to harmony_transfer_labels, including when the reference was already cached.
+The harmony_transfer_labels tool writes celltype_transferred.csv under save_path (without an
+index suffix). Verify that file exists before passing it to annotate_cell_types. The annotation
+tool saves a separate celltype_annotated.h5ad; reload that output to verify labels, not the
+unannotated preprocessed.h5ad, and do not overwrite it from the unannotated object.
+
+The saved object must contain predicted labels in .obs['cell_type'].
+"""
+
+
+def _execute_agent_worker(
+    method: str,
+    request: dict[str, Any],
+    *,
+    python_executable: str,
+    workspace: Path,
+    working_directory: Path,
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    workspace.mkdir(parents=True, exist_ok=False)
+    if request.get("resume_from"):
+        request["resumed_artifacts"] = _stage_spatialagent_resume(request, workspace)
+    request_path = workspace / "worker_request.json"
+    result_path = workspace / "worker_result.json"
+    stdout_path = workspace / "worker_stdout.log"
+    stderr_path = workspace / "worker_stderr.log"
+    request_path.write_text(json.dumps(request, indent=2), encoding="utf-8")
+    worker_path = Path(__file__).with_name("agent_baseline_worker.py")
+    command = [
+        python_executable,
+        str(worker_path),
+        "--method",
+        method,
+        "--request",
+        str(request_path),
+        "--result",
+        str(result_path),
+    ]
+    environment = os.environ.copy()
+    environment["PATH"] = (
+        str(Path(python_executable).resolve().parent) + os.pathsep + environment["PATH"]
+    )
+    with (
+        stdout_path.open("w", encoding="utf-8") as stdout,
+        stderr_path.open("w", encoding="utf-8") as stderr,
+    ):
+        completed = subprocess.run(
+            command,
+            cwd=working_directory,
+            stdout=stdout,
+            stderr=stderr,
+            timeout=timeout_seconds,
+            check=False,
+            env=environment,
+        )
+    if not result_path.exists():
+        raise RuntimeError(
+            f"{method} worker exited with code {completed.returncode} without a result; "
+            f"see {stdout_path} and {stderr_path}."
+        )
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    if completed.returncode or result.get("status") != "success":
+        message = result.get("message", f"worker exit code {completed.returncode}")
+        raise RuntimeError(
+            f"{method} worker failed: {message}; see {stdout_path} and {stderr_path}."
+        )
+    return result
+
+
+def _stage_spatialagent_resume(request: dict[str, Any], workspace: Path) -> list[dict[str, str]]:
+    source = Path(request["resume_from"])
+    previous = json.loads((source / "worker_request.json").read_text())
+    if _sha256(Path(previous["query_h5ad"])) != _sha256(Path(request["query_h5ad"])):
+        raise ValueError("SpatialAgent resume requires the identical query input.")
+    for key in ("model", "source_revision", "task_prompt_template"):
+        if previous[key] != request[key]:
+            raise ValueError(f"SpatialAgent resume changed {key}.")
+    files = [source / "preprocessed.h5ad", source / "celltype_transferred.csv"]
+    files.extend(sorted((source / "czi_reference").glob("*")))
+    files.extend(sorted(source.glob("celltype-transferred_*.h5ad")))
+    records = []
+    for path in files:
+        destination = workspace / path.relative_to(source)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+        digest = _sha256(path)
+        if _sha256(destination) != digest:
+            raise ValueError(f"SpatialAgent resume copy differs: {path}")
+        records.append({"source": str(path), "destination": str(destination), "sha256": digest})
+    return records
+
+
+def _write_agent_predictions(
+    *,
+    query_path: Path,
+    annotated_path: Path,
+    output_path: Path,
+    method: str,
+    prediction_column: str,
+    confidence_column: str | None,
+) -> dict[str, Any]:
+    query = ad.read_h5ad(query_path, backed="r")
+    try:
+        query_index = pd.Index(query.obs_names.astype(str))
+    finally:
+        query.file.close()
+    annotated = ad.read_h5ad(annotated_path, backed="r")
+    try:
+        if prediction_column not in annotated.obs:
+            raise KeyError(
+                f"{method} output lacks the required .obs['{prediction_column}'] column."
+            )
+        annotated_index = pd.Index(annotated.obs_names.astype(str))
+        if not annotated_index.is_unique:
+            raise ValueError(f"{method} output contains duplicate observation identifiers.")
+        extra = annotated_index.difference(query_index)
+        if len(extra):
+            raise ValueError(
+                f"{method} output contains {len(extra)} observations absent from the query."
+            )
+        ordered_index = query_index[query_index.isin(annotated_index)]
+        output_order_preserved = annotated_index.equals(ordered_index)
+        labels = annotated.obs[prediction_column].astype("string").copy()
+        labels.index = annotated_index
+        labels = labels.reindex(ordered_index)
+        if confidence_column is None:
+            confidence = pd.Series(np.nan, index=ordered_index, dtype=float)
+        else:
+            if confidence_column not in annotated.obs:
+                raise KeyError(
+                    f"{method} output lacks configured confidence column "
+                    f".obs['{confidence_column}']."
+                )
+            confidence = pd.to_numeric(annotated.obs[confidence_column], errors="raise")
+            confidence.index = annotated_index
+            confidence = confidence.reindex(ordered_index)
+    finally:
+        annotated.file.close()
+
+    frame = pd.DataFrame(
+        {
+            "raw_prediction": labels,
+            "confidence": confidence,
+            "method": method,
+            "mapping_method": "gptcelltype",
+        },
+        index=ordered_index,
+    )
+    frame.index.name = "cell_id"
+    frame.to_csv(output_path, sep="\t")
+    return {
+        "n_input_cells": len(query_index),
+        "n_predictions": len(frame),
+        "n_nonmissing_predictions": int(frame["raw_prediction"].notna().sum()),
+        "prediction_row_coverage": float(len(frame) / len(query_index)),
+        "upstream_observation_order_preserved": output_order_preserved,
+        "prediction_column": prediction_column,
+        "confidence_column": confidence_column,
+    }
+
+
+def _run_agent_baseline(
+    prepared: dict[str, Any],
+    *,
+    method: str,
+    model: str,
+    request: dict[str, Any],
+    python_executable: str,
+    working_directory: Path,
+    process_timeout_seconds: int,
+    prediction_column: str,
+    confidence_column: str | None,
+) -> dict[str, Any]:
+    output = _prediction_output(prepared, method)
+    workspace = output.parent / method
+    query_path = Path(request["query_h5ad"])
+    query_sha256 = _sha256(query_path)
+    annotated_path = Path(request["annotated_h5ad"])
+    run_path = output.with_suffix(".run.json")
+    try:
+        worker_result = _execute_agent_worker(
+            method,
+            request,
+            python_executable=python_executable,
+            workspace=workspace,
+            working_directory=working_directory,
+            timeout_seconds=process_timeout_seconds,
+        )
+        if _sha256(query_path) != query_sha256:
+            raise RuntimeError(f"{method} mutated the selection-blind query input.")
+        if not annotated_path.exists():
+            raise FileNotFoundError(
+                f"{method} completed without producing the required output: {annotated_path}"
+            )
+        prediction_audit = _write_agent_predictions(
+            query_path=query_path,
+            annotated_path=annotated_path,
+            output_path=output,
+            method=method,
+            prediction_column=prediction_column,
+            confidence_column=confidence_column,
+        )
+    except Exception as error:
+        failure = {
+            "status": "error",
+            "method": method,
+            "model": model,
+            "error_type": type(error).__name__,
+            "message": str(error),
+            "workspace": str(workspace.relative_to(REPO_ROOT)),
+            "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        run_path.write_text(json.dumps(failure, indent=2), encoding="utf-8")
+        raise
+
+    metadata = {
+        "status": "success",
+        "method": method,
+        "version": worker_result.get("version"),
+        "model": model,
+        "worker_python": python_executable,
+        "process_timeout_seconds": process_timeout_seconds,
+        "query_sha256": query_sha256,
+        **prediction_audit,
+        "prompt_sha256": hashlib.sha256(request["prompt"].encode("utf-8")).hexdigest(),
+        "output_path": str(output.relative_to(REPO_ROOT)),
+        "annotated_h5ad": str(annotated_path.relative_to(REPO_ROOT)),
+        "annotated_h5ad_sha256": _sha256(annotated_path),
+        "worker_request_path": str((workspace / "worker_request.json").relative_to(REPO_ROOT)),
+        "worker_request_sha256": _sha256(workspace / "worker_request.json"),
+        "worker_result_path": str((workspace / "worker_result.json").relative_to(REPO_ROOT)),
+        "worker_result_sha256": _sha256(workspace / "worker_result.json"),
+        "worker_stdout_path": str((workspace / "worker_stdout.log").relative_to(REPO_ROOT)),
+        "worker_stderr_path": str((workspace / "worker_stderr.log").relative_to(REPO_ROOT)),
+        "data_sent_to_provider": "agent-selected context derived from the selection-blind query",
+        "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    for key in (
+        "source",
+        "source_revision",
+        "use_azure",
+        "use_local_embeddings",
+        "embedding_cache_path",
+        "resume_from",
+        "resumed_artifacts",
+        "task_prompt_template",
+        "task_prompt",
+    ):
+        if key in request:
+            metadata[key] = request[key]
+    if "query_preprocessing" in worker_result:
+        metadata["query_preprocessing"] = worker_result["query_preprocessing"]
+    if "harmony_compatibility" in worker_result:
+        metadata["harmony_compatibility"] = worker_result["harmony_compatibility"]
+    if "h5ad_compatibility" in worker_result:
+        metadata["h5ad_compatibility"] = worker_result["h5ad_compatibility"]
+    if "llm_output_normalization" in worker_result:
+        metadata["llm_output_normalization"] = worker_result["llm_output_normalization"]
+    if "runtime_dependencies" in worker_result:
+        metadata["runtime_dependencies"] = worker_result["runtime_dependencies"]
+        metadata["pythonpath"] = worker_result["pythonpath"]
+    run_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    return metadata
+
+
+def run_biomni(
+    prepared: dict[str, Any] | str | Path,
+    *,
+    model: str | None = None,
+    source: str | None = None,
+    python_executable: str | Path | None = None,
+    process_timeout_seconds: int = 21_600,
+    task_prompt_template: str | None = None,
+    execution_timeout_seconds: int | None = None,
+) -> dict[str, Any]:
+    """Execute the upstream Biomni agent and adapt its output for benchmark scoring."""
+    prepared = _load_prepared(prepared)
+    manifest = load_manifest(prepared["dataset_id"])
+    config = manifest["baselines"]["biomni"]
+    selected_model = model or config["model"]
+    selected_source = source or config.get("source")
+    selected_python = str(python_executable or os.environ.get("BIOMNI_PYTHON") or sys.executable)
+    output = _prediction_output(prepared, "biomni")
+    annotated_path = output.parent / "biomni" / "annotated.h5ad"
+    query_path = (REPO_ROOT / prepared["query_h5ad"]).resolve()
+    prompt = _biomni_prompt(
+        query_path, annotated_path.resolve(), manifest, selected_model, task_prompt_template
+    )
+    data_lake_path = DATA_DIR / "cache" / "biomni" / "biomni_data" / "data_lake"
+    request = {
+        "query_h5ad": str(query_path),
+        "annotated_h5ad": str(annotated_path.resolve()),
+        "prompt": prompt,
+        "task_prompt": _agent_task_prompt(
+            query_path, annotated_path.resolve(), manifest, task_prompt_template
+        ),
+        "task_prompt_template": task_prompt_template,
+        "model": selected_model,
+        "source": selected_source,
+        "data_path": str((DATA_DIR / "cache" / "biomni").resolve()),
+        "data_lake_path": str(data_lake_path.resolve()),
+        "agent_timeout_seconds": execution_timeout_seconds
+        or int(config.get("agent_timeout_seconds", 1_800)),
+        "use_tool_retriever": bool(config.get("use_tool_retriever", True)),
+        "commercial_mode": bool(config.get("commercial_mode", False)),
+        "expected_version": config.get("expected_version"),
+        "expected_data_lake_files": config.get(
+            "expected_data_lake_files", ["czi_census_datasets_v4.parquet"]
+        ),
+    }
+    return _run_agent_baseline(
+        prepared,
+        method="biomni",
+        model=selected_model,
+        request=request,
+        python_executable=selected_python,
+        working_directory=annotated_path.parent,
+        process_timeout_seconds=process_timeout_seconds,
+        prediction_column=config.get("prediction_column", "cell_type"),
+        confidence_column=config.get("confidence_column"),
+    )
+
+
+def run_spatialagent(
+    prepared: dict[str, Any] | str | Path,
+    *,
+    model: str | None = None,
+    source_path: str | Path | None = None,
+    python_executable: str | Path | None = None,
+    process_timeout_seconds: int = 21_600,
+    resume_from: str | Path | None = None,
+    task_prompt_template: str | None = None,
+    execution_timeout_seconds: int | None = None,
+) -> dict[str, Any]:
+    """Execute the upstream SpatialAgent and adapt its output for benchmark scoring."""
+    prepared = _load_prepared(prepared)
+    manifest = load_manifest(prepared["dataset_id"])
+    config = manifest["baselines"]["spatialagent"]
+    selected_model = model or config["model"]
+    selected_python = str(
+        python_executable or os.environ.get("SPATIALAGENT_PYTHON") or sys.executable
+    )
+    configured_source = source_path or os.environ.get("SPATIALAGENT_REPO")
+    if configured_source is None:
+        raise RuntimeError(
+            "SpatialAgent source is required; pass source_path or set SPATIALAGENT_REPO."
+        )
+    resolved_source = Path(configured_source).expanduser().resolve()
+    if not (resolved_source / "spatialagent" / "agent" / "spatialagent.py").is_file():
+        raise FileNotFoundError(f"Invalid SpatialAgent repository: {resolved_source}")
+    source_revision = _git_revision(resolved_source)
+    expected_revision = config.get("source_revision")
+    if expected_revision is not None and source_revision != expected_revision:
+        raise RuntimeError(
+            f"SpatialAgent revision {expected_revision} is required; found {source_revision}."
+        )
+    output = _prediction_output(prepared, "spatialagent")
+    annotated_path = output.parent / "spatialagent" / "celltype_annotated.h5ad"
+    query_path = (REPO_ROOT / prepared["query_h5ad"]).resolve()
+    prompt = _spatialagent_prompt(
+        query_path, annotated_path.resolve(), manifest, selected_model, task_prompt_template
+    )
+    request = {
+        "query_h5ad": str(query_path),
+        "annotated_h5ad": str(annotated_path.resolve()),
+        "prompt": prompt,
+        "task_prompt": _agent_task_prompt(
+            query_path, annotated_path.resolve(), manifest, task_prompt_template
+        ),
+        "task_prompt_template": task_prompt_template,
+        "model": selected_model,
+        "source_path": str(resolved_source),
+        "source_revision": source_revision,
+        "use_azure": bool(config.get("use_azure", False)),
+        "use_local_embeddings": bool(config.get("use_local_embeddings", True)),
+        "embedding_cache_path": str(
+            (DATA_DIR / "cache" / "spatialagent" / "embedding_cache").resolve()
+        ),
+        "data_path": str((resolved_source / "data").resolve()),
+        "save_path": str(annotated_path.parent.resolve()),
+        "tool_retrieval": bool(config.get("tool_retrieval", True)),
+        "tool_retrieval_method": config.get("tool_retrieval_method", "llm"),
+        "skill_retrieval": bool(config.get("skill_retrieval", True)),
+        "act_timeout_seconds": execution_timeout_seconds
+        or int(config.get("act_timeout_seconds", 1_800)),
+        "recursion_limit": int(config.get("recursion_limit", 50)),
+    }
+    if resume_from is not None:
+        request["resume_from"] = str(Path(resume_from).resolve())
+        request["prompt"] += (
+            "\nResume the previous native workflow: preprocessing, reference acquisition and "
+            "Harmony label transfer have already completed on this identical query. Their "
+            "verified artifacts are copied into save_path. Reuse preprocessed.h5ad and "
+            "celltype_transferred.csv there and execute annotate_cell_types with resolution=0, "
+            "then verify the saved celltype_annotated.h5ad. The previous execution stopped before "
+            "annotation finished; this run gives annotation a fresh full execution budget. "
+            "Do not redo the completed preprocessing, "
+            "reference search, download or label-transfer steps."
+        )
+    return _run_agent_baseline(
+        prepared,
+        method="spatialagent",
+        model=selected_model,
+        request=request,
+        python_executable=selected_python,
+        working_directory=resolved_source,
+        process_timeout_seconds=process_timeout_seconds,
+        prediction_column=config.get("prediction_column", "cell_type"),
+        confidence_column=config.get("confidence_column"),
+    )
 
 
 def run_celltypist(
@@ -676,6 +1197,7 @@ def run_gptcelltype(
     max_marker_cells_per_cluster: int | None = None,
     max_marker_cells_total: int | None = None,
     marker_sampling_random_seed: int | None = None,
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Execute GPTCellType directly; only cluster marker names are sent to OpenAI."""
     version = _require_version("omicverse")
@@ -685,7 +1207,9 @@ def run_gptcelltype(
 
     prepared = _load_prepared(prepared)
     manifest = load_manifest(prepared["dataset_id"])
-    config = manifest["baselines"]["gptcelltype"]
+    config = dict(manifest["baselines"]["gptcelltype"])
+    if model is not None:
+        config["model"] = model
     query = ad.read_h5ad(REPO_ROOT / prepared["query_h5ad"])
     working, query_preprocessing = _prepare_log1p(query)
     if working.n_obs < 3 or working.n_vars < 3:

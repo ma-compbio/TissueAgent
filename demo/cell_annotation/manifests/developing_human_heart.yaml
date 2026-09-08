@@ -44,4 +44,13 @@ baselines:
     tissue_name: heart
     species_name: human
     model: gpt-5.1
+  biomni:
+    model: gpt-5.1
+    source: OpenAI
+    expected_version: 0.0.8
+  spatialagent:
+    model: gpt-5.1
+    use_azure: false
+    act_timeout_seconds: 10800
+    source_revision: e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6
 mapping: demo/cell_annotation/mappings/developing_human_heart.json

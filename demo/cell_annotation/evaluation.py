@@ -23,6 +23,13 @@ from .benchmarks import REPO_ROOT, _label_contract_sha256, _sha256
 
 
 UNASSIGNED = "Unassigned"
+DEFAULT_PREDICTION_METHODS = (
+    "tissueagent",
+    "celltypist",
+    "gptcelltype",
+    "biomni",
+    "spatialagent",
+)
 
 PREDICTION_MAPPING_SYSTEM_PROMPT = """\
 Map free-text cell-annotation labels into a frozen evaluation label space.
@@ -424,7 +431,7 @@ def evaluate_predictions(
     if prediction_paths is None:
         prediction_paths = {
             method: run_dir / f"{method}_predictions.tsv"
-            for method in ("tissueagent", "celltypist", "gptcelltype")
+            for method in DEFAULT_PREDICTION_METHODS
             if (run_dir / f"{method}_predictions.tsv").exists()
         }
     if not prediction_paths:
@@ -719,7 +726,7 @@ def bootstrap_grouped_metrics(
     if prediction_paths is None:
         prediction_paths = {
             method: run_dir / f"{method}_predictions.tsv"
-            for method in ("tissueagent", "celltypist", "gptcelltype")
+            for method in DEFAULT_PREDICTION_METHODS
             if (run_dir / f"{method}_predictions.tsv").exists()
         }
     if not prediction_paths:

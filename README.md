@@ -296,7 +296,16 @@ OmicVerse GPTCellType comparison remains an isolated optional dependency:
 uv sync --frozen --extra cell-annotation-benchmarks
 ```
 
-This installs only the versions pinned in `uv.lock`; the demo never installs packages at runtime. The ovarian Seurat conversion additionally requires an existing R installation with Seurat and Matrix. Missing R packages are reported explicitly and are never installed by TissueAgent. See `demo/cell_annotation_benchmark.ipynb` for the three-dataset quick/full workflow.
+This installs only the versions pinned in `uv.lock`; the demo never installs packages at runtime.
+Biomni and SpatialAgent baselines use their own upstream environments to avoid dependency conflicts
+and expose configurable base models through the same benchmark runner/output path. See
+[`docs/cell_annotation_agent_baselines.md`](docs/cell_annotation_agent_baselines.md) for setup and
+[`demo/cell_annotation_benchmark.ipynb`](demo/cell_annotation_benchmark.ipynb) for the developing
+human heart, BCL, and Han mouse brain Stereo-seq quick/full demo. The guide also includes a
+saved-results plotting command that needs no API keys or expression data.
+The ovarian Seurat conversion additionally requires an existing R installation with
+Seurat and Matrix. Missing R packages are reported explicitly and are never installed by
+TissueAgent.
 
 > [!TIP]
 > All agents use GPT-5 by default. To save API tokens, models with lower reasoning capabilities can be used. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
