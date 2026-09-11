@@ -229,6 +229,12 @@ def _write_report(
                 "not assigned an invented accuracy score."
             )
         ),
+        (
+            "Protein-coding and multi-species answers additionally normalize unambiguous "
+            "sentence-form "
+        ),
+        "decisions and species names. Human-alignment answers naming an explicit chromosome in ",
+        "prose or cytoband notation receive the scorer's existing chromosome-level half-credit.",
         "",
         "## Progress and aggregate results",
         "",

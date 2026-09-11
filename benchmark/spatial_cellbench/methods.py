@@ -91,14 +91,17 @@ class CallTrace:
 class LangChainModelCall:
     """Invoke one configured model without model or semantic fallbacks."""
 
-    def __init__(self, model_id: str) -> None:
+    def __init__(self, model_id: str, *, timeout: float | None = None) -> None:
         """Create one reusable model client."""
         from models import build_chat_model
         from server.rate_limit import with_header_retry
 
         register_benchmark_models()
         self.model_id = model_id
-        self._model = with_header_retry(build_chat_model(model_id), max_attempts=6)
+        overrides = {"timeout": timeout, "max_retries": 0} if timeout is not None else {}
+        self._model = with_header_retry(
+            build_chat_model(model_id, **overrides), max_attempts=6
+        )
         self._chains: dict[type[BaseModel], object] = {}
         self._traces: list[CallTrace] = []
         self._failed_attempts: list[dict] = []

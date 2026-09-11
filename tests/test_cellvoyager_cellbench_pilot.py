@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import statistics
 from pathlib import Path
 
 from benchmark.cellvoyager_cellbench_pilot.methods import (
@@ -10,6 +11,9 @@ from benchmark.cellvoyager_cellbench_pilot.methods import (
     expected_generation_stages,
     load_query,
     run_cellvoyager,
+)
+from benchmark.cellvoyager_cellbench_pilot.aggregate_replicates import (
+    build_replicate_aggregate,
 )
 from benchmark.cellvoyager_cellbench_pilot.run_all import build_aggregate
 from benchmark.cellvoyager_cellbench_pilot.schemas import (
@@ -166,3 +170,30 @@ def test_full_aggregate_is_running_until_every_query_completes() -> None:
     assert aggregate["status"] == "running"
     assert aggregate["completed_queries"] == 0
     assert aggregate["direct_pooled_hit_fraction"] is None
+
+
+def test_three_replicate_aggregate_uses_population_standard_deviation() -> None:
+    runs = []
+    for replicate, direct_micro in enumerate((0.70, 0.75, 0.80), 1):
+        runs.append(
+            {
+                "status": "complete",
+                "replicate": replicate,
+                "query_count": 50,
+                "candidate_count": 483,
+                "generation_model": "o3-mini",
+                "orchestration_model": "gpt-5.1",
+                "judge_model": "gpt-4o",
+                "recruitment_successes": 50,
+                "invocation_successes": 50,
+                "direct_mean_query_hit_fraction": direct_micro,
+                "direct_pooled_hit_fraction": direct_micro + 0.01,
+                "recruited_mean_query_hit_fraction": direct_micro - 0.02,
+                "recruited_pooled_hit_fraction": direct_micro - 0.01,
+            }
+        )
+    aggregate = build_replicate_aggregate(runs)
+    assert aggregate["direct_micro_avg"]["mean"] == 0.75
+    assert aggregate["direct_micro_avg"]["std"] == statistics.pstdev(
+        (0.70, 0.75, 0.80)
+    )

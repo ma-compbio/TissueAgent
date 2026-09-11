@@ -23,6 +23,7 @@ Request JSON keys:
     models:         list[str] | None        (consensus mode)
     additional_context: str | None
     cache_dir:      str | None
+    log_dir:        str | None
 
 The result JSON always has a top-level ``status`` of "ok" or "error".
 """
@@ -45,6 +46,7 @@ def _run(request: dict[str, Any]) -> dict[str, Any]:
     tissue = request.get("tissue")
     additional_context = request.get("additional_context")
     cache_dir = request.get("cache_dir")
+    log_dir = request.get("log_dir")
     mode = request.get("mode", "single")
 
     if mode == "consensus":
@@ -57,6 +59,7 @@ def _run(request: dict[str, Any]) -> dict[str, Any]:
             additional_context=additional_context,
             use_cache=True,
             cache_dir=cache_dir,
+            log_dir=log_dir,
             verbose=False,
         )
         # interactive_consensus_annotation returns a 10-key dict; surface the
@@ -87,6 +90,7 @@ def _run(request: dict[str, Any]) -> dict[str, Any]:
         additional_context=additional_context,
         use_cache=True,
         cache_dir=cache_dir,
+        log_dir=log_dir,
     )
     return {
         "status": "ok",

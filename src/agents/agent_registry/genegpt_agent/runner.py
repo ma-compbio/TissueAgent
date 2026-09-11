@@ -30,6 +30,8 @@ from __future__ import annotations
 
 import re
 import sys
+import time
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -51,6 +53,7 @@ _PINNED_MODEL = "gpt-4o"
 # Upstream constants (main_turbo.py): truncate long prompts, cap tool calls.
 _CUT_LENGTH = 36000
 _MAX_CALLS = 10
+_NCBI_HTTP_TIMEOUT_SECONDS = 1200
 
 # The default few-shot mask upstream reports as its best config: both API docs
 # (Eutils + BLAST) + all four demonstrations. String order = Dc.1-2, Dm.1-4.
@@ -94,6 +97,18 @@ def _find_url(text: str) -> str | None:
     return loose[0] if loose else None
 
 
+def _call_api(url: str) -> bytes:
+    """Execute one upstream-compatible NCBI request with a bounded read."""
+    time.sleep(1)
+    url = url.replace(" ", "+")
+    print(url)
+    request = urllib.request.Request(url)
+    with urllib.request.urlopen(
+        request, timeout=_NCBI_HTTP_TIMEOUT_SECONDS
+    ) as response:
+        return response.read()
+
+
 def _ensure_upstream_on_path() -> bool:
     if not (_UPSTREAM_DIR / "main_turbo.py").is_file():
         raise RuntimeError(
@@ -123,6 +138,7 @@ def _import_upstream_helpers():
         for mod in ("main_turbo", "config"):
             sys.modules.pop(mod, None)
         import main_turbo  # type: ignore[import-not-found]
+        main_turbo.call_api = _call_api
     finally:
         if app_config is None:
             sys.modules.pop("config", None)
@@ -131,7 +147,7 @@ def _import_upstream_helpers():
         if added_path:
             sys.path.remove(str(_UPSTREAM_DIR))
 
-    return main_turbo.get_prompt_header, main_turbo.call_api
+    return main_turbo.get_prompt_header, _call_api
 
 
 def _extract_answer(text: str) -> str:
@@ -232,7 +248,6 @@ def run_genegpt_question(
                 url = _find_url(text)
                 if url:
                     if "blast" in url and "Get" in url:
-                        import time
                         time.sleep(30)  # wait for BLAST result on NCBI
                     call = call_api(url)
 

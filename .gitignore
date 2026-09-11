@@ -11,6 +11,7 @@ __marimo__/
 /logs/
 /datasets/
 /cache/
+/demo/cache/
 # workspace/: keep the high-level folder skeleton tracked (via .gitkeep),
 # but ignore everything users / agents put inside at runtime — project
 # runs, library uploads, scratch drafts, in-flight plan files.
@@ -80,6 +81,18 @@ benchmark/biomysterybench/*
 benchmark/spatial_cellbench/runs/
 benchmark/spatial_cellbench/slurm/*.out
 
+# GPT-4o direct-vs-recruited mLLMCelltype benchmark definition. Runtime model
+# payloads and isolated TissueAgent state remain local; compact auditable results
+# are retained.
+!benchmark/mllmcelltype_gpt4o_subset/
+benchmark/mllmcelltype_gpt4o_subset/data/subset.partial.json
+benchmark/mllmcelltype_gpt4o_subset/results/*
+!benchmark/mllmcelltype_gpt4o_subset/results/REPORT.md
+!benchmark/mllmcelltype_gpt4o_subset/results/preflight.json
+!benchmark/mllmcelltype_gpt4o_subset/results/records.json
+!benchmark/mllmcelltype_gpt4o_subset/results/run_status.json
+!benchmark/mllmcelltype_gpt4o_subset/results/summary.json
+
 # The problem set, the harness, and the graded results. `slurm/make_prompt.py`
 # matters more than its size suggests: the preamble it emits is what separates
 # one prompt version from another, and results are only comparable within a version.
@@ -133,6 +146,25 @@ docs/figures/extract_icons.py
 docs/manuscript/
 
 data/
+
+# Keep the canonical Lohoff 2b reference used by the demo notebook.
+!/demo/data/
+/demo/data/*
+!/demo/data/reference_lohoff-2a.png
+!/demo/data/reference_lohoff-2b.png
+!/demo/data/reference_lohoff-2c.png
+!/demo/data/reference_lohoff-2d.png
+!/demo/data/method_lohoff-2d.png
+!/demo/data/instructions_lohoff-2d.md
+
+# Lohoff panel reproductions: retain only the canonical final image from each run.
+/demo/outputs/figure_recreation_lohoff-2*/*
+!/demo/outputs/figure_recreation_lohoff-2*/final_figure.png
+
+# Re-open the compact, derived input bundle after the repository-wide data rule.
+!benchmark/mllmcelltype_gpt4o_subset/data/
+benchmark/mllmcelltype_gpt4o_subset/data/*
+!benchmark/mllmcelltype_gpt4o_subset/data/mca_hlca_gtex.json
 
 .rlib/
 

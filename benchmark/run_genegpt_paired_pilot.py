@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
+import signal
 import shutil
 import subprocess
 import sys
@@ -38,6 +40,16 @@ _TASK_ORDER = [
     "Multi-species DNA aligment",
     "Human genome DNA aligment",
 ]
+
+_SPECIES_ALIASES = {
+    "human": ("Homo sapiens", "human"),
+    "mouse": ("Mus musculus", "mouse"),
+    "rat": ("Rattus norvegicus", "rat"),
+    "zebrafish": ("Danio rerio", "zebrafish"),
+    "worm": ("Caenorhabditis elegans", "worm"),
+    "yeast": ("Saccharomyces cerevisiae", "yeast"),
+    "chicken": ("Gallus gallus", "chicken"),
+}
 
 
 def _is_fewshot(question: str) -> bool:
@@ -99,6 +111,50 @@ def _score(raw: str, gold: Any, task: str) -> tuple[Any, float]:
         sys.path.remove(str(_UPSTREAM))
 
     pred = get_answer(raw or "", task)
+    if task == "Protein-coding genes" and isinstance(pred, str):
+        decision = re.match(r"^(yes|no)\b", pred.strip(), flags=re.IGNORECASE)
+        if decision:
+            pred = "TRUE" if decision.group(1).lower() == "yes" else "NA"
+        elif re.search(
+            r"\bis not (?:a )?protein[- ]coding gene\b", pred, flags=re.IGNORECASE
+        ):
+            pred = "NA"
+        elif re.search(
+            r"\bis (?:a )?protein[- ]coding gene\b", pred, flags=re.IGNORECASE
+        ):
+            pred = "TRUE"
+    elif task == "Multi-species DNA aligment" and isinstance(pred, str):
+        if "?" not in pred and "http" not in pred.lower():
+            species = {
+                canonical
+                for canonical, aliases in _SPECIES_ALIASES.items()
+                for alias in aliases
+                if re.search(rf"\b{re.escape(alias)}\b", pred, flags=re.IGNORECASE)
+            }
+            if len(species) == 1:
+                pred = species.pop()
+    elif task == "Human genome DNA aligment" and isinstance(pred, str):
+        coordinates = re.findall(
+            r"\bchr(?:omosome)?\s*([0-9]{1,2}|X|Y|MT|M)\s*:\s*"
+            r"([0-9,]+)\s*-\s*([0-9,]+)",
+            pred,
+            flags=re.IGNORECASE,
+        )
+        if len(coordinates) == 1:
+            chromosome, start, end = coordinates[0]
+            pred = f"chr{chromosome.upper()}:{start.replace(',', '')}-{end.replace(',', '')}"
+        else:
+            chromosomes = {
+                chromosome.upper()
+                for chromosome in re.findall(
+                    r"\bchr(?:omosome)?\s*([0-9]{1,2}|X|Y|MT|M)"
+                    r"(?=\b|[pq:])",
+                    pred,
+                    flags=re.IGNORECASE,
+                )
+            }
+            if len(chromosomes) == 1:
+                pred = f"chr{chromosomes.pop()}"
     if task in ("Gene disease association", "Disease gene location"):
         golds = gold.split(", ") if isinstance(gold, str) else list(gold)
         score = sum(item in pred for item in golds) / len(golds)
@@ -148,6 +204,36 @@ def _find_tool_result(
     return candidates[-1] if candidates else (None, {})
 
 
+def _run_cli(
+    command: list[str], cwd: Path, env: dict[str, str], timeout: int
+) -> subprocess.CompletedProcess[str]:
+    """Run an isolated CLI process and terminate all descendants on timeout."""
+    proc = subprocess.Popen(
+        command,
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        stdout, stderr = proc.communicate()
+        raise subprocess.TimeoutExpired(
+            exc.cmd,
+            exc.timeout,
+            output=stdout or exc.output,
+            stderr=stderr or exc.stderr,
+        ) from None
+    return subprocess.CompletedProcess(command, proc.returncode, stdout, stderr)
+
+
 def _run_direct(index: int, question: str, out_dir: Path) -> dict[str, Any]:
     from agents.agent_registry.genegpt_agent.runner import run_genegpt_question
 
@@ -192,26 +278,20 @@ def _run_tissueagent(
     started = time.perf_counter()
     child_env = {**os.environ, "PYTHONPATH": str(_SRC)}
     child_env.setdefault("TISSUEAGENT_CODING_AGENT", "cache")
+    command = [
+        sys.executable,
+        "-m",
+        "cli",
+        prompt,
+        "--json",
+        "--no-docker",
+        "--task-id",
+        f"genegpt_paired_{index:02d}",
+        "--seed",
+        "0",
+    ]
     try:
-        proc = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "cli",
-                prompt,
-                "--json",
-                "--no-docker",
-                "--task-id",
-                f"genegpt_paired_{index:02d}",
-                "--seed",
-                "0",
-            ],
-            cwd=_SRC,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            env=child_env,
-        )
+        proc = _run_cli(command, _SRC, child_env, timeout)
     except subprocess.TimeoutExpired as exc:
         elapsed = time.perf_counter() - started
         stdout = exc.stdout or ""

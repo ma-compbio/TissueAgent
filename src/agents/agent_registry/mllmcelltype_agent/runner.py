@@ -213,6 +213,7 @@ def run_mllmcelltype_annotation(
     run_dir = active_project_outputs() / "mllmcelltype" / run_identifier
     run_dir.mkdir(parents=True, exist_ok=True)
     cache_dir = run_dir / "cache"
+    log_dir = run_dir / "logs"
 
     request = {
         "marker_genes": marker_genes,
@@ -224,6 +225,7 @@ def run_mllmcelltype_annotation(
         "models": models,
         "additional_context": additional_context,
         "cache_dir": str(cache_dir),
+        "log_dir": str(log_dir),
     }
     request_path = run_dir / "request.json"
     result_path = run_dir / "result.json"
