@@ -1,0 +1,175 @@
+{
+  "status": "success",
+  "unit_fingerprint": "51a572f86e23a48b2e04810edda484034a0d200f92fe61980ff3bf2494475132",
+  "generation_proposal_sha256": "c3015c6797d8d703194c18314a929507319313eea9e333d9e8ab8fcd748c0228",
+  "truth_sha256": "72bf6018e990222dd5a6b3b23c29ec5fbf3182b6cbc88c1cbb5016808f1e94b7",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "322c4569fd44d3d0c474271cccff16a93f75c69ed18bc805f16567221267daaa",
+    "1c721b2f6256234f9ab4e0388bbaa411e67ef6f5cefe504882e1c592e4a42c02",
+    "069f186a5b203c0e96fbe1425a9cb131b1d8f171eeb6704479f67afdaa29e15f",
+    "5cb18c519b66b6addf2b96288b9c8569d967798205d4aecdc4640fa47c200c22",
+    "5ee5d4a9e49d20a821073e9f7c95b660aaafb3a0efe2ba583aa2d6810f6a8f12",
+    "9da98f017abca4f859cc08935aabbe250446b1d642bb2855e51027305b81ab53",
+    "2fb33fd1f9eaa8186bc6043e1a48725fe13104fe08f58bd4e31fe63fe754225e",
+    "458002c98df647fe95163b549d54362ab4c0f656a083d64b1c07bdfbf63e6392",
+    "8a6f154e3231e5c1e75ab0c095167f021dfd759fc52f364d40432c0ac76a555b",
+    "812aff72dc3f1ade2cb1b55a3ccb3cb1a1e1a1b57b32b0915fae45ae88e87142"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis focuses on quantifying spatial heterogeneity by comparing the transcriptomic profiles of local neighborhoods within a tissue section, using similarity scores that take into account various factors like neighborhood size, spatial resolution, and cell density. This aligns with the main objective of the ground-truth analysis G02, which is to compare neighborhood similarity and spatial heterogeneity scores. Both analyses share the primary goal of assessing spatial heterogeneity and measuring similarities between neighborhoods."
+    },
+    {
+      "candidate_index": 1,
+      "match": false,
+      "reason": "The proposed analysis focuses on identifying recurrent microenvironments within tissues by clustering spatial transcriptomics data, emphasizing the discovery of recurrent combinations of cell types and states to shed light on tissue architecture and pathology boundaries. None of the ground-truth analyses precisely aligns with this focus. The closest analyses, such as G04 and G09, involve clustering or summarization of neighborhood compositions, but they either emphasize agreement with known tissue annotations or compress into graph abstractions. The proposed focus on recurrent microenvironments is distinct as it is more about identifying and understanding repeated cell type patterns without additional conditions such as comparison, validation against known structures, or specific disease conditions."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis 'Differential Neighborhood Analysis Across Conditions' matches ground-truth analysis 'G06', 'Detect differential microenvironments between liver samples'. Both analyses focus on comparing neighborhood compositions across different conditions to identify changes, with the proposed analysis aimed at understanding condition-specific disruptions and G06 targeting the identification of neighborhoods with composition changes across liver samples. The core scientific objective of detecting differential microenvironments across conditions aligns between the two."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis focuses on mapping ligand-receptor interactions overlaying spatial coordinates to reveal signaling hotspots, aiming to understand cell-cell interactions in microenvironments. This matches ground-truth G04, which aims to relate neighborhood structures to ligand-receptor scores to identify interactions supported by composition and proximity. Both share the main objective of linking spatial organization and ligand-receptor interactions to explore intercellular communication."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis focuses on integrating data at multiple spatial resolutions and normalizing for cell density and spot size variances to create a multi-scale view for identifying gradients and transitions. This aligns with the ground-truth analysis G05, which aims to assess robustness to resolution and density by varying spatial resolution and determining if heterogeneity conclusions hold across different sampling densities. Both analyses share the objective of understanding and verifying findings across different scales and resolutions, thus capturing a comprehensive view of the spatial data."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on detecting and characterizing continuous transitions in gene expression at tissue boundaries, emphasizing the identification of transition zones where changes in cell states occur. This is distinct from any of the ground-truth analyses, which focus on identifying microenvironments, neighborhood compositions, tumor subtypes, spatial resolutions, or ligand-receptor interactions. None of the ground-truth analyses explicitly mention the main objective of detecting continuous transitions or gradients at tissue boundaries."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis focuses on normalizing neighborhood composition by accounting for cell density fluctuations in spatial transcriptomics. This directly relates to 'Ground-truth G08', which assesses robustness to resolution and density. Both analyses are concerned with correcting or adapting to changes in cell density or spatial resolution to ensure that biological conclusions reflect true variations rather than artifacts."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis focuses on spatial deconvolution to identify cell-type distribution and analyze local heterogeneity within spatial maps, aiming to discern microenvironmental niches and gene expression profiles. This aligns with G07, which involves comparing spatial heterogeneity scores across datasets, since both analyses aim to quantify and understand spatial heterogeneity in tissue samples."
+    },
+    {
+      "candidate_index": 8,
+      "match": false,
+      "reason": "The proposed analysis focuses on quantifying the spatial autocorrelation of gene expression patterns, specifically using statistics like Moran's I and Geary's C to determine if gene expressions are spatially clustered. This objective is distinct from the ground-truth analyses, which focus on tasks such as building microenvironment graph abstractions, identifying spatial domains, and comparing neighborhood compositions or microenvironments. The ground-truth set analyses primarily focus on the structure and composition of spatial neighborhoods or their implications (e.g., interactions, stability, or classification), rather than explicitly quantifying spatial autocorrelation of gene expression patterns. Therefore, the proposed analysis does not match any of the ground-truth analyses."
+    },
+    {
+      "candidate_index": 9,
+      "match": false,
+      "reason": "The proposed analysis focuses on integrating tissue morphology with spatial transcriptomics to enhance the biological interpretability of spatial heterogeneity, specifically through contextualizing gene expression patterns and aligning molecular data with morphological boundaries. None of the ground-truth analyses have a main scientific objective that matches this integration focus. Most of the ground-truth analyses deal with neighborhood composition, microenvironment analysis, or domain identification without emphasis on morphological integration."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 6,
+    "candidate_count": 10,
+    "candidate_hit_fraction": 0.6
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 10,
+    "observable_model_attempts": 10,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.5026354994624853,
+        "input_tokens": 825,
+        "output_tokens": 96,
+        "total_tokens": 921
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 2.2048806082457304,
+        "input_tokens": 820,
+        "output_tokens": 137,
+        "total_tokens": 957
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.8037014789879322,
+        "input_tokens": 823,
+        "output_tokens": 94,
+        "total_tokens": 917
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 2.324071377515793,
+        "input_tokens": 825,
+        "output_tokens": 87,
+        "total_tokens": 912
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.7888001929968596,
+        "input_tokens": 820,
+        "output_tokens": 104,
+        "total_tokens": 924
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 3.1713781729340553,
+        "input_tokens": 815,
+        "output_tokens": 97,
+        "total_tokens": 912
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.777019314467907,
+        "input_tokens": 816,
+        "output_tokens": 75,
+        "total_tokens": 891
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.6198736187070608,
+        "input_tokens": 829,
+        "output_tokens": 74,
+        "total_tokens": 903
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 2.7260724026709795,
+        "input_tokens": 830,
+        "output_tokens": 142,
+        "total_tokens": 972
+      },
+      {
+        "stage": "judge_10",
+        "kind": "structured",
+        "elapsed_seconds": 1.9575306195765734,
+        "input_tokens": 824,
+        "output_tokens": 89,
+        "total_tokens": 913
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 20.879
+  },
+  "trace_sha256": "03428f5ed2fdebb8babebe0dd9ff5d954b0c573de9894297aac3d6a5546090ab",
+  "checkpoint_sha256": "c3ebfe0a439632f4b196edb94f73cdf88a4899cc650897725ab493d476baa4d2"
+}

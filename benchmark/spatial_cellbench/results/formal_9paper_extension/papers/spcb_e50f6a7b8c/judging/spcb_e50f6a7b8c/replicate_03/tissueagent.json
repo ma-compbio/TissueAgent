@@ -1,0 +1,147 @@
+{
+  "status": "success",
+  "unit_fingerprint": "2c6035d60ec3f118960dae46e841d51cd4b73301ef3c6d75992a75a0c08ac2fd",
+  "generation_proposal_sha256": "eb171f7c43fb08e98778eaf4fe545a33bb4cea890c1f9375c7213cdadb79d0e5",
+  "truth_sha256": "3c1b5260101c66070acabd4fbfdadb7a920741b19789682bd98366c1fbdc3bec",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "fe92b82e47608d5e5ed62a97b48de1ee322f10f47e458ed2351f9bd8be3f57bc",
+    "be8971c0d6e5098f59e49730307f56c05cb30156f3382c914db07c5cfabf181c",
+    "d3bb7f4cfca51fe706bce8215e8038f1979b6c14e376a117f4588108fd56a910",
+    "768e03079a4e568ffe2b2a7616a396274610803ca18a2527af42d0e841cb4d3c",
+    "9d650e90f628cb9514814e6064fe18786063d0f7cd2a64500f9225e540b06bea",
+    "2219d21de9e5eb5b508734453209049722bd9b90936e3282c3aee7e11f3207f8",
+    "cdd752f9196b6a98ff10e203ce15aa648d60b047ab7783f2c5d274a2c6d27238",
+    "d0c14545412115fad890e43523fa148061cc03d7639ce6c24e951dacced3a78f"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": false,
+      "reason": "The proposed analysis focuses on spatial clustering of molecular profiles using graph-based clustering techniques that incorporate spatial coordinates and molecular data. This objective is distinctly about segmenting tissues into spatially coherent regions based on molecular and spatial data.\n\nNone of the ground-truth analyses focus on this specific objective of clustering tissues based on spatial and molecular information. They instead focus on statistical quantification of spatial patterning (G01), multimodal integration (G02), assay type comparisons (G03), image segmentation and morphology extraction (G04), detection of spatially variable genes (G05), benchmarking image processing (G06), constructing spatial neighbor graphs (G07), and cell-type neighborhood enrichment (G08). Therefore, there is no match between the proposed analysis and the ground-truth analyses."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on neighborhood enrichment of cell types using permutation-based methods, which matches the objective of G07. G07 involves testing neighborhood enrichment between cell types using similar statistical tests. Both aim to identify co-localization and spatial proximity patterns of different cell types using statistical methods."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on identifying genes with region-specific expression patterns by comparing expression levels across spatially defined tissue areas, using differential expression methods. While it employs gradient-based methods for spatial comparisons rather than Moran statistics used in G08, the core objective of detecting spatially variable genes is a shared scientific goal. Therefore, it matches the objective of ground-truth G08, which aims to detect spatially variable genes based on their expression across tissue regions."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis focuses on image-based tissue region segmentation using large-scale microscopy images and segmentation algorithms, which matches the main scientific objective of G02, 'Segment images and extract cell morphology.' Both involve the use of image segmentation and feature extraction techniques to analyze morphological features of the tissue."
+    },
+    {
+      "candidate_index": 4,
+      "match": false,
+      "reason": "The proposed analysis focuses on detecting continuous gradients or trajectories in tissues using spatial transcriptomics to map developmental or pathological progressions. It emphasizes trajectory inference within spatial data, aligning molecular profiles along inferred trajectories. None of the ground-truth analyses focus on detecting continuous trajectories or gradients within spatial data. Instead, they cover various objectives such as constructing neighbor graphs, quantifying spatial patterns, segmenting images, integrating molecular and morphology features, benchmarking scalable processing, detecting spatially variable genes, testing neighborhood enrichment between cell types, and analyzing spatial omics across assay types. These objectives do not match the continuous trajectory mapping emphasis in the proposed analysis."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on integrating diverse spatial omics data types using joint embedding methods for multimodal integration. The main scientific objective is to enhance biological interpretation by combining spatial transcriptomics and proteomics data. None of the ground-truth analyses primarily focus on integrating and jointly embedding multiple spatial omics modalities. Therefore, there is no match with any of the ground-truth analyses, which focus on specific tasks like integrating molecular and morphology features, quantifying spatial patterning, or analyzing spatial omics across assay types."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis aims to infer cell-cell communication networks using spatial graphs and network analysis, focusing on ligand-receptor pairing in spatial transcriptomics data to understand cellular crosstalk. This aligns with Ground Truth G08, which involves testing neighborhood enrichment between cell types through permutation-based evaluations. Both analyses have the main scientific objective of uncovering interactions and proximities between different cell types within spatial contexts."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis focuses on scalable feature extraction from large-scale tissue images, leveraging image tiling and efficient computational methods. This aligns with ground truth analysis G05, which involves image segmentation and extraction of cell morphology features using tiling to handle large images. Both analyses share the main scientific objective of processing large tissue images to extract morphological features efficiently."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 5,
+    "candidate_count": 8,
+    "candidate_hit_fraction": 0.625
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 8,
+    "observable_model_attempts": 8,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 3.5582260861992836,
+        "input_tokens": 755,
+        "output_tokens": 164,
+        "total_tokens": 919
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 2.1794410198926926,
+        "input_tokens": 758,
+        "output_tokens": 64,
+        "total_tokens": 822
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.8393392339348793,
+        "input_tokens": 759,
+        "output_tokens": 98,
+        "total_tokens": 857
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.263262653723359,
+        "input_tokens": 744,
+        "output_tokens": 64,
+        "total_tokens": 808
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 2.576289491727948,
+        "input_tokens": 752,
+        "output_tokens": 133,
+        "total_tokens": 885
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.7576308958232403,
+        "input_tokens": 762,
+        "output_tokens": 110,
+        "total_tokens": 872
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 2.4176710341125727,
+        "input_tokens": 757,
+        "output_tokens": 87,
+        "total_tokens": 844
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.8447786383330822,
+        "input_tokens": 755,
+        "output_tokens": 76,
+        "total_tokens": 831
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 17.439
+  },
+  "trace_sha256": "4fbf7578238eefcfa1427ce9620d1ec0bd21b0f0b08bbe9f8edcfbe3e9fac3d4",
+  "checkpoint_sha256": "31521bd59728b31de6e22f4cd4d568d12701825660cc860b8cb42fdcbfef850b"
+}

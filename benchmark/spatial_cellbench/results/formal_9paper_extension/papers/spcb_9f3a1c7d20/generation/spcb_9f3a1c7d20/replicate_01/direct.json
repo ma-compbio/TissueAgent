@@ -1,0 +1,83 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "c81e83f92d56e3cf27073ce4113e256ae4ccd0ad6bf255fbc2ac2f2173b67a7e",
+  "eval_id": "spcb_9f3a1c7d20",
+  "replicate": 1,
+  "proposal_count": 10,
+  "proposal_sha256": "44ae8cdc99ed2e33f4d3b5ca3add8b0d7e230bfcaecfbf9a3119c5a186ec4a1a",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Domain Segmentation",
+        "summary": "This analysis will identify contiguous spatial domains within tissue sections by integrating gene expression patterns with cell location data. By using graph-based clustering methods and spatial contiguity constraints, the approach will distinguish biologically relevant regions such as functional tissue zones, while avoiding artifacts caused by mixed cell populations in individual spots."
+      },
+      {
+        "title": "Serial Section Alignment Using Spatial Signatures",
+        "summary": "The proposed method aligns serial tissue sections by leveraging shared spatial gene expression signatures. By implementing a matching algorithm that considers local gene expression gradients and architectural landmarks, the analysis ensures accurate registration while preserving subtle differences in tissue morphology and minimizing errors introduced by technical variation."
+      },
+      {
+        "title": "Cell Type Deconvolution with Neighborhood Context",
+        "summary": "This analysis refines traditional reference-based deconvolution by incorporating information on the local cellular neighborhood. It estimates the proportion of different cell types within mixed spots, while enforcing spatial coherence and contextual constraints to ensure that the predicted cell type distributions are consistent with histological structures and tissue organization."
+      },
+      {
+        "title": "Joint Embedding of Spatial and Single-Cell Data",
+        "summary": "This approach integrates single-cell transcriptomics datasets with spatial transcriptomics data using joint embedding techniques. The analysis transfers high-resolution cell type annotations into the spatial domain through mutual nearest neighbor matching and other alignment strategies, while maintaining spatial contiguity and biological context across the datasets."
+      },
+      {
+        "title": "Spatial Gradient and Niche Analysis",
+        "summary": "This analysis focuses on identifying gradients in gene expression that reflect transitions in cell states or microenvironment niches. By modeling spatial expression patterns and correlating them with physical coordinates, the approach can reveal boundaries between different functional zones and elucidate gradients that are lost in bulk or dissociated single-cell studies."
+      },
+      {
+        "title": "Histology-Informed Graph-Based Clustering",
+        "summary": "This analysis employs a graph-based clustering approach that integrates histological imaging data with spatial transcriptomics profiles. The method links gene expression with morphologic features using spatial adjacency graphs, ensuring that clusters represent meaningful biological units and align with observed tissue architecture."
+      },
+      {
+        "title": "Cross-Platform Spatial Data Integration",
+        "summary": "To address differences between imaging-based and sequencing-based spatial assays, this analysis will integrate data from multiple spatial transcriptomics platforms. Using data harmonization and spatial correspondence techniques, the analysis enables joint exploration of high-resolution imaging data alongside broad transcriptomic profiles, preserving the tissue context across methods."
+      },
+      {
+        "title": "Spatially Aware Batch Correction",
+        "summary": "This analysis develops a batch correction framework that respects spatial structure by integrating geometric information into the correction process. By distinguishing between technical variance and true biological differences rooted in tissue architecture, the method will ensure that adjustments do not erase real spatial patterns present across tissue slices or sections."
+      },
+      {
+        "title": "Multi-Modal Integration of Spatial Omics Data",
+        "summary": "This analysis integrates spatial transcriptomics with complementary omics data such as proteomics or epigenomics, acquired from the same tissue sections. By leveraging multi-modal data fusion techniques that account for spatial coordinates, the analysis aims to create a holistic view of tissue structure and function, enhancing the interpretability of each modality in a spatial context."
+      },
+      {
+        "title": "Spatially Informed Trajectory Mapping",
+        "summary": "This method maps spatial trajectories and lineage relationships by combining transcriptomic gradients with spatial coordinates. The analysis infers dynamic transitions and potential developmental or disease-associated paths within different microenvironments, while respecting spatial constraints that correlate with tissue histology and architecture."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 9.603737204917707,
+        "input_tokens": 430,
+        "output_tokens": 1049,
+        "total_tokens": 1479
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "02c0478e443c69db5b38845c57724979c4c2e70b1b9ab74b167d5d3fd16a10ac",
+    "overview_sha256": null,
+    "elapsed_seconds": 9.68
+  },
+  "trace_sha256": "02f26295dc82d29e68c530e544c2515f5c5f0574b3beb373a15c99db0c91ad86",
+  "checkpoint_sha256": "24ed348efb128a2f56ee98af0049c5faf32ee75799055a34ef526f8c51bc5549"
+}

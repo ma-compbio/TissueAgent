@@ -1,0 +1,79 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "1079234ea1ea5faf6cebfbb93a113eaa5ede0cb48f53ee67abf042e0fef7575c",
+  "eval_id": "spcb_18c9d0e1f2",
+  "replicate": 3,
+  "proposal_count": 9,
+  "proposal_sha256": "5ab8566a979be9b1407a564d87dcb9d460300d5e01e277517f57d5a59ad10f1a",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Density-Adjusted Normalization of Spatial Data",
+        "summary": "This analysis will develop and apply normalization methods that account for spatial variation in cell density. By integrating spatial coordinates with gene expression counts, the approach will correct for biases introduced by uneven cell density across the tissue. The method will rely on spatial weighting and smoothing techniques to ensure that regions with high cell density do not overwhelm the signal from sparser regions, thus allowing for robust identification of genes with true spatially resolved patterns."
+      },
+      {
+        "title": "Spatial Hotspot Detection of Gene Expression",
+        "summary": "This analysis will identify local hotspots of high gene expression by mapping spatial transcriptomics data onto the tissue architecture. Techniques such as spatial scan statistics or local Moran’s I will be used to pinpoint regions where expression is significantly elevated, accounting for local density variations. The method will also explore the role of spatial adjacency networks to differentiate genuine biological hotspots from apparent clustering due to technical artifacts."
+      },
+      {
+        "title": "Clustering Genes by Spatial Co-Localization Patterns",
+        "summary": "In this analysis, genes will be grouped based on the similarity of their spatial expression patterns across the tissue. This will involve generating spatial expression profiles for each gene and employing clustering algorithms that incorporate spatial distance metrics. The approach aims to uncover gene networks and pathways that are activated in specific tissue regions, providing insights into localized biological functions and potential regulatory mechanisms."
+      },
+      {
+        "title": "Spatially Resolved Cell-Cell Communication Inference",
+        "summary": "This analysis is designed to explore potential communication between neighboring cell types by examining spatially correlated expression of ligand-receptor pairs. The method will integrate spatial proximity data with expression levels to statistically test if complementary signaling molecules show coordinated expression in adjacent cells. This approach will help uncover functional interactions that are spatially constrained within the tissue microenvironment."
+      },
+      {
+        "title": "Multi-Layer and Volumetric Reconstruction of Spatial Patterns",
+        "summary": "This proposal focuses on extending spatial transcriptomics analyses to three-dimensional reconstructions using aligned serial sections or volumetric imaging data. The analysis will involve aligning multiple tissue layers, correcting for section misalignments, and integrating signal information across layers. It will allow for a comprehensive exploration of gene expression patterns in a volumetric context, revealing spatial relationships and gradient effects across different tissue depths."
+      },
+      {
+        "title": "Serial Section Alignment with Spatial Pattern Analysis",
+        "summary": "By leveraging multiple serial sections, this analysis aims to align and compare gene expression patterns across adjacent tissue slices. The methodology includes image registration algorithms that incorporate spatial and gene expression information to accurately align sections. This enables the detection of consistent spatial patterns across sections, providing robust evidence for biological spatial patterning and reducing potential artifacts from sample preparation."
+      },
+      {
+        "title": "Irregular Neighborhood Gene Cluster Analysis",
+        "summary": "This analysis targets irregular neighborhoods within the tissue by defining cell clusters based on physical proximity rather than traditional grid-based methods. The method will use spatial network graphs to delineate cells sharing common neighborhoods and test for overrepresentation of gene expression patterns within those clusters. By focusing on the irregular cell distribution, this approach can reveal localized transcriptional programs that are masked in bulk analyses."
+      },
+      {
+        "title": "Density-aware Differential Expression Across Tissue Regions",
+        "summary": "This proposal develops a framework for comparing gene expression between distinct tissue regions while explicitly accounting for spatial density variations. Differential expression analyses will incorporate covariates that reflect local cell density and spatial distribution to control for potential confounders. The result will be a more accurate estimation of region-specific gene regulation that is not skewed by variations in cell numbers."
+      },
+      {
+        "title": "Spatial Autocorrelation and Gene Expression Patterning",
+        "summary": "This analysis will evaluate spatial autocorrelation in gene expression data using methods such as Geary’s C or Moran’s I statistics. The study will quantify the degree to which expression levels of individual genes are similar in nearby cells compared to distant cells. This analysis differentiates between true spatially structured gene expression and random or density-induced variations, thereby highlighting genes that exhibit biologically relevant spatial patterns."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "7060bfc722d8571ac5932666ba137fe83e5d0aeb1ece167bfb8e1bcd792ea0b1",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 5.4346008650027215,
+        "input_tokens": 402,
+        "output_tokens": 1141,
+        "total_tokens": 1543
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "9170a91d527cb01786caa1b8c84431834567efafd4b58c900e8225c6f153cdb1",
+    "overview_sha256": null,
+    "elapsed_seconds": 5.44
+  },
+  "trace_sha256": "ef242345b855cc7d6385169623391a389a351f514d4055cffb9c1c75d598c423",
+  "checkpoint_sha256": "a77ac5bac735bde0f893f50f618bc8e6a6f0b61ddc4c1600bb9684d8299fa737"
+}

@@ -1,0 +1,175 @@
+{
+  "status": "success",
+  "unit_fingerprint": "0245978a121068e8448e66ebfd9dc5d7d64b3e930eac9ef8a47bea05f41954cc",
+  "generation_proposal_sha256": "1e2a74699e3c2def79ccc31abb99e5ffd5d9e18b6abb05ed883366eb3a6e5f75",
+  "truth_sha256": "243ecf68bec765b7f41e666a1c0fdb626f29ccd3c587e9929b88be2122b5c12d",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "29f2286c48e853b781866b75600daf94420543113d2fe5b2b3ca26cbb7645492",
+    "99cb1030ae891da6f9b482a886ce20c5179c40bb1f9524e8fc5ea30175df7cf0",
+    "36a06ad38b731eefb0029b659c76da41a597a3a2eddd6239da35bf0be9cde3d5",
+    "13c44bda0c4cc5d480c6a7d75bc61d4207b1732bcd4692cac4db1fec2f01f991",
+    "59586fd7744ef0f3aec631ff0ca30c15021bd335b8b12087912a65435635b9ae",
+    "2d4e5054a020ddfff592c77354038c8100326b34cffca53f3c2845cdd7ef3926",
+    "25bf2181d67564dfc73baac4db0eac2ab101fa54941255c7e13572eeb87aac40",
+    "cf54839c61066ffa6e4ea9be3d4bed540eea1c608b06a1f376613ff34a1c208c",
+    "4fc63ffa552d9ca12c107d3c645a1ab415ff80748bcd6e5737dc0bca0d7af3aa",
+    "85a2611d88c511ed1ac884a8718b3a526c2827734d298060aed8d28a3dfdb014"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis on 'Neighborhood-Constrained Trajectory Modeling for Spatial Progression' has a main scientific objective of developing robust pseudotime models reflecting cell-state transitions in spatial-omics data. This is similar to the ground-truth analysis G03, which aims to infer a spatial trajectory after brain injury, ordering locations based on the path from injury and identifying transcriptional transitions. Both involve constructing and inferring spatial trajectories that reflect transitions across cells or tissue regions. Thus, the main scientific objective of both analyses is aligned, focusing on understanding and modeling spatial trajectories."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on identifying cell-cell communication networks by integrating ligand-receptor co-expression with spatial and morphological data to ensure spatial plausibility. This aligns with the objective of G04, which aims to detect spatially constrained ligand-receptor pairs using spatial neighborhoods. Both analyses aim to establish cell-cell communication constrained by spatial considerations, ensuring the plausibility of detected interactions."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis matches with G10 (\"Validate across spatial technologies\") as it focuses on integrating diverse spatial omics datasets from different platforms and ensuring coherent results across non-registered sections and temporal samples. Both analyses are concerned with harmonizing data across multiple platforms to validate cross-platform consistency of spatial omics analyses."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis focuses on denoising and imputing missing or noisy spatial expression data in spatial transcriptomics, specifically aiming to accurately recover molecular signatures while preserving spatial gradients. This aligns with the ground-truth analysis G04 titled \"Impute noisy spatial gene expression,\" which also focuses on imputing missing or noisy spatial expression data. Both share the main scientific objective related to improving the quality or accuracy of spatial gene expression data through imputation and noise reduction."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis focuses on constructing dynamic spatial graphs to model tissue reorganization, which includes enabling constrained trajectory inference and differentiation of spatial microenvironments in development, injury, and disease contexts. This aligns with the ground-truth analysis G08, which involves inferring a spatial trajectory after brain injury, as both involve trajectory inference related to injury and spatial reorganization."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on correcting spatial autocorrelation when performing differential expression analysis to adjust for spatial dependencies and noise in tissues. None of the ground-truth analyses specifically aim to address spatial autocorrelation correction or differential expression analysis with spatial considerations. The closest ground-truth analyses involve spatial trajectories, ligand-receptor interactions, and imputation, but not spatial autocorrelation correction. Therefore, there is no match."
+    },
+    {
+      "candidate_index": 6,
+      "match": false,
+      "reason": "The proposed analysis focuses on an integrated multimodal clustering framework aimed at delineating coherent tissue domains using gene expression, spatial localization, and tissue morphology. It emphasizes clustering to discover biologically relevant microenvironments within tissues. None of the ground-truth analyses focus primarily on clustering to define tissue microenvironments using the three mentioned modalities (gene expression, spatial location, morphology). The ground-truth list includes objectives related to validating spatial technologies, detecting ligand-receptor pairs, imputing gene expression, spatial trajectory analysis, and mapping cell communications, none of which align precisely with the proposed analysis' main objective of integrated clustering to identify tissue domains."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis focuses on integrating temporal dynamics with spatial information, including trajectory inference over time, through advanced registration techniques. This aligns with the main scientific objective of \"Validate trajectory with morphology and time course\" (G10), which involves comparing inferred spatial trajectories with time-course data. Both analyses aim to understand spatial and temporal changes through trajectory methods."
+    },
+    {
+      "candidate_index": 8,
+      "match": true,
+      "reason": "The proposed analysis focuses on trajectory inference using anatomical landmarks and spatial constraints to accurately reconstruct dynamic processes in tissues, aiming for biologically interpretable trajectories resilient to noise. Ground-truth analysis G02 also involves spatial trajectory analysis to identify transitions between anatomically organized cell states, indicating a similar main scientific objective of inferring spatial trajectories that are informed by anatomical structures."
+    },
+    {
+      "candidate_index": 9,
+      "match": true,
+      "reason": "The proposed analysis focuses on mapping ligand-receptor interactions in a spatial context, specifically integrating molecular co-expression with spatial adjacency and tissue morphology to filter out false positives. This objective relates directly to G10 in the ground-truth set, which aims to detect spatially constrained ligand-receptor pairs using spatial neighborhood constraints. Both analyses share the main scientific objective of identifying spatially constrained cell communication interactions, making them a match."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 8,
+    "candidate_count": 10,
+    "candidate_hit_fraction": 0.8
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 10,
+    "observable_model_attempts": 10,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.669087776914239,
+        "input_tokens": 864,
+        "output_tokens": 120,
+        "total_tokens": 984
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.7930871471762657,
+        "input_tokens": 866,
+        "output_tokens": 81,
+        "total_tokens": 947
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.5219150092452765,
+        "input_tokens": 867,
+        "output_tokens": 70,
+        "total_tokens": 937
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.626668842509389,
+        "input_tokens": 874,
+        "output_tokens": 99,
+        "total_tokens": 973
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.2846111878752708,
+        "input_tokens": 861,
+        "output_tokens": 80,
+        "total_tokens": 941
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.6891042981296778,
+        "input_tokens": 857,
+        "output_tokens": 88,
+        "total_tokens": 945
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.8556746151298285,
+        "input_tokens": 863,
+        "output_tokens": 135,
+        "total_tokens": 998
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.3480441272258759,
+        "input_tokens": 860,
+        "output_tokens": 76,
+        "total_tokens": 936
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 1.4287992976605892,
+        "input_tokens": 863,
+        "output_tokens": 79,
+        "total_tokens": 942
+      },
+      {
+        "stage": "judge_10",
+        "kind": "structured",
+        "elapsed_seconds": 1.6018560584634542,
+        "input_tokens": 873,
+        "output_tokens": 91,
+        "total_tokens": 964
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 15.822
+  },
+  "trace_sha256": "8d2467859ed73cb886c4ed25aeb2d2ae4b7dd7a575ede06bb23ffbe2343dd761",
+  "checkpoint_sha256": "93fdeed7a45962b979ee0f91d265b5686d9d37cce6d0de5daaa8b5cf3a4d1a53"
+}

@@ -1,0 +1,83 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "311aa2f0c81cfa99eea2e33aa606575fdb68696f272b8b9ddc14409a8f52af18",
+  "eval_id": "spcb_b20c3d4e5f",
+  "replicate": 1,
+  "proposal_count": 10,
+  "proposal_sha256": "2eb3ba03db40491acd423b8624b3049815694ff430c88d4d578571a15eedb2a3",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Neighborhood Composition Analysis",
+        "summary": "This analysis focuses on defining and quantifying local neighborhoods by integrating the spatial coordinates from transcriptomic data with cell-type expression profiles. By aggregating spots into defined neighborhoods based on proximity, the analysis would compute composition scores to reflect the diversity and abundance of cell types and gene expression patterns. These scores help in distinguishing tissue microenvironments and set the stage for further downstream comparisons."
+      },
+      {
+        "title": "Recurrent Microenvironment Identification",
+        "summary": "Using clustering algorithms tailored to spatial data, this analysis aims to detect reoccurring patterns of local gene expression, defining recurrent microenvironments within tissue sections. The method involves partitioning the tissue into neighborhood clusters and applying unsupervised clustering based on combined spatial and transcriptomic similarity, thereby uncovering signature profiles of common microenvironments."
+      },
+      {
+        "title": "Differential Microenvironment Profiling Across Conditions",
+        "summary": "This analysis compares spatial neighborhoods between different experimental or disease conditions to pinpoint regions with altered microenvironment structures. The approach adjusts for differences in cell density and platform resolution, employing statistical models to assess if observed differences in local transcriptomic patterns represent true biological shifts rather than technical artifacts."
+      },
+      {
+        "title": "Ligand-Receptor Spatial Interaction Mapping",
+        "summary": "Focused on potential cell-cell communication, this analysis overlays spatial information with ligand-receptor gene expression data to map putative interactions. It involves evaluating neighbor pairs for ligand and receptor co-expression, followed by spatial alignment to determine if interaction hotspots correlate with specific tissue regions or cellular arrangements."
+      },
+      {
+        "title": "Hierarchical Spatial Clustering of Tissue Sections",
+        "summary": "This analysis integrates multi-scale clustering techniques to identify spatial domains at different resolutions. By first grouping individual spots into neighborhoods and then clustering these groups hierarchically, the method distinguishes between broad tissue architecture and subtle microenvironment variations, offering insights into tissue organization dynamics."
+      },
+      {
+        "title": "Continuous Transition Mapping in Spatial Domains",
+        "summary": "Designed to capture gradients and continuous transitions in gene expression, this method uses spatial smoothing techniques and manifold learning to map gradual shifts in cellular state across the tissue. The outcome is a visual and quantitative representation of how expression patterns evolve spatially, highlighting borderline regions and transitional microenvironments."
+      },
+      {
+        "title": "Integration of Spatial Transcriptomics with Histological Annotations",
+        "summary": "This analysis aligns high-resolution spatial transcriptomics data with annotated histological images or tissue landmarks. By overlaying gene expression profiles on tissue structure, the method identifies correlations between cellular microenvironments and anatomical features, thereby improving interpretability and validating spatial patterns with external histopathological benchmarks."
+      },
+      {
+        "title": "Spot Density Correction in Neighborhood Analysis",
+        "summary": "Acknowledging variations in cell or spot density, this method applies normalization and weighting strategies to correct for bias introduced by uneven spot distribution. By integrating density correction into the neighborhood analysis framework, it ensures that differential spatial patterns truly reflect biological differences rather than technical sampling artifacts."
+      },
+      {
+        "title": "Spatial Autocorrelation and Heterogeneity Scoring",
+        "summary": "Utilizing spatial statistical methods like Moran’s I or Geary’s C, this analysis quantifies the degree of spatial autocorrelation in gene expression measures across tissue sections. Heterogeneity scores are computed to delineate distinct microenvironmental regions and facilitate the detection of regions with unexpectedly high or low similarity to their surroundings."
+      },
+      {
+        "title": "Multidimensional Spatial Gene Expression Profiling",
+        "summary": "This comprehensive approach combines spatial geometry with multivariate transcriptomic data using techniques such as spatial principal component analysis (PCA) and dimensionality reduction. The analysis seeks to capture complex interactions across multiple spatial dimensions, offering an interpretable map of gene expression modules and their spatial distribution within the tissue."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "4ce07e4315758c38916ddb971b099d9fc7be7c49860e2f159722b654d41e4b06",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 8.11910816701129,
+        "input_tokens": 417,
+        "output_tokens": 1216,
+        "total_tokens": 1633
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "e85e33ac5cf404da6c9999fd20301a9b5f53f87c8b70e0487534b03fa8c07d76",
+    "overview_sha256": null,
+    "elapsed_seconds": 8.205
+  },
+  "trace_sha256": "7360d728c95d47802dbda0014376a3887d6e4cbfc6ecb04cff019153010ed42e",
+  "checkpoint_sha256": "3c9384e28423867420d79efffe580c5d9dd095b9421a652a8d1a846b68739ec3"
+}

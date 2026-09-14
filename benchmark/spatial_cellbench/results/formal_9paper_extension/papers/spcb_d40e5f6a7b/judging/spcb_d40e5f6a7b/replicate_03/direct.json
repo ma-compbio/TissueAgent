@@ -1,0 +1,147 @@
+{
+  "status": "success",
+  "unit_fingerprint": "197bb0d94194a60e7c0a7b10e382879e69da402785705c6be6fded558431a840",
+  "generation_proposal_sha256": "d9479e1612639ae8c57f4a1e2b92b05d05d5576e7ae762a360abdca7b363ad1c",
+  "truth_sha256": "b05669d6ed39131680845296b99ec71f14f85a364018fdf6843cae0c2ddece60",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "f86bfdb0dc69b0afcc30118712162beb9586da03b44fe68787a28ab03409c656",
+    "219bfd425daa6e9d0629434911a870bd74b36293eb86f4bfa3399ebab22fa31f",
+    "11433d4aaef2d0ef782e875aa0497d8d96640cc41d9fd7caf60a14ff87eff803",
+    "da8814fcd1c0e764fd2b30eb06486d80da25036558c3badc58a9e65ccdd0633b",
+    "2052a4af9229c4ae8b3693db1245312f092a76a569f56e4d9e53751e6560ae40",
+    "6f500fb457b15be19687e2058d33235437db42bbaaa9cab4535f80221b4cc7f5",
+    "b74dea2f1d729135d5cb453d82ccc4fe7e978abce36ff55503a5ce0884888e92",
+    "da3e99a706b1c8e83d9b75522cfe09058619b4c71ee56f92f5e8c519ee72ee35"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis focuses on detecting contaminated spots in spatial-omics data by examining inconsistencies between gene expression and spatial context. This closely matches ground-truth analysis G07, which involves using spatial expression and tissue context to identify inconsistent locations in a human brain section. Both analyses aim to address the problem of identifying spatial misassignments or contamination in spatial-omics data using expression profiles and spatial information."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on using deconvolution to recover true cell-type signals from mixed spatial spots, essentially correcting for mixed or contaminated spots. This aligns with the objective of G07, which aims to remove swapped or contaminated spots in breast cancer tissue and evaluate the result. Both aim for recovering more accurate spatial transcriptomic profiles by addressing spot contamination issues, despite being applied in distinct contexts (general vs specific to breast tumor boundaries)."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on detecting and correcting spots that blur anatomical boundaries and enhancing the specificity of domain markers through correction. This matches ground-truth analysis G04, which aims to improve marker specificity in brain layers by comparing marker-gene maps before and after correction to enhance specificity. Both analyses share the main scientific objective of correcting spatial data to improve the specificity of domain markers, although they apply to different types of tissues (general anatomical boundaries in the proposed vs specific brain layers in G04)."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis aims to validate spatial transcriptomics correction strategies by using gold-standard annotated tissues. This involves comparing pre- and post-correction marker specificity, spatial domain definitions, and cell-type calls against a known ground truth to assess improvement. Ground-truth analysis G02 has a similar objective of comparing marker-gene maps before and after correction against known annotations to quantify improved specificity in brain layers. The main scientific objectives align in evaluating correction strategies against established annotations to determine improvements in specificity and accuracy."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis benchmarks correction strategies using synthetic mixtures with known labels to assess contamination detection and restoration of original profiles. This is analogous to ground-truth analysis G07, which uses a human-mouse chimera to validate corrections by recovering the expected species assignment. Both involve using known compositions (species or cell-type labels) to evaluate correction strategies' success in restoring original profiles."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis focuses on improving marker specificity through correction, comparing expression data before and after correction to assess marker accuracy. This aligns with the ground-truth analysis G05, which involves improving marker specificity in brain layers by comparing marker-gene maps before and after correction. Both analyses have the common scientific objective of enhancing the specificity of marker genes by using correction strategies."
+    },
+    {
+      "candidate_index": 6,
+      "match": false,
+      "reason": "The proposed analysis focuses on studying the impact of local versus global contamination on spatial clusters by examining proximity to contamination sources and measuring correction efficiency. The ground-truth analyses generally focus on correction and assessment of contamination specifically in anatomical or disease-related contexts, or the recovery and improvement of biological specificity and clustering. These analyses aim at understanding and correcting contamination or swap effects specifically to improve identification of biological structures or improve marker specificity. While the proposed analysis involves contamination correction, its primary objective is the methodological study of contamination types (local vs. distant) rather than the recovery of biological attributes or spatial domain specificity related to a particular tissue type or condition, which seems to be the focus of the ground-truth analyses. Therefore, it does not match any specific ground-truth analysis in terms of main scientific objective."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis focuses on improving cell-type identification through spatial correction by integrating spatial geometry with expression profiles. The primary objectives include improving clustering metrics, anatomical concordance, and marker gene reliability for enhanced biological interpretability. None of the ground-truth analyses specifically focus on enhancing cell-type identification across ambiguous regions in the manner described. While there are analyses related to correcting contamination and improving marker specificity, they are specific to certain types of tissues or scenarios, such as brain layers, malignant spots in breast cancer, or pancreatic tumor mapping, and do not broadly focus on cell-type identification across ambiguous spatial regions."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 6,
+    "candidate_count": 8,
+    "candidate_hit_fraction": 0.75
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 8,
+    "observable_model_attempts": 8,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.308636274188757,
+        "input_tokens": 719,
+        "output_tokens": 87,
+        "total_tokens": 806
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.975702740252018,
+        "input_tokens": 715,
+        "output_tokens": 93,
+        "total_tokens": 808
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.6537256874144077,
+        "input_tokens": 713,
+        "output_tokens": 105,
+        "total_tokens": 818
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 2.0787312611937523,
+        "input_tokens": 715,
+        "output_tokens": 106,
+        "total_tokens": 821
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.5999315902590752,
+        "input_tokens": 708,
+        "output_tokens": 82,
+        "total_tokens": 790
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.6909578051418066,
+        "input_tokens": 712,
+        "output_tokens": 80,
+        "total_tokens": 792
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 4.995198164135218,
+        "input_tokens": 710,
+        "output_tokens": 166,
+        "total_tokens": 876
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 2.8048470728099346,
+        "input_tokens": 715,
+        "output_tokens": 126,
+        "total_tokens": 841
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 18.11
+  },
+  "trace_sha256": "650d86a858627d9be768aef3c17776f53788cfafb1ecee78f9d06a8b07e21746",
+  "checkpoint_sha256": "92628c18691dfd4c79862c45378bbe22ea094e1517bfe253d48ac7f5d2e443a6"
+}

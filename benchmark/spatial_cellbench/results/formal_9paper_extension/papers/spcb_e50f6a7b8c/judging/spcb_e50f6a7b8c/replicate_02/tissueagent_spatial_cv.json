@@ -1,0 +1,147 @@
+{
+  "status": "success",
+  "unit_fingerprint": "9c2437ea6e1608f993694c9d736c6c14ddc5ab4d620224df0b4f6bbe03bc1287",
+  "generation_proposal_sha256": "ee4d327fbffa4b36125b4f5aa225cbb7c5a099412bec34604541c77b1d3c50ec",
+  "truth_sha256": "3c1b5260101c66070acabd4fbfdadb7a920741b19789682bd98366c1fbdc3bec",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "cce4d863fc9bc175829a01570f4381a5b8254e08197fc9a934a23ac2202ee60b",
+    "f6cfdc3adf8e03068cfcad70145b6de77377b750b9284b908b40848e76c5cf6f",
+    "f974d7dc02cc571d0d5bda9fe0fdf5589397dc468c3c2389fbb460f5de3c6258",
+    "f16afc86ab517ae96d5600b03cb8f4e0d33bdd985b55a9ec8f9715deff16989c",
+    "f52384f8cabd72d56448b4f2f56c82ea901afb1afddb327e3290b41b53dcdeb5",
+    "eed1ff306f3010dfc9d99daf2a44ff90f2af5006750777ae69277085e632b0f2",
+    "ffac3015c1cfe8c978af090340a4fe99c8f4fc9edd3ecbb8894f80ed5271a0c6",
+    "f53f3b95783a1205392d8661ad7e5662df8868a4f358fcbffad125ae37805a3e"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis focuses on integrating spatial transcriptomics and imaging data to delineate tissue domains and map cell-cell interactions. This aligns with the objective of ground-truth analysis 'G01', which is to integrate molecular and morphological features and assess agreement between these modalities. Both the proposal and 'G01' aim to analyze and relate structures derived from expression data and high-resolution imaging."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis integrates gene module detection with morphological feature extraction to map links between molecular signatures and tissue structure, which aligns with the ground-truth analysis 'G03' that focuses on integrating molecular and morphology features to relate expression-derived structures with image-derived features."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on integrating spatial transcriptomic profiles with high-resolution morphological imaging and revealing global gradients and local tissue domains through spatial variance decomposition. This aligns well with ground truth analysis G03, which involves integrating molecular and morphological features and assessing agreement between modalities. Both aim to relate and validate expression-derived structures with imaging-derived features, reflecting a similar main scientific objective."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis aims to integrate transcriptomics and imaging data to identify tissue domains, which involves aligning molecular signals with morphological features. This matches the scientific objective of ground-truth analysis G01, which is to integrate molecular and morphology features by relating expression-derived spatial structure to image-derived features."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis focuses on spatial alignment between molecular and imaging data, constructing multi-scale neighborhood graphs to map tissue domains, and assessing convergence between molecular signals and morphological features. This aligns closely with the ground truth analysis titled \"Integrate molecular and morphology features,\" which also discusses relating expression-derived spatial structures to image-derived features and assessing the agreement between modalities."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis, 'Integrated Spatial Differential Expression and Neighborhood Composition Analysis,' involves integrating transcriptomic and morphological data to understand spatial differential expression and neighborhood composition. This matches the main scientific objective of ground-truth analysis G06, 'Integrate molecular and morphology features,' which focuses on relating expression-derived spatial structure to image-derived features and assessing agreement between modalities. Both analyses aim to combine molecular expression data with morphological information to draw insights about tissue structure and function."
+    },
+    {
+      "candidate_index": 6,
+      "match": false,
+      "reason": "The proposed analysis focuses on spatial trajectory inference to capture dynamic cell-state transitions and interactions in tumor microenvironments, integrating spatial transcriptomics with imaging, and examining differential expression along trajectories. None of the ground-truth analyses share this specific objective of inferring spatial trajectories and mapping cell interactions in tumor environments. The closest ground-truth analysis might be G03, which involves neighborhood enrichment, but this is not the same as trajectory inference or interaction mapping proposed here."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis includes the construction of a flexible, sensitivity-tested spatial graph to delineate sub-regions within tissues, which aligns closely with ground-truth analysis G03. G03 focuses on constructing flexible spatial neighbor graphs appropriate for various spatial assays. The main scientific objective of both analyses is the construction and use of spatial graphs for tissue analysis."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 7,
+    "candidate_count": 8,
+    "candidate_hit_fraction": 0.875
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 8,
+    "observable_model_attempts": 8,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.5929796397686005,
+        "input_tokens": 795,
+        "output_tokens": 83,
+        "total_tokens": 878
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.1092431582510471,
+        "input_tokens": 787,
+        "output_tokens": 59,
+        "total_tokens": 846
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.2308078985661268,
+        "input_tokens": 780,
+        "output_tokens": 80,
+        "total_tokens": 860
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.0918655022978783,
+        "input_tokens": 775,
+        "output_tokens": 65,
+        "total_tokens": 840
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.2513147536665201,
+        "input_tokens": 767,
+        "output_tokens": 77,
+        "total_tokens": 844
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.278605692088604,
+        "input_tokens": 768,
+        "output_tokens": 98,
+        "total_tokens": 866
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.7449124455451965,
+        "input_tokens": 772,
+        "output_tokens": 99,
+        "total_tokens": 871
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.800723385065794,
+        "input_tokens": 781,
+        "output_tokens": 76,
+        "total_tokens": 857
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 11.102
+  },
+  "trace_sha256": "9824c75ca148e89dc8ac10ccb7acfc6a5fb1c2ac33754d8dec1f6ac8ddce37a9",
+  "checkpoint_sha256": "f2c426b973fd61f6c22c0e9a6a7f5ee0ca4f9a83376251dd1d5553e6e757af90"
+}

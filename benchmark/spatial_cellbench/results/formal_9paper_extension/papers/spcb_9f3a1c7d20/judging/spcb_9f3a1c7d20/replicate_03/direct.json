@@ -1,0 +1,175 @@
+{
+  "status": "success",
+  "unit_fingerprint": "e2f5c745d500334d42b966b382e9fac3f924f21cb667a46b069dcf9a709b2705",
+  "generation_proposal_sha256": "14670d64961362ebb56febe1ba93cb17847c812fe0863afecd282cac668ee5c6",
+  "truth_sha256": "8214cf8a5d93b39bc875bece8496694bce2a78faf058dd248d0ddb2457fab151",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "b0b0448af0f8de0fd1cf8855815adf80c8ff7706f24423d68d50b8ed89302f44",
+    "706b688fc335079931e70b6286bf4d37111190c894365c933abef0987a79dad5",
+    "bc953a07eab61f92a6ec9090e10730b38e1324b68a1227a98f9286524b97bea5",
+    "9703f6ea92968c65b3d3b08f71902af632c65de6abb5b2781aefc7fb79317da9",
+    "66103f41282f3f6b227fd1b3197b37e7cdef5ae466aea87e5539dc7422a049c5",
+    "106249eb04805ef76f3cd3688cb214e6cac185bc9b888f286587aad0cb2d6b65",
+    "a080a7963ae451ea4c77b99bc37d63f51376db18f172e8b215ae240d108f5737",
+    "02ec4d1c52c01628b66b1803744f043f2945be0ab8976d3189ce6c4330eed757",
+    "3f31c31fb636251b1a2c804459b195844419b4ad0b932b10462489fae22b7891",
+    "9d150d89b8756c0637ab6dac827fe99b3df89deeda461463b4adfc3b0770f81b"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis 'Spatial Domain Segmentation' matches the ground-truth analysis G02 'Identify contiguous spatial domains in olfactory bulb'. Both analyses have the main scientific objective of identifying contiguous spatial domains within tissue sections by clustering based on gene expression and factoring in spatial coordinates to recover coherent structures or anatomies. The emphasis on spatial labeling and anatomical coherence highlights a common goal focused on domain segmentation and anatomical feature distinction."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis of 'Serial Section Alignment' matches the ground-truth analysis 'G03', titled 'Integrate serial sections vertically.' Both analyses aim to integrate serial sections to create a three-dimensional representation and address section effects while preserving anatomical structure."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis, 'Neighborhood-Aware Cell Type Deconvolution,' aims to deconvolve mixed capture spots by using neighborhood information and single-cell references, minimizing misclassification by considering spatial consistency. This matches the ground-truth analysis G10, whose objective is to deconvolve mixed spatial spots with the help of a single-cell reference while also using neighborhood structure to enhance the mapping accuracy."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis aims to identify subtle gradients and transitions in tissue structure using a graph-based approach. This matches the scientific objective of ground-truth ID G05, which is to identify contiguous spatial domains (in this case, in the olfactory bulb). Both analyses focus on spatial domain identification and the use of spatial geometry (proximity or adjacency in the proposed analysis) in conjunction with expression data to achieve this."
+    },
+    {
+      "candidate_index": 4,
+      "match": false,
+      "reason": "The proposed analysis focuses on integrating high-resolution imaging-based spatial transcriptomics data with broad gene coverage from sequencing-based platforms, using data fusion techniques to align imaging features with sequencing profiles. This objective is distinct from any of the ground-truth analyses, as it combines modalities from different platforms to enhance spatial detail and global expression trends. None of the ground-truth analyses specifically address the integration of imaging and sequencing data for similar purposes, such as capturing fine spatial details and global expression trends, making it a unique approach not directly matching the listed objectives."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis matches the scientific objective of ground-truth analysis G08: 'Integrate serial sections vertically.' Both analyses focus on removing section effects while preserving genuine anatomical structure or biological variation across serial sections."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis and the ground-truth analysis G01 both aim to identify spatial domains in tissue by integrating expression data with histological or anatomical information. While the proposed analysis focuses on refining clustering outputs to ensure the domains have molecular and morphological relevance, G01 involves clustering spots using expression and tissue geometry to recover coherent anatomical layers. Both analyses share the main scientific objective of improving the identification of spatial domains by incorporating morphological features."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis matches the objective of ground-truth analysis G03. Both involve transferring information from single-cell datasets to spatial data, using neighborhood structure or spatial continuity to improve the mapping and deconvolution of cell types in spatial transcriptomics data."
+    },
+    {
+      "candidate_index": 8,
+      "match": false,
+      "reason": "The proposed analysis focuses on investigating differential gene expression across spatial domains while accounting for local tissue structure. This involves performing within-domain comparisons to ensure that differential signals are not artifacts. The ground-truth analyses do not have an analysis with the primary objective of differential expression analysis across spatial domains. Most of the ground-truth analyses either deal with integration of different sections, deconvolution, or evaluating domain accuracy. None of these directly correspond with the primary goal of differential expression as outlined in the proposed analysis."
+    },
+    {
+      "candidate_index": 9,
+      "match": false,
+      "reason": "The proposed analysis focuses on deciphering gene expression patterns at multiple spatial scales using scale-adaptive clustering and spatial smoothing to understand local and broader tissue-level organizational patterns. This does not match any of the ground-truth analyses as they each have specific scientific objectives that do not align with multi-scale analysis of tissue microenvironments. For instance, objectives in the ground-truth set include integrating serial sections, mapping specific cell states in tumors or lymph nodes, comparing spatial integration methods, or identifying spatial domains with anatomical coherence, none of which match the described purpose of understanding multi-scale gene expression patterns and tissue microenvironment interactions."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 7,
+    "candidate_count": 10,
+    "candidate_hit_fraction": 0.7
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 10,
+    "observable_model_attempts": 10,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.4529462363570929,
+        "input_tokens": 862,
+        "output_tokens": 90,
+        "total_tokens": 952
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.1697003524750471,
+        "input_tokens": 857,
+        "output_tokens": 57,
+        "total_tokens": 914
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 2.2358312532305717,
+        "input_tokens": 855,
+        "output_tokens": 86,
+        "total_tokens": 941
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.8066936656832695,
+        "input_tokens": 855,
+        "output_tokens": 90,
+        "total_tokens": 945
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 3.1740264650434256,
+        "input_tokens": 858,
+        "output_tokens": 115,
+        "total_tokens": 973
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.1427746638655663,
+        "input_tokens": 855,
+        "output_tokens": 49,
+        "total_tokens": 904
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 2.034964920952916,
+        "input_tokens": 864,
+        "output_tokens": 92,
+        "total_tokens": 956
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.106417614966631,
+        "input_tokens": 860,
+        "output_tokens": 57,
+        "total_tokens": 917
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 2.0135252214968204,
+        "input_tokens": 850,
+        "output_tokens": 107,
+        "total_tokens": 957
+      },
+      {
+        "stage": "judge_10",
+        "kind": "structured",
+        "elapsed_seconds": 2.286866856738925,
+        "input_tokens": 863,
+        "output_tokens": 130,
+        "total_tokens": 993
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 18.426
+  },
+  "trace_sha256": "01c4969e9fbfadc8a9950189e653ab6721d96b12d9fb1e0c23a22dedcd134476",
+  "checkpoint_sha256": "ffe2b2d2b15126527af10c3d29597b4b6609cbbbf3c9377a7c9ba674cacf63b2"
+}

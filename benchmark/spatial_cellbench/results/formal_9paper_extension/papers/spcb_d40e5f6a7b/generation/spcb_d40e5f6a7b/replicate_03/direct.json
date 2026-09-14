@@ -1,0 +1,75 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "3331d8f90185e1bd6f5a7da097fe121fa55093c4ba94beef1a6592067924fccc",
+  "eval_id": "spcb_d40e5f6a7b",
+  "replicate": 3,
+  "proposal_count": 8,
+  "proposal_sha256": "d9479e1612639ae8c57f4a1e2b92b05d05d5576e7ae762a360abdca7b363ad1c",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Expression-Spatial Contamination Detection",
+        "summary": "This analysis integrates gene expression profiles with spatial tissue geometries to detect spots containing mixed signals due to misassignment or contamination. Statistical metrics will compare local expression neighbors and geometry-based distances to flag locations where marker gene expression contradicts spatial context. The flagged spots will undergo further examination to determine if contamination stems from adjacent tissue or from technical errors in spot assignment."
+      },
+      {
+        "title": "Spatial Deconvolution for Mixed Spot Correction",
+        "summary": "This analysis employs deconvolution methods specifically tailored for spatial transcriptomics data to disaggregate mixed gene expression profiles from capture regions containing multiple cell types. By using probabilistic models that incorporate known spatial arrangements and expression signatures, the approach aims to recover true cell-type signals, particularly in regions with overlapping features or ambiguous boundary definitions."
+      },
+      {
+        "title": "Boundary Integrity and Correction Strategy",
+        "summary": "Focusing on anatomical boundaries, this analysis detects sharp expression gradients and malfunctioning spots along tissue interfaces. By mapping the transition between distinct tissue regions, statistical models can identify spots that blur these boundaries. Correction strategies will then be applied to these spots by borrowing information from the clearer, adjacent regions, enhancing the specificity of domain markers."
+      },
+      {
+        "title": "Validation with Gold-Standard Annotated Tissues",
+        "summary": "This analysis tests correction strategies on tissues with high-quality, gold-standard annotations to validate the effectiveness of spatial transcriptomics adjustments. By comparing pre- and post-correction marker specificity, spatial domain definitions, and cell-type calls against the known ground truth, the approach rigorously evaluates if improvements are attained without introducing novel patterns."
+      },
+      {
+        "title": "Benchmarking Using Synthetic Mixtures with Known Labels",
+        "summary": "Using synthetic datasets composed of mixture spots with known species or cell-type labels, this analysis quantitatively benchmarks the performance of correction strategies. It assesses the sensitivity and specificity of contamination detection and evaluates how well the corrections restore the original, unmixed gene expression profiles while minimizing false positive corrections."
+      },
+      {
+        "title": "Marker Specificity Enhancement Analysis",
+        "summary": "This analysis focuses on how correction strategies improve the specificity of marker genes. Pre- and post-correction expression data will be systematically compared to quantify changes in marker accuracy and domain clarity. By using statistical tests and correlation analyses, the assessment measures improvements in the precision with which true cell-type markers are retained against contaminating signals."
+      },
+      {
+        "title": "Local versus Global Contamination Impact Study",
+        "summary": "This analysis distinguishes between local and distant contamination effects on spatial clusters by segregating spots based on their relative proximity to suspected contamination sources. Statistical models will quantify differences in correction efficiency between patches with localized errors versus those influenced by remote contamination. This nuanced study is critical for tailoring correction algorithms across varied spatial contexts."
+      },
+      {
+        "title": "Refinement of Cell-type Identification via Spatial Correction",
+        "summary": "This analysis evaluates how applying spatial correction improves cell-type calling in ambiguous regions. By integrating spatial geometry with expression profiles, misassigned cells are re-evaluated and reclassified. Success is gauged through improved clustering metrics, higher concordance with anatomical structures, and increased marker gene reliability, thereby enhancing biological interpretability."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "cafbf3797487b651b0dd64fd17ddf641441a364bcccb8f6cb9f7deec95625ca1",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 4.6615453930571675,
+        "input_tokens": 405,
+        "output_tokens": 1027,
+        "total_tokens": 1432
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "63cc3ebd43fe24657568da6c552175d7f309d2241167f94c4e60e3c3496f080c",
+    "overview_sha256": null,
+    "elapsed_seconds": 4.667
+  },
+  "trace_sha256": "a37cbb761dc1eb8ef3af6b09ba54cf610219323ed5c2fe470391d7443922ba7d",
+  "checkpoint_sha256": "219307f083e26e058df7c551e7dee665aa85de4ed3038595a2c69b9706ffad2e"
+}

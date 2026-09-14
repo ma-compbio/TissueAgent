@@ -1,0 +1,83 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "473f8ea2c54f8e0470bc099d33fdcc7f2e7f42776bef4d0c549971addae29d3c",
+  "eval_id": "spcb_07b8c9d0e1",
+  "replicate": 1,
+  "proposal_count": 10,
+  "proposal_sha256": "11631aa4a30e21334664140d88d7be92a4190499a8748e2a27324360907bae97",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Trajectory Inference with Multi-modal Constraints",
+        "summary": "This analysis integrates spatial transcriptomics expression with physical coordinates and tissue morphology to infer trajectories that reflect biological processes in situ. By incorporating local neighborhood information and using alignment algorithms to register sequential tissue sections, the analysis can trace differentiation or injury-induced remodeling over time. The method employs spatial smoothing and explicit neighborhood constraints to reduce noise and false positives, yielding interpretable tracks of cell state changes."
+      },
+      {
+        "title": "Neighborhood-based Ligand-Receptor Interaction Mapping",
+        "summary": "Focusing on spatially plausible cell–cell communication, this analysis screens for ligand–receptor pairs by correlating expression data with physical proximity. It uses a neighborhood graph built from coordinate data to assess interactions only among close-by cells, thereby reducing false positives from distant co-occurrences. Additional integration of morphological segmentation aids in confirming anatomical plausibility of the identified signaling pairs."
+      },
+      {
+        "title": "Integrated Multi-Modal Noise Reduction Pipeline",
+        "summary": "This analysis leverages both transcriptomic and imaging/morphological data to address noise and missing measurements. It deploys a fusion algorithm that adjusts expression profiles based on nearby spots and correlated morphological features, ensuring that neighboring cells contribute informative priors. A Bayesian smoothing process is applied to reinforce genuine spatial patterns, resulting in robust and improved datasets for downstream analyses."
+      },
+      {
+        "title": "3D Tissue Reconstruction for Process Mapping",
+        "summary": "Here, spatial transcriptomics data from serial sections are computationally integrated to reconstruct a three-dimensional tissue representation. Expression measurements are aligned with physical coordinates and supported by histological images to generate a volumetric model. This reconstruction allows researchers to visualize and quantify biological trajectories, validate tissue growth patterns, and track dynamic changes across multiple layers."
+      },
+      {
+        "title": "Spatial Deconvolution of Mixed Cell Populations",
+        "summary": "This approach deconvolutes transcriptomes from spatial spots containing a mixture of cell types by integrating spatial location data and morphological cues. The analysis assigns cell type proportions based on gene expression signatures while leveraging spatial coherence to resolve ambiguity. Such deconvolution strategies are critical for distinguishing overlapping biological processes and identifying rare cell states in damaged or developing tissues."
+      },
+      {
+        "title": "Image and Expression Modal Alignment for Anatomical Validation",
+        "summary": "Merging high-resolution imaging and spatial transcriptomics data, this analysis aligns morphological structures with gene expression profiles to validate anatomical and functional regions. The method employs image segmentation to delineate tissue features and cross-references these with regional expression patterns. This alignment aids in confirming the biological relevance of inferred cell trajectories and communication networks."
+      },
+      {
+        "title": "Spatial Domain Classification via Machine Learning",
+        "summary": "This analysis uses supervised and unsupervised machine learning techniques to classify spatial domains within a tissue. It integrates transcriptomic signatures and physical distances to cluster regions with distinct biological functions. The model is trained on known anatomical features, while regularization with morphological data ensures robustness to spatial variability, providing clear maps of tissue heterogeneity."
+      },
+      {
+        "title": "Graph-based Spatial Cell Communication Network Inference",
+        "summary": "In this approach, a graph is constructed where nodes represent spatial spots and edges denote proximity and expression similarity. The analysis infers cell communication networks by assessing ligand-receptor co-occurrence only among spatially adjacent nodes, reducing remote false positives. Interpretable network metrics are derived to reveal core interacting modules and potential regulatory hubs driving tissue dynamics."
+      },
+      {
+        "title": "High-Resolution Microenvironment Mapping",
+        "summary": "This analysis focuses on characterizing the fine-scale heterogeneity of tissue microenvironments in spatial transcriptomics data. By integrating precise coordinate data with localized expression profiles and imaging features, the method identifies microdomains that may represent niches for specific biological processes. Clustering algorithms enhanced with spatial constraints ensure that detected subregions are biologically meaningful and account for potential tissue growth dynamics."
+      },
+      {
+        "title": "Cross-sectional Time Series Spatial Integration",
+        "summary": "Designed for studies with multiple time points or tissue sections, this analysis integrates cross-sectional spatial transcriptomics with corresponding imaging data to study dynamic processes over time. The pipeline aligns temporal snapshots by emphasizing spatial continuity and morphological markers, minimizing distortion due to tissue growth or spot mixture artifacts. This temporal and spatial integration yields insights into the progression of development, injury responses, or disease."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "f4c4e0c38d2664324ac38cd3c00c6d2b94abf491c7cbbbad9af4ae86c05fe5c7",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 7.425354928942397,
+        "input_tokens": 410,
+        "output_tokens": 1198,
+        "total_tokens": 1608
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "85a5d3e2fbe55aee4b9f9f5de5f583969d1b758c98caebf1e1e106d4b8b44285",
+    "overview_sha256": null,
+    "elapsed_seconds": 7.431
+  },
+  "trace_sha256": "01eae9f801055f52f0b1e3f583b04ad57721ee2c08e5b6e6bf77289f8c2e3539",
+  "checkpoint_sha256": "bb4e5172bee18e9217580a9b6422323223f8100e6a3952001feaea905ecd0e8f"
+}
