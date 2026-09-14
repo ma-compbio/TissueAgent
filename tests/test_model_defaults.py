@@ -24,3 +24,12 @@ def test_gpt_55_uses_responses_api(monkeypatch) -> None:
     model = models.build_chat_model("gpt-5.5", role="worker")
 
     assert model.use_responses_api is True
+
+
+def test_gpt_4o_is_available_without_reasoning_effort() -> None:
+    """The non-reasoning comparison model should be selectable by the pilot."""
+    spec = models.get_model_spec("gpt-4o", role="worker")
+
+    assert spec.api_model == "gpt-4o"
+    assert spec.provider == "openai"
+    assert spec.reasoning_effort is None

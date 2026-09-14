@@ -88,6 +88,12 @@ SUPPORTED_MODELS: List[ModelSpec] = [
         reasoning_effort="high",
     ),
     ModelSpec(
+        id="gpt-4o",
+        provider="openai",
+        api_model="gpt-4o",
+        label="GPT-4o",
+    ),
+    ModelSpec(
         id="gpt-5.4",
         provider="openai",
         api_model="gpt-5.4",

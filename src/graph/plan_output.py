@@ -18,6 +18,7 @@ from typing import Any
 from langchain_core.messages import AIMessage, HumanMessage
 
 from agents.recruiter_agent.prompt import get_skill_metadata
+from graph.replan_state import effective_replan_count
 from graph.ui_events import emit_message
 from server.plan_store import (
     PlanDocument,
@@ -227,7 +228,7 @@ def create_planner_state_update(max_retries: int = 2):
         if getattr(response, "tool_calls", None):
             return _with_original_request({})
         text = (response.content.strip() or "") if isinstance(response.content, str) else ""
-        replan_count = int(state.get("replan_count", 0) or 0)
+        replan_count = effective_replan_count(state)
         is_replan = replan_count > 0
 
         # planner_retry_count is scoped per (initial-plan | replan) phase. Detect

@@ -57,12 +57,15 @@ from graph.node_factories import (
     create_tool_node,
 )
 from graph.plan_output import create_planner_state_update, create_recruiter_state_update
+from graph.replan_state import effective_replan_count
 
 
 def create_tissueagent_graph(
     state_queue: Queue,
     model_proc_fn: Callable[..., BaseChatModel],
     domain_agents: list | None = None,
+    *,
+    allow_targeted_replanning: bool = True,
     **custom_agent_kwargs,
 ) -> StateGraph:
     """Build the full TissueAgent state graph (uncompiled).
@@ -84,6 +87,10 @@ def create_tissueagent_graph(
         domain_agents: Optional override of the recruitable domain-agent list. Defaults to
             :data:`AgentDefns`. Benchmark ablations may pass a filtered copy (e.g. without
             ``cellvoyager_agent``).
+        allow_targeted_replanning: Whether an evaluator ``ROUTE: REPLAN`` verdict may return to
+            the planner. Set to ``False`` for the static-plan architecture ablation: planning,
+            recruitment, execution, evaluation, and reporting remain intact, but the initial plan
+            cannot be revised after execution begins.
         **custom_agent_kwargs: Extra keyword arguments forwarded to :class:`CustomAgent`
             constructors. Each ctor receives only the kwargs it declares in its signature (filtered
             via ``inspect.signature``). For example, ``kernel_client=...`` is consumed by the coding
@@ -232,7 +239,7 @@ def create_tissueagent_graph(
         prior planner response (not the recruiter-annotated plan_store), and the
         message filter strips the same response so it isn't shown twice.
         """
-        if int(state.get("replan_count", 0) or 0) > 0:
+        if effective_replan_count(state) > 0:
             previous_plan = find_last_planner_final_content(state.get("messages", []))
             return replan_prompt.replace("{{previous_plan}}", previous_plan)
         return initial_planner_prompt
@@ -340,7 +347,7 @@ def create_tissueagent_graph(
         head = text.splitlines()[0].upper() if text else ""
         if head.startswith("ROUTE: DIRECT") or head.startswith("ROUTE: CLARIFY"):
             return END
-        if int(state.get("replan_count", 0) or 0) > 0:
+        if effective_replan_count(state) > 0:
             if state.get("planner_validation_errors"):
                 return planner_node_id
             return recruiter_node_id
@@ -414,8 +421,8 @@ def create_tissueagent_graph(
     def evaluator_state_update(response, state):
         content = (response.content or "").strip()
         head = content.splitlines()[0].upper() if content else ""
-        if head.startswith("ROUTE: REPLAN"):
-            prior = int(state.get("replan_count", 0) or 0)
+        if head.startswith("ROUTE: REPLAN") and allow_targeted_replanning:
+            prior = effective_replan_count(state)
             new_count = prior + 1
             history = list(state.get("replan_history", []))
             history.append(datetime.now(timezone.utc).isoformat())
@@ -442,7 +449,7 @@ def create_tissueagent_graph(
         """
         text = (response.content or "").strip()
         head = text.splitlines()[0].upper() if text else ""
-        if head.startswith("ROUTE: REPLAN"):
+        if head.startswith("ROUTE: REPLAN") and allow_targeted_replanning:
             return planner_node_id
         return reporter_node_id
 

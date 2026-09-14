@@ -27,7 +27,7 @@ from langgraph.managed import RemainingSteps
 from langgraph.types import Command
 
 from agents.agent_utils import format_skill_prompt
-from config import DATA_DIR
+from config import DATA_DIR, active_project_outputs
 from graph.message_utils import (
     normalize_trailing_assistant,
     sanitize_message,
@@ -232,7 +232,6 @@ def create_agent_node(
     Returns:
         A callable suitable for use as a LangGraph node function.
     """
-
     if callable(prompt):
         try:
             preview_text = prompt({"messages": []})
@@ -444,15 +443,33 @@ def _validate_step_artifacts(expected_artifacts: list[str]) -> tuple[list[str], 
     found: list[str] = []
     missing: list[str] = []
     for artifact_path in expected_artifacts:
-        full_path = DATA_DIR / artifact_path
-        if full_path.exists():
-            found.append(artifact_path)
+        clean = artifact_path.lstrip("/")
+        if clean.startswith("project/outputs/"):
+            candidates = [(DATA_DIR, clean)]
+        elif clean.startswith("outputs/"):
+            candidates = [(active_project_outputs().parent, clean)]
         else:
-            matches = sorted(DATA_DIR.glob(artifact_path))
-            if matches:
-                found.extend(str(m.relative_to(DATA_DIR)) for m in matches)
+            # Planner exemplars intentionally use concise paths such as
+            # ``tables/result.csv`` and ``figures/plot.png``. Coding agents write those
+            # beneath the active project's output root. Keep the legacy workspace-root
+            # lookup too for existing plans and non-project artifacts.
+            candidates = [
+                (DATA_DIR, clean),
+                (active_project_outputs(), clean),
+            ]
+
+        matches = []
+        for root, pattern in candidates:
+            exact = root / pattern
+            if exact.exists():
+                matches.append(exact)
             else:
-                missing.append(artifact_path)
+                matches.extend(sorted(root.glob(pattern)))
+        unique_matches = sorted(set(matches))
+        if unique_matches:
+            found.extend(str(match.relative_to(DATA_DIR)) for match in unique_matches)
+        else:
+            missing.append(artifact_path)
     return found, missing
 
 

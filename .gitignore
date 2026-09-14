@@ -71,6 +71,7 @@ COPILOT_QA.md
 # stay excluded. Without it the whole HF clone becomes trackable.
 benchmark/*
 !benchmark/*.py
+/benchmark/biofigbench/
 !benchmark/biomysterybench/
 benchmark/biomysterybench/*
 !benchmark/biomysterybench/biomysterybench_expr/
