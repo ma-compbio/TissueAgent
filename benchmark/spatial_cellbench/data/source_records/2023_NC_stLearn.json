@@ -1,0 +1,9 @@
+{
+  "paper_id": "2023_NC_stLearn",
+  "paper_title": "Robust mapping of spatiotemporal trajectories and cell–cell interactions in healthy and diseased tissues",
+  "paper_doi": "10.1038/s41467-023-43120-6",
+  "pmcid": "PMC10676408",
+  "paper_pdf": "papers/2023_NC_stLearn/paper.pdf",
+  "code_sources": ["https://github.com/BiomedicalMachineLearning/stlearn"],
+  "spatial_modalities": ["Visium", "Slide-seq", "MERFISH", "seqFISH"]
+}

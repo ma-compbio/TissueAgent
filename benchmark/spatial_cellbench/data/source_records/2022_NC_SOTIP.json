@@ -1,0 +1,9 @@
+{
+  "paper_id": "2022_NC_SOTIP",
+  "paper_title": "SOTIP is a versatile method for microenvironment modeling with spatial omics data",
+  "paper_doi": "10.1038/s41467-022-34867-5",
+  "pmcid": "PMC9705407",
+  "paper_pdf": "papers/2022_NC_SOTIP/paper.pdf",
+  "code_sources": ["https://github.com/ZJUFanLab/SOTIP"],
+  "spatial_modalities": ["Visium", "spatial proteomics"]
+}

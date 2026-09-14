@@ -1,12 +1,12 @@
 # Spatial CellBench
 
-This benchmark asks a model to recover the analyses in eleven spatial-omics papers from frozen,
+This benchmark asks a model to recover the analyses in twenty spatial-omics papers from frozen,
 title-free scientific background. Public CellBench is used only as the protocol reference; its
 single-cell dataset is not run here.
 
 ## Frozen design
 
-The corpus contains eleven spatial-primary papers and 112 independently reported analyses. Each
+The corpus contains twenty spatial-primary papers and 193 independently reported analyses. Each
 paper's true analysis count is disclosed to every generation arm, matching CellBench's oracle-N
 setup. Counts range from 5 to 12.
 
@@ -32,10 +32,10 @@ hidden truth set. Multiple candidates may match the same truth item, exactly as 
 CellBench. The primary per-paper value is therefore the candidate hit fraction, not one-to-one
 precision, truth recall, ARI, NMI, or F1.
 
-Three replicates are averaged within each paper. The formal design is 11 papers x 3 arms x 3
-replicates: 99 generation units and 99 judge units. Direct uses 33 model calls, judging uses
-1,008 candidate-level calls, and native TA call counts depend on its plans. Every TA+CV unit
-includes the corresponding 3N CV calls, totaling 1,008 across all eleven papers. The experiment
+Three replicates are averaged within each paper. The formal design is 20 papers x 3 arms x 3
+replicates: 180 generation units and 180 judge units. Direct uses 60 model calls, judging uses
+1,737 candidate-level calls, and native TA call counts depend on its plans. Every TA+CV unit
+includes the corresponding 3N CV calls, totaling 1,737 across all twenty papers. The experiment
 is a descriptive benchmark.
 
 ## Validate
@@ -43,7 +43,8 @@ is a descriptive benchmark.
 ```bash
 python -m benchmark.spatial_cellbench.validate_data \
   --archive papers-20260711T025044Z-2-001.zip \
-  --archive papers-20260721T071755Z-1-001.zip
+  --archive papers-20260721T071755Z-1-001.zip \
+  --archive papers-20260902T-extension-001.zip
 
 python -m benchmark.spatial_cellbench.run run \
   --run-dir /tmp/spatial-cellbench-check --validate-only
@@ -54,21 +55,20 @@ Checkpoints are immutable and resumable. `--skip-judge` stages generation first;
 
 ## CPU Slurm run
 
-The completed eight papers are not rerun. The launcher contains only the three extension papers,
-one per CPU node. Submit the stages with dependencies so generation and judging never write the
-same checkpoint concurrently:
+The launcher runs all twenty papers, one per CPU node. Submit the stages with dependencies so
+generation and judging never write the same checkpoint concurrently:
 
 ```bash
-GEN_JOB=$(sbatch --parsable --array=0-2 benchmark/spatial_cellbench/slurm/run_spatial_benchmark.sh generation)
-JUDGE_JOB=$(sbatch --parsable --dependency=afterok:${GEN_JOB} --array=0-2 benchmark/spatial_cellbench/slurm/run_spatial_benchmark.sh judge)
+GEN_JOB=$(sbatch --parsable --array=0-19 benchmark/spatial_cellbench/slurm/run_spatial_benchmark.sh generation)
+JUDGE_JOB=$(sbatch --parsable --dependency=afterok:${GEN_JOB} --array=0-19 benchmark/spatial_cellbench/slurm/run_spatial_benchmark.sh judge)
 sbatch --dependency=afterok:${JUDGE_JOB} --array=0 benchmark/spatial_cellbench/slurm/run_spatial_benchmark.sh merge
 ```
 
-The default run root is `benchmark/spatial_cellbench/runs/formal_3paper_extension`. Set `RUN_ROOT`
+The default run root is `benchmark/spatial_cellbench/runs/formal_20paper`. Set `RUN_ROOT`
 to use a different immutable run directory. The launcher defaults to the local `tissueagent`
 Conda environment; set `PYTHON` to override it. Submit from the repository root. Do not combine
 checkpoints from another source fingerprint inside one resumable run directory.
 
-The exact estimands and contrasts are frozen in `analysis_spec.md`. The tracked formal aggregate
-under `results/` contains all eleven papers and records the eight-paper and three-paper source
-batches separately. Runtime checkpoints stay under the ignored run root.
+The exact estimands and contrasts are frozen in `analysis_spec.md`. The tracked aggregate under
+`results/` is the historical eleven-paper result; the twenty-paper corpus is frozen and ready for
+a fresh generation/judging run. Runtime checkpoints stay under the ignored run root.

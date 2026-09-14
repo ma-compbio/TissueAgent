@@ -25,12 +25,28 @@
         "2025_NM_STORIES",
         "2026_NC_RESCUE"
       ]
+    },
+    {
+      "filename": "papers-20260902T-extension-001.zip",
+      "sha256": "7e4e471447ccf88cde5ea1f26ccce584b44e926b240c27466ef411f3a0ec5228",
+      "member_count": 28,
+      "source_paper_ids": [
+        "2023_NC_GraphST",
+        "2022_NC_STAGATE",
+        "2022_NC_SOTIP",
+        "2022_NC_SpaceFlow",
+        "2022_NC_SpotClean",
+        "2022_NM_Squidpy",
+        "2024_GM_SEDR",
+        "2023_NC_stLearn",
+        "2021_GR_MERINGUE"
+      ]
     }
   ],
   "frozen_artifacts": {
-    "public_contexts_sha256": "1ac5275bf06c61a1b216601d22b1799b46132208baad102c38f168acbaafaffe",
-    "ground_truth_sha256": "eac2c5a57dec92da40681d3fea2379a167f80ccb06e0a778be6417b39a8a5b6b",
-    "scope_adjudication_sha256": "77c5977ff93ce7e9519ebb243481b780b8dca69169db8c121a614f2979e7fc99",
+    "public_contexts_sha256": "bc714bfccd97f1b1e2d1dd2ec7d41b74dee93e9da5d9587e2514ca78874d6069",
+    "ground_truth_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+    "scope_adjudication_sha256": "757abc5da8b9485af4572bc21d124d24db2e67f8c4c6cdfb7bd5aec550b34c47",
     "spatial_overview_sha256": "34954dad7d5535ecad3d92e88d9cdc2a2fa9c90b5e3c7f8cad7ed4402a75114e",
     "context_rule_version": "cellbench_intro_only_v2",
     "ground_truth_schema_version": 2
@@ -50,8 +66,8 @@
     "review": "Two independent extraction passes followed by analysis-level PDF adjudication, a final spatial-core scope audit, and page, section, and anchor evidence."
   },
   "curation_summary": {
-    "included_papers": 11,
-    "final_analysis_labels": 112,
+    "included_papers": 20,
+    "final_analysis_labels": 193,
     "analysis_counts": {
       "spcb_377c86462b": 9,
       "spcb_3d9b1bdbd6": 12,
@@ -63,7 +79,16 @@
       "spcb_f4c0753473": 12,
       "spcb_22b1a945e2": 11,
       "spcb_fa0ad80e86": 11,
-      "spcb_783779446a": 12
+      "spcb_783779446a": 12,
+      "spcb_9f3a1c7d20": 10,
+      "spcb_a10b2c3d4e": 9,
+      "spcb_b20c3d4e5f": 10,
+      "spcb_c30d4e5f6a": 9,
+      "spcb_d40e5f6a7b": 8,
+      "spcb_e50f6a7b8c": 8,
+      "spcb_f60a7b8c9d": 8,
+      "spcb_07b8c9d0e1": 10,
+      "spcb_18c9d0e1f2": 9
     },
     "adjudication_status": "complete"
   },
@@ -167,6 +192,87 @@
       "paper_type": "computational_method",
       "eligibility": "include",
       "redaction_terms": ["RESCUE", "unattributed transcriptome"]
+    },
+    {
+      "opaque_id": "spcb_9f3a1c7d20",
+      "source_paper_id": "2023_NC_GraphST",
+      "title": "Spatially informed clustering, integration, and deconvolution of spatial transcriptomics with GraphST",
+      "pdf_pages": 19,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["GraphST", "graph self-supervised contrastive learning"]
+    },
+    {
+      "opaque_id": "spcb_a10b2c3d4e",
+      "source_paper_id": "2022_NC_STAGATE",
+      "title": "Deciphering spatial domains from spatially resolved transcriptomics with an adaptive graph attention auto-encoder",
+      "pdf_pages": 12,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["STAGATE", "adaptive graph attention auto-encoder"]
+    },
+    {
+      "opaque_id": "spcb_b20c3d4e5f",
+      "source_paper_id": "2022_NC_SOTIP",
+      "title": "SOTIP is a versatile method for microenvironment modeling with spatial omics data",
+      "pdf_pages": 19,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["SOTIP", "spatially organized tissue"]
+    },
+    {
+      "opaque_id": "spcb_c30d4e5f6a",
+      "source_paper_id": "2022_NC_SpaceFlow",
+      "title": "Identifying multicellular spatiotemporal organization of cells with SpaceFlow",
+      "pdf_pages": 14,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["SpaceFlow", "pseudo-spatiotemporal map"]
+    },
+    {
+      "opaque_id": "spcb_d40e5f6a7b",
+      "source_paper_id": "2022_NC_SpotClean",
+      "title": "SpotClean adjusts for spot swapping in spatial transcriptomics data",
+      "pdf_pages": 11,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["SpotClean", "spot swapping"]
+    },
+    {
+      "opaque_id": "spcb_e50f6a7b8c",
+      "source_paper_id": "2022_NM_Squidpy",
+      "title": "Squidpy: a scalable framework for spatial omics analysis",
+      "pdf_pages": 14,
+      "paper_type": "software_framework",
+      "eligibility": "include",
+      "redaction_terms": ["Squidpy", "ImageContainer"]
+    },
+    {
+      "opaque_id": "spcb_f60a7b8c9d",
+      "source_paper_id": "2024_GM_SEDR",
+      "title": "Unsupervised spatially embedded deep representation of spatial transcriptomics",
+      "pdf_pages": 15,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["SEDR", "spatially embedded deep representation"]
+    },
+    {
+      "opaque_id": "spcb_07b8c9d0e1",
+      "source_paper_id": "2023_NC_stLearn",
+      "title": "Robust mapping of spatiotemporal trajectories and cell–cell interactions in healthy and diseased tissues",
+      "pdf_pages": 25,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["stLearn", "pseudo-time-space", "SCTP"]
+    },
+    {
+      "opaque_id": "spcb_18c9d0e1f2",
+      "source_paper_id": "2021_GR_MERINGUE",
+      "title": "Characterizing spatial gene expression heterogeneity in spatially resolved single-cell transcriptomic data with nonuniform cellular densities",
+      "pdf_pages": 14,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["MERINGUE", "spatial autocorrelation and cross-correlation"]
     }
   ]
 }

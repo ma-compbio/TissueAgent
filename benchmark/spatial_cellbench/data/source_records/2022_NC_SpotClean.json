@@ -1,0 +1,9 @@
+{
+  "paper_id": "2022_NC_SpotClean",
+  "paper_title": "SpotClean adjusts for spot swapping in spatial transcriptomics data",
+  "paper_doi": "10.1038/s41467-022-30587-y",
+  "pmcid": "PMC9142522",
+  "paper_pdf": "papers/2022_NC_SpotClean/paper.pdf",
+  "code_sources": ["https://github.com/kuanglab/SpotClean"],
+  "spatial_modalities": ["Visium"]
+}

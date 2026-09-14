@@ -1,0 +1,9 @@
+{
+  "paper_id": "2021_GR_MERINGUE",
+  "paper_title": "Characterizing spatial gene expression heterogeneity in spatially resolved single-cell transcriptomic data with nonuniform cellular densities",
+  "paper_doi": "10.1101/gr.271288.120",
+  "pmcid": "PMC8494224",
+  "paper_pdf": "papers/2021_GR_MERINGUE/paper.pdf",
+  "code_sources": ["https://github.com/JEFworks-Lab/MERINGUE"],
+  "spatial_modalities": ["MERFISH", "spatial transcriptomics", "Slide-seq", "ISH"]
+}
