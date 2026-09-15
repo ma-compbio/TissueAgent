@@ -41,11 +41,20 @@ tissueagent:
   min_shared_genes: 50
   harmony_max_iter: 20
   preserve_all_spatial_obs: true
-celltypist:
-  mode: train_reference
-  label_column: cell.types
-gptcelltype:
-  tissue_name: ovary
-  species_name: human
-  model: gpt-5.1
+baselines:
+  celltypist:
+    mode: train_reference
+    label_column: cell.types
+  gptcelltype:
+    tissue_name: ovary
+    species_name: human
+    model: gpt-5.1
+  biomni:
+    model: gpt-5.1
+    source: OpenAI
+    expected_version: 0.0.8
+  spatialagent:
+    model: gpt-5.1
+    use_azure: false
+    source_revision: e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6
 mapping: demo/cell_annotation/mappings/ovarian_cancer.json

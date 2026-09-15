@@ -123,7 +123,10 @@ def create_agent_node(
 
         next_node = tool_node_id if getattr(response, "tool_calls", []) else None
         if not next_node and exit_node is not None:
-            next_node = exit_node(response, state) if callable(exit_node) else exit_node
+            next_node = (
+                exit_node(response, {**state, **extra_update})
+                if callable(exit_node) else exit_node
+            )
 
         update_payload = {"messages": [response]}
         if extra_update:
@@ -247,12 +250,21 @@ def _validate_step_artifacts(expected_artifacts: list[str]) -> tuple[list[str], 
     """
     found: list[str] = []
     missing: list[str] = []
+    def readable_artifact(path):
+        if path.suffix.lower() == ".h5ad":
+            import h5py
+
+            return path.is_file() and h5py.is_hdf5(path)
+        return path.exists()
+
     for artifact_path in expected_artifacts:
         full_path = DATA_DIR / artifact_path
-        if full_path.exists():
+        if readable_artifact(full_path):
             found.append(artifact_path)
         else:
-            matches = sorted(DATA_DIR.glob(artifact_path))
+            matches = sorted(
+                path for path in DATA_DIR.glob(artifact_path) if readable_artifact(path)
+            )
             if matches:
                 found.extend(str(m.relative_to(DATA_DIR)) for m in matches)
             else:

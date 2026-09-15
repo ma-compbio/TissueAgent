@@ -50,6 +50,18 @@ from graph.node_factories import (
 from graph.plan_output import create_planner_state_update, create_recruiter_state_update
 
 
+class TissueAgentState(MessagesState):
+    """Retain orchestration controls across graph nodes and replanning."""
+
+    replan_count: int
+    replan_history: list[str]
+    planner_retry_count: int
+    planner_retry_phase: str
+    planner_validation_errors: str | None
+    recruiter_retry_count: int
+    recruiter_validation_errors: str | None
+
+
 def create_tissueagent_graph(
     state_queue: Queue,
     model_proc_fn: Callable[..., BaseChatModel],
@@ -418,7 +430,7 @@ def create_tissueagent_graph(
         message_filter_fn=filter_for_execution_phase,
     )
 
-    graph = StateGraph(MessagesState)
+    graph = StateGraph(TissueAgentState)
 
     graph.add_edge(START, planner_node_id)
 

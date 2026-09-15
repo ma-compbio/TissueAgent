@@ -130,16 +130,29 @@ def _preserve_cell_annotator_user_request(
     if step.assigned_agent != "cell_annotator_agent":
         return task_instructions
     additions: list[str] = []
-    if user_request.strip():
+    from agents.tissue_niche_context import get_tissue_niche_context
+
+    niche_context = get_tissue_niche_context()
+    if niche_context:
         additions.append(
-            "Exact original user request — preserve its input/output paths and biological "
-            f"context in every tool call:\n{user_request.strip()}"
+            "Original tissue-niche task fields, preserved by the native tools:\n"
+            + json.dumps(niche_context, ensure_ascii=False)
+        )
+    if user_request.strip():
+        preservation = (
+            "preserve the requested final output and biological context. Derived candidate files "
+            "returned by tools are valid inputs to later analysis steps"
+            if niche_context
+            else "preserve its input/output paths and biological context in every tool call"
+        )
+        additions.append(
+            f"Exact original user request — {preservation}:\n{user_request.strip()}"
         )
         context = (
             get_bound_cell_annotation_context()
             or _cell_annotation_context_from_user_request(user_request)
         )
-        if context:
+        if context and not niche_context:
             canonical_context = json.dumps(
                 context,
                 ensure_ascii=False,

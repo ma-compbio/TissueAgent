@@ -21,6 +21,7 @@ from agents.agent_registry.cell_annotater_agent.tools_impl.method_selection impo
     list_celltypist_model_catalog_tool,
 )
 from agents.agent_registry.cell_annotater_agent.tools_impl.niche_annotation import (
+    inspect_tissue_niche_input_tool,
     niche_annotation_tool,
 )
 from agents.agent_registry.cell_annotater_agent.tools_impl.selection_contract import (
@@ -393,13 +394,34 @@ CellAnnotaterTools: list[StructuredTool] = [
         ),
     ),
     StructuredTool.from_function(
+        func=inspect_tissue_niche_input_tool,
+        name="inspect_tissue_niche_input_tool",
+        description=(
+            "Read-only preflight for tissue-niche annotation. Inspect the truth-blinded query "
+            "before choosing niche parameters. Explicit or auto cell-type/spatial keys are "
+            "accepted; no future clustering key is required. Optional neighborhood_radii report "
+            "sparse graph connectivity for candidate scales. Feasible diagnostics are retained "
+            "when another candidate exceeds the resource limit. If none are usable, inspect "
+            "another candidate before choosing a scale. It reports slide-key candidates, cell-type "
+            "coverage, bounded expression-state diagnostics, coordinate extents, and within-slide "
+            "nearest-neighbor distance quantiles. It does not read held-out niche labels, "
+            "historical predictions, benchmark scores, or recommend a final configuration."
+        ),
+    ),
+    StructuredTool.from_function(
         func=niche_annotation_tool,
         name="niche_annotation_tool",
         description=(
             "Runs UTAG tissue-niche discovery and internal LLM labeling on one spatial AnnData. "
             "It uses cell-type composition when available, otherwise marker and spatial summaries. "
-            "It writes annotated H5AD and JSON prompt/result artifacts without CELLxGENE, Harmony, "
-            "or external reference acquisition."
+            "Call it after inspect_tissue_niche_input_tool with an explicit evidence-backed "
+            "configuration, parameter rationale, and preflight SHA-256. It writes annotated H5AD "
+            "at output_path and JSON evidence/prompt/result artifacts. Pass dataset_context and "
+            "the original allowed_labels. Set preview_only=True to save clustering and return its "
+            "spatial/composition evidence without model labeling. Then label the chosen candidate "
+            "with preview_only=False. To label existing clusters, set utag_apply_clustering=False "
+            "and their actual niche_key; this skips UTAG. It performs no external reference "
+            "acquisition."
         ),
     ),
 ]

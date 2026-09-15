@@ -23,11 +23,14 @@ def _last_index_of_final(messages: list[BaseMessage], agent_name: str) -> int | 
 
 
 def filter_for_recruiter(messages: list[BaseMessage]) -> list[BaseMessage]:
-    """Recruiter sees: user query + planner's final plan output only.
+    """Keep the task, latest failure assessment, and planner's revised plan.
 
     Strips the planner's intermediate tool calls (template reads, globs, etc.).
     """
     result = [msg for msg in messages if isinstance(msg, HumanMessage)]
+    feedback = _last_index_of_final(messages, "evaluator_agent")
+    if feedback is not None:
+        result.append(messages[feedback])
     idx = _last_index_of_final(messages, "planner_agent")
     if idx is not None:
         result.append(messages[idx])
