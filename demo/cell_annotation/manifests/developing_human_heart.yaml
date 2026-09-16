@@ -7,7 +7,7 @@ disease: healthy
 developmental_stage: embryonic and fetal
 query:
   kind: local_h5ad
-  path: demo/data/cell_annotation/overall_merfish.h5ad
+  path: demo/data/cell_annotation/inputs/developing_human_heart/full.h5ad
   size_bytes: 370287574
   sha256: 3af2b996834d23f73e77ac197e8c4a9d604dbb67ffe024af9f5d2e6bd41ddecf
   expected_n_obs: 228635

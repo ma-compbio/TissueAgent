@@ -33,8 +33,7 @@ DEFAULT_OUTPUT = (
     / "demo"
     / "data"
     / "cell_annotation"
-    / "intermediates"
-    / "benchmarks"
+    / "inputs"
     / DATASET_ID
     / "full.h5ad"
 )

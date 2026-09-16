@@ -21,7 +21,7 @@ source:
   zenodo_record: 7813151
 query:
   kind: local_h5ad
-  path: demo/data/cell_annotation/intermediates/benchmarks/bcl/full.h5ad
+  path: demo/data/cell_annotation/inputs/bcl/full.h5ad
   expected_n_obs: 49910
   expected_n_vars: 36601
   size_bytes: 294091660
@@ -35,7 +35,7 @@ query:
 ground_truth:
   column: refined_clusters
   held_out_columns: [refined_clusters]
-  path: demo/data/cell_annotation/intermediates/benchmarks/bcl/full.ground_truth.tsv
+  path: demo/data/cell_annotation/inputs/bcl/full.ground_truth.tsv
 reference_audit:
   require_agent_generated: true
   require_live_discovery: true

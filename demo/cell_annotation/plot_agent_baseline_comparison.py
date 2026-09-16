@@ -4,17 +4,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import time
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from .run_agent_baseline_comparison import (
-    ROOT, RUN_ID, STUDY, configure_runtime, matched_task_prompt,
+from .run_agent_baseline_comparison import ROOT, RUN_ID, configure_runtime
+
+
+STUDY = ROOT / (
+    "demo/outputs/cell_annotation/"
+    "tissueagent-repeatability-heart-bcl-scope-v11-han-20260825-v1/"
+    "study_manifest_posthoc_mapping_v1.json"
 )
-
-
 BASELINES = ROOT / (
     "demo/outputs/cell_annotation/final-heart-bcl-han-stereoseq-20260801-v1/"
     "cell_annotation_final_heart_bcl_han_stereoseq_provenance.json"
@@ -28,6 +32,33 @@ METRICS = (
     ("balanced_accuracy", "Balanced accuracy"),
     ("macro_f1", "Macro F1"),
 )
+
+
+def matched_task_prompt(spec: dict) -> tuple[str, list[dict]]:
+    """Recover the saved TissueAgent task, replacing only the two IO paths."""
+    from .benchmarks import _sha256
+
+    templates, sources = [], []
+    for run in spec["runs"]:
+        path = Path(run["tissueagent_run_json"])
+        prompt = json.loads(path.read_text())["prompt"]
+        template, query_count = re.subn(
+            r"^(Annotate cell types in (?:spatial )?AnnData )'[^']+'",
+            r"\1'<QUERY_H5AD>'",
+            prompt,
+        )
+        template, output_count = re.subn(
+            r"Save the annotated H5AD to '[^']+'\.$",
+            "Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+            template,
+        )
+        if query_count != 1 or output_count != 1:
+            raise ValueError(f"Cannot identify TissueAgent task IO paths: {path}")
+        templates.append(template)
+        sources.append({"path": str(path), "sha256": _sha256(path), "prompt": prompt})
+    if len(set(templates)) != 1:
+        raise ValueError("TissueAgent replicates have different scientific task prompts.")
+    return templates[0], sources
 
 
 def _observation_ids(path: Path) -> set[str]:
@@ -103,7 +134,18 @@ def collect_results(run_id: str, overrides: dict) -> tuple[pd.DataFrame, pd.Data
             alignment = json.loads(alignment_path.read_text())
             template, prompt_sources = matched_task_prompt(spec)
             assert alignment["task_prompt_template"] == template
-            assert alignment["tissueagent_prompt_sources"] == prompt_sources
+            if "comparison_config" in alignment:
+                from .run_agent_baseline_comparison import load_config
+
+                config_path = directory / alignment["comparison_config"]
+                assert _sha256(config_path) == alignment["comparison_config_sha256"]
+                configured = next(
+                    item for item in load_config(config_path)["datasets"]
+                    if item["dataset_id"] == spec["dataset_id"]
+                )
+                assert configured["task_prompt_template"] == template
+            else:
+                assert alignment["tissueagent_prompt_sources"] == prompt_sources
             assert request["task_prompt_template"] == template
             assert request["task_prompt"] == template.replace(
                 "<QUERY_H5AD>", request["query_h5ad"]

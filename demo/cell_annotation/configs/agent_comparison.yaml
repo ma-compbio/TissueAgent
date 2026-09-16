@@ -1,0 +1,61 @@
+model: gpt-5.1
+random_seed: 42
+tissueagent_seed: 42
+prediction_mapping_model: gpt-5.1
+prediction_mapping_seed: 42
+execution_timeout_seconds: 21600
+process_timeout_seconds: 43200
+datasets:
+- dataset_id: developing_human_heart
+  display_name: Developing human heart
+  expected_label_space: primary
+  expected_exclusions: []
+  expected_n_obs: 228635
+  expected_n_truth_cells: 228635
+  expected_n_excluded_truth_cells: 0
+  expected_prepared_query_sha256: 6c45b5c82fe20f88537d9d77d45667b2b7a110aa056cd2bfb21a35acf66d5dd1
+  expected_label_contract_sha256: 680980cc253dd8ae28c24c35f52878c3d6397bb4e77dd82327d3e42eec16c61f
+  expected_evaluation_mapping_sha256: 4f7d33d2cd8ad30f132695ba6c65e2eee2b4f21ccee79245aca42a4c7cfd8ac4
+  task_prompt_template: 'Annotate cell types in spatial AnnData ''<QUERY_H5AD>''. Biological context:
+    species=''human'', tissue=''developing human heart'', disease=''healthy'', developmental_stage=''embryonic
+    and fetal''. Save the annotated H5AD to ''<ANNOTATED_H5AD>''.'
+  evaluation_mapping: demo/cell_annotation/mappings/developing_human_heart.json
+  expected_ground_truth_sha256: 943f59717573571a137a6bef5197be626187f1c979f8f67c5f602ea934ceef2d
+- dataset_id: bcl
+  display_name: BCL
+  expected_label_space: primary
+  expected_exclusions:
+  - B14
+  expected_n_obs: 49910
+  expected_n_truth_cells: 49566
+  expected_n_excluded_truth_cells: 344
+  expected_prepared_query_sha256: 30e89b96220b7c481fa619d65aa0f3f7a508a2438a0cb8a6a341621c2b86ddc8
+  expected_label_contract_sha256: 6153f62a39bdb7858e28187b10fb5b820eddc8a383bf83c12fc90211ec306025
+  expected_evaluation_mapping_sha256: 4616feed9c36242bd8a87766eaa25349b8a659952f09bcd423941c16152adf74
+  task_prompt_template: 'Annotate cell types in AnnData ''<QUERY_H5AD>''. Biological context: species=''human'',
+    tissue=''central nervous system'', disease=''primary central nervous system diffuse large B-cell lymphoma'',
+    developmental_stage=''adult''. Study context: The dataset contains 5-prime single-cell RNA sequencing
+    from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment.
+    This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident
+    cells may nevertheless be present. Annotation scope contract: {"primary_scope":"lymphoma tumor and
+    tumor-immune microenvironment","requested_output":"cell identity and, when supported by expression
+    evidence, disease or malignancy state","sampling_context":"dissociated surgical biopsies; not a representative
+    whole-brain atlas","secondary_scope":"CNS-resident populations may be present"}. Save the annotated
+    H5AD to ''<ANNOTATED_H5AD>''.'
+  evaluation_mapping: demo/cell_annotation/mappings/bcl.json
+  expected_ground_truth_sha256: e9e19b7475c43a50ce3d9744f42fd0d5cce1ed721394ab83281e43397ed623dc
+- dataset_id: han_mouse_brain_stereoseq
+  display_name: Mouse brain Stereo-seq
+  expected_label_space: cell_ontology_shared
+  expected_exclusions: []
+  expected_n_obs: 478740
+  expected_n_truth_cells: 478740
+  expected_n_excluded_truth_cells: 0
+  expected_prepared_query_sha256: 7247b476b7137397401de0c843b265bfbe3478319dfef346005291a6e40cf320
+  expected_label_contract_sha256: 3569ec3fdb88169b1c484089fe7756ab9c16d849abfb41e2f28b3f1ef1c61f21
+  expected_evaluation_mapping_sha256: 1a250a515fbf614333c4900422478899f34d371e5d359f4cfb9d807f951218a7
+  task_prompt_template: 'Annotate cell types in spatial AnnData ''<QUERY_H5AD>''. Biological context:
+    species=''mouse'', tissue=''whole adult mouse brain'', disease=''normal'', developmental_stage=''11-week
+    adult''. Save the annotated H5AD to ''<ANNOTATED_H5AD>''.'
+  evaluation_mapping: demo/cell_annotation/mappings/han_mouse_brain_stereoseq_frozen.json
+  expected_ground_truth_sha256: 0106199d103f383651990c506784f1b2df8fdbbaa61b154ffdbacd2cd136a9ac

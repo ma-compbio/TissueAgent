@@ -27,8 +27,7 @@ DEFAULT_OUTPUT = (
     / "demo"
     / "data"
     / "cell_annotation"
-    / "intermediates"
-    / "benchmarks"
+    / "inputs"
     / "bcl"
     / "full.h5ad"
 )

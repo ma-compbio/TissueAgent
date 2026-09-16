@@ -55,3 +55,7 @@ COPILOT_QA.md
 # Benchmark directory
 benchmark/
 workspace/cellvoyager_agent/
+
+# Tissue-niche agent benchmark data and run artifacts
+/demo/data/
+/demo/outputs/

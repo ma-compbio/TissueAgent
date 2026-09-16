@@ -1,0 +1,17 @@
+dataset_id: ovca_xenium_spatialfusion
+source_h5ad: demo/data/tissue_niche/raw/ovca_xenium_spatialfusion/processed_OVCA.h5ad
+truth_key: path_region
+celltype_key: major_celltype
+spatial_key: spatial
+section_key: null
+expected_shape: [338695, 5101]
+exclude_truth_labels: [Unassigned]
+public_context:
+  species: human
+  tissue: ovary and adjacent tissue
+  disease: ovarian cancer
+  assay: Xenium
+  expression_state: counts
+  coordinate_units: micrometres
+labels: [Tumor, Smooth muscle, Necrosis, Fallopian tube, Ovary]
+source_url: https://zenodo.org/records/20934900

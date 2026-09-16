@@ -23,13 +23,50 @@ This mode renders saved scores and does not repeat the source-run audit or evalu
 Large query/reference H5AD files, per-cell predictions, upstream checkouts, environments, caches,
 and historical run directories are intentionally not committed. The provenance retains their
 original paths and hashes as an audit record, not portable download links. Re-evaluating or
-running the full source audit requires those archived artifacts. In particular, the matched-task
-driver expects the saved TissueAgent study manifest named by its `STUDY` constant, its referenced
-prepared runs and transcripts, and their query, truth, and mapping files. The full plotting audit
-also needs the earlier baseline provenance and source files named by `BASELINES`, plus CZI
-reference metadata. These are not needed to redraw the committed figure.
+running the full source audit requires those archived artifacts. The full plotting audit uses the
+saved TissueAgent study named by the plotter's `STUDY` constant and the earlier baseline provenance
+named by `BASELINES`, plus their source files and CZI reference metadata. These are not needed to
+redraw the committed figure or run a new comparison.
 
 ## Prepare inputs for a new evaluation
+
+All evaluation input data lives under `demo/data/cell_annotation/inputs/`:
+
+```text
+demo/data/cell_annotation/inputs/
+├── developing_human_heart/
+│   └── full.h5ad
+├── bcl/
+│   ├── full.h5ad
+│   └── full.ground_truth.tsv
+└── han_mouse_brain_stereoseq/
+    ├── full.h5ad
+    └── full.ground_truth.tsv
+```
+
+The heart H5AD contains its ground truth in `obs['populations']`. BCL and Han use external
+ground-truth tables. The preparation step strips evaluation labels before exposing inputs to agents.
+
+To receive the inputs, extract `cell_annotation_eval_inputs.zip` **from the TissueAgent repository
+root**. The archive creates the full directory structure above:
+
+```bash
+unzip /path/to/cell_annotation_eval_inputs.zip
+```
+
+The archive contains exactly these five data files. The dataset manifests, evaluation mappings,
+configuration, and runners come from Git. Agent environments and API keys are configured separately;
+references needed by the agents are acquired during their native workflows.
+
+To rebuild the archive from the repository root:
+
+```bash
+.venv/bin/python -m demo.cell_annotation.package_inputs
+```
+
+This writes `demo/data/cell_annotation/cell_annotation_eval_inputs.zip`, checks the input hashes,
+and refuses to overwrite an existing archive. Use `--output /path/to/new-name.zip` for another
+destination. Data and the ZIP remain ignored by Git.
 
 The three manifests are in `demo/cell_annotation/manifests/`, with frozen label contracts in
 `demo/cell_annotation/mappings/`. Source locations, hashes, and reference requirements are recorded
@@ -44,7 +81,49 @@ uv run python -m demo.cell_annotation.han_mouse_brain_stereoseq --help
 `demo/cell_annotation_benchmark.ipynb` is an interactive quick/full demo for these three datasets,
 not a replay of the archived matched-task study. Its direct smoke-test scoring does not apply the
 study's post-hoc name mapping, BCL exclusions, or mouse shared-ontology scoring. For the published
-comparison protocol, use the matched-task driver with the archived inputs described below.
+comparison protocol, use the configuration-driven comparison command below.
+
+## Run a fresh comparison
+
+[configs/agent_comparison.yaml](../demo/cell_annotation/configs/agent_comparison.yaml) records the
+original scientific task text, full-cohort input hashes, evaluation mappings, scoring settings,
+GPT-5.1 model, and baseline time limits. The runner prepares inputs from the dataset manifests and
+checks that their query and truth bytes match the original experiment. It needs the dataset source
+files listed above; it does not read any previous study, run record, or prediction.
+
+From the repository root, prepare without making model requests:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m demo.cell_annotation.run_agent_baseline_comparison \
+  --method tissueagent --method biomni --method spatialagent \
+  --run-id teammate-comparison-v1 --prepare-only
+```
+
+After configuring the baseline environments below, run and score all three agents:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m demo.cell_annotation.run_agent_baseline_comparison \
+  --method tissueagent --method biomni --method spatialagent \
+  --run-id teammate-comparison-v1
+```
+
+Use one `--method` to run that agent alone, and repeat `--dataset` to select datasets. Runs are
+written to `demo/outputs/cell_annotation/<dataset>/<run-id>-<method>/`. Existing predictions are
+reused. `--evaluate-only` requires existing inputs and predictions; it may make evaluator model
+requests if the prediction-name mapping has not yet been generated. SpatialAgent's `--resume-from`
+continues an earlier native attempt into the selected run as before.
+
+Each fresh run saves `comparison_config.yaml` and `task_prompt_alignment.json`. Changed settings
+require a new run ID. `--config` accepts a copied configuration; `tissueagent_seed` controls the
+single TissueAgent run, while `prediction_mapping_seed` remains 42 for the shared evaluator.
+The existing `run_tissueagent_repeatability` command retains the three-replicate study workflow.
+Baseline native randomness and execution behavior are unchanged.
+
+Scoring uses `primary` labels for heart and BCL, excludes BCL truth label `B14`, and uses
+`cell_ontology_shared` for Han. The complete Han evaluation mapping is versioned separately as
+`mappings/han_mouse_brain_stereoseq_frozen.json`; the original pending mapping remains the input
+to blinded preparation. Each new prediction file gets its own truth-blind name mapping before
+the unchanged evaluator computes scores.
 
 ## Baseline entry points
 
@@ -112,7 +191,7 @@ overlay path are recorded in the successful Biomni run metadata.
 When using that project-local dependency overlay, launch Biomni with it explicitly:
 
 ```bash
-PYTHONPATH=/home/etrop/TissueAgent/data/cache/biomni/python-dependencies \
+PYTHONPATH="$PWD/src:$PWD/data/cache/biomni/python-dependencies" \
   .venv/bin/python -m demo.cell_annotation.run_agent_baseline_comparison \
   --method biomni --run-id my-matched-rerun
 ```
@@ -180,12 +259,10 @@ remain active. Child processes inherit the selected interpreter's `bin` director
 
 ## Matched-task comparison reruns
 
-`python -m demo.cell_annotation.run_agent_baseline_comparison --method biomni` (or
-`--method spatialagent`) runs the three frozen cohorts used in the latest TissueAgent study.
-It copies byte-identical query files and recovers the scientific task from the saved TissueAgent
-prompts, verifying agreement across all three replicates. Only input/output paths are replaced.
-This includes BCL's study context and its explicit cell-identity/disease-state annotation scope.
-The recovered task and source hashes are saved in `task_prompt_alignment.json`.
+The comparison runner preserves the three frozen cohorts and scientific task text from the latest
+TissueAgent study. Those tasks now live in the comparison configuration, including BCL's study
+context and its explicit cell-identity/disease-state annotation scope. Only input/output paths are
+substituted for each execution. Historical prompt recovery remains in the archived-result plotter.
 
 The matched mouse SpatialAgent attempt stopped after guessing an indexed transfer CSV filename.
 Its native tool had actually written `celltype_transferred.csv`. A continuation reuses its verified

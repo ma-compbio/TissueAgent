@@ -1,0 +1,15 @@
+datasets: [developing_human_heart, ovca_xenium_spatialfusion]
+methods: [tissueagent, biomni, spatialagent]
+model: gpt-5.1
+reasoning_effort: high
+seeds: [42, 43, 44]
+runtime_root: /scratch/tissue_niche_agents
+process_timeout_seconds: 43200
+execution_timeout_seconds: 21600
+recursion_limit: 100
+biomni:
+  source: OpenAI
+  expected_version: 0.0.8
+spatialagent:
+  source_revision: e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6
+  use_azure: false

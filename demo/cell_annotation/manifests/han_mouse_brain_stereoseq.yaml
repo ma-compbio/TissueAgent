@@ -17,7 +17,7 @@ source:
     they are not orthogonally measured identities.
 query:
   kind: local_h5ad
-  path: demo/data/cell_annotation/intermediates/benchmarks/han_mouse_brain_stereoseq/full.h5ad
+  path: demo/data/cell_annotation/inputs/han_mouse_brain_stereoseq/full.h5ad
   expected_n_obs: 478740
   expected_n_vars: 27159
   size_bytes: 937145045
@@ -37,7 +37,7 @@ ground_truth:
   column: cell_subclass
   held_out_columns:
   - cell_subclass
-  path: demo/data/cell_annotation/intermediates/benchmarks/han_mouse_brain_stereoseq/full.ground_truth.tsv
+  path: demo/data/cell_annotation/inputs/han_mouse_brain_stereoseq/full.ground_truth.tsv
   sha256: 0106199d103f383651990c506784f1b2df8fdbbaa61b154ffdbacd2cd136a9ac
   grouped_bootstrap_column: section_id
   note: Score concordance with the publisher's 19-subclass Spatial-ID taxonomy.
