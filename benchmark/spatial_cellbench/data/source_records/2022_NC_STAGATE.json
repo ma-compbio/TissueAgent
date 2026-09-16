@@ -1,0 +1,9 @@
+{
+  "paper_id": "2022_NC_STAGATE",
+  "paper_title": "Deciphering spatial domains from spatially resolved transcriptomics with an adaptive graph attention auto-encoder",
+  "paper_doi": "10.1038/s41467-022-29439-6",
+  "pmcid": "PMC8976049",
+  "paper_pdf": "papers/2022_NC_STAGATE/paper.pdf",
+  "code_sources": ["https://github.com/zhanglabtools/STAGATE"],
+  "spatial_modalities": ["Visium", "Stereo-seq", "Slide-seqV2"]
+}

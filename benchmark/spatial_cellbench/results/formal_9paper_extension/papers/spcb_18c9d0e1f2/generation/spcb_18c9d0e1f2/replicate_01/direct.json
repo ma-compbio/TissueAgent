@@ -1,0 +1,79 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "84a0ca0f88f7f02f5a937a00c50762ca05f86ac94e82ed1c02e56e1efab1365b",
+  "eval_id": "spcb_18c9d0e1f2",
+  "replicate": 1,
+  "proposal_count": 9,
+  "proposal_sha256": "d01cd7e8989e6ff5fa9eacbf27fb03faa7dbf118bbb900d8dc17e37f74343c64",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Gene Expression Hotspot Detection",
+        "summary": "This analysis identifies regions in the tissue where particular genes exhibit high localized expression while accounting for variations in cell density. Using spatial transcriptomics data, hotspots are detected by integrating explicit spatial adjacency weighting with density normalization. The method distinguishes dense areas merely due to cell clusters from regions where gene expression is truly enriched, thereby revealing biologically significant clusters of activity."
+      },
+      {
+        "title": "Neighborhood Co-expression Correlation Analysis",
+        "summary": "This analysis examines the spatial adjacencies between cells to identify pairs or groups of genes that are co-expressed within neighboring cells. By constructing a spatial graph from cell coordinates, the approach computes correlation coefficients within spatially defined neighborhoods, allowing for the identification of gene modules that behave in a coordinated manner, potentially indicating intercellular communication."
+      },
+      {
+        "title": "Spatial Pattern Clustering of Gene Programs",
+        "summary": "In this analysis, genes are grouped into clusters based on the similarity of their spatial expression patterns across the tissue. The method employs spatial smoothing and explicit incorporation of spatial adjacency metrics to ensure that clusters represent true spatial patterns rather than artifacts of technical variability. The resulting clusters can then be linked to distinct functional gene programs or tissue regions."
+      },
+      {
+        "title": "Density-adjusted Spatial Variance Analysis",
+        "summary": "This analysis focuses on quantifying spatial heterogeneity in gene expression while explicitly adjusting for uneven cell density. By modeling gene expression as a function of local cell density, the method separates biological signal from technical noise, ensuring that regions of sparse sampling do not lead to underestimation of patterning. This approach enhances the detection of true spatial signals across variable density landscapes."
+      },
+      {
+        "title": "3D Volumetric Transcriptomic Mapping",
+        "summary": "This analysis extends spatial transcriptomics into three dimensions by integrating serial tissue sections or volumetric imaging data. Cells are mapped within a 3D coordinate system and spatial relationships are recalculated to identify volumetric expression gradients and localized signaling centers. Such mapping allows for the study of tissue organization in complex geometries and deeper insights into spatial gene regulation across layers."
+      },
+      {
+        "title": "Layer-specific Spatial Differential Expression",
+        "summary": "Focusing on tissues with distinct layers, this analysis compares gene expression patterns across defined spatial layers while controlling for inter-layer differences in cell density. It involves segmenting the tissue into discrete layers using imaging markers, then computing differential expression profiles that are spatially weighted to account for local microenvironment differences. This helps to reveal layer-specific biological signals and developmental gradients."
+      },
+      {
+        "title": "Spatial Autocorrelation of Gene Expression",
+        "summary": "This analysis quantifies the degree of spatial autocorrelation for individual genes using metrics such as Moran's I or Geary's C, adapted for transcriptomics data. By explicitly incorporating spatial coordinates, the method assesses whether high (or low) gene expression values cluster together in the tissue. This approach identifies genes with statistically significant spatial clustering, suggesting their involvement in localized biological processes."
+      },
+      {
+        "title": "Inter-cell Type Communication via Proximity Analysis",
+        "summary": "This analysis leverages location-based information to detect complementary expression patterns among interacting cell types. By defining spatial neighborhoods and integrating cell type annotations, the approach tests if the expression of ligands in one cell type is spatially correlated with receptors in adjacent cells. The method uses permutation tests to determine significance while controlling for spatial density effects, thus revealing potential intercellular signaling pathways."
+      },
+      {
+        "title": "Spatially-resolved Expression Gradient Analysis",
+        "summary": "This analysis aims to detect and model gradients of gene expression across a tissue section, using spatial interpolation methods that consider explicit adjacency relationships. The approach quantifies changes in expression levels as a function of distance from anatomical landmarks or tissue boundaries, and applies regression models that incorporate local density corrections. The resulting spatial gradient maps help in understanding directionality in tissue differentiation processes."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "7060bfc722d8571ac5932666ba137fe83e5d0aeb1ece167bfb8e1bcd792ea0b1",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 8.634497461025603,
+        "input_tokens": 402,
+        "output_tokens": 1237,
+        "total_tokens": 1639
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "9170a91d527cb01786caa1b8c84431834567efafd4b58c900e8225c6f153cdb1",
+    "overview_sha256": null,
+    "elapsed_seconds": 8.662
+  },
+  "trace_sha256": "91e1675e66dd8f05d05d4f1243e4ceb3c0b863d6cd97bbfefed0c70f40708b22",
+  "checkpoint_sha256": "e0200d5f17c0e8276612b88d3d95967b3da3fb73673be32fe1177c690bcc0fa2"
+}

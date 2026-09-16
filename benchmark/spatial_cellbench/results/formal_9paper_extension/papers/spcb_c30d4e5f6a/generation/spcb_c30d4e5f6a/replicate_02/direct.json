@@ -1,0 +1,79 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "9f46c2a6479a3e2d25841da19bb9b9a454208599642680209c2c361c0bbc56ba",
+  "eval_id": "spcb_c30d4e5f6a",
+  "replicate": 2,
+  "proposal_count": 9,
+  "proposal_sha256": "03f96bc0c5ebb4f6abc3daa49cd8f2eec0d7b6f2956ace4f260f97a2c044a3eb",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Domain Segmentation and Annotation",
+        "summary": "This analysis will use spatially aware clustering algorithms to segment the tissue into distinct domains based on gene expression profiles and spatial coordinates. The process involves preprocessing spatial transcriptomics data to account for sparsity, applying graph-based and spatial clustering methods, and then annotating the resulting domains by integrating known marker genes and tissue architecture information."
+      },
+      {
+        "title": "Spatial Expression Gradient Mapping",
+        "summary": "This study will focus on identifying and quantifying gene expression gradients across tissue landscapes. By applying spatial regression and diffusion mapping techniques, the analysis will reveal continuous gradients and transition zones within the tissue, ensuring that the measured changes in expression align with known spatial architectures and developmental trajectories."
+      },
+      {
+        "title": "Spatially Constrained Trajectory Inference",
+        "summary": "This analysis will adapt pseudotime methods to incorporate spatial information, ensuring that inferred trajectories respect local tissue neighborhoods. The approach will combine gene expression similarity with physical proximity, allowing for the reconstruction of continuous transitions between cellular states that reflect morphogenetic changes during development or disease progression."
+      },
+      {
+        "title": "Cell-Cell Communication Analysis in Spatial Context",
+        "summary": "This proposal aims to explore local paracrine and juxtacrine signaling by mapping ligand-receptor interactions within the tissue’s spatial framework. By integrating spatial proximity with expression levels of interacting gene pairs, the analysis will infer communication networks that are critical for maintaining tissue homeostasis or driving pathological changes."
+      },
+      {
+        "title": "Spatial Differential Gene Expression During Disease Progression",
+        "summary": "This analysis will compare spatial transcriptomic profiles between healthy and diseased regions by performing spatially informed differential expression analysis. By taking into account the geometric structure of the tissue, the method will identify genes and pathways that are differentially regulated in localized microenvironments, ultimately linking molecular changes to specific tissue domains."
+      },
+      {
+        "title": "Integration of Imaging Features with Spatial Transcriptomics",
+        "summary": "This study will integrate high-resolution imaging data with spatial transcriptomic information to enhance the characterization of tissue microenvironments. The analysis will extract morphological features from imaging data, correlate these with spatial gene expression patterns, and delineate regions where structural attributes align with unique molecular signatures."
+      },
+      {
+        "title": "Subcellular RNA Localization Analysis",
+        "summary": "Focusing on high-resolution spatial transcriptomics data, this analysis will investigate the subcellular distribution of RNA molecules. By leveraging spatial coordinates at subcellular resolution, the approach will distinguish between nuclear, cytoplasmic, and other compartment-specific gene expressions, shedding light on the underlying mechanisms of intracellular RNA transport and localization."
+      },
+      {
+        "title": "Spatial Reconstruction of Developmental Lineages",
+        "summary": "This analysis will combine spatial transcriptomic data with lineage tracing techniques to reconstruct developmental trajectories within intact tissue. By identifying spatially continuous paths that correspond to changes in gene expression over time, the method will help to map cell fate decisions in situ, aligning these transitions with anatomical landmarks and marker genes."
+      },
+      {
+        "title": "Spatial Network Analysis of Tissue Microenvironments",
+        "summary": "This proposal will construct spatial networks where nodes represent tissue spots or cells and edges represent physical or transcriptional similarities. By analyzing network properties and community structures, the study aims to identify functional tissue compartments and cellular neighborhoods, enhancing our understanding of how physical interactions drive complex biological processes."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "ab436a05aea916e5d82f67e27df79d735c38da627142c533ae5fd5b75068ec4e",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 6.377168417093344,
+        "input_tokens": 415,
+        "output_tokens": 1129,
+        "total_tokens": 1544
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "deb95daf8ce94a6378007a19487dc114f7bbfd0b4737fb57e1648da4423015bd",
+    "overview_sha256": null,
+    "elapsed_seconds": 6.397
+  },
+  "trace_sha256": "d0d2f9b853956cf8ba7edc81ff97bfa22edcfa80092dc5b6ade738960f7891a2",
+  "checkpoint_sha256": "c5ff61f998f189ee78223e972215fb71161620465a4f6b4c10030935ccb08b12"
+}

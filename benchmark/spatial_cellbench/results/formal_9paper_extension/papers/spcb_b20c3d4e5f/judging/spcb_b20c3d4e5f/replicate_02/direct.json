@@ -1,0 +1,175 @@
+{
+  "status": "success",
+  "unit_fingerprint": "7fb3a2e71cdf7a33c7019bd21b8ad5748c73515078f4516f4d43a1e8aa3c10b6",
+  "generation_proposal_sha256": "f4df081c50e158a927e2bfc6d23f8406bbfdbbe515dc4941bf051b3332c1a910",
+  "truth_sha256": "72bf6018e990222dd5a6b3b23c29ec5fbf3182b6cbc88c1cbb5016808f1e94b7",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "7452015369e031fb4c6aee71f49d753a7c05c5c25e783c99eaa0fc706f4fecc0",
+    "2283cc57aa8d29f90481556ec5b8d83440a0a071e27d36f2cf4efe721cc78d12",
+    "0ee7aed4ec9ec1502c6204eb9aa9c2b79f6116b28fc168b0e002adbeff8f5382",
+    "d81dc12096ae4bfdc5d2c387dc9b08533db323be96982abb51b48e724313dfef",
+    "cf407eb60e3a8e178bbf3df998c0f12a5bbc53ce4acc7bc2521d3436d648a05c",
+    "18747705cc390a8173d86b42f77b2e0362a5ae47b681f098595e00778cb0be23",
+    "429b8031c86179571230966f6cb8e5971b8b03c68ed8d8b30192ff93ab65445e",
+    "0999555e3cc26c6c571bd0c69cfe9bab95b07d476ad98f8d93e38c49a2b56d90",
+    "d60dae773ec54c75905ef6dc04eed1d91a2fbe6c339b124ae3c54c8be9019daf",
+    "908eda78bcf5986ae6bd973dd3b7ce0ac4cecf3c3e730292b592a3ad60172c5b"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis aims to quantify spatial heterogeneity using divergence metrics between local gene expression profiles, which matches G09. G09 also focuses on comparing spatial heterogeneity scores, which suggests a similar objective of understanding or evaluating spatial variability within datasets."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis, \"Neighborhood Composition Clustering,\" focuses on clustering spatial neighborhoods based on cell-type composition and gene expression to detect recurrent microenvironments and identify distinct tissue regions. This aligns with the main objective of G01, which is to cluster spatial neighborhoods into domains and evaluate whether the resulting regions agree with tissue annotations and known cell states. Both analyses aim to identify and interpret spatial domains from neighborhood composition, hence they share the same main scientific objective."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on comparing spatial neighborhoods across conditions to identify regions where local cell compositions and transcriptomic patterns differ. This matches the main scientific objective of the ground truth analysis G06, which is to detect differential microenvironments across conditions (specifically between liver samples in G06), by comparing local microenvironment distributions and identifying neighborhoods whose composition changes across conditions. Both analyses aim to identify differential spatial neighborhood characteristics in response to changing conditions."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis focuses on mapping ligand-receptor interactions in spatial context to identify cell-cell communication events and correlate them with localized gene expression changes. This has a similar objective to ground-truth analysis G01, which aims to relate neighborhood structure to ligand-receptor activity by comparing microenvironment organization. Both analyses aim to uncover functional cell interactions based on spatial organization."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis and G04 both focus on the stability of conclusions regarding microenvironments when spatial resolution changes. The proposed analysis integrates data to ensure robustness of microenvironmental feature detection across different resolutions, while G04 involves varying spatial resolution to assess stability of heterogeneity conclusions. Both aim to address robustness across resolution differences, making their main objectives align."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on detecting transition boundaries within spatial transcriptomics data using edge-detection techniques. This involves identifying regions where there are abrupt changes in gene expression that signify boundaries between different microenvironments or tissue layers. The ground-truth analyses primarily focus on categorizing and comparing microenvironments, neighborhood composition, spatial domains, and their heterogeneity or stability, but do not specifically mention detecting boundaries of transitions between states or regions. Therefore, the specific objective of detecting transition boundaries is not matched by any of the ground-truth analyses."
+    },
+    {
+      "candidate_index": 6,
+      "match": false,
+      "reason": "The proposed analysis focuses on normalizing cell densities to compute microenvironment scores, with the objective of ensuring detected heterogeneity reflects genuine biological variability rather than technical artifacts. None of the ground-truth analyses explicitly share this primary objective of normalizing for cell density to decouple it from transcriptomic heterogeneity. The closest ground-truth objective that involves heterogeneity is G06, which assesses stability with varying density, but its main focus is not on normalization for cell density itself. Therefore, the proposed analysis does not have a matching main scientific objective in the ground-truth set."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis 'Spatial Differential Interaction Network Analysis' focuses on building interaction networks based on proximity-enhanced ligand-receptor activity and performing differential analyses to detect connectivity changes across tissues. This aligns with the objective of the ground-truth analysis 'Relate neighborhood structure to ligand-receptor activity' (G05), which involves comparing microenvironment organization with ligand-receptor scores to identify interactions influenced by local composition and proximity."
+    },
+    {
+      "candidate_index": 8,
+      "match": false,
+      "reason": "The proposed analysis focuses on integrating tissue morphology and annotation with spatial transcriptomics profiles to enhance interpretability and elucidate functional relevance. This does not align with any specific ground-truth analysis objectives, which include components like assessing resolution robustness, focusing on proteomics, specific spatial domain identification, and neighborhood heterogeneity. The ground-truth analyses are more focused on specific types of analyses (e.g., resolution robustness, proteomics, neighborhood compositional studies), whereas the proposed analysis integrates different modalities for interpretative enhancement."
+    },
+    {
+      "candidate_index": 9,
+      "match": false,
+      "reason": "The proposed analysis focuses on modeling gene expression as continuous functions of spatial coordinates to capture continuous changes in cell-state compositions. This involves quantifying local gradients and identifying transitions, which is distinct in its continuous modeling approach. None of the ground-truth analyses specifically focus on continuous spatial gradient modeling or address continuous changes across tissue regions using similar methods. They focus on different objectives such as neighborhood clustering, microenvironment comparison, and robustness testing."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 6,
+    "candidate_count": 10,
+    "candidate_hit_fraction": 0.6
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 10,
+    "observable_model_attempts": 10,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.850731024518609,
+        "input_tokens": 823,
+        "output_tokens": 56,
+        "total_tokens": 879
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.4491247925907373,
+        "input_tokens": 812,
+        "output_tokens": 98,
+        "total_tokens": 910
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 2.647933606058359,
+        "input_tokens": 805,
+        "output_tokens": 95,
+        "total_tokens": 900
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.5915220770984888,
+        "input_tokens": 814,
+        "output_tokens": 79,
+        "total_tokens": 893
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.829814288765192,
+        "input_tokens": 810,
+        "output_tokens": 78,
+        "total_tokens": 888
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 2.5095065366476774,
+        "input_tokens": 807,
+        "output_tokens": 115,
+        "total_tokens": 922
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 2.071154948323965,
+        "input_tokens": 813,
+        "output_tokens": 122,
+        "total_tokens": 935
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.3936964999884367,
+        "input_tokens": 805,
+        "output_tokens": 90,
+        "total_tokens": 895
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 1.854257544502616,
+        "input_tokens": 813,
+        "output_tokens": 109,
+        "total_tokens": 922
+      },
+      {
+        "stage": "judge_10",
+        "kind": "structured",
+        "elapsed_seconds": 1.8878896236419678,
+        "input_tokens": 806,
+        "output_tokens": 93,
+        "total_tokens": 899
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 19.089
+  },
+  "trace_sha256": "c1ef98bb905e4a1419d5e4da4d08ae75f5bb33351eedaa91c4ad0f437c8271d0",
+  "checkpoint_sha256": "d43029a200bc35cd1a4cdb01c3289055e1c9b7a52d8d239674ff4735ad5268d0"
+}

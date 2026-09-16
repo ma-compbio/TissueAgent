@@ -1,0 +1,147 @@
+{
+  "status": "success",
+  "unit_fingerprint": "6e866ba53ef76bee40f0a50cd6143f050ab80831fc660dfeb0406fd390047ff5",
+  "generation_proposal_sha256": "eca95f71b41ad4b025f7e560d67d9ccd760b124a99fd4f4dd1eaa02bb10bfc90",
+  "truth_sha256": "3c1b5260101c66070acabd4fbfdadb7a920741b19789682bd98366c1fbdc3bec",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "0584cdde8aae9fd3ae3989c258e22cabceb2bf94f45aa48505f7aeabe0f74466",
+    "0e67b7528d2ba7440c8a391bfb4f723110ae7a9005960eacfa02a060a38b6a73",
+    "8a0d333725f01e08b2dc87f2d80772f2c8351a593bae3b18ec310d10d2bd3987",
+    "8fbec6492fa865671caf85b96cb488769d50a9a96f0b69373eb03c10fbe9ae43",
+    "495a8a76c27271a199bb03aa9abc6d1bc2bc84ef009af07f5657e9b8ae4b231a",
+    "dd278736cbfcd0553904de1338f40a3baa357afb31dde09f3c1144c2bc10c1ec",
+    "4feb3d3159e9b112fe8baac281e7d0c070a89139368d45aa24ee66ba2902bd0d",
+    "5f9bed69db7e3c354797bf0c7ffdbb8339ad4ac78e6f3513ece2d41a240bf8d4"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed spatial-omics analysis aims to assess spatial neighborhood enrichment concerning specific cell types or molecular signatures in proximity to tissue structures and uses permutation-based enrichment methods to compute enrichment scores. This objective matches the ground-truth analysis G04, which is focused on using permutation-based enrichment to identify cell-type pairs occurring near one another more frequently than expected in spatial coordinates. Both analyses share a common scientific objective related to identifying and testing for neighborhood enrichment between cell types."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on detecting and quantifying spatial patterns in gene expression using spatial autocorrelation measures, which aligns with the ground-truth analysis G01 that describes ranking genes by spatial autocorrelation to identify spatially variable genes. Both analyses have the main objective of using spatial autocorrelation to analyze gene expression patterns, making them a match."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis involves integrating image segmentation with morphological feature extraction and linking these with molecular profiles to classify cell states and tissue architectures. This matches the ground-truth analysis in G05, which aims to integrate molecular and morphology features, as both focus on combining molecular data with morphological data extracted from images."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis focuses on constructing scalable spatial graphs that represent physical proximities of cells or spots in high-dimensional spatial data, emphasizing computational scalability and flexible neighbor definitions. This aligns closely with the ground-truth analysis G06, which is about constructing flexible spatial neighbor graphs using different methodologies (grid, radius, Delaunay, etc.) for spatial assays. Both analyses share the main scientific objective of building flexible spatial graphs suitable for various spatial assays, highlighting computational considerations."
+    },
+    {
+      "candidate_index": 4,
+      "match": false,
+      "reason": "The proposed analysis focuses on expanding traditional co-localization approaches to assess spatial relationships among signaling molecules and other key markers, emphasizing the integration of spatial correlation measures and examining co-localization across multiple markers and scales. None of the ground-truth analyses specifically aims at enhancing co-localization and signaling molecule interactions. The closest ground-truth involving relationships in space is G06, which involves neighborhood enrichment between cell types, but it uses permutation-based enrichment, not co-localization of signaling molecules. No ground-truth analysis matches the specific objective of the proposed analysis, which is the quantitative assessment of signaling dynamics through spatial relationships among molecules."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis focuses on integrating and harmonizing data across different spatial omics assays to enable robust cross-assay comparisons, which matches the main scientific objective of the ground-truth analysis G06: 'Analyze spatial omics across assay types'. Both involve handling data from different types of spatial omics assays and ensuring consistency across different experimental platforms."
+    },
+    {
+      "candidate_index": 6,
+      "match": false,
+      "reason": "The proposed analysis focuses on benchmarking the reliability and robustness of spatial analysis pipelines using synthetic datasets and perturbations to evaluate computational methods. None of the ground-truth analyses specifically consider benchmarking or simulation to evaluate robustness or pipeline performance. They address different objectives such as detecting spatially variable genes, integrating molecular and morphology features, or constructing spatial neighbor graphs. While some ground-truth analyses involve processing and analysis which could be construed as requiring robustness, none explicitly aim to benchmark methodologies in the manner described by the proposed analysis."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis focuses on mapping spatial trajectories and temporal dynamics within tissues, integrating spatial and temporal data to understand progression pathways and cellular state transitions over space and time. None of the ground-truth analyses explicitly address the integration of spatial trajectories with temporal dynamics or pseudo-temporal ordering of molecular profiles. The closest analyses involve spatial patterning at a single time point, such as enrichment testing (G01), clustering and dispersion (G02), and spatially variable gene detection (G07), but they do not incorporate temporal dynamics. Therefore, the proposed analysis does not match any of the ground-truth analyses."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 5,
+    "candidate_count": 8,
+    "candidate_hit_fraction": 0.625
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 8,
+    "observable_model_attempts": 8,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.6246898099780083,
+        "input_tokens": 750,
+        "output_tokens": 98,
+        "total_tokens": 848
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.4070736356079578,
+        "input_tokens": 751,
+        "output_tokens": 75,
+        "total_tokens": 826
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.2414030525833368,
+        "input_tokens": 761,
+        "output_tokens": 67,
+        "total_tokens": 828
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.0706293135881424,
+        "input_tokens": 752,
+        "output_tokens": 100,
+        "total_tokens": 852
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 2.628174578770995,
+        "input_tokens": 770,
+        "output_tokens": 132,
+        "total_tokens": 902
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.8515345640480518,
+        "input_tokens": 753,
+        "output_tokens": 76,
+        "total_tokens": 829
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.7839973717927933,
+        "input_tokens": 756,
+        "output_tokens": 109,
+        "total_tokens": 865
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 2.0450767036527395,
+        "input_tokens": 747,
+        "output_tokens": 128,
+        "total_tokens": 875
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 13.654
+  },
+  "trace_sha256": "3ba00560e0dd0b5307ba85990f70bd7244b1d364704f1a41dafc5de87330781c",
+  "checkpoint_sha256": "fdc6a8126554db44bacc19b7b0eca712dc3bd522ac9cfcf00dbbc5317441f7d8"
+}

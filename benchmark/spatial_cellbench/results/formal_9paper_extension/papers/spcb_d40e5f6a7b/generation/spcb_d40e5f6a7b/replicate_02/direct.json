@@ -1,0 +1,75 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "bf92e8356ceb6c9c8707639478332d6f6d320cfba71b096e4d2ac7f1bc842f54",
+  "eval_id": "spcb_d40e5f6a7b",
+  "replicate": 2,
+  "proposal_count": 8,
+  "proposal_sha256": "0e1753cd38b62a423fea0c2d7f80cfbe9479071d5a218569a9502abbab373ae5",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Contamination Detection via Expression and Geometry Integration",
+        "summary": "This analysis involves developing an algorithm that integrates gene expression profiles with tissue geometry to identify spots that show suspicious contamination. The approach detects spots whose transcriptomic signatures do not correlate with their expected tissue location—especially near boundaries—and flags them for further inspection. Statistical comparisons with local neighborhood expression and spatial distance metrics are used to profile contamination spread and misassignment, providing a first layer of quality control before further correction."
+      },
+      {
+        "title": "Species Label-Based Validation of Correction Strategies",
+        "summary": "Leveraging datasets containing spots from mixed species tissues, this analysis tests correction strategies using known species-specific gene markers. By comparing the assigned and true species labels, researchers can quantify and validate the robustness of the contamination detection method. The analysis matches observed gene expression patterns against species-specific markers and ensures that spatial repositioning or correction of spots leads to improved marker specificity and reduced interspecies mixing."
+      },
+      {
+        "title": "Refinement of Spatial Domains and Marker Specificity",
+        "summary": "This analysis focuses on using enhanced spatial correction techniques to refine the delineation of anatomical domains. The method evaluates the impact of spot decontamination on the specificity of known marker genes. By recalculating spatial clusters and domain boundaries post-correction, it quantifies improvements in marker specificity, overall domain integrity, and cell-type assignment accuracy, comparing profiles before and after applying the correction algorithm."
+      },
+      {
+        "title": "Boundary-Aware Correction of Misassigned Spots",
+        "summary": "In this analysis, the focus is on regions with sharp anatomical interfaces where contamination is most problematic. The method employs boundary-aware statistical models that incorporate geometrical features, such as distance from anatomical edge, to selectively correct spots that appear misassigned. The evaluation includes assessing the continuity of gene expression patterns across tissue interfaces and determining whether corrections maintain consistency with nearby unperturbed regions."
+      },
+      {
+        "title": "Local Neighborhood Smoothing for Transcriptomic Deconvolution",
+        "summary": "This analysis proposes a deconvolution strategy that leverages local averaging of gene expression weighted by spatial proximity. The algorithm uses neighborhood-level smoothing to estimate the true expression of a spot by incorporating signals from adjacent spots with less contamination. It assesses how this local smoothing can restore intrinsic gene expression patterns and improve cell type calling, particularly in regions where spots are mixtures of signals from different cell types."
+      },
+      {
+        "title": "Comparative Analysis with Gold-Standard Tissue Annotations",
+        "summary": "To validate the correction process, this methodology compares corrected spatial transcriptomics data with gold-standard histological annotations. The study identifies regions that have consensus anatomical boundaries and tests whether the application of correction algorithms enhances the alignment of marker expression with these boundaries. Quantitative metrics, such as boundary sharpness and gene specificity, are computed to measure improvements relative to the annotated ground-truth."
+      },
+      {
+        "title": "Detection of Aberrant Gene Expression Patterns in Edge Regions",
+        "summary": "This analysis is dedicated to identifying spots where gene expression deviates unexpectedly from spatially contiguous regions, particularly near tissue boundaries. It involves statistical modeling to detect outlier spots that differ significantly from the homogenous expression expected given their neighborhood's profile. Such spots are further evaluated for potential misassignment, enabling targeted correction strategies to restore true expression profiles."
+      },
+      {
+        "title": "Quantitative Assessment of Correction Performance Under Variable Conditions",
+        "summary": "Here, the performance of the spatial correction strategy is evaluated across different simulated scenarios of contamination. The analysis systematically varies the proportion, proximity, and intensity of contaminated spots to benchmark the robustness of correction algorithms. Performance metrics such as improvement in clustering accuracy, marker specificity, and domain integrity are quantified, enabling optimization and parameter tuning for diverse tissue contexts."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "cafbf3797487b651b0dd64fd17ddf641441a364bcccb8f6cb9f7deec95625ca1",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 6.362195850000717,
+        "input_tokens": 405,
+        "output_tokens": 1258,
+        "total_tokens": 1663
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "63cc3ebd43fe24657568da6c552175d7f309d2241167f94c4e60e3c3496f080c",
+    "overview_sha256": null,
+    "elapsed_seconds": 6.382
+  },
+  "trace_sha256": "b48f752cc0a2644d88cd1c9b73d4dcd29f60932071682e0439bf89612fb0fa17",
+  "checkpoint_sha256": "8c89c64dfe7a6f29e0460417578e4c1830a912bbbcff7ca819a093324b772120"
+}

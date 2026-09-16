@@ -1,0 +1,175 @@
+{
+  "status": "success",
+  "unit_fingerprint": "4f96449bf3321e1dd8c8716b09d3fff15ddbe234a2c3d6464c903b3781506aa1",
+  "generation_proposal_sha256": "4f90e1a617c657a664b5d85777d9b4aaaa23a39423fe4ad3e90e8f4204c47272",
+  "truth_sha256": "243ecf68bec765b7f41e666a1c0fdb626f29ccd3c587e9929b88be2122b5c12d",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "4daab4558a4678ea08ce5225efd4b27696c3faf213dbd6f9377308e324152848",
+    "1d49fe10cc907a1b6b3890a68bb78b971125b56ab76cc3999b98c1750fe512f7",
+    "b3d088b907c2dfa6917ada26975a6d4fe636b09b971530990c504aab3a8d3f88",
+    "4a25b746b1d48f5f9367211793e876b7cecb23c40dcad07bfd1f17b0c67b130f",
+    "4fa3f2f3028f7443ebf4da63d6d2b8c4c026c2cd3a9762c0e5402e1e9c4f710e",
+    "9aa88fca4fca2a383dd7da15851d8a54f528e25665ed7e208687430d962739dd",
+    "a7b0b352ab128003e0647f45192baebabe1d48bfb260ec9f34102ffe4311cefe",
+    "14ec30552dde1bea2e547ca71ae9be231761e34aec8181d520ee9ce271a720a7",
+    "f3ff65c0168b677c508f2794979295ec14f3382a697f7cb83dc61d40a093d949",
+    "ca05dbbc7b9c1150026bfe07d7e46826832857c8beb95adee8a7d01020425559"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis focuses on inferring spatial domains and continuous cellular trajectories by integrating multiple modalities, which matches the main scientific objective of 'G07' in the ground-truth set: 'Trace embryonic breast-tissue transitions'. Both analyses describe the application of spatial trajectory analysis to tissue sections, aiming to identify transitions between anatomically organized cell states. The proposed analysis additionally emphasizes rigorous quality control and the incorporation of morphology, aligning with the multimodal nature described in 'G07'."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on denoising and imputation techniques for spatial transcriptomics data, which aligns with the main scientific objective of ground-truth analysis G06. G06 aims to impute missing or noisy spatial gene expression by integrating expression, morphology, and distance. The use of deep learning-based imputation and integration of spatial coordinates and imaging features in the proposed analysis matches the imputation focus of G06."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on modeling continuous cellular trajectories within dynamic, growing tissues by incorporating gene expression profiles, spatial distances, and morphological images. It explicitly incorporates image registration to handle tissue deformation and focuses on trajectory inference. Ground-truth G06, titled 'Trace embryonic breast-tissue transitions,' involves applying spatial trajectory analysis to sections of tissue to identify transitions between organized cell states. Both analyses share the objective of inferring or tracing spatial trajectories to capture dynamic changes in cell states within tissues."
+    },
+    {
+      "candidate_index": 3,
+      "match": false,
+      "reason": "The proposed analysis focuses on constructing spatial graphs for cell-cell communication by integrating gene expression data, spatial coordinates, and tissue images, with emphasis on validating these graphs against anatomical structures. This objective is distinct from any in the ground-truth set because it is centered on graph construction and validation specifically for cell-cell communication using spatial context. None of the ground-truth analyses focus on this exact approach or its goals. While some ground-truth analyses deal with cell communication or spatial interactions (e.g., G05 and G07), they do not emphasize the construction and quantitative validation of spatial graphs as described in the proposed analysis."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis focuses on integrating spatial transcriptomics data across platforms and sections, with an emphasis on batch-effect correction and section-specific normalization. This is aligned with the main scientific objective of ground-truth analysis G06, which aims to validate spatial analyses across different spatial technologies. Both involve cross-platform harmonization of spatial data to ensure robust analysis."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis aims to identify spatial domains and infer cellular trajectories using expression, spatial, and morphological data. A core component of the analysis is the application of trajectory inference to understand tissue reorganization patterns and cellular state transitions. This aligns with the main scientific objective of G06, which is to quantify expression changes along inferred spatial trajectories and compare them with known biological processes. Both analyses focus on understanding changes along spatial trajectories to gain insights into cellular dynamics."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis focuses on modeling tissue remodeling by considering tissue deformation and inferring spatial trajectories with this information. This corresponds to the ground-truth analysis 'G08', which involves spatial trajectory analysis to identify cellular transitions in organized tissues. Both analyses aim to understand transitions and cellular organization changes, though in different contexts."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis focuses on inferring ligand-receptor interactions within spatially constrained neighborhoods, which matches the main scientific objective of the ground truth analysis G07. G07 aims to detect spatially constrained ligand-receptor pairs, using permutations constrained by spatial neighborhoods, which is conceptually similar to the proposed analysis targeting robust inference of these interactions considering spatial constraints."
+    },
+    {
+      "candidate_index": 8,
+      "match": true,
+      "reason": "The proposed analysis focuses on enhancing spatial imputation by integrating multi-modal data, with particular attention to correcting dropout events and technical noise, which aligns with the primary objective of the ground truth analysis G07. G07 aims to impute missing or noisy spatial gene expression by integrating expression, morphology, and distance. Both analyses share the main scientific objective of improving the quality and accuracy of spatial gene expression data through imputation methods."
+    },
+    {
+      "candidate_index": 9,
+      "match": false,
+      "reason": "The proposed analysis focuses on integrating spatial transcriptomics data across multiple modalities to construct validated interaction networks and ensure reliable cell–cell communication inferences. It emphasizes rigorous statistical validation using graph metrics, correcting section-specific variability, and spatial distortions. None of the ground-truth analyses specifically address this scientific objective. The closest might be G04 but it deals more with comparing the influence of morphological and distance information on different analysis outcomes rather than constructing and validating interaction networks with cross-validation and graph metrics."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 8,
+    "candidate_count": 10,
+    "candidate_hit_fraction": 0.8
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 10,
+    "observable_model_attempts": 10,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.5016405377537012,
+        "input_tokens": 881,
+        "output_tokens": 104,
+        "total_tokens": 985
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.0529256891459227,
+        "input_tokens": 899,
+        "output_tokens": 91,
+        "total_tokens": 990
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.844214491546154,
+        "input_tokens": 877,
+        "output_tokens": 105,
+        "total_tokens": 982
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.8028734140098095,
+        "input_tokens": 889,
+        "output_tokens": 131,
+        "total_tokens": 1020
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.3007857520133257,
+        "input_tokens": 886,
+        "output_tokens": 76,
+        "total_tokens": 962
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.5175728555768728,
+        "input_tokens": 887,
+        "output_tokens": 97,
+        "total_tokens": 984
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.9327117279171944,
+        "input_tokens": 883,
+        "output_tokens": 70,
+        "total_tokens": 953
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.4848286472260952,
+        "input_tokens": 886,
+        "output_tokens": 78,
+        "total_tokens": 964
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 1.701741635799408,
+        "input_tokens": 897,
+        "output_tokens": 92,
+        "total_tokens": 989
+      },
+      {
+        "stage": "judge_10",
+        "kind": "structured",
+        "elapsed_seconds": 1.7024010941386223,
+        "input_tokens": 903,
+        "output_tokens": 105,
+        "total_tokens": 1008
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 15.845
+  },
+  "trace_sha256": "7331d0a3843111bed760cf3125e874235bbfe1efd32fe3139556da2864983b1c",
+  "checkpoint_sha256": "0c7793de007472dd689eb2cf96dd7154bab073133731d1a3c4c39f1bb48358fa"
+}

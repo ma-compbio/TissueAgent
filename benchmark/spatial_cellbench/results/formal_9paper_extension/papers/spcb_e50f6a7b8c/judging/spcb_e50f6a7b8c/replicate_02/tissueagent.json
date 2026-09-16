@@ -1,0 +1,147 @@
+{
+  "status": "success",
+  "unit_fingerprint": "cac1bf8419b5248021d76d3ce0018816d3d199d7099f9950fbf506d73cefe976",
+  "generation_proposal_sha256": "5fbd9edc13155d8e48ca7eeb802cd5c94cd0272c737d40fa29123d808ae868f1",
+  "truth_sha256": "3c1b5260101c66070acabd4fbfdadb7a920741b19789682bd98366c1fbdc3bec",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "04a8e4a5aaa1418d98fec0c5f88ebf2a250f2a7576426debf634728be0c87267",
+    "97c16fff51c2cfabc3e6181585a3fdc07bab5c40d89c584de026ac999bf946be",
+    "e480b6603ba8d4b9d9d7a48237c0607e521cae58d54f5eaaf480607c911f7935",
+    "ba8ab106ff480288cb85aab9e56548ed1600b98182354029821d933f0740fda0",
+    "fe2470767e7487f17fc4d142f999cb84f544638b2a38999314d1d413244fc4b5",
+    "42ea07a3e0d8bdcbdba002361c19b1a60e0bff93b5b05e94ab2179ab30725be0",
+    "9e20d78ef7823c51fe630abdc9a8e960fcc41c752690bcf42fbc7c9eefba5b28",
+    "5ca3893e602d9148184df43b92861bf05591962642c268b255f3decacef7131a"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis aims to integrate graph-based clustering of spatial transcriptomics data with image-guided domain annotation, using histology images to extract morphological features. This directly aligns with the main scientific objective of ground-truth analysis G01, which is to integrate molecular (expression-derived) and morphological (image-derived) features and assess their agreement."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on detecting and characterizing spatially variable genes by identifying those with significant spatial expression patterns. This aligns closely with the ground-truth analysis G07, which involves detecting spatially variable genes using statistics to rank them by spatial autocorrelation and visualize their expression in tissue regions. Both analyses aim at uncovering gene expression patterns that exhibit spatial variability and contribute to understanding tissue organization."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on inferring cellular interaction networks by evaluating spatial co-localization of different cell types using spatial neighbor graphs and statistical enrichment assessments. This aligns with the main scientific objective of the ground-truth analysis 'G08', which tests neighborhood enrichment between cell types using permutation-based enrichment to identify cell-type pairs that occur near one another more often than expected. Both analyses aim to understand cell-cell interactions based on their spatial proximity."
+    },
+    {
+      "candidate_index": 3,
+      "match": false,
+      "reason": "The proposed analysis focuses on mapping spatial trajectories and gradients to understand tissue organization through gene expression data, employing dimensionality reduction and deep learning for detecting gene expression changes across cellular states. This objective does not match with any of the ground-truth analyses, which focus on integrating molecular features, image segmentation, cell-type neighborhood enrichment, cross-assay analysis, scalable processing, spatially variable gene detection, neighbor graph construction, or global spatial pattern quantification. None of these analyses aim to derive spatial trajectories or model gradual gene expression changes in the same way as the proposed analysis."
+    },
+    {
+      "candidate_index": 4,
+      "match": false,
+      "reason": "The proposed analysis focuses on integrating spatial transcriptomics data with single-cell RNA-seq profiles for high-resolution cell-type mapping, mainly using deconvolution and label-transfer methodologies to allocate cell-type or state labels to spatial locations. None of the ground-truth analyses involves this specific objective. Most ground-truth analyses involve different tasks, such as morphology extraction, spatial graph construction, detecting spatially variable genes, or testing neighborhood enrichment, none of which match the main objective of the proposed analysis."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on spatial deconvolution to resolve the cellular composition of multi-cellular capture spots in spatial transcriptomic data, aiming to estimate the proportion of each cell type present in each spot using high-resolution single-cell reference profiles. None of the ground-truth analyses share this objective. They focus on different objectives such as cell morphology segmentation, neighborhood enrichment, spatial gene variability, spatial patterning, integration of molecular and morphological features, and benchmarking scalable processing, which do not match the specific goal of deconvoluting spot compositions into cell types."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis 'Inferring Ligand–Receptor Communication in Complex Tissue Microenvironments' aims to identify signaling interactions by analyzing co-expression levels of ligands and receptors among neighboring cells with spatial data. This is scientifically aligned with ground-truth 'G03', which deals with testing neighborhood enrichment between cell types using permutation-based methods to identify cell-type pairs that occur proximally more often than stochastic expectation. Both analyses aim to leverage spatial proximity data to infer significant interactions between molecular entities in tissue."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis aims to integrate morphological features from histology images with spatial transcriptomic data for studying diseased vs. normal tissue, which aligns with the ground-truth G04 analysis that seeks to relate expression-derived spatial structure to image-derived features and assess agreement between modalities. Both focus on integrating molecular and imaging data for a comprehensive understanding of spatial organization in tissues."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 5,
+    "candidate_count": 8,
+    "candidate_hit_fraction": 0.625
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 8,
+    "observable_model_attempts": 8,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.2881195675581694,
+        "input_tokens": 817,
+        "output_tokens": 75,
+        "total_tokens": 892
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.4058728516101837,
+        "input_tokens": 807,
+        "output_tokens": 86,
+        "total_tokens": 893
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 2.6542093567550182,
+        "input_tokens": 806,
+        "output_tokens": 94,
+        "total_tokens": 900
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 2.165930775925517,
+        "input_tokens": 806,
+        "output_tokens": 121,
+        "total_tokens": 927
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.8697246462106705,
+        "input_tokens": 818,
+        "output_tokens": 105,
+        "total_tokens": 923
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 2.541149588301778,
+        "input_tokens": 823,
+        "output_tokens": 118,
+        "total_tokens": 941
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.6344055123627186,
+        "input_tokens": 809,
+        "output_tokens": 107,
+        "total_tokens": 916
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.4203329347074032,
+        "input_tokens": 820,
+        "output_tokens": 80,
+        "total_tokens": 900
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 14.983
+  },
+  "trace_sha256": "bdfa636569be94a0d649eeaed56ac0ea96c5a172e5055ed62b9c324910c14553",
+  "checkpoint_sha256": "412d265128e10289a06a666091a5c2853d8aa577f29f241629c7367085f6abd4"
+}

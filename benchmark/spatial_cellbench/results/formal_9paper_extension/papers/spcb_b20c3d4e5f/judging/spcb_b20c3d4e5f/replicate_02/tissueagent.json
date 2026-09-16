@@ -1,0 +1,175 @@
+{
+  "status": "success",
+  "unit_fingerprint": "faa29a6cde514af5b4eacf1ab89b8c8b444b5b71b00be638f2ac2769b5deee19",
+  "generation_proposal_sha256": "71c7bb6c239fd59a7bbcd42642ca89c382b48624bf404fbbab94471ce245efdf",
+  "truth_sha256": "72bf6018e990222dd5a6b3b23c29ec5fbf3182b6cbc88c1cbb5016808f1e94b7",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "b1285bfc403ae8a7777dc07476bf0a84f7018843107397afac0585fc0bb877c2",
+    "aba2cede89eaf09eb6c260d45fe9d3e9f67fbb6ae57e486b800a2df3e36bfb5f",
+    "f9711464a04d5bea2578bc2ea26150a1603248870b44e0c7452d4599f3e7a5b1",
+    "62f5e6343ad84b37e794a6f70371d1a2cfd73fee4f30b766f81cdb5cba2241f4",
+    "340c900a2c82ad048b20bda016eb29c568565075cd608f658197b9ff2672cdf4",
+    "80244fcf316ddd05ce1a78b42cae724edb30ddb09b06199bb3d85b7806960218",
+    "e808d8626b824797b50aa6c9eed292291251ebdeed8084a98324e44dbaae5a1a",
+    "f841a5eb02c7a32a92e5a14f20b5287cdd473ce45561c331b957b732cc836372",
+    "f31d4fce54ac1b5f5442723184a497de93706b98279a03bf127fb5f62745cd81",
+    "8222158b3dadddeac3b2ac2163bf951896b6bc0992378daa5819cff2fed3c3ea"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis describes quantifying cell-type composition in local spatial neighborhoods and using spatial geometry to compute heterogeneity scores. Similarly, ground-truth analysis G03 involves quantifying neighborhood heterogeneity, specifically using simulated mixtures to recognize heterogeneous neighborhoods. Both analyses focus on evaluating heterogeneity within spatial neighborhoods, matching in their main scientific objective."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis, 'Differential Microenvironment Analysis Across Conditions,' involves comparing spatial neighborhoods and distinguishing disease-specific microenvironment changes from technical variability. This is similar in main scientific objective to the ground-truth analysis G04, 'Detect differential microenvironments between liver samples,' which involves comparing local microenvironment distributions across conditions. Both analyses focus on identifying differential microenvironments between different conditions, although the ground-truth specifically mentions liver samples, the core objective of comparing microenvironments across conditions matches."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on mapping ligand–receptor interactions in a spatial context, specifically examining cell–cell communication pathways within defined neighborhoods. This aligns with ground-truth analysis G10, which involves relating neighborhood structure to ligand-receptor activity by comparing microenvironment organization with ligand-receptor scores. Both analyses have the scientific objective of exploring ligand-receptor interactions in relation to spatial microenvironment organization."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis aims to address the technical challenges of variable sampling and cell density by performing multi-scale spatial pattern analysis and normalizing for these differences. This aligns with the main scientific objective of ground-truth analysis G06, which is to assess robustness to resolution and density, determining whether conclusions about heterogeneity remain stable when sampling density varies. Both analyses are concerned with controlling for technical artifacts to ensure accurate biological interpretation, highlighting the robustness of spatial conclusions under varying technical conditions."
+    },
+    {
+      "candidate_index": 4,
+      "match": false,
+      "reason": "The proposed analysis focuses on identifying continuous transitions along tissue interfaces, specifically targeting subtle boundaries between different microenvironments, which are often missed by traditional clustering methods. This is primarily about capturing gradual compositional changes and mapping continuous transition zones.\n\nNone of the ground-truth analyses explicitly focus on detecting such gradual compositional transitions or identifying continuous transition zones at tissue boundaries. Rather, they focus on broader tasks such as microenvironment identification, neighborhood composition analysis, spatial heterogeneity, or tumor microenvironments. These objectives are not directly concerned with the nuanced detection of gradual transitions, hence there is no match between the proposed analysis and the ground-truth analyses."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on assessing disruptions in tissue architecture and correlating irregular cell distributions with disease boundaries, aiming to link cellular disorganization with broader architectural disturbances. None of the ground-truth analyses specifically mention evaluating disruptions at disease interfaces or correlating these disruptions with pathological processes. The ground-truth analyses are more focused on identifying microenvironments, stratifying based on spatial organizations, comparing heterogeneity, or understanding microenvironmental interactions, which do not match the specific objective of evaluating tissue disruption at disease interfaces. Therefore, there is no direct match."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis, \"Integrated Spatial Interaction Network Construction,\" focuses on constructing a comprehensive network model of spatial neighborhoods by integrating measures of cell state similarity, spatial proximity, and ligand–receptor interactions. This aligns with the ground-truth analysis G05, \"Build a microenvironment graph abstraction,\" which involves compressing densely connected local neighborhoods into a graph and summarizing recurring cell-composition configurations. Both analyses aim to build an abstract representation of spatial configuration using graph-based approaches to understand tissue organization at a systems level."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis focuses on using graph-based metrics to characterize connectivity patterns among spatial neighborhoods and assess topological features that could infer structural relationships and communication pathways within tissue. This seems to align with the goal of ground truth G03, which involves building a graph abstraction to summarize recurring cell-composition configurations. Both analyses aim to create an understanding of spatial relationships and structural connectivity within tissue using graph theoretical approaches."
+    },
+    {
+      "candidate_index": 8,
+      "match": false,
+      "reason": "The proposed analysis focuses on investigating directional changes in cellular composition along predefined tissue axes to understand the dynamics of microenvironment evolution, particularly in the context of development or disease progression. This is a specific objective related to understanding spatial compositional gradients and their role in tissue dynamics.\n\nNone of the ground-truth analyses explicitly focus on assessing changes or gradients in cellular composition along predefined spatial axes over a tissue space. Most of the ground-truth analyses involve neighborhood composition analysis, identifying or validating microenvironment classes, or comparing spatial heterogeneity, which differs from the proposed analysis's focus on directional gradient dynamics."
+    },
+    {
+      "candidate_index": 9,
+      "match": true,
+      "reason": "The proposed analysis aims to cluster spatial neighborhoods into distinct archetypes based on cell-type abundance, spatial geometry, and molecular signatures, which aligns with the ground-truth analysis G05. G05 involves clustering spatial neighborhoods into domains and evaluating agreement with tissue annotations and known cell states. Both analyses share the main scientific objective of identifying distinct spatial domains or archetypes based on neighborhood composition."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 7,
+    "candidate_count": 10,
+    "candidate_hit_fraction": 0.7
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 10,
+    "observable_model_attempts": 10,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.656973147764802,
+        "input_tokens": 829,
+        "output_tokens": 73,
+        "total_tokens": 902
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.6336424890905619,
+        "input_tokens": 821,
+        "output_tokens": 107,
+        "total_tokens": 928
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.326159257441759,
+        "input_tokens": 829,
+        "output_tokens": 86,
+        "total_tokens": 915
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.4357223957777023,
+        "input_tokens": 832,
+        "output_tokens": 101,
+        "total_tokens": 933
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 2.199862003326416,
+        "input_tokens": 820,
+        "output_tokens": 138,
+        "total_tokens": 958
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 2.5098063703626394,
+        "input_tokens": 821,
+        "output_tokens": 117,
+        "total_tokens": 938
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.7181316614151,
+        "input_tokens": 827,
+        "output_tokens": 110,
+        "total_tokens": 937
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.7680482547730207,
+        "input_tokens": 815,
+        "output_tokens": 87,
+        "total_tokens": 902
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 2.2840330991894007,
+        "input_tokens": 823,
+        "output_tokens": 127,
+        "total_tokens": 950
+      },
+      {
+        "stage": "judge_10",
+        "kind": "structured",
+        "elapsed_seconds": 1.981742212548852,
+        "input_tokens": 824,
+        "output_tokens": 83,
+        "total_tokens": 907
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 18.519
+  },
+  "trace_sha256": "dfcb622e4306046d9020d12831bacb7d9b29549cdccd22effe8cb067d6a98ab8",
+  "checkpoint_sha256": "599384c64ed5be0478f80c50b75da6fc1f7bb5551f6432e7b9087a51a4ae81ab"
+}

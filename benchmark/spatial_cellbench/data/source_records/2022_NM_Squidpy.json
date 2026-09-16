@@ -1,0 +1,9 @@
+{
+  "paper_id": "2022_NM_Squidpy",
+  "paper_title": "Squidpy: a scalable framework for spatial omics analysis",
+  "paper_doi": "10.1038/s41592-021-01358-2",
+  "pmcid": "PMC8828470",
+  "paper_pdf": "papers/2022_NM_Squidpy/paper.pdf",
+  "code_sources": ["https://github.com/scverse/squidpy"],
+  "spatial_modalities": ["Visium", "seqFISH", "MERFISH", "IMC", "4i"]
+}

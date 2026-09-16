@@ -1,0 +1,161 @@
+{
+  "status": "success",
+  "unit_fingerprint": "f855361716762864e8bd9d4c4bbd1f06e83ac3495288a5a84b9525d30c7a409c",
+  "generation_proposal_sha256": "976caf50774540593b2ae41db514e5e59a874ba3c38684180a082d89330790eb",
+  "truth_sha256": "6638af0911bf694e663d8347a59f926ba8438f1ebfc39bbc6c4ae884e1331d95",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "e0be9bcbb689c34cb6d611c17a858fa805e55d14482d2f8cad85b7911f19ea6e",
+    "e20b2391042524b0daf4a0e99351f1985d054f274772bfd868ccbfc7d04d0d7f",
+    "e59a52bd7891ca4a264caefef0bd43eb1ac4d3d7f28c9cd6c88a61d782012a08",
+    "107bf15a5292c7dc0175ba623d6ebf93baa79ac623f9441124811b84f43ee8e0",
+    "ecd7e6aff3773a3474930e00a2f7e62eeaecf141c03db4258d2577f4958e4ed3",
+    "4902ad25e74417602f00df08b7ed4f79b3b6e93bb5deceed253afd4d17325e54",
+    "c14feec61fafea3a8b4c6541c79a13284bd219bcd71c4000d284751869df716a",
+    "572a3c1522cd8e9e985da256d0e61f0d9b23e8f76a2425b039e0bc70b591ee01",
+    "8cb3657e3aa183662b02046e12e8c1d32a846e9d4689d5ae7be92db71911b898"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis shares the main scientific objective with ground-truth analysis G03: both aim to reconstruct a three-dimensional tissue representation from spatial omics data, identifying expression domains that persist across this reconstructed volume."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis shares the main scientific objective with G06, which is to reconstruct a three-dimensional tissue map or representation from serial sections. Both descriptions involve integrating sections to create a 3D representation that maintains certain features, like discrete boundaries and continuous gradients. The proposed analysis focuses on avoiding artificial expression patterns during this process, while G06 emphasizes identifying expression domains within the reconstructed 3D volume."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on tissue segmentation while explicitly incorporating mechanisms to safeguard against denoising artifacts, a key aspect of the ground-truth analysis with ID G03. G03 also emphasizes denoising expression while preserving boundaries, seeking to maintain spatial pattern integrity without disrupting layer-specific marker signals. Therefore, both analyses share the main objective of improving spatial delineation through mitigating the impacts of denoising. The 3D reconstruction aspect of the proposed analysis aligns with objectives seen in G04, but the primary focus on denoising matches more strongly with G03."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis emphasizes the reconstruction of three-dimensional tissue architecture from spatial data, along with cross-sectional integration, which aligns with the objective of G01: 'Extract three-dimensional expression domains'. Both involve reconstructing 3D tissue from serial sections and identifying consistent expression domains across the volume."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis focuses on clustering with an emphasis on preserving tissue boundaries while performing smoothing, which matches the main scientific objective of ground-truth analysis G04, 'Denoise expression while preserving boundaries.' Both analyses are concerned with maintaining boundary integrity while carrying out other operations (in the proposed analysis, parameter-tuning clustering; in G04, denoising expression)."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis aims to achieve a three-dimensional reconstruction of spatial domains that is validated both statistically and biologically. This aligns with G08, where the goal is to reconstruct a 3D tissue representation from serial sections and identify persistent expression domains across the volume. Both analyses share the main objective of constructing a three-dimensional spatial representation and validating the domains within this context."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposal aims to integrate spatial and molecular data into a cohesive three-dimensional reconstruction, which aligns with the objective of G09 in the ground-truth set, where the goal is to reconstruct a 3D tissue representation from serial sections and identify expression domains across that reconstructed volume."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis focuses on evaluating alternative dimensionality reduction methods with dynamic denoising strategies for spatial clustering, while safeguarding domain boundaries, and assembling a precise three-dimensional tissue model. This aligns well with the ground-truth analysis G06, which also emphasizes the denoising of expression while preserving boundaries. Both analyses share a core objective of preserving spatial boundaries while enhancing data quality through denoising techniques."
+    },
+    {
+      "candidate_index": 8,
+      "match": true,
+      "reason": "The proposed analysis aims to create a three-dimensional reconstruction of tissue architecture using multi-scale spatial domain segmentation. It aligns with the scientific objective of G03, which also focuses on reconstructing a 3D tissue model from serial sections to identify persistent expression domains."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 9,
+    "candidate_count": 9,
+    "candidate_hit_fraction": 1.0
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 9,
+    "observable_model_attempts": 9,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.4459718838334084,
+        "input_tokens": 809,
+        "output_tokens": 49,
+        "total_tokens": 858
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 2.383151527494192,
+        "input_tokens": 799,
+        "output_tokens": 87,
+        "total_tokens": 886
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 2.3964324556291103,
+        "input_tokens": 800,
+        "output_tokens": 121,
+        "total_tokens": 921
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.3838952518999577,
+        "input_tokens": 799,
+        "output_tokens": 65,
+        "total_tokens": 864
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.5017741229385138,
+        "input_tokens": 800,
+        "output_tokens": 81,
+        "total_tokens": 881
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.2639508321881294,
+        "input_tokens": 800,
+        "output_tokens": 81,
+        "total_tokens": 881
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.4519134033471346,
+        "input_tokens": 798,
+        "output_tokens": 63,
+        "total_tokens": 861
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 2.6435340773314238,
+        "input_tokens": 805,
+        "output_tokens": 88,
+        "total_tokens": 893
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 2.0289751328527927,
+        "input_tokens": 795,
+        "output_tokens": 59,
+        "total_tokens": 854
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 16.502
+  },
+  "trace_sha256": "b53ffa714c91aee56fe9142f6a957fbfe9754a18210b45e246ba01c4e6b8b745",
+  "checkpoint_sha256": "43c5ae07acab7e9d7d7d2c26706d7c50d9b5e75a119422fe1f04864e2cdbad74"
+}

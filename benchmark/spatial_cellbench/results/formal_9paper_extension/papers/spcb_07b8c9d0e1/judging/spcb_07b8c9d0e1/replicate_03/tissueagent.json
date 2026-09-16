@@ -1,0 +1,175 @@
+{
+  "status": "success",
+  "unit_fingerprint": "4fec08c2b05a16cb6768305cd7b4ae8ddee4b4e7b449acf1886546f5a18dff09",
+  "generation_proposal_sha256": "ff006cd33afa5a182e6fbc6247e86ba3c2d0b2558ab9e349afa659be84fb91dd",
+  "truth_sha256": "243ecf68bec765b7f41e666a1c0fdb626f29ccd3c587e9929b88be2122b5c12d",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "a248be0798591df9e40aa36a961d556688c12735425077284d0137ede1594d1c",
+    "663778276ce0d30823de5ae4b7a0f6b83c220b1edb67e805bb89097ab0c03db8",
+    "8ab4829be28f6ba7bd74791011dd6388df2d7387247edd4bcd93dd95800b24f1",
+    "1967650c783f56a7c455b28154f943016b07dca442ccf1443677bcbb853399bd",
+    "f66461578abcee0f77e27c07bf993d97f2ed21429e6f95b0d837750f299371db",
+    "6dba709a63df5a47c9dbfc45373df7c43ddacdf686e2543e8dc784de8f660ae6",
+    "a2344fa4e1b42f6ae38c412d8b2d321f621ae47ca8e7385fe1ec251bcbe99ef2",
+    "dcfe61188c7f4385a542a2e2fc1cbcf6de0292a9ed60e48ca2fa6cd59036f432",
+    "8ddc8c56dfe8c31f8c679ad36b8643a1c9149b77e521659f6b7f2b889582fbbc",
+    "1ccb33ac87c6b606ab60825dbd49d4eff9f65881b77e2c221eb6ebe17f38afc5"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": false,
+      "reason": "The proposed analysis focuses on identifying spatial domains within tissue samples by integrating multiple data modalities, specifically gene expression, spatial coordinates, and imaging-derived morphological features. The primary aim is to define distinct tissue regions and validate them against anatomical landmarks. None of the ground-truth analyses directly address this objective of delineating spatial domains with multimodal data integration.\n\n- G01 focuses on the usability of spatial analyses with different platforms rather than defining spatial domains.\n- G02 and G03 involve spatial trajectory analysis, not domain delineation.\n- G04, G05, and G07 are focused on signaling and communication interactions, not domain definition.\n- G06 and G09 are about spatial trajectories and expression along trajectories, not spatial domain identification.\n- G08 is about imputing gene expression data, not separating tissue into domains.\n- G10 compares models using morphology-aware and expression-only information, not the integration for domain delineation.\n\nNone of these align with the main objective of the proposed analysis, which is multimodal spatial domain identification in tissue samples."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on reconstructing continuous spatial trajectories and gradients to reflect dynamic biological processes such as differentiation or injury repair, integrating transcriptomic profiles with physical and morphological cues and ensuring validation with time course data or known injury markers. This aligns with G08, which involves validating spatial trajectories by comparing them with morphology and time course data to ensure the trajectories reflect biological progressions."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis aims to reveal cell–cell interactions by integrating ligand–receptor co-expression with spatial proximity constraints, specifically focusing on identifying local communication networks by filtering out spurious distant interactions. This aligns with the main objective of G03, which is to detect spatially constrained ligand-receptor pairs by identifying significant local co-occurrence. Both analyses share the same scientific objective of assessing spatially-relevant ligand-receptor interactions."
+    },
+    {
+      "candidate_index": 3,
+      "match": false,
+      "reason": "The proposed analysis focuses on reconstructing 3D tissue architecture by assimilating spatial transcriptomics with imaging and morphological information, ensuring accurate spatial modeling. None of the ground-truth analyses share this primary objective of 3D tissue reconstruction. The ground-truth analyses are focused on understanding signaling interactions, spatial trajectories, communication patterns, ligand-receptor pairs, morphology effects, validation across technologies, expression changes, and imputation in spatial omics contexts, but not on creating cohesive 3D tissue models."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis, which focuses on neighborhood-based denoising and imputation in spatial transcriptomics data, matches the scientific objective of ground-truth analysis G10. Both proposals aim to enhance the quality of spatial gene expression data by imputing or correcting noise and missing values, with the intention of preserving biological signals."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on characterizing the local cellular microenvironment by profiling the composition and co-localization of cell types within spatial neighborhoods. This includes identifying clusters of interacting cells and validating the findings with independent data such as immunostaining or morphological information. None of the ground-truth analyses match this specific objective, which is about the composition and interaction profiling of spatial neighborhoods rather than other tasks such as identifying ligand-receptor pairs (G01), trajectory analysis (G04, G06, G08), or specific interactions within a particular condition (G05, G09)."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis focuses on understanding the impact of tissue growth and cellular mixing on spatial gene expression patterns. It integrates spatial and morphological data to correct for distortions in trajectories due to these dynamic processes. This aligns with G02, which involves validating spatial trajectories with morphological data and considers temporal aspects in post-injury contexts. While the specific focus on tissue growth differs slightly, the overall objective of using morphology to validate dynamics in spatial omics is present in both analyses."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis aims to capture tissue organization at multiple scales and validate these structures against anatomical maps. This objective does not match any ground-truth analysis, as the ground-truth analyses focus on spatial trajectory inference, cell communication mapping, or expression change quantification along trajectories rather than on multiscale spatial organization and validation against anatomical structures."
+    },
+    {
+      "candidate_index": 8,
+      "match": false,
+      "reason": "The proposed analysis focuses on spatial deconvolution of mixed cellular spots, aiming to resolve overlapping gene expression signals from heterogeneous cell types within individual spots. This involves integrating transcriptomic signatures with spatial coordinates and validating with single-cell references and in situ measurements. None of the ground-truth analyses share this main objective. The ground-truth analyses cover topics such as detecting spatially constrained ligand-receptor pairs, mapping cell communication, validating across technologies, comparing modalities for clustering, imputing noisy gene expression, and analyzing spatial trajectories, but none of them specifically address the spatial deconvolution of cellular spots."
+    },
+    {
+      "candidate_index": 9,
+      "match": false,
+      "reason": "The proposed analysis focuses on the detection of tissue boundaries and anatomical landmarks by integrating transcriptomic data, spatial coordinates, and morphological imaging. This objective does not match any ground-truth analyses, which are focused on techniques such as validation across platforms, imputation of gene expression data, spatial trajectory analysis, cell communication mapping, and comparison of models in different contexts. None of the ground-truth analyses aim to specifically delineate boundaries or identify landmarks as the main goal."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 4,
+    "candidate_count": 10,
+    "candidate_hit_fraction": 0.4
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 10,
+    "observable_model_attempts": 10,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 3.7166883442550898,
+        "input_tokens": 863,
+        "output_tokens": 224,
+        "total_tokens": 1087
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.8187092375010252,
+        "input_tokens": 860,
+        "output_tokens": 82,
+        "total_tokens": 942
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.7682039886713028,
+        "input_tokens": 859,
+        "output_tokens": 93,
+        "total_tokens": 952
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 3.7692341580986977,
+        "input_tokens": 859,
+        "output_tokens": 108,
+        "total_tokens": 967
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.4827488362789154,
+        "input_tokens": 863,
+        "output_tokens": 71,
+        "total_tokens": 934
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 2.3511990271508694,
+        "input_tokens": 860,
+        "output_tokens": 122,
+        "total_tokens": 982
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 2.576405981555581,
+        "input_tokens": 860,
+        "output_tokens": 100,
+        "total_tokens": 960
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 2.335088388994336,
+        "input_tokens": 853,
+        "output_tokens": 75,
+        "total_tokens": 928
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 4.093709025532007,
+        "input_tokens": 863,
+        "output_tokens": 126,
+        "total_tokens": 989
+      },
+      {
+        "stage": "judge_10",
+        "kind": "structured",
+        "elapsed_seconds": 2.943362643942237,
+        "input_tokens": 855,
+        "output_tokens": 100,
+        "total_tokens": 955
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 26.858
+  },
+  "trace_sha256": "82b990a53b584fe983ff14995bae04a42b6e8a61ff7a9d5428546995fdb0a503",
+  "checkpoint_sha256": "12d84deab84f22a6036347b47c8601852e86dde1a292443b34f58f2c18ebaa60"
+}

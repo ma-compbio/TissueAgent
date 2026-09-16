@@ -1,0 +1,147 @@
+{
+  "status": "success",
+  "unit_fingerprint": "2dc6ad5800c60407c1e1c5c73d09cf8703d4b36b398be9b0f00f7ff08aec3041",
+  "generation_proposal_sha256": "3cf3b97dbb6bf703632a71c5f736ebd748c48a37cb9952acfd7ac956654d86eb",
+  "truth_sha256": "0cc0e081cf825fcb98be7c77456cfd2c98194617a0e9c1598f6eac179864b05c",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "d02e26c7c73bf7b87b77e0dd21d4ad797984d2446fce0a8dabdce44021af7b47",
+    "fe5641c4473e7215fe2dc3356d56e1ffa442a3bff395b649657117d94e049e63",
+    "0ccc0a865c1586117eb8d08caf6a4b4d369d830f97df1ebc31caaf233c64e6b7",
+    "9f98b33706038ad0ea48f30a1318a1f4f5d6a2d58738e6589e33a9b16abf6cce",
+    "038719814ab4529b25ba2b7650a0cfe2ff712c780b2b3c10983da259b1ddec36",
+    "672b2393f5a516c4561d7467c4297cf8b5a9431f059311e2fb2fa4f46d915a3b",
+    "f254c77cfa3cbeacfe8dd93d065ef4275480467a87570dca09096207b293a0e5",
+    "1506231657cdd6b499c2d7c1be2775c95ce3c4c13f18a64d7474f594da041290"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": false,
+      "reason": "The proposed analysis focuses on quality control and preprocessing steps such as spot-level quality control, normalization, and regressing out technical covariates, which are preparatory measures for ensuring high-quality input data. In contrast, the ground-truth analyses are centered on specific downstream objectives like trajectory inference, clustering, denoising, and spatial mapping. These objectives are different from the primary goal of the proposed analysis, which is to prepare data rather than perform exploratory or inferential tasks on it. Therefore, there is no match between the proposed analysis and any of the ground-truth analyses provided."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on spatially aware normalization and denoising, with specific emphasis on reducing noise in expression profiles while preserving spatial boundaries. The main scientific objective closely aligns with ground-truth analysis G07, which aims to denoise sparse spatial expression by reconstructing expression from noisy measurements and assessing whether the denoised profiles recover known molecular patterns in spatial data. Both analyses share the objective of improving data quality through denoising techniques."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis aims to reduce dimensionality while integrating spatial coordinates, creating a spatially-informed latent space suitable for clustering, trajectory inference, and visualization. Ground-truth analysis G06 focuses on using latent representations to infer spatial trajectories. Both analyses share the scientific objective of utilizing latent representations for trajectory inference. Although the proposed analysis also mentions clustering and visualization, the inclusion of trajectory inference aligns it with G06."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis aims to identify distinct tissue compartments and local microenvironmental niches using graph-based clustering on spatially informed embeddings. This aligns with the ground-truth analysis 'G06,' which involves identifying spatially distinct subregions within a tumor and relating them to pathology and microenvironments. Both analyses focus on delineating spatial regions within a tissue, thereby matching in scientific objective."
+    },
+    {
+      "candidate_index": 4,
+      "match": false,
+      "reason": "The proposed analysis focuses on deconvolving mixed-cell spots into proportions of canonical cell types and mapping them to spatial domains, using techniques like label transfer and integration of single-cell RNA-seq data. This analysis is specifically about identifying and annotating cell types within spatial-omics data. None of the ground-truth analyses have this main scientific objective. For instance, G01 focuses on denoising data, whereas the proposed study is about cell type annotation. G07 mentions mapping subregions in a tumor, but the main objective there is about spatial patterns related to pathology, not specifically deconvolution and label transfer for cell type annotation."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on identifying genes with spatial variability and clustering them into co-expression modules to understand tissue heterogeneity. None of the ground-truth analyses have the same primary objective of identifying spatial gene variability and creating co-expression modules. The ground-truth analyses are centered around tasks such as mapping tumor subregions, inferring spatial trajectories, evaluating scalability, correcting batch effects, clustering cortical layers, denoising sparse expression data, benchmarking representation quality, and analyzing high-resolution tissues. The proposed analysis is distinct in its focus on spatial gene co-expression modules."
+    },
+    {
+      "candidate_index": 6,
+      "match": false,
+      "reason": "The proposed analysis aims to perform spatial differential expression analysis to identify differentially expressed genes across spatial domains, considering spatial autocorrelation and cellular composition. None of the ground-truth analyses focus on identifying differentially expressed genes as their main scientific objective. The ground-truth analyses cover objectives like denoising, clustering, batch effect correction, mapping tumor subregions, analyzing specific datasets, inferring trajectories, and evaluating scalability, but not spatial differential expression specifically."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis focuses on integrating gene expression data with high-resolution histological imaging to provide insights into tissue architecture and improve biological interpretation of spatial organization. None of the ground-truth analyses share this main scientific objective. The ground-truth analyses include objectives such as inferring spatial trajectories, benchmarking representation quality, analyzing specific datasets for spatial organization, correcting batch effects, clustering cortical layers, identifying subregions in tumors, evaluating scalability, and denoising sparse spatial expression, none of which involve the explicit integration of multi-modal data to enhance tissue architecture understanding."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 3,
+    "candidate_count": 8,
+    "candidate_hit_fraction": 0.375
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 8,
+    "observable_model_attempts": 8,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 2.467027973383665,
+        "input_tokens": 731,
+        "output_tokens": 125,
+        "total_tokens": 856
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.340005997568369,
+        "input_tokens": 724,
+        "output_tokens": 96,
+        "total_tokens": 820
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 2.6563988868147135,
+        "input_tokens": 727,
+        "output_tokens": 89,
+        "total_tokens": 816
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.578518332913518,
+        "input_tokens": 730,
+        "output_tokens": 84,
+        "total_tokens": 814
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 2.208378938958049,
+        "input_tokens": 724,
+        "output_tokens": 135,
+        "total_tokens": 859
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 2.0318087693303823,
+        "input_tokens": 721,
+        "output_tokens": 118,
+        "total_tokens": 839
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 2.5009708255529404,
+        "input_tokens": 712,
+        "output_tokens": 98,
+        "total_tokens": 810
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 2.032835705205798,
+        "input_tokens": 736,
+        "output_tokens": 117,
+        "total_tokens": 853
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 16.819
+  },
+  "trace_sha256": "a5e2b8b7dacc633637c1dd375cf32e208dbd20b80f932ada5d6178db7815ee07",
+  "checkpoint_sha256": "0f52dbb16dc18ba49f77ea8a923d9f6179a0a11d705cedb2baac0168a0285d32"
+}

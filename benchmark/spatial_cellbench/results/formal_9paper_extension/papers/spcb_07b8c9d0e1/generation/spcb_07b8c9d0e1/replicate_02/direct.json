@@ -1,0 +1,83 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "47084a096632343d6c2376daf7b51def6e558ea43e6eee71792ca3144e1b2c83",
+  "eval_id": "spcb_07b8c9d0e1",
+  "replicate": 2,
+  "proposal_count": 10,
+  "proposal_sha256": "83ed31306705b824133ad44929be07f2c20a7626763f4ab20e9c7d5330335c95",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Developmental Trajectory Mapping",
+        "summary": "This analysis will integrate spatial transcriptomics data across sequential tissue sections to reconstruct developmental trajectories. It will incorporate physical distances and expression profiles to link neighboring regions, using trajectory inference algorithms that account for discontinuities caused by tissue growth and cell type mixing. Validation will occur through comparison with known developmental stages and imaging data."
+      },
+      {
+        "title": "Neighborhood-Constrained Ligand-Receptor Interaction Analysis",
+        "summary": "In this analysis, ligand-receptor co-expression will be filtered by enforcing a spatial proximity constraint. Spots with significant expression of interacting pairs will be assessed for spatial contiguity, reducing false positive signals from distant cells. The method will blend expression data with measured inter-cell spot distances and, when available, morphological cues for enhanced biological relevance."
+      },
+      {
+        "title": "Multi-Modal Noise Reduction via Data Integration",
+        "summary": "Here, spatial transcriptomics data will be integrated with available tissue morphology and coordinate information to reduce noise and recover missing signals. A Bayesian or machine learning framework will be employed to assign weights to each modality, thereby mitigating noise due to low capture sensitivity and improving the detection of genuine expression patterns across tissue sections."
+      },
+      {
+        "title": "Spatial Pattern Recognition in Injury Response",
+        "summary": "This analysis will focus on areas affected by injury, using spatial transcriptomics to differentiate injury-induced transcriptional states. Computational clustering will segregate zones based on gene expression changes, correlating these clusters with distance metrics and morphological markers. The goal is to unravel localized injury signaling and repair mechanisms through spatial gradients of gene expression."
+      },
+      {
+        "title": "Integrative Morphology-Enhanced Trajectory Analysis",
+        "summary": "By combining high-resolution imaging data with expression profiles, this analysis will use both tissue morphology and transcriptomic information to delineate trajectories of cell state transitions. Explicit neighborhood constraints will be applied, with algorithmic adjustments to account for tissue growth distortion. This method will validate inferred trajectories against anatomical landmarks and time course data."
+      },
+      {
+        "title": "Spatial Deconvolution of Mixed Spots",
+        "summary": "This method aims to separate mixed cell type signals within spatial transcriptomics spots by incorporating explicit spatial and morphological context. A probabilistic model will assign portioned contributions of each cell type based on both gene expression and neighboring cell signatures. The resulting deconvolution will improve understanding of cell–cell communication within shared microenvironments."
+      },
+      {
+        "title": "3D Reconstruction of Tissue from Serial Sections",
+        "summary": "This comprehensive analysis will register serial tissue sections to produce a three-dimensional tissue map by integrating spatial coordinates, gene expression profiles, and morphological references. Advanced registration algorithms, including non-linear deformations, will allow the reconstruction of continuous biological processes. Analysis will highlight how developmental and injury responses vary in three dimensions."
+      },
+      {
+        "title": "Spatial Time-Course Analysis of Disease Progression",
+        "summary": "In this analysis, temporal changes in disease states will be mapped across spatially resolved tissues. Time-course data from spatial transcriptomics will be evaluated alongside physical distances, enabling the detection of progressive alterations in cell states. This integrated approach validates progression trajectories against both known disease markers and independent imaging data."
+      },
+      {
+        "title": "Inference of Spatial Cell–Cell Communication Networks",
+        "summary": "Spatial transcriptomics data will be used to infer networks of cell–cell communication by integrating ligand-receptor pair expression with explicit spatial proximity measures. This analysis will employ network algorithms to weigh interactions based on both molecular data and neighbor distance, thereby generating interpretable maps of intercellular signaling validated by known anatomical structures."
+      },
+      {
+        "title": "Spatial Smoothing and Imputation of Sparse Expression Data",
+        "summary": "This analysis focuses on reducing technical variability by applying spatial smoothing algorithms that extend expression signals across physically close areas. The method will combine distance-based weighting with expression imputation techniques to recover missing measurements while retaining biologically plausible gradients. Validation will be performed against independent datasets and morphological outlines."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "f4c4e0c38d2664324ac38cd3c00c6d2b94abf491c7cbbbad9af4ae86c05fe5c7",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 5.401991839054972,
+        "input_tokens": 410,
+        "output_tokens": 1058,
+        "total_tokens": 1468
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "85a5d3e2fbe55aee4b9f9f5de5f583969d1b758c98caebf1e1e106d4b8b44285",
+    "overview_sha256": null,
+    "elapsed_seconds": 5.409
+  },
+  "trace_sha256": "238cbb045fc277e2d6f9dd10540712e200a2350e2b0953890222be354973752f",
+  "checkpoint_sha256": "8c017d4ff23b416cff924d6bf6143c5d911e42062f97ec0f2231f1057280ecd9"
+}

@@ -1,0 +1,79 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "8b9986310a4f7a54969291cd11e8fc4741445b194946b893941e692d1c036882",
+  "eval_id": "spcb_18c9d0e1f2",
+  "replicate": 2,
+  "proposal_count": 9,
+  "proposal_sha256": "5616e32e357af1e7503d43fdb7a6aacd5d3a586c014977c05abbae3cfecd44a8",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Gene Expression Hotspot Detection",
+        "summary": "This analysis focuses on identifying hotspots where gene expression is significantly enriched. The approach would involve dividing the tissue into spatial bins and applying density-corrected statistical tests to detect regions with higher-than-expected expression. By comparing observed expression in local clusters with a baseline model that accounts for cell density variations, the analysis would yield a map of gene hotspots that accurately reflect true biological signal rather than differences in sample density."
+      },
+      {
+        "title": "Cell Neighborhood Communication Analysis",
+        "summary": "This study will capture potential cell-to-cell communication by detecting complementary expression signals in adjacent cells. Using spatial adjacency graphs, each cell is connected to its nearest neighbors and a communication score is calculated based on pairs of ligands and receptors. Spatial transcriptomic profiles are then correlated with neighborhood architecture to discern if gene pairs found in adjacent cells contribute to signaling cascades, while controlling for the influence of local cell density."
+      },
+      {
+        "title": "Density-Adjusted Spatial Differential Expression",
+        "summary": "In this analysis, differential expression tests will incorporate explicit models of local cell density. The study compares gene expression within regions stratified by high or low density to mitigate false positives due to crowded regions. Integrating spatial smoothing techniques, data is normalized to reduce variation caused by local cell aggregates. This helps ensure that biologically meaningful differences are flagged rather than artefacts of sampling bias."
+      },
+      {
+        "title": "2D and 3D Tissue Layer Alignment Analysis",
+        "summary": "The objective is to align and analyze serial sections or volumetric data using spatial coordinates. This study employs image registration methods to bring together spatial transcriptomics datasets from different dimensions. By aligning layers or volumes, researchers can identify consistent spatial patterns and transitions across the tissue. This analysis uses both rigid and non-rigid registration combined with statistical tests to determine if observed gene expression gradients persist through the third dimension."
+      },
+      {
+        "title": "Spatial Autocorrelation of Gene Expression",
+        "summary": "This analysis measures the degree to which gene expression values are correlated with their spatial neighbors. By calculating Moran's I or similar spatial statistics while controlling for underlying density variations, the study evaluates whether genes exhibit significant clustering. Genes with high spatial autocorrelation scores can be prioritized for further investigation of tissue organization and zonal functionality, offering insights into spatially coordinated biological processes."
+      },
+      {
+        "title": "Adjacency-Based Spatial Clustering of Gene Programs",
+        "summary": "The analysis utilizes graph-based clustering methods that explicitly account for spatial adjacency and tissue geometry. Cells are connected via a spatial proximity network and clusters are defined based on shared gene expression patterns. The methodology biases the clustering process to incorporate the physical contiguity of cells, ensuring that identified clusters are reflective of biologically associated regions with potentially unique cellular functions and transcriptional programs."
+      },
+      {
+        "title": "Co-localization Analysis of Complementary Signals",
+        "summary": "This study focuses on identifying pairs of genes or pathways that are co-localized across tissue regions, potentially signifying interacting or complementary roles. Using spatial point pattern analysis, the study will test for statistically significant overlap of expression patterns beyond what is expected by random chance. Control measures for density and spatial segregation are incorporated to distinguish true co-localization from artifacts created by regional cell abundance differences."
+      },
+      {
+        "title": "Normalization and Variance Stabilization in Spatial Data",
+        "summary": "The focus is on developing normalization strategies that account for uneven cell density and irregular spatial sampling. The analysis involves comparing several normalization methods and variance stabilization techniques tailored for spatial transcriptomics data. By applying spatially aware normalization, the method corrects for density-induced variance differences, ensuring that subsequent analyses (e.g., clustering and differential expression) are robust to non-biological variability."
+      },
+      {
+        "title": "Integrative Analysis of Multi-Technology Spatial-Omics Data",
+        "summary": "This analysis aims to integrate spatial datasets obtained from different measurement technologies, such as imaging-based and capture-based assays. The methodology employs alignment techniques and cross-modality normalization to reconcile differences in resolution and spatial coverage. Statistical and computational frameworks are then used to compare spatial expression patterns, ensuring that consistent biological signals are detected despite technical variability."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "7060bfc722d8571ac5932666ba137fe83e5d0aeb1ece167bfb8e1bcd792ea0b1",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 5.942323666997254,
+        "input_tokens": 402,
+        "output_tokens": 1226,
+        "total_tokens": 1628
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "9170a91d527cb01786caa1b8c84431834567efafd4b58c900e8225c6f153cdb1",
+    "overview_sha256": null,
+    "elapsed_seconds": 5.948
+  },
+  "trace_sha256": "788881e4f63427b1609589e9a680998bb3c9185f545d7b9f1362c8a89580f1fe",
+  "checkpoint_sha256": "dc1c95f78f4ed33ca8cece43029f785cbf4e77cab26285af741925945bf4408b"
+}

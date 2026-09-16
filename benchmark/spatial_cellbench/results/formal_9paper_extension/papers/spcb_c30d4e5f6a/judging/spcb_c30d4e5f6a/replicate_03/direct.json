@@ -1,0 +1,161 @@
+{
+  "status": "success",
+  "unit_fingerprint": "0a7d0c8c312068128acf5de550676d90595e4e429825c5d24980ae542d4b21c9",
+  "generation_proposal_sha256": "93be4e2e4b47ea8df3273fb261d5578442fea991c5d62e766a690bdd9e4dcca2",
+  "truth_sha256": "effa3066f2368be7e4147538dbfefb90cc53ec080558325bc4cd608a3ae5b5a2",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "5f908f08f34e2884e8b81dd51bd9b23716952a572bf8fa632a9dfc918fa63c0c",
+    "273c5455e206ad5e0b6cba985902e7b00f97781ea28c3dff322d01d1c0343de1",
+    "34f4ece5d89ffcf7df2de012652ee7345c054ed5a95bfeb1f8f8f4eedd90a84e",
+    "d8496779b6fd783b90864b29591a0af1c840b37151f14614f361c6a87b5342eb",
+    "f2c3e2c40bc5cd7911389622cc253da194ff85b7c6b1045b6a09ddb734699631",
+    "fd2c3a72fe8ec12eb97a0039f70269863184326694758fbd370031cafea1c63a",
+    "693b2cf101d41d9e07626c1cccabab5e944b104065e6d091562d595b4ee4ed4b",
+    "7621dc8077e7026a673f1733f7f8bc4ebbb7b4b8c593f5b39f006e6cd4215a63",
+    "05326f008f13ae4c2ffd7236f83494e2e679650b8e69ecde3d5be5f5301d6e1c"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis aims to identify spatially distinct tissue domains using spatially-aware clustering techniques. This closely matches the objective of G04, 'Segment coherent spatial domains,' which describes learning spatial representations to cluster locations into biologically meaningful domains. Both analyses focus on delineating spatial domains, making this a match."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis 'Continuous Spatial Pseudotime Ordering' aims to arrange cells or spots in a continuous order that respects both expression similarity and physical location, specifically for the purpose of revealing ordered biological processes such as tissue development or repair. This matches the ground-truth analysis 'G08', which aims to generate a pseudo-spatiotemporal map that orders spatial locations along a continuous map capturing progression between transcriptional states while respecting tissue geometry. Both objectives involve ordering spatial domains in a continuous trajectory that respects spatial and transcriptional criteria."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on detecting spatial gradients of gene expression across tissue sections, identifying genes with spatially varying expression to suggest roles in tissue patterning or morphogen gradients, which aligns with the scientific goal of identifying genes that vary spatially. This is similar to the ground-truth analysis G09, which aims to discover spatially varying gene patterns by identifying gene-expression patterns associated with domains and inferred trajectories. Both analyses focus on identifying spatially variable gene expression patterns."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis focuses on inferring cell–cell communication networks based on spatial proximity and ligand-receptor co-expression patterns. This matches ground-truth analysis G06, which aims to identify spatially constrained ligand–receptor relationships, albeit in the context of tumor and immune populations. Both analyses share the main scientific objective of studying ligand-receptor interactions and communication networks within spatial contexts."
+    },
+    {
+      "candidate_index": 4,
+      "match": false,
+      "reason": "The proposed analysis focuses on resolving transcriptomic patterns at subcellular resolution by integrating spatial transcriptomics data with high-resolution cell segmentation, aimed at understanding subcellular localization and mapping transcripts to subcellular compartments. This objective is primarily concerned with intracellular spatial distribution and gene regulation at the subcellular level. None of the ground-truth analyses specifically focus on subcellular resolution or the integration with cell segmentation to map subcellular compartments. Most ground-truth analyses are concerned with tissue-level spatial arrangements, trajectory inference, and spatial communication, which do not align with the subcellular focus of the proposed analysis."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on quantifying expression variability and heterogeneity across spatial locations and correlating them with tissue architecture. It emphasizes modeling expression variability, spatial autocorrelation, and multimodal integration to understand microenvironmental influences. However, none of the ground-truth set analyses match this specific objective. While the ground-truth set includes analyses of spatial patterns, pseudotemporal mapping, and domain discovery, none are focused on the same scientific objective of directly quantifying and modeling spatial expression variability and heterogeneity."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis 'Spatial Trajectory Bridging Discrete Tissue States' has the main scientific objective of constructing continuous spatial trajectories to bridge discrete tissue states or anatomical regions, highlighting transitions between these states. This matches the main scientific objective of ground truth analysis G04, 'Generate a pseudo-spatiotemporal map,' which aims to order spatial locations along a continuous map capturing progression between transcriptional states while respecting tissue geometry. Both analyses focus on creating a continuous transition pathway between different states or regions using spatial data."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis aims to integrate spatial transcriptomics with histological imagery to correlate gene expression patterns with morphological features. None of the ground-truth analyses focus on integrating histological imagery for the purpose of relating gene expression to morphological structures. They focus on other scientific objectives such as spatiotemporal mapping, cell-state transitions, tumor-immune communication, trajectory tracing, domain segmentation, and benchmarking. Thus, the main scientific objective of the proposed analysis does not match any from the ground-truth set."
+    },
+    {
+      "candidate_index": 8,
+      "match": true,
+      "reason": "The proposed analysis aims to implement spatially-informed imputation methods to recover missing or noisy gene expression values. This is closely related to 'Analyze sparse high-resolution spatial data' from the ground-truth set, as both focus on addressing issues of sparsity in spatial data. Both analyses aim at improving the usability of spatial transcriptomics data despite its sparsity, either through imputation or assessing robustness to sparse measurements."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 6,
+    "candidate_count": 9,
+    "candidate_hit_fraction": 0.6666666666666666
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 9,
+    "observable_model_attempts": 9,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.2223260346800089,
+        "input_tokens": 766,
+        "output_tokens": 69,
+        "total_tokens": 835
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.6750586107373238,
+        "input_tokens": 768,
+        "output_tokens": 114,
+        "total_tokens": 882
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.7111708465963602,
+        "input_tokens": 761,
+        "output_tokens": 101,
+        "total_tokens": 862
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.3377083726227283,
+        "input_tokens": 761,
+        "output_tokens": 84,
+        "total_tokens": 845
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 2.310878563672304,
+        "input_tokens": 767,
+        "output_tokens": 131,
+        "total_tokens": 898
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 2.118032170459628,
+        "input_tokens": 760,
+        "output_tokens": 109,
+        "total_tokens": 869
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 2.0172997023910284,
+        "input_tokens": 759,
+        "output_tokens": 109,
+        "total_tokens": 868
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.801895149052143,
+        "input_tokens": 755,
+        "output_tokens": 107,
+        "total_tokens": 862
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 1.838114770129323,
+        "input_tokens": 763,
+        "output_tokens": 90,
+        "total_tokens": 853
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 16.035
+  },
+  "trace_sha256": "eef1e63c7405537744256604124afc3d24ba96ab44c5b27fa038930f2f5c6499",
+  "checkpoint_sha256": "2e58844540bec0a02d8471aa7afe3d915f1d229d8822751cef870053fdc38ced"
+}

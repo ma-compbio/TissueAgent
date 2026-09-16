@@ -1,0 +1,147 @@
+{
+  "status": "success",
+  "unit_fingerprint": "b5bc291a2f347ec55d07bfb75b44e78abee310d30d1bc573ce19538dd2374a55",
+  "generation_proposal_sha256": "45495d6d38f87827e14742aaf1a004e09b77d8ae52cafc651e05a0cbae7749e2",
+  "truth_sha256": "3c1b5260101c66070acabd4fbfdadb7a920741b19789682bd98366c1fbdc3bec",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "eacab26b2147a0442dc7dfa46ab805969f38bec63360e45d369366f303466940",
+    "c41be9ba35ba618a7ba6cada6278170de2a8833800b4ff022e9073cb1bf8bf2e",
+    "f6e5cb0905866c8c34b19012e8996a2f099ff775c57ff02d913a5133374607eb",
+    "69ec124e1a375c347d70c1b2d98a56975506568c5895c96b91e8563d986f5ff8",
+    "6105786a576a1aa47cada46010c8a8b503abc6d642f362c0507361e87a70f8ac",
+    "1f55655cde40fbff841403100623a8d79e9267ec7b8142bf24e28bb3069b8f9e",
+    "0414acb68a08783b030f32789fe15847d0d6ff4a095cba816be908569d13984b",
+    "47d5116ac2bdb982903b13304b99e044a740cf608721c7e9fe328ec0572a6443"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis aims to identify genes showing spatially patterned expression by computing spatial statistics like Moran's I, which matches the main objective of G07: detecting spatially variable genes with Moran statistics."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis matches the ground-truth analysis G08. Both involve testing for neighborhood enrichment of cell types using permutation methods to identify cell-type pairs that occur near one another more frequently than expected. The main scientific objective is shared."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on integrating spatial gene expression data with high-resolution microscopy images to segment tissue into distinct regions, guided by morphological and transcriptional features. This objective aligns with ground-truth analysis G05, which focuses on integrating molecular and morphological features and assessing their relationship. Both analyses aim to combine different modalities to understand tissue architecture."
+    },
+    {
+      "candidate_index": 3,
+      "match": false,
+      "reason": "The proposed analysis focuses on identifying differences in gene expression between spatially segregated tissue regions by performing differential expression testing. None of the ground-truth analyses focus primarily on differential expression between tissue regions. The closest analysis, G05, involves spatially variable genes detection using autocorrelation, which is related but distinct from differential expression testing between clearly defined spatial regions."
+    },
+    {
+      "candidate_index": 4,
+      "match": false,
+      "reason": "The proposed analysis focuses on constructing spatial gene correlation networks to reveal co-expressed gene modules within localized neighborhoods. The scientific objective centers on using gene expression correlations to build an interpretable network reflecting spatial organization. None of the ground-truth analyses directly share this primary objective of uncovering co-expressed gene modules via correlation networks. Ground-truth analysis G01 involves building spatial neighbor graphs for various spatial assays but does not address gene expression correlations or network analysis of gene modules. Thus, there is no match based on the main scientific objectives."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis matches the ground-truth analysis G01. Both involve the segmentation and morphological feature extraction from large images, specifically focusing on cell or tissue images subdivided into tiles. The candidate also involves processing these segmented tiles to extract image features, aligning closely with G01's focus on tiling, segmentation, and morphology feature extraction."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis, which involves assessing concordance between tissue morphology and molecular structure by integrating image-derived features with gene expression data, aligns with the ground-truth analysis G02. G02 describes the integration of molecular and morphological features and involves assessing the agreement between expression-derived spatial structures and image features, which is essentially the same scientific objective as the proposed analysis."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis focuses on identifying and mapping gene modules based on their co-variation across spatial locations in tissue, assessing gene co-expression within local neighborhoods, and evaluating the impact of spatial proximity on gene networks. This involves dimensionality reduction, clustering, and correlation metrics for defining gene module dynamics. None of the ground-truth analyses explicitly match this objective, as the closest analyses focus on global spatial patterning (G02), spatial neighbor graphs (G03), or spatially variable genes (G07), but not on gene module co-variation and its mapping."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 5,
+    "candidate_count": 8,
+    "candidate_hit_fraction": 0.625
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 8,
+    "observable_model_attempts": 8,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.6501265540719032,
+        "input_tokens": 754,
+        "output_tokens": 47,
+        "total_tokens": 801
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.846211375668645,
+        "input_tokens": 742,
+        "output_tokens": 54,
+        "total_tokens": 796
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.3162572402507067,
+        "input_tokens": 738,
+        "output_tokens": 74,
+        "total_tokens": 812
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.4357623513787985,
+        "input_tokens": 735,
+        "output_tokens": 79,
+        "total_tokens": 814
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.8147265426814556,
+        "input_tokens": 732,
+        "output_tokens": 114,
+        "total_tokens": 846
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 2.8782587312161922,
+        "input_tokens": 739,
+        "output_tokens": 75,
+        "total_tokens": 814
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.3541429918259382,
+        "input_tokens": 749,
+        "output_tokens": 79,
+        "total_tokens": 828
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.77849848754704,
+        "input_tokens": 750,
+        "output_tokens": 120,
+        "total_tokens": 870
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 14.088
+  },
+  "trace_sha256": "edb0ede3939a768bf9afb539c4110727f93fd6b7d9c23e1dabe9c1267ff3a7c0",
+  "checkpoint_sha256": "48843a8ba82e41743d5a2d464fa30ce68386b93e6bfe51c162b60dbad54388e3"
+}
