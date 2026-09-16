@@ -1,0 +1,1623 @@
+[
+  {
+    "eval_id": "spcb_f4c0753473",
+    "schema_version": 2,
+    "analyses": [
+      {
+        "analysis_id": "A01",
+        "title": "Infer malignant-cell fractions",
+        "description": "Infer spot-level malignant abundance without requiring a matched malignant-cell reference, using cancer-specific copy-number or expression patterns and a spatial-transcriptomics-specific malignant profile.",
+        "analysis_type": "deconvolution",
+        "evidence": [
+          {
+            "page": 2,
+            "section": "Results — Decomposing cell lineages in tumor spatial transcriptomics",
+            "anchor": "malignant cell fraction inference from CNA or expression patterns"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A02",
+        "title": "Hierarchically deconvolve nonmalignant lineages",
+        "description": "Estimate major immune and stromal lineages first and then constrained sublineages using a pan-cancer single-cell reference and a two-level lineage tree.",
+        "analysis_type": "deconvolution",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Decomposing cell lineages in tumor spatial transcriptomics",
+            "anchor": "hierarchical deconvolution of nonmalignant cell fractions"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A03",
+        "title": "Estimate unidentifiable or low-density composition",
+        "description": "Retain unexplained signal as an unidentifiable component that reflects unknown cell types, dropout, or variable total cellular density across spatial locations.",
+        "analysis_type": "deconvolution",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Decomposing cell lineages in tumor spatial transcriptomics",
+            "anchor": "unidentifiable component and variable cell density"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A04",
+        "title": "Validate within-cohort composition recovery",
+        "description": "Construct simulated spots by splitting patients within single-cell cohorts into non-overlapping reference and test groups, then compare inferred cellular fractions with their known values.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Performance validation by simulated ST data",
+            "anchor": "intra-dataset patient split for simulated spatial transcriptomics"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A05",
+        "title": "Test cross-cohort reference generalization",
+        "description": "Use distinct single-cell cohorts for reference and synthetic test spots, including leave-one-dataset-out references, and compare accuracy, hierarchy, competing methods, runtime, and memory.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Performance validation by simulated ST data",
+            "anchor": "inter-dataset and leave-one-out reference validation"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A06",
+        "title": "Validate against blinded histopathology across tumors",
+        "description": "Compare inferred cell fractions with double-blind tissue-region annotations across eight spatial datasets and seven tumor types, including robustness to reduced gene counts.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Validation by real ST data with double-blind histopathology annotations",
+            "anchor": "eight tumor datasets with double-blind pathology annotations"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A07",
+        "title": "Discover malignant-cell substates",
+        "description": "Cluster malignant-rich spatial locations and characterize spatial cancer states with cancer gene modules instead of treating all malignant cells as one homogeneous population.",
+        "analysis_type": "spatial_gene_program",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Validation by real ST data",
+            "anchor": "clustering malignant-rich spots to explore cancer cell states"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A08",
+        "title": "Apply deconvolution to high-resolution colon data",
+        "description": "Evaluate cellular composition at near-cellular ten-micrometre resolution in colon tissue and compare inferred tumor and stromal regions with pathology.",
+        "analysis_type": "deconvolution",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — Decompose ST data with various resolutions",
+            "anchor": "18,288 high-resolution colon beads"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A09",
+        "title": "Apply a custom reference to low-resolution pancreatic data",
+        "description": "Analyze one-hundred-micrometre pancreatic spatial data and use matched single-cell measurements to add acinar and ductal populations missing from the built-in reference.",
+        "analysis_type": "deconvolution",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — Decompose ST data with various resolutions",
+            "anchor": "matched pancreatic single-cell reference at low spatial resolution"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A10",
+        "title": "Screen spatially colocalized interacting cell pairs",
+        "description": "Build a breast-tumor cell-fraction colocalization network and use spot-level ligand-receptor network scores to distinguish plausible interaction from reference-similarity-driven colocalization.",
+        "analysis_type": "interaction_analysis",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — Ligand–receptor interactions within ST spots",
+            "anchor": "CAF–M2 interaction versus CAF–endothelial colocalization"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A11",
+        "title": "Identify specific fibroblast–macrophage ligand–receptor pairs",
+        "description": "Integrate breast spatial and single-cell data to assign ligand and receptor expression to fibroblasts and M2 macrophages and identify specific candidate mediating pairs.",
+        "analysis_type": "interaction_analysis",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — Ligand–receptor interactions within ST spots",
+            "anchor": "specific ligand–receptor pairs between CAF and M2 cells"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A12",
+        "title": "Link fibroblast–macrophage niches to tumor-interface invasion programs",
+        "description": "Test whether fibroblast–M2 locations lie near tumor–immune boundaries, then compare nearby and distant malignant locations with adjusted differential expression and pathway enrichment to identify invasion programs.",
+        "analysis_type": "differential_spatial_analysis",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — Cell–cell interactions at the tumor-immune interface",
+            "anchor": "interface proximity with differential expression and EMT enrichment"
+          }
+        ]
+      }
+    ],
+    "curation": {
+      "protocol": "cellbench_fig12_spatial_v2",
+      "curator_a_count": 5,
+      "curator_b_count": 12,
+      "matched_count": 5,
+      "set_f1": 0.588235,
+      "adjudication_status": "complete",
+      "notes": "Final spatial-core scope audit retained all independently reported labels; page-level evidence remains attached to each analysis."
+    }
+  },
+  {
+    "eval_id": "spcb_7e74c983be",
+    "schema_version": 2,
+    "analyses": [
+      {
+        "analysis_id": "A01",
+        "title": "Map normal kidney anatomy with fine-resolution spatial data",
+        "description": "Deconvolve fine-resolution spatial beads, recover corticomedullary structures and specialized renal populations, and quantify proximity-enriched normal neighborhoods.",
+        "analysis_type": "cell_type_mapping",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Reference and altered states",
+            "anchor": "fine-resolution spatial mapping across 67 pucks"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A02",
+        "title": "Map normal kidney anatomy with spot-based spatial data",
+        "description": "Transfer atlas identities to spatial spots and recover cortex, medulla, nephron-segment transitions, and histologically validated structures.",
+        "analysis_type": "cell_type_mapping",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Reference and altered states",
+            "anchor": "spot-based corticomedullary and nephron-segment mapping"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A03",
+        "title": "Map spot-based injury neighborhoods",
+        "description": "Map altered states across reference, acute-injury, and chronic-disease tissue and quantify epithelial, stromal, and immune colocalization in injured or fibrotic regions.",
+        "analysis_type": "domain_or_neighborhood",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — Spatially mapped injury neighbourhoods",
+            "anchor": "altered-state colocalization in injured tissue"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A04",
+        "title": "Define three-dimensional disease niches",
+        "description": "Classify cells from large-scale three-dimensional multiplexed imaging, cluster their local neighborhoods, and quantify epithelial, vascular, stromal, and leukocyte organization in injured tissue.",
+        "analysis_type": "trajectory_or_3d",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — Spatially mapped injury neighbourhoods",
+            "anchor": "1.54 million cells organized into 14 three-dimensional niches"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A05",
+        "title": "Validate adaptive injury niches across spatial platforms",
+        "description": "Confirm adaptive epithelial-state localization and adjacent stromal or immune composition using independent fine-resolution, spot-based, immunofluorescence, and in-situ hybridization measurements.",
+        "analysis_type": "domain_or_neighborhood",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — Stages and niches of epithelial repair",
+            "anchor": "cross-platform validation of adaptive epithelial niches"
+          }
+        ]
+      }
+    ],
+    "curation": {
+      "protocol": "cellbench_fig12_spatial_v2",
+      "curator_a_count": 7,
+      "curator_b_count": 16,
+      "matched_count": 7,
+      "set_f1": 0.608696,
+      "adjudication_status": "complete",
+      "notes": "Final spatial-core scope audit retained 5 of 16 labels and excluded 11 whose core input or inference was single-cell, bulk, clinical, regulatory, or genetic."
+    }
+  },
+  {
+    "eval_id": "spcb_5940c8e4ea",
+    "schema_version": 2,
+    "analyses": [
+      {
+        "analysis_id": "A01",
+        "title": "Identify cortical domains in annotated brain sections",
+        "description": "Benchmark pathology-foundation-model-enhanced spatial clustering on annotated human brain sections and test whether image embeddings improve cortical-layer recovery.",
+        "analysis_type": "domain_or_neighborhood",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Improved spatial domain identification",
+            "anchor": "annotated human brain cortical layers"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A02",
+        "title": "Validate domain identification on independent image datasets",
+        "description": "Test spatial-domain recovery on independent bright-field and fluorescence image datasets and compare pretrained pathology embeddings with traditional image features.",
+        "analysis_type": "domain_or_neighborhood",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Improved spatial domain identification",
+            "anchor": "independent H&E and fluorescence spatial datasets"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A03",
+        "title": "Identify domains in spatial RNA–protein data",
+        "description": "Cluster an independently annotated human lymph-node dataset using RNA, protein, and language-derived embeddings to recover cortex, capsule, and adipose regions.",
+        "analysis_type": "domain_or_neighborhood",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — Domain identification of multi-omic spatial data",
+            "anchor": "human lymph-node RNA and antibody-derived tags"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A04",
+        "title": "Transfer brain spot annotations",
+        "description": "Train classifiers across annotated brain sections and test whether combining gene expression and pathology embeddings improves held-out spatial spot labels.",
+        "analysis_type": "cell_type_mapping",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — More accurate spot-type annotation",
+            "anchor": "cross-validation across annotated brain sections"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A05",
+        "title": "Transfer spot annotations across independent image datasets",
+        "description": "Test reference-to-query spot annotation on independent bright-field and fluorescence datasets and examine how image quality affects multimodal gains.",
+        "analysis_type": "cell_type_mapping",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — More accurate spot-type annotation",
+            "anchor": "independent fluorescence query annotation"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A06",
+        "title": "Compare disease and tissue representation structure",
+        "description": "Quantify whether molecular and pathology embeddings organize a large multi-disease spatial collection by disease or tissue and assess batch effects and model ranking.",
+        "analysis_type": "representation_or_integration",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — Whole-slide disease-associated prediction",
+            "anchor": "disease-versus-tissue representation clustering"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A07",
+        "title": "Predict disease with sample-level cross-validation",
+        "description": "Classify disease states under sample-level cross-validation and compare molecular, image, joint, fine-tuned, and resampled inputs.",
+        "analysis_type": "multimodal_integration",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — Whole-slide disease-associated prediction",
+            "anchor": "sample-level cross-validation of disease prediction"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A08",
+        "title": "Test cross-study disease generalization",
+        "description": "Repeat disease prediction with entire studies held out and evaluate whether multimodal integration or class-imbalance correction generalizes across studies.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — Whole-slide disease-associated prediction",
+            "anchor": "study-held-out cross-validation"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A09",
+        "title": "Infer multicellular interactions from cancer slides",
+        "description": "Predict spatial expression from colorectal whole-slide images, identify spatial genes and regions, and infer directional communication including a candidate chemokine interaction.",
+        "analysis_type": "interaction_analysis",
+        "evidence": [
+          {
+            "page": 9,
+            "section": "Results — Inferring novel multicellular interactions from cancer slides",
+            "anchor": "spatial expression and directional communication from four cancer slides"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A10",
+        "title": "Evaluate reports across diseases and input modalities",
+        "description": "Generate reports for a multi-disease spatial collection and assess molecular-only, image-only, and joint prompting using completeness, consistency, stability, and expert comparisons.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 11,
+            "section": "Results — Medical reports with multimodal instruction",
+            "anchor": "eighteen-disease report modality evaluation"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A11",
+        "title": "Benchmark image-patch and expression retrieval",
+        "description": "Train molecular encoders to align spatial expression with matching histology patches and rank pathology foundation models with contrastive and top-k retrieval metrics across diseases and held-out patients.",
+        "analysis_type": "representation_or_integration",
+        "evidence": [
+          {
+            "page": 13,
+            "section": "Results — Evaluating pathology foundation models with an extra modality",
+            "anchor": "same-location image-patch and expression retrieval"
+          }
+        ]
+      }
+    ],
+    "curation": {
+      "protocol": "cellbench_fig12_spatial_v2",
+      "curator_a_count": 5,
+      "curator_b_count": 14,
+      "matched_count": 4,
+      "set_f1": 0.421053,
+      "adjudication_status": "complete",
+      "notes": "Final spatial-core scope audit retained 11 of 14 labels and excluded three bulk or pathology-only external analyses."
+    }
+  },
+  {
+    "eval_id": "spcb_b4769977eb",
+    "schema_version": 2,
+    "analyses": [
+      {
+        "analysis_id": "A01",
+        "title": "Learn local spatial-relationship representations",
+        "description": "Divide spatial samples into windows, estimate multivariate nonlinear intra- and intercellular relationships, cluster windows across samples, retain recurring clusters, and represent each specimen by its cluster composition.",
+        "analysis_type": "representation_or_integration",
+        "evidence": [
+          {
+            "page": 2,
+            "section": "Results — Identifying local spatial relationships",
+            "anchor": "localized relationship patterns and sample composition"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A02",
+        "title": "Predict ductal carcinoma progression from tissue organization",
+        "description": "Learn cell-type-based tissue representations for ductal carcinoma in situ and compare them with composition, neighborhood, and graph baselines for progression prediction.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — Robust patterns associated with clinical features",
+            "anchor": "predicting progression from ductal carcinoma in situ"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A03",
+        "title": "Predict immunotherapy response from lymphoma tissue organization",
+        "description": "Use pretreatment cutaneous lymphoma samples to predict response to checkpoint inhibition and compare local spatial representations with spatial and non-spatial alternatives.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — Robust patterns associated with clinical features",
+            "anchor": "predicting response to PD-1 inhibition"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A04",
+        "title": "Predict hormone-therapy sensitivity in breast cancer",
+        "description": "Use breast-cancer imaging samples to predict sensitivity or resistance to postoperative hormonal therapy from spatial tissue representations.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — Robust patterns associated with clinical features",
+            "anchor": "sensitivity to postoperative hormone therapy"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A05",
+        "title": "Test neighborhood-scale and recurrence sensitivity",
+        "description": "Vary window size and recurrence filtering and measure their effects on representation size and clinical prediction across three cohorts.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — Robust patterns associated with clinical features",
+            "anchor": "window size and persistence criterion sensitivity"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A06",
+        "title": "Interpret lymphoma response-associated neighborhoods",
+        "description": "Rank spatial clusters by model reliance, map their abundance and autocorrelation, and interpret responder- and nonresponder-associated tumor, immune, stromal, and vascular relationships.",
+        "analysis_type": "differential_spatial_analysis",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — Comprehensive explanation of clinical associations",
+            "anchor": "spatial explanation of PD-1 response in lymphoma"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A07",
+        "title": "Benchmark label-independent marker-abundance representations",
+        "description": "Repeat the clinical tasks directly from quantitative marker abundance per cell and compare with composition, neighborhood, graph, and spatial-clustering baselines.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 9,
+            "section": "Results — Modeling quantitative cell features",
+            "anchor": "marker abundance per segmented cell across clinical tasks"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A08",
+        "title": "Interpret marker relationships associated with hormone resistance",
+        "description": "Identify marker-level clusters associated with resistance or sensitivity, map their localization and spatial autocorrelation, and interpret immune, stromal, and tumor relationships.",
+        "analysis_type": "differential_spatial_analysis",
+        "evidence": [
+          {
+            "page": 9,
+            "section": "Results — Modeling quantitative cell features",
+            "anchor": "marker-level relationships predicting hormonal therapy sensitivity"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A09",
+        "title": "Demonstrate scalability on pancreatic spatial transcriptomics",
+        "description": "Apply the representation method to hundreds of pancreatic cancer fields of view containing more than seven hundred thousand cells as an independent transcriptomic-scale application.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 12,
+            "section": "Discussion and Methods — Pancreatic data application",
+            "anchor": "300 fields of view with more than 700,000 cells"
+          }
+        ]
+      }
+    ],
+    "curation": {
+      "protocol": "cellbench_fig12_spatial_v2",
+      "curator_a_count": 5,
+      "curator_b_count": 9,
+      "matched_count": 4,
+      "set_f1": 0.571429,
+      "adjudication_status": "complete",
+      "notes": "Final spatial-core scope audit retained all independently reported labels; page-level evidence remains attached to each analysis."
+    }
+  },
+  {
+    "eval_id": "spcb_4e967b72a1",
+    "schema_version": 2,
+    "analyses": [
+      {
+        "analysis_id": "A01",
+        "title": "Jointly deconvolve spots and reconstruct cell-resolved transcriptomes",
+        "description": "Combine spot-level sequencing, a single-cell reference, and histological nuclear segmentation in a generative model to infer cell-type proportions and transcriptome-wide expression for individual cells.",
+        "analysis_type": "deconvolution",
+        "evidence": [
+          {
+            "page": 2,
+            "section": "Results — Single-cell spatial whole transcriptomics",
+            "anchor": "simultaneous deconvolution and decomposition of spatial data"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A02",
+        "title": "Benchmark rare-cell deconvolution against matched measurements",
+        "description": "Compare deconvolution methods on matched disease-model brain data using targeted single-cell proportions and in-situ expression patterns to assess common and rare populations.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 2,
+            "section": "Results — Rare cell-type deconvolution accuracy",
+            "anchor": "matched targeted spatial data used as ground truth"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A03",
+        "title": "Benchmark deconvolution on simulations and multiple human tissues",
+        "description": "Evaluate deconvolution under several simulated noise levels and across eight paired single-cell and spatial datasets from diverse human tissues, including computational performance.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 2,
+            "section": "Results — Rare cell-type deconvolution accuracy",
+            "anchor": "three simulation noise levels and eight paired tissue datasets"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A04",
+        "title": "Discover and validate astrocyte regional specification",
+        "description": "Cluster reconstructed brain astrocytes, map subclusters to anatomical regions, identify regional gene programs, and validate them with targeted spatial data, independent nuclei data, and a negative-control simulation.",
+        "analysis_type": "spatial_gene_program",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Astrocyte regional specification",
+            "anchor": "astrocyte subclusters and regional gene programs"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A05",
+        "title": "Identify disease-associated microglia and regional programs",
+        "description": "Detect disease-enriched microglial populations, determine their regional specification, and validate them with targeted spatial expression, pathology imaging, and pathway analysis.",
+        "analysis_type": "spatial_gene_program",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — Disease-associated microglia regional specifications",
+            "anchor": "regional disease-associated microglial subclusters"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A06",
+        "title": "Distinguish tumor and normal epithelial states in breast tissue",
+        "description": "Apply copy-number and differential-expression signatures to reconstructed luminal cells and validate tumor and normal identities against independent targeted spatial breast samples.",
+        "analysis_type": "cell_type_mapping",
+        "evidence": [
+          {
+            "page": 8,
+            "section": "Results — Tumor–microenvironment spatial domains",
+            "anchor": "copy-number analysis and external tumor identity validation"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A07",
+        "title": "Analyze breast-cancer domains and tumor communication",
+        "description": "Define concentric tumor domains, compare their cellular composition, and identify domain-specific tumor–immune and tumor–stromal communication patterns.",
+        "analysis_type": "interaction_analysis",
+        "evidence": [
+          {
+            "page": 9,
+            "section": "Results — Tumor–microenvironment spatial domains",
+            "anchor": "three tumor domains and communication patterns"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A08",
+        "title": "Extend tumor-cell identification to lung and colorectal cancer",
+        "description": "Apply reconstructed cell-level profiles to independent lung- and colorectal-cancer spatial datasets and identify epithelial cells as their primary tumor populations.",
+        "analysis_type": "cell_type_mapping",
+        "evidence": [
+          {
+            "page": 9,
+            "section": "Results — Tumor–microenvironment spatial domains",
+            "anchor": "epithelial tumor cells in lung and colorectal cancer"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A09",
+        "title": "Benchmark cell-level expression decomposition and spatial preservation",
+        "description": "Compare reconstructed expression with competing methods on simulated brain data, then reaggregate cells to pseudo-spots to measure count recovery and preservation of spatially variable genes.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 9,
+            "section": "Results — Comprehensive decomposition benchmarking",
+            "anchor": "reaggregation and spatial-variable-gene preservation"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A10",
+        "title": "Reconstruct noncapture regions into whole-section cell maps",
+        "description": "Impute cells and their expression between capture spots, merge measured and imputed regions, and validate whole-section reconstruction against matched targeted spatial fields of view.",
+        "analysis_type": "representation_or_integration",
+        "evidence": [
+          {
+            "page": 10,
+            "section": "Results — Pseudo-single-cell whole-slide images",
+            "anchor": "recovering information in noncapture areas"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A11",
+        "title": "Recover nuclei missing from spatial single-nucleus sequencing",
+        "description": "Treat observed spatial nuclei as capture regions, reconstruct missing nuclei, and assess cell-type, marker-expression, and composition concordance with the original profiles.",
+        "analysis_type": "representation_or_integration",
+        "evidence": [
+          {
+            "page": 10,
+            "section": "Results — Overcoming in-situ single-nuclei sequencing limits",
+            "anchor": "retrieve lost single-nucleus expression profiles"
+          }
+        ]
+      }
+    ],
+    "curation": {
+      "protocol": "cellbench_fig12_spatial_v2",
+      "curator_a_count": 5,
+      "curator_b_count": 11,
+      "matched_count": 3,
+      "set_f1": 0.375,
+      "adjudication_status": "complete",
+      "notes": "Final spatial-core scope audit retained all independently reported labels; page-level evidence remains attached to each analysis."
+    }
+  },
+  {
+    "eval_id": "spcb_732f7ca9d3",
+    "schema_version": 2,
+    "analyses": [
+      {
+        "analysis_id": "A01",
+        "title": "Model contamination from three-dimensional tissue projection",
+        "description": "Simulate spherical cells in sections of different geometry and quantify the fraction of a projected signal originating from the target cell rather than vertically adjacent structures.",
+        "analysis_type": "trajectory_or_3d",
+        "evidence": [
+          {
+            "page": 1,
+            "section": "Results — Geometric projection model",
+            "anchor": "simplified geometric model of vertical contamination"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A02",
+        "title": "Measure vertical cell-type consistency in one brain platform",
+        "description": "Correct local depth drift, virtually split a thick brain section, annotate top and bottom transcript profiles independently, and quantify cell-type agreement and vertical doublets.",
+        "analysis_type": "trajectory_or_3d",
+        "evidence": [
+          {
+            "page": 2,
+            "section": "Results — Virtual subslicing analysis",
+            "anchor": "virtually split tissue and compare top-bottom cell identities"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A03",
+        "title": "Replicate vertical consistency on an independent brain platform",
+        "description": "Apply the segmented top-versus-bottom comparison to an independent imaging-based mouse-brain dataset and quantify whole-tissue and non-neuronal consistency.",
+        "analysis_type": "trajectory_or_3d",
+        "evidence": [
+          {
+            "page": 2,
+            "section": "Results — Cross-platform vertical consistency",
+            "anchor": "testing whether the effect is limited to one technology"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A04",
+        "title": "Construct segmentation-free vertical-signal maps",
+        "description": "Generate local top and bottom expression embeddings, calculate vertical signal integrity maps, and locate overlapping cells, folds, and low-integrity structures without cell segmentation.",
+        "analysis_type": "trajectory_or_3d",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Maps of vertical signal integrity",
+            "anchor": "segmentation-free tissue maps of vertical signal integrity"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A05",
+        "title": "Validate vertical-signal maps with simulated overlaps",
+        "description": "Create controlled in-silico tissue overlaps and test whether reduced vertical signal integrity localizes the simulated mixtures.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Maps of vertical signal integrity",
+            "anchor": "low integrity corresponds to simulated cell overlaps"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A06",
+        "title": "Validate vertical signal with independent brain imaging",
+        "description": "Reproduce low-integrity structures in an independent brain dataset, confirm vertical doublets in depth-resolved nuclear images, and test whether virtual thinning improves integrity.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Cross-platform and imaging validation",
+            "anchor": "z-stack validation and higher integrity after virtual thinning"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A07",
+        "title": "Apply vertical-overlap analysis to liver",
+        "description": "Generate liver expression embeddings and identify endothelial and stromal regions with increased tendency for vertical doublets in an independent tissue.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Liver generalization",
+            "anchor": "public mouse liver dataset and vertical doublets"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A08",
+        "title": "Evaluate three-dimensional segmentation quality",
+        "description": "Compare vertical signal integrity with annotation confidence for two three-dimensional segmentation methods and identify folds or contamination missed by segmentation.",
+        "analysis_type": "benchmark_validation",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Segmentation-quality analysis",
+            "anchor": "two 3D segmentation strategies miss tissue folds"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A09",
+        "title": "Quantify effects of vertical-doublet removal on cell typing",
+        "description": "Flag low-integrity cells, compare their expression embeddings with singlets, remove them, and measure improved cell-type separation across platforms.",
+        "analysis_type": "cell_type_mapping",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Downstream cell typing",
+            "anchor": "clearer cell-type separation after doublet removal"
+          }
+        ]
+      }
+    ],
+    "curation": {
+      "protocol": "cellbench_fig12_spatial_v2",
+      "curator_a_count": 5,
+      "curator_b_count": 9,
+      "matched_count": 5,
+      "set_f1": 0.714286,
+      "adjudication_status": "complete",
+      "notes": "Final spatial-core scope audit retained all independently reported labels; page-level evidence remains attached to each analysis."
+    }
+  },
+  {
+    "eval_id": "spcb_377c86462b",
+    "schema_version": 2,
+    "analyses": [
+      {
+        "analysis_id": "A01",
+        "title": "Infer receptor-conditioned spatial ligand–target activity",
+        "description": "Combine location, cell-type abundance, ligand and target expression, receptor availability, and neighborhood composition to score ligand–target activity and derive communication domains and pathway maps.",
+        "analysis_type": "method_development",
+        "evidence": [
+          {
+            "page": 2,
+            "section": "Results — Spatial ligand-target interactions",
+            "anchor": "end-to-end framework for spatial ligand-target interactions"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A02",
+        "title": "Benchmark ligand–target activity on simulated interactions",
+        "description": "Generate spatial positive and negative regions from several matched spatial and single-cell references and compare methods using activity accuracy, precision, and recall under two simulation designs.",
+        "analysis_type": "method_benchmark",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — Benchmarking ligand-target inference",
+            "anchor": "simulated intestine, breast tumor, and cortical datasets"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A03",
+        "title": "Benchmark communication-domain recovery against cortical layers",
+        "description": "Infer domains from interaction scores on twelve cortical spatial sections and compare them with manually annotated layers and white matter using clustering-agreement metrics.",
+        "analysis_type": "spatial_domain_benchmark",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — Benchmarking ligand-target inference",
+            "anchor": "twelve cortical samples with ARI and NMI"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A04",
+        "title": "Test sensitivity to sparsity and annotation errors",
+        "description": "Evaluate activity stability under molecular-count downsampling, cell-label perturbation, and changes in cell-type annotation granularity.",
+        "analysis_type": "robustness_analysis",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — Benchmarking ligand-target inference",
+            "anchor": "downsampling and ten-to-thirty-percent cell-label perturbation"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A05",
+        "title": "Map communication domains and astrocyte interactions in adult brain",
+        "description": "Analyze matched adult mouse-brain sections and nuclei references, associate communication domains with anatomy, and characterize regional astrocyte signaling with neighboring populations.",
+        "analysis_type": "spatial_communication_application",
+        "evidence": [
+          {
+            "page": 8,
+            "section": "Results — Communication domains in mouse brain",
+            "anchor": "two mouse brain sections and regional astrocyte subtypes"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A06",
+        "title": "Resolve intratumor communication subdomains",
+        "description": "Analyze matched single-cell and spatial data from a triple-negative breast tumor, characterize cancer, stromal, and immune ligand–target activity, and map domain-specific pathways.",
+        "analysis_type": "cancer_spatial_application",
+        "evidence": [
+          {
+            "page": 9,
+            "section": "Results — Intratumor communication subdomains",
+            "anchor": "matched single-cell and spatial data from one breast tumor"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A07",
+        "title": "Identify a fetal-liver hepatocyte–macrophage niche",
+        "description": "Analyze high-resolution fetal-liver spatial data with a matched single-cell reference, identify a hepatocyte–macrophage communication niche, quantify spatial association, and replicate it in a second sample.",
+        "analysis_type": "developmental_spatial_application",
+        "evidence": [
+          {
+            "page": 11,
+            "section": "Results — Hepatocyte-macrophage interactions in fetal liver",
+            "anchor": "replicated hepatocyte–macrophage spatial interaction"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A08",
+        "title": "Recover oncofetal communication across two tumor platforms",
+        "description": "Rank oncofetal ligands and interactions in one single-cell spatial tumor platform, then evaluate the same programs in two tumors measured by another platform.",
+        "analysis_type": "cross_platform_cancer_application",
+        "evidence": [
+          {
+            "page": 12,
+            "section": "Results — Oncofetal interactions in liver cancer",
+            "anchor": "cross-platform analysis of three liver tumors"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A09",
+        "title": "Link an oncofetal niche to bipotent-cell reprogramming",
+        "description": "Focus on communication between oncofetal and bipotent cells, identify enriched target pathways, replicate the spatial result on a second platform, and experimentally validate a predicted cytokine response.",
+        "analysis_type": "mechanism_validation",
+        "evidence": [
+          {
+            "page": 13,
+            "section": "Results — Oncofetal-niche-mediated reprogramming",
+            "anchor": "spatially replicated and experimentally validated reprogramming"
+          }
+        ]
+      }
+    ],
+    "curation": {
+      "protocol": "cellbench_fig12_spatial_v2",
+      "curator_a_count": 5,
+      "curator_b_count": 9,
+      "matched_count": 5,
+      "set_f1": 0.714286,
+      "adjudication_status": "complete",
+      "notes": "Final spatial-core scope audit retained all independently reported labels; page-level evidence remains attached to each analysis."
+    }
+  },
+  {
+    "eval_id": "spcb_3d9b1bdbd6",
+    "schema_version": 2,
+    "analyses": [
+      {
+        "analysis_id": "A01",
+        "title": "Learn integrated spatial representations, factors, and gene programs",
+        "description": "Jointly model count matrices and coordinates with spatial graph learning, adversarial alignment, and integrated factorization to recover harmonized representations, interpretable factors, and gene loadings.",
+        "analysis_type": "method_development",
+        "evidence": [
+          {
+            "page": 2,
+            "section": "Results — Method overview",
+            "anchor": "count matrices and spatial coordinates from multiple sections"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A02",
+        "title": "Benchmark integration and factor recovery on simulations",
+        "description": "Simulate sections with known spatial factors and loadings under varying batch effects and noise, then compare clustering, biological preservation, factor recovery, and loading recovery.",
+        "analysis_type": "method_benchmark",
+        "evidence": [
+          {
+            "page": 2,
+            "section": "Results — Accuracy and interpretability",
+            "anchor": "simulation with known spatial factors and gene loadings"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A03",
+        "title": "Integrate multi-donor cortical sections",
+        "description": "Jointly analyze twelve sections from three donors, align cortical layers, preserve their anatomical trajectory, benchmark domain recovery, and interpret layer-specific factors and gene programs.",
+        "analysis_type": "multi_section_application",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Multi-donor cortical integration",
+            "anchor": "twelve sections from three donors and shared layer trajectory"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A04",
+        "title": "Stitch partially overlapping brain sections",
+        "description": "Integrate sagittal and coronal sections with shared cortex but section-specific anatomy, evaluate preservation of unique structures, and recover fine hippocampal and cerebellar factors.",
+        "analysis_type": "partial_overlap_integration",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Stitching partially shared brain structures",
+            "anchor": "partially overlapping sagittal and coronal sections"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A05",
+        "title": "Integrate cross-technology adult brain data",
+        "description": "Align transcriptome-wide bead-based and targeted single-cell brain data, transfer cortical structure, recover fine domains and factors, and use broader gene coverage for downstream signaling analysis.",
+        "analysis_type": "cross_technology_application",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Integration across technologies",
+            "anchor": "cross-technology adult brain integration and signaling"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A06",
+        "title": "Integrate cross-technology embryo data",
+        "description": "Align targeted and transcriptome-wide embryo sections, identify consistent spatial domains, and recover fine cardiac structures and developmental programs.",
+        "analysis_type": "cross_technology_application",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — Integration across technologies",
+            "anchor": "cross-technology embryo integration and sixteen domains"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A07",
+        "title": "Impute unmeasured genes across spatial technologies",
+        "description": "Validate imputation by holding out measured markers, transfer transcriptome-wide information into a targeted assay, and analyze gene programs in dorsal and ventral embryonic structures.",
+        "analysis_type": "spatial_gene_imputation",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — Cross-technology gene imputation",
+            "anchor": "held-out markers and expansion from hundreds to thousands of genes"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A08",
+        "title": "Compare uninjured and wounded skin",
+        "description": "Integrate control and postoperative skin, align shared epidermal layers, preserve wound-specific spots, recover a skin trajectory, and identify wound-enriched immune factors and processes.",
+        "analysis_type": "condition_specific_integration",
+        "evidence": [
+          {
+            "page": 8,
+            "section": "Results — Condition-specific skin integration",
+            "anchor": "uninjured and postoperative day-seven wound sections"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A09",
+        "title": "Resolve breast-tumor and stromal heterogeneity",
+        "description": "Integrate two high-resolution breast-cancer sections, distinguish in-situ and invasive regions, and characterize spatially distinct myoepithelial and endothelial factors associated with progression.",
+        "analysis_type": "cancer_spatial_application",
+        "evidence": [
+          {
+            "page": 9,
+            "section": "Results — Breast cancer microenvironment heterogeneity",
+            "anchor": "two high-resolution breast cancer sections"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A10",
+        "title": "Build a temporal atlas of mouse organogenesis",
+        "description": "Integrate eight whole-embryo sections across developmental stages, annotate organs, quantify growth trajectories, and identify spatial factors and gene programs for developing structures.",
+        "analysis_type": "spatiotemporal_application",
+        "evidence": [
+          {
+            "page": 10,
+            "section": "Results — Spatiotemporal mouse organogenesis",
+            "anchor": "eight whole-embryo sections spanning successive stages"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A11",
+        "title": "Benchmark rigid and nonrigid spatial registration",
+        "description": "Create controlled rotations of adjacent brain sections, evaluate transformation recovery and biological alignment against competing methods, extend across platforms, and test nonrigid alignment.",
+        "analysis_type": "spatial_registration_benchmark",
+        "evidence": [
+          {
+            "page": 11,
+            "section": "Results — Accurate three-dimensional reconstruction",
+            "anchor": "controlled rotations and cross-platform registration benchmarks"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A12",
+        "title": "Reconstruct a whole embryo in three dimensions",
+        "description": "Integrate and sequentially align five adjacent high-density embryo sections to reconstruct major organs and fine tissue substructures in three dimensions.",
+        "analysis_type": "three_dimensional_reconstruction",
+        "evidence": [
+          {
+            "page": 11,
+            "section": "Results — Accurate three-dimensional reconstruction",
+            "anchor": "five adjacent embryo sections with more than half a million spots"
+          }
+        ]
+      }
+    ],
+    "curation": {
+      "protocol": "cellbench_fig12_spatial_v2",
+      "curator_a_count": 5,
+      "curator_b_count": 12,
+      "matched_count": 5,
+      "set_f1": 0.588235,
+      "adjudication_status": "complete",
+      "notes": "Final spatial-core scope audit retained all independently reported labels; page-level evidence remains attached to each analysis."
+    }
+  },
+  {
+    "eval_id": "spcb_22b1a945e2",
+    "schema_version": 2,
+    "analyses": [
+      {
+        "analysis_id": "A01",
+        "title": "Map nested hippocampal structure and marker genes",
+        "description": "Identify the full hippocampus together with CA1, CA2, CA3, and dentate-gyrus subregions, organize their overlapping spatial programs as a hierarchy, and recover region-specific hierarchical marker genes.",
+        "analysis_type": "spatial_hierarchy",
+        "evidence": [
+          {
+            "page": 2,
+            "section": "Results — Nested hierarchical structure in the hippocampus",
+            "anchor": "full hippocampal structure, four subregions, hierarchy tree, and hierarchical marker genes"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A02",
+        "title": "Resolve multilayer organization in breast cancer",
+        "description": "Detect overlapping spatial expression programs in human breast cancer tissue and show that tumor regions contain two-, three-, and four-layer organization that a single segmentation cannot represent.",
+        "analysis_type": "spatial_hierarchy",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Four-layer nested structure in human breast cancer dataset",
+            "anchor": "up to four layers of overlapping hotspots in histologically defined tumor regions"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A03",
+        "title": "Discover a tertiary lymphoid structure by spatial uniqueness",
+        "description": "Score how distinct each localized coexpression program is from the rest of the breast section, identify a tertiary lymphoid structure without prior marker selection, and confirm it with characteristic genes.",
+        "analysis_type": "spatial_domain_discovery",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Four-layer nested structure in human breast cancer dataset",
+            "anchor": "uniqueness score highlights the tertiary lymphoid structure and its marker genes"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A04",
+        "title": "Benchmark multiscale structure against segmentation",
+        "description": "Compare recovered tumor, hippocampal, and anterior-cortex structures with HMRF, SpaGCN, and BayesSpace across requested region counts, measuring spatial agreement and the range of simultaneously represented scales.",
+        "analysis_type": "spatial_domain_benchmark",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Benchmarking and validation",
+            "anchor": "Jaccard comparison with segmentation methods over numbers of regions and spatial scales"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A05",
+        "title": "Test robustness with gene subsampling and synthetic hierarchies",
+        "description": "Measure preservation of real coexpression programs after subsampling genes, then vary signal content and tuning parameters in a five-layer synthetic hierarchy to assess recovery and parameter sensitivity.",
+        "analysis_type": "robustness_benchmark",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — Benchmarking and validation",
+            "anchor": "50% and 80% gene subsampling plus a synthetic five-layer hierarchy"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A06",
+        "title": "Compare related cortical structures and their expression differences",
+        "description": "Use spatial similarity maps to connect distinct anterior-cortex regions with shared oligodendrocyte programs, then perform differential expression to identify spatial heterogeneity between the matched structures.",
+        "analysis_type": "spatial_pattern_comparison",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — NeST similarity maps identify related but spatially distinct structures",
+            "anchor": "similarity between cortical CH6 and CH8 followed by differential expression"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A07",
+        "title": "Find disease-specific intestinal expression structures",
+        "description": "Compare spatial expression programs between control and dextran-sodium-sulfate colitis sections and distinguish structures shared across conditions from patterns unique to diseased tissue.",
+        "analysis_type": "cross_condition_spatial_comparison",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — NeST similarity maps identify related but spatially distinct structures",
+            "anchor": "control-versus-colitis similarity maps for shared and disease-specific structures"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A08",
+        "title": "Trace spatial programs through mouse embryo development",
+        "description": "Project late-embryo coexpression programs onto seven earlier Stereo-seq stages to visualize the spatial emergence of brain, liver, heart, lung, and other developmental structures.",
+        "analysis_type": "spatiotemporal_pattern_analysis",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — NeST similarity maps identify related but spatially distinct structures",
+            "anchor": "E16.5 spatial programs compared across E9.5 through E15.5 embryos"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A09",
+        "title": "Localize two-dimensional ligand-receptor activity",
+        "description": "Combine spatial ligand diffusion with receptor expression to map Dll1-Notch1 interaction hotspots in an embryo and compare them with a nonspatial cell-type communication analysis.",
+        "analysis_type": "spatial_interaction_analysis",
+        "evidence": [
+          {
+            "page": 9,
+            "section": "Results — CCI hotspots in the developing mouse embryo",
+            "anchor": "spatial Dll1-Notch1 activity and hotspot comparison with CellChat"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A10",
+        "title": "Characterize interaction heterogeneity within cell types",
+        "description": "Compare signaling-active and inactive cells within spinal-cord and brain identities, identify differential downstream programs, and quantify whether interaction hotspots align with or subdivide annotated cell types.",
+        "analysis_type": "differential_spatial_interaction",
+        "evidence": [
+          {
+            "page": 10,
+            "section": "Results — CCI hotspots in the developing mouse embryo",
+            "anchor": "within-cell-type differential expression and overlap of CCI hotspots with cell types"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A11",
+        "title": "Infer three-dimensional interaction hotspots across cortical layers",
+        "description": "Model interlayer ligand transport in serial MERFISH planes, identify three-dimensional Tac1-Tacr1 interaction regions, characterize behavior-related expression in selected hotspots, and quantify signaling variation through depth.",
+        "analysis_type": "three_dimensional_interaction",
+        "evidence": [
+          {
+            "page": 10,
+            "section": "Results — Three-dimensional CCI in mouse cortex",
+            "anchor": "3D Tac1-Tacr1 hotspots, functional enrichment, and z-axis interaction heterogeneity"
+          }
+        ]
+      }
+    ],
+    "curation": {
+      "protocol": "cellbench_fig12_spatial_v2",
+      "curator_a_count": 11,
+      "curator_b_count": 10,
+      "matched_count": 10,
+      "set_f1": 0.952381,
+      "adjudication_status": "complete",
+      "notes": "A results-section pass and an independent figure-caption pass were reconciled; the final spatial-core audit retained eleven non-overlapping analyses with PDF-page evidence."
+    }
+  },
+  {
+    "eval_id": "spcb_fa0ad80e86",
+    "schema_version": 2,
+    "analyses": [
+      {
+        "analysis_id": "A01",
+        "title": "Benchmark prediction of unseen spatiotemporal cell states",
+        "description": "Train on staged mouse, zebrafish, and axolotl Stereo-seq atlases, predict held-out early and late time points, and compare predicted gene-expression distributions with PRESCIENT across repeated initializations.",
+        "analysis_type": "trajectory_prediction_benchmark",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Benchmarking STORIES against the state of the art",
+            "anchor": "early and late held-out prediction across three spatiotemporal atlases"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A02",
+        "title": "Ablate the contribution of spatial information",
+        "description": "Compare the spatially informed objective with an otherwise matched linear optimal-transport model and quantify whether tissue geometry improves future expression prediction and spatial consistency.",
+        "analysis_type": "spatial_ablation",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Benchmarking STORIES against the state of the art",
+            "anchor": "comparison with the alpha-zero linear counterpart to assess the usefulness of space"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A03",
+        "title": "Validate biologically coherent cell-type transitions",
+        "description": "Measure transition accuracy and inspect spatial matches for specific developing populations, including zebrafish adaxial and somite cells and organ-specific mouse and axolotl populations, relative to PRESCIENT.",
+        "analysis_type": "trajectory_validation",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — Benchmarking STORIES against the state of the art",
+            "anchor": "cell-type transition accuracy and spatially coherent matches across atlases"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A04",
+        "title": "Reconstruct axolotl neuron-regeneration trajectories",
+        "description": "Learn a differentiation landscape for regenerative cell states and recover the three major paths from ependymoglial populations through intermediate progenitors to distinct excitatory-neuron fates.",
+        "analysis_type": "spatiotemporal_trajectory",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — STORIES reveals drivers of neuron regeneration in axolotls",
+            "anchor": "potential landscape and three major regeneration trajectories"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A05",
+        "title": "Map location-dependent axolotl fate probabilities",
+        "description": "Estimate terminal fate probabilities for reactive ependymoglial cells and test whether their position around the injury predicts commitment toward medial, dorsal, or lateral excitatory-neuron outcomes.",
+        "analysis_type": "spatial_fate_mapping",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — STORIES reveals drivers of neuron regeneration in axolotls",
+            "anchor": "spatial fate probabilities for reactive ependymoglial cells at 15 days post injury"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A06",
+        "title": "Recover and discover axolotl regeneration gene trends",
+        "description": "Validate expected Vim and Nptx1 changes along the regenerative path, fit gene-expression trends over the learned potential, and nominate stage-specific drivers including Hes5, Cdc25b, Map1a, L1cam, and Nsg2.",
+        "analysis_type": "trajectory_gene_program",
+        "evidence": [
+          {
+            "page": 5,
+            "section": "Results — STORIES reveals drivers of neuron regeneration in axolotls",
+            "anchor": "spline-based known and unsupervised gene trends along the regeneration potential"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A07",
+        "title": "Infer regulators of axolotl neuron regeneration",
+        "description": "Test transcription-factor enrichment among trajectory-associated genes and identify candidate regulators of regenerative differentiation, including CTNNB1, SP1, MYC, SOX6, and REST.",
+        "analysis_type": "regulatory_enrichment",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — STORIES reveals drivers of neuron regeneration in axolotls",
+            "anchor": "TRRUST enrichment of transcription factors targeting candidate driver genes"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A08",
+        "title": "Reconstruct branching neurogenic and gliogenic trajectories",
+        "description": "Learn the mouse dorsal-midbrain landscape and recover radial glial branching toward neuroblast and glioblast fates without manually specifying the trajectory starting population.",
+        "analysis_type": "spatiotemporal_trajectory",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — STORIES identifies drivers of gliogenesis in mouse midbrain",
+            "anchor": "RGC branching toward NeuB and GlioB fates in the learned landscape"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A09",
+        "title": "Map spatial biases in mouse radial-glial fate",
+        "description": "Estimate neuroblast and glioblast fate probabilities for radial glia, identify rostral, caudal, and central spatial biases, and confirm the organization across stages and biological replicates.",
+        "analysis_type": "spatial_fate_mapping",
+        "evidence": [
+          {
+            "page": 8,
+            "section": "Results — STORIES identifies drivers of gliogenesis in mouse midbrain",
+            "anchor": "rostral-to-caudal organization of RGC fate probabilities across replicates"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A10",
+        "title": "Recover and discover mouse gliogenesis gene trends",
+        "description": "Validate decreasing Mki67 and increasing Aldh1l1 along the radial-glia-to-glioblast path, then discover additional temporally ordered programs and candidate drivers such as Glis3.",
+        "analysis_type": "trajectory_gene_program",
+        "evidence": [
+          {
+            "page": 8,
+            "section": "Results — STORIES identifies drivers of gliogenesis in mouse midbrain",
+            "anchor": "known and unsupervised gene trends along the gliogenesis potential"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A11",
+        "title": "Infer regulators of mouse gliogenesis",
+        "description": "Test transcription-factor enrichment among gliogenesis-associated genes and identify regulators linked to glial differentiation or glioma, including SOX4, NOTCH2, MYC, MYCN, and MAX.",
+        "analysis_type": "regulatory_enrichment",
+        "evidence": [
+          {
+            "page": 8,
+            "section": "Results — STORIES identifies drivers of gliogenesis in mouse midbrain",
+            "anchor": "transcription-factor enrichment among mouse gliogenesis driver genes"
+          }
+        ]
+      }
+    ],
+    "curation": {
+      "protocol": "cellbench_fig12_spatial_v2",
+      "curator_a_count": 11,
+      "curator_b_count": 11,
+      "matched_count": 11,
+      "set_f1": 1.0,
+      "adjudication_status": "complete",
+      "notes": "Results-subsection and figure-caption extraction passes converged after separating quantitative benchmarks, spatial fate maps, gene trends, and regulator tests; all labels depend on spatially informed trajectories."
+    }
+  },
+  {
+    "eval_id": "spcb_783779446a",
+    "schema_version": 2,
+    "analyses": [
+      {
+        "analysis_id": "A01",
+        "title": "Benchmark deconvolution with unattributed expression",
+        "description": "Simulate spatial measurements with varying sparsity and magnitude of expression missing from the reference, then compare cell-type proportion accuracy across methods using concordance, error, and divergence metrics.",
+        "analysis_type": "deconvolution_benchmark",
+        "evidence": [
+          {
+            "page": 3,
+            "section": "Results — Simulations",
+            "anchor": "cell-type deconvolution across unattributed-expression sparsity and proportion regimes"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A02",
+        "title": "Benchmark recovery of hidden expression and robustness",
+        "description": "Measure recovery error for the true unattributed expression matrix and test sensitivity to library-size variability and effective spatial-grid resolution across simulated conditions.",
+        "analysis_type": "expression_recovery_benchmark",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — Simulations",
+            "anchor": "unattributed-expression recovery error across signal, noise, and grid-size regimes"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A03",
+        "title": "Validate canonical and neuropil expression recovery",
+        "description": "Use honey-bee brain MERFISH segmentation as independent ground truth to compare recovered somatic proportions, canonical cell-body expression, and unattributed neuropil expression with competing methods.",
+        "analysis_type": "spatial_expression_validation",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — RESCUE accurately recovers the unattributed transcriptome in real tissues",
+            "anchor": "segmentation-grounded validation in somatic and neuropil-only honey-bee grids"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A04",
+        "title": "Discover transcriptional niches in honey-bee neuropil",
+        "description": "Cluster recovered unattributed profiles across the honey-bee brain and map coherent programs to mushroom-body calyces, antennal and optic lobes, the central complex, and other neuropil structures.",
+        "analysis_type": "spatial_domain_discovery",
+        "evidence": [
+          {
+            "page": 4,
+            "section": "Results — RESCUE accurately recovers the unattributed transcriptome in real tissues",
+            "anchor": "clustering of unattributed expression reveals anatomically distinct neuropil niches"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A05",
+        "title": "Correct breast-cancer deconvolution with a missing adipocyte reference",
+        "description": "Analyze paired breast spatial and single-cell data lacking adipocytes in the reference, quantify misassignment to stromal and endothelial cells, and test whether separating unattributed expression restores composition accuracy.",
+        "analysis_type": "incomplete_reference_deconvolution",
+        "evidence": [
+          {
+            "page": 6,
+            "section": "Results — RESCUE enables accurate deconvolution of ST data with incomplete reference",
+            "anchor": "adipocyte-rich regions and deconvolution accuracy with an incomplete reference"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A06",
+        "title": "Resolve missing breast-tissue programs by factorization",
+        "description": "Apply non-negative matrix factorization separately to canonical and unattributed breast expression and recover spatial factors for adipocytes and extracellular-matrix programs absent from the reference.",
+        "analysis_type": "spatial_factor_analysis",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — RESCUE enables accurate deconvolution of ST data with incomplete reference",
+            "anchor": "unattributed NMF factors containing adipocyte and extracellular-matrix markers"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A07",
+        "title": "Test deconvolution generalization across tissues and species",
+        "description": "Benchmark incomplete-reference deconvolution on additional human prefrontal-cortex and cichlid telencephalon spatial datasets paired with nuclear references to assess cross-tissue and cross-species robustness.",
+        "analysis_type": "deconvolution_generalization",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — RESCUE enables accurate deconvolution of ST data with incomplete reference",
+            "anchor": "additional DLPFC and cichlid benchmarks using snRNA-seq references"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A08",
+        "title": "Quantify layer-specific unattributed expression in human cortex",
+        "description": "Estimate the unattributed fraction across six cortical layers and white matter in eight DLPFC sections and identify elevated signal in neuropil-rich Layer 1 and axon-rich white matter.",
+        "analysis_type": "spatial_layer_comparison",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — RESCUE uncovers layer-specific unattributed expression in the human DLPFC",
+            "anchor": "unattributed-expression proportions across cortical layers and white matter"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A09",
+        "title": "Identify Layer 1 genes hidden in raw spatial expression",
+        "description": "Compare Layer 1 with other cortical layers using differential expression on raw and recovered unattributed components, revealing mitochondrial and process-localized genes whose direction or magnitude is obscured in raw data.",
+        "analysis_type": "differential_spatial_analysis",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — RESCUE uncovers layer-specific unattributed expression in the human DLPFC",
+            "anchor": "raw-versus-unattributed differential expression for Layer 1"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A10",
+        "title": "Enrich functional programs in the cortical unattributed component",
+        "description": "Perform gene-set enrichment on Layer-1 differential genes from raw and unattributed expression and identify mitochondrial energy-production programs detected only after separating the hidden component.",
+        "analysis_type": "spatial_pathway_enrichment",
+        "evidence": [
+          {
+            "page": 8,
+            "section": "Results — RESCUE uncovers layer-specific unattributed expression in the human DLPFC",
+            "anchor": "GO enrichment comparison for Layer 1 genes from raw and unattributed expression"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A11",
+        "title": "Reveal hidden spatially variable genes in cichlid brain",
+        "description": "Run spatial-variable-gene analysis on observed and unattributed cichlid telencephalon expression and map programs, including app, cntn1, dner, and eno1, that emerge along radial-glial projections only after removing nuclear signal.",
+        "analysis_type": "spatial_variable_gene_analysis",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — RESCUE reveals spatially structured unattributed expression in the cichlid fish telencephalon",
+            "anchor": "SVGs unique to unattributed expression and their radial-glial spatial maps"
+          }
+        ]
+      },
+      {
+        "analysis_id": "A12",
+        "title": "Factorize process-localized programs in cichlid telencephalon",
+        "description": "Apply non-negative matrix factorization to the recovered cichlid component and identify synaptic, radial-glial, mitochondrial, ribosomal, and locally translated programs organized along extended cellular processes.",
+        "analysis_type": "spatial_factor_analysis",
+        "evidence": [
+          {
+            "page": 7,
+            "section": "Results — RESCUE reveals spatially structured unattributed expression in the cichlid fish telencephalon",
+            "anchor": "NMF factors enriched for synaptic, process-localized, mitochondrial, and ribosomal genes"
+          }
+        ]
+      }
+    ],
+    "curation": {
+      "protocol": "cellbench_fig12_spatial_v2",
+      "curator_a_count": 12,
+      "curator_b_count": 11,
+      "matched_count": 11,
+      "set_f1": 0.956522,
+      "adjudication_status": "complete",
+      "notes": "Results-section and figure-caption passes were reconciled by collapsing closely linked simulation endpoints while retaining distinct downstream spatial tests; twelve labels passed the spatial-core audit."
+    }
+  }
+]

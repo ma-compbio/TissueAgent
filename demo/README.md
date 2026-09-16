@@ -27,12 +27,11 @@ demo
 ├── figure_recreation_lohoff-2b.ipynb    # notebook for figure recreation task (Figure 2b from Lohoff et. al.)
 ├── figure_recreation_lohoff-2e.ipynb    # notebook for figure recreation task (Figure 2c from Lohoff et. al.)
 ├── spot_deconvolution_visium_heart.ipynb    # notebook for cell-type deconvolution task
-├── run_hypothesis_recovery.py           # Comment #7 hypothesis-recovery benchmark runner
-├── score_hypothesis_recovery.py         # score TissueAgent vs CellVoyager runs
 ├── notebook_utils.py                    # utility functions for setting up and running TissueAgent in notebooks
 └── README.md
 ```
 
+<<<<<<< HEAD
 ### Tissue-niche baselines
 
 For named annotation with TissueAgent, Biomni and SpatialAgent, use the
@@ -55,6 +54,8 @@ PYTHONPATH=src python demo/run_hypothesis_recovery.py \
 PYTHONPATH=src python demo/score_hypothesis_recovery.py --all --aggregate
 ```
 
+=======
+>>>>>>> origin/main
 ### Web UI Demo
 
 https://github.com/user-attachments/assets/ef381418-cf5c-431b-9052-f931c922d2c8

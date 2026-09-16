@@ -26,7 +26,7 @@ from pathlib import Path
 
 import nbformat as nbf
 import nbformat.v4 as nbfv4
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 from langchain_core.messages import AIMessage, BaseMessage
 
 from agents.agent_utils import extract_block

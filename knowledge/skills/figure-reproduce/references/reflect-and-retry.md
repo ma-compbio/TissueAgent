@@ -42,7 +42,9 @@ Read the failure precisely (error text, or the visual delta). Assign one:
 | `missing-file` | script/loader points at a path that doesn't exist |
 | `missing-field` | the color column / embedding / gene the figure needs isn't in the data |
 | `wrong-subset` | ran, but plotted the whole sheet instead of the shown rows/series |
-| `label-mismatch` | ran, but axis/legend/tick text differs from the target |
+| `label-mismatch` | ran, but axis/legend/tick text differs from the target (text diff shows near-misses/missing) |
+| `palette-mismatch` | ran, structure is right, but the colors are wrong (`compare_figures.py` reports a large palette dE, or `limited_by: color`) |
+| `order-mismatch` | ran, right colors, but categories/rows/bars are in a different sequence than the target's legend or ticks |
 | `api-error` | library API changed / wrong function / bad kwargs |
 | `undocumented-preprocessing` | ran, but values are off because a normalization/filter step is unstated |
 | `stochastic` | output varies run-to-run (embedding rotated, clusters relabeled) |
@@ -63,21 +65,28 @@ Apply the **smallest** fix that addresses the diagnosed cause; record what you d
 | `env_setup` | set an env var / lightweight system dep / seed | `stochastic`, `env-missing` |
 | `api_shim` | minimal compatibility shim for a changed/broken upstream API | `api-error` |
 | `subset_fix` | filter to exactly the rows/series/categories the panel shows, in the shown order | `wrong-subset` |
-| `label_fix` | copy the panel's axis/legend/tick text **verbatim**; set explicit category order + colormap | `label-mismatch` |
+| `label_fix` | copy the panel's axis/legend/tick text **verbatim** from the target | `label-mismatch` |
+| `palette_fix` | re-extract the target spec (`extract_reference_spec.py`) and set an explicit `#RRGGBB` per category / the identified `cmap` (watch `_r`) — never a named color or a default | `palette-mismatch` |
+| `order_fix` | set the explicit category order from the spec's legend/tick sequence and iterate in that order (also fixes legend + z-order) | `order-mismatch` |
 | `method_fix` | apply the preprocessing the Methods/caption imply (log/scale/normalize/filter) | `undocumented-preprocessing` |
 | `reacquire_target` | re-extract the correct reference panel (main vs Extended Data) | `wrong-target` |
 
 **Cause → fix quick map:** `env-missing`→dep_install/env_setup ·
 `missing-file`→path_fix/data_relocate (basename-search first) · `missing-field`→
 compute it if the data supports it, else reproduce the closest variant and say so ·
-`wrong-subset`→subset_fix · `label-mismatch`→label_fix · `api-error`→api_shim/
+`wrong-subset`→subset_fix · `label-mismatch`→label_fix · `palette-mismatch`→
+palette_fix · `order-mismatch`→order_fix · `api-error`→api_shim/
 dep_install · `undocumented-preprocessing`→method_fix (read the Methods) ·
 `stochastic`→env_setup (set seed) + accept B3 · `wrong-target`→reacquire_target.
 
 ## Step 3 — re-run from the smallest changed step
 
-- Fixed a **label/subset/colormap**? Just re-run the plotting cell — don't re-fetch
-  data. (Not a re-prep; costs nothing against the re-prep budget.)
+- Fixed a **label / subset / palette / order / colormap**? Just re-run the plotting
+  cell — don't re-fetch data. This is not a re-prep, so it costs nothing against the
+  **re-prep** budget, but it **is** a reproduction attempt and counts against the ≤3.
+  These are the cheapest repairs available: prefer them over re-running the analysis
+  whenever the diagnosis points at appearance rather than values — and batch several
+  into one re-render rather than spending an attempt per tweak.
 - Fixed the **environment or data**? That's your one re-prep round-trip — re-run the
   full pipeline once.
 - Sentinel-gate anything expensive you had to redo (`touch <step>.done`) so a

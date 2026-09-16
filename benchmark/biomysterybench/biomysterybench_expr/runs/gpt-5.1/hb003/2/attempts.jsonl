@@ -1,0 +1,2 @@
+{"attempt": 1, "started_at": "2026-07-30T04:53:35-04:00", "wall_time_s": 5400, "exit_code": 124, "outcome": "timeout", "terminal_state": null, "timeout_s": 5400}
+{"attempt": 2, "started_at": "2026-08-05T13:14:30-04:00", "wall_time_s": 1417, "exit_code": 0, "outcome": "completed", "terminal_state": "completed", "timeout_s": 5400}

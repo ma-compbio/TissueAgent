@@ -1,6 +1,6 @@
 # Coding sandbox
 
-The **coding agent** (`src/agents/agent_registry/coding_agent/`) can execute code either directly on your host or inside an isolated Docker container. The container-based mode is called the **sandbox** and is toggled from the web UI's **Settings** page. Both modes speak the same Jupyter Kernel Gateway protocol, so the coding agent's behavior is identical either way — only the execution environment changes.
+The cached coding agent (`src/agents/agent_registry/coding_agent_cache/`) can execute code either directly on your host or inside an isolated Docker container. Select it with `TISSUEAGENT_CODING_AGENT=cache`. The canonical DeepAgent implementation uses local shell execution and does not use this sandbox. The container-based mode is toggled from the web UI's **Settings** page. Both cached modes speak the same Jupyter Kernel Gateway protocol, so their behavior is identical — only the execution environment changes.
 
 ## What it is
 

@@ -1,1 +1,1 @@
-Expert coder equipped with spatial transcriptomics analysis tools. Supports Python and R.
+Expert coder equipped with spatial transcriptomics analysis tools, workspace file operations, and shell execution.

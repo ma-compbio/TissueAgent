@@ -1,0 +1,279 @@
+{
+  "protocol": "cellbench_fig12_spatial_v2",
+  "scope_rule": "Keep an independently reported analysis only when its core input or inference depends on spatial omics or explicit tissue coordinates; exclude stand-alone single-cell, bulk, clinical, genetic, and pathology-only analyses.",
+  "review_status": "complete",
+  "papers": [
+    {
+      "eval_id": "spcb_f4c0753473",
+      "original_analysis_count": 12,
+      "final_analysis_count": 12,
+      "retained_id_map": {
+        "A01": "A01",
+        "A02": "A02",
+        "A03": "A03",
+        "A04": "A04",
+        "A05": "A05",
+        "A06": "A06",
+        "A07": "A07",
+        "A08": "A08",
+        "A09": "A09",
+        "A10": "A10",
+        "A11": "A11",
+        "A12": "A12"
+      },
+      "dropped": []
+    },
+    {
+      "eval_id": "spcb_7e74c983be",
+      "original_analysis_count": 16,
+      "final_analysis_count": 5,
+      "retained_id_map": {
+        "A03": "A01",
+        "A04": "A02",
+        "A07": "A03",
+        "A08": "A04",
+        "A11": "A05"
+      },
+      "dropped": [
+        {
+          "source_analysis_id": "A01",
+          "title": "Construct an integrated kidney cellular atlas",
+          "reason": "Core integration uses scRNA, snRNA, and joint single-cell RNA data; spatial assays only localize cell types defined elsewhere."
+        },
+        {
+          "source_analysis_id": "A02",
+          "title": "Map cell-type chromatin and regulatory landscapes",
+          "reason": "Chromatin peaks, motifs, and regulatory landscapes come from single-nucleus multi-omic data without spatial coordinates."
+        },
+        {
+          "source_analysis_id": "A05",
+          "title": "Define injury-associated cellular states",
+          "reason": "Injury states are defined from scRNA, snRNA, and joint single-cell data rather than spatial inference."
+        },
+        {
+          "source_analysis_id": "A06",
+          "title": "Validate injury-state timing across species",
+          "reason": "The cross-species validation projects human states onto a mouse single-cell injury time course."
+        },
+        {
+          "source_analysis_id": "A09",
+          "title": "Reconstruct proximal-tubule and loop repair trajectories",
+          "reason": "Trajectory and RNA-velocity analyses operate on single-cell and single-nucleus subpopulations."
+        },
+        {
+          "source_analysis_id": "A10",
+          "title": "Infer trajectory-specific regulatory networks",
+          "reason": "Regulatory-network inference integrates single-nucleus chromatin and expression without spatial input."
+        },
+        {
+          "source_analysis_id": "A12",
+          "title": "Infer repair-state-specific signaling",
+          "reason": "Spatial assays motivate a niche, but the CellChat analysis itself operates on single-cell trajectory modules."
+        },
+        {
+          "source_analysis_id": "A13",
+          "title": "Associate adaptive states with kidney-failure outcomes",
+          "reason": "Survival and Cox analyses use bulk-biopsy expression and clinical outcomes."
+        },
+        {
+          "source_analysis_id": "A14",
+          "title": "Validate state–diagnosis associations in an independent cohort",
+          "reason": "The validation compares diagnoses in an independent bulk-biopsy expression cohort."
+        },
+        {
+          "source_analysis_id": "A15",
+          "title": "Connect repair regulation to kidney genetic risk",
+          "reason": "Genetic enrichment uses GWAS, eQTL, chromatin peaks, and regulatory networks without spatial data."
+        },
+        {
+          "source_analysis_id": "A16",
+          "title": "Characterize senescent maladaptive repair",
+          "reason": "Senescence and repair-state comparisons are based primarily on single-cell states and trajectories."
+        }
+      ]
+    },
+    {
+      "eval_id": "spcb_5940c8e4ea",
+      "original_analysis_count": 14,
+      "final_analysis_count": 11,
+      "retained_id_map": {
+        "A01": "A01",
+        "A02": "A02",
+        "A03": "A03",
+        "A04": "A04",
+        "A05": "A05",
+        "A06": "A06",
+        "A07": "A07",
+        "A08": "A08",
+        "A11": "A09",
+        "A13": "A10",
+        "A14": "A11"
+      },
+      "dropped": [
+        {
+          "source_analysis_id": "A09",
+          "title": "Predict treatment response in breast cancer",
+          "reason": "Treatment-response prediction uses whole-slide images and bulk-level gene-expression profiles."
+        },
+        {
+          "source_analysis_id": "A10",
+          "title": "Predict colorectal cancer survival",
+          "reason": "Survival prediction uses TCGA whole-slide images and whole-slide-level expression."
+        },
+        {
+          "source_analysis_id": "A12",
+          "title": "Generate and externally evaluate pathology reports",
+          "reason": "The external evaluation cohort contains pathology images and reports but no spatial-omics input."
+        }
+      ]
+    },
+    {
+      "eval_id": "spcb_b4769977eb",
+      "original_analysis_count": 9,
+      "final_analysis_count": 9,
+      "retained_id_map": {
+        "A01": "A01",
+        "A02": "A02",
+        "A03": "A03",
+        "A04": "A04",
+        "A05": "A05",
+        "A06": "A06",
+        "A07": "A07",
+        "A08": "A08",
+        "A09": "A09"
+      },
+      "dropped": []
+    },
+    {
+      "eval_id": "spcb_4e967b72a1",
+      "original_analysis_count": 11,
+      "final_analysis_count": 11,
+      "retained_id_map": {
+        "A01": "A01",
+        "A02": "A02",
+        "A03": "A03",
+        "A04": "A04",
+        "A05": "A05",
+        "A06": "A06",
+        "A07": "A07",
+        "A08": "A08",
+        "A09": "A09",
+        "A10": "A10",
+        "A11": "A11"
+      },
+      "dropped": []
+    },
+    {
+      "eval_id": "spcb_732f7ca9d3",
+      "original_analysis_count": 9,
+      "final_analysis_count": 9,
+      "retained_id_map": {
+        "A01": "A01",
+        "A02": "A02",
+        "A03": "A03",
+        "A04": "A04",
+        "A05": "A05",
+        "A06": "A06",
+        "A07": "A07",
+        "A08": "A08",
+        "A09": "A09"
+      },
+      "dropped": []
+    },
+    {
+      "eval_id": "spcb_377c86462b",
+      "original_analysis_count": 9,
+      "final_analysis_count": 9,
+      "retained_id_map": {
+        "A01": "A01",
+        "A02": "A02",
+        "A03": "A03",
+        "A04": "A04",
+        "A05": "A05",
+        "A06": "A06",
+        "A07": "A07",
+        "A08": "A08",
+        "A09": "A09"
+      },
+      "dropped": []
+    },
+    {
+      "eval_id": "spcb_3d9b1bdbd6",
+      "original_analysis_count": 12,
+      "final_analysis_count": 12,
+      "retained_id_map": {
+        "A01": "A01",
+        "A02": "A02",
+        "A03": "A03",
+        "A04": "A04",
+        "A05": "A05",
+        "A06": "A06",
+        "A07": "A07",
+        "A08": "A08",
+        "A09": "A09",
+        "A10": "A10",
+        "A11": "A11",
+        "A12": "A12"
+      },
+      "dropped": []
+    },
+    {
+      "eval_id": "spcb_22b1a945e2",
+      "original_analysis_count": 11,
+      "final_analysis_count": 11,
+      "retained_id_map": {
+        "A01": "A01",
+        "A02": "A02",
+        "A03": "A03",
+        "A04": "A04",
+        "A05": "A05",
+        "A06": "A06",
+        "A07": "A07",
+        "A08": "A08",
+        "A09": "A09",
+        "A10": "A10",
+        "A11": "A11"
+      },
+      "dropped": []
+    },
+    {
+      "eval_id": "spcb_fa0ad80e86",
+      "original_analysis_count": 11,
+      "final_analysis_count": 11,
+      "retained_id_map": {
+        "A01": "A01",
+        "A02": "A02",
+        "A03": "A03",
+        "A04": "A04",
+        "A05": "A05",
+        "A06": "A06",
+        "A07": "A07",
+        "A08": "A08",
+        "A09": "A09",
+        "A10": "A10",
+        "A11": "A11"
+      },
+      "dropped": []
+    },
+    {
+      "eval_id": "spcb_783779446a",
+      "original_analysis_count": 12,
+      "final_analysis_count": 12,
+      "retained_id_map": {
+        "A01": "A01",
+        "A02": "A02",
+        "A03": "A03",
+        "A04": "A04",
+        "A05": "A05",
+        "A06": "A06",
+        "A07": "A07",
+        "A08": "A08",
+        "A09": "A09",
+        "A10": "A10",
+        "A11": "A11",
+        "A12": "A12"
+      },
+      "dropped": []
+    }
+  ]
+}

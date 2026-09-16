@@ -29,13 +29,51 @@ export interface SerializedMessage {
   image_paths?: string[];
 }
 
+export interface SubagentToken {
+  stream_id: string;
+  source: string;
+  text: string;
+}
+
+export interface StreamingDraft {
+  source: string;
+  text: string;
+}
+
 export interface SubagentTranscript {
   tool_id: string;
   agent_name: string;
   avatar: string;
   transcript: SerializedMessage[] | null;
+  /** Kebab-case names of the skills loaded into this step's sub-agent.
+   *  Populated from the plan step's assigned skills; empty for steps that
+   *  loaded none, and absent on legacy sessions saved before this existed. */
+  skills?: string[];
+  /** Fully-rendered system prompt the sub-agent ran with (skills already
+   *  substituted). Absent on legacy sessions saved before this existed. */
+  system_prompt?: string | null;
   raw_state: string | null;
   invocation_id?: string | null;
+  /** Transient live text keyed by DeepAgent stream identity. Never persisted. */
+  streaming_drafts?: Record<string, StreamingDraft>;
+}
+
+/** Detail for a single skill, fetched lazily from `/api/skills/{name}`. */
+export interface SkillDetail {
+  name: string;
+  description: string;
+  applies_to: string[];
+  /** True for folder-based skills that ship bundled scripts/ + references/. */
+  is_dir: boolean;
+  /** Full markdown body of the skill's own file. */
+  content: string;
+  /** Repo-relative folder path, e.g. "knowledge/skills/figure-reproduce".
+   *  Only present for folder skills. */
+  dir_path?: string;
+  /** Skill markdown filename within the folder (e.g. "figure-reproduce.md"). */
+  main_file?: string;
+  /** File tree under the skill folder, paths relative to it. Folder skills only. */
+  files?: BrowseEntry[];
 }
 
 export interface HistoryData {
@@ -78,7 +116,8 @@ export type ServerEvent =
   | { type: "message"; data: SerializedMessage }
   | { type: "subagent_state"; data: SubagentTranscript }
   | { type: "subagent_start"; data: { invocation_id: string; agent_name: string; avatar: string } }
-  | { type: "subagent_message"; data: { invocation_id: string; agent_name: string; message: SerializedMessage } }
+  | { type: "subagent_token"; data: { invocation_id: string; agent_name: string } & SubagentToken }
+  | { type: "subagent_message"; data: { invocation_id: string; agent_name: string; message: SerializedMessage; stream_id?: string; source?: string } }
   | { type: "subagent_end"; data: { invocation_id: string; agent_name: string } }
   | { type: "run_complete"; elapsed_seconds: number }
   | { type: "run_error"; error_type: string; detail: string }

@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "run": {
+    "project_id": "2026-07-28_04-35-00",
+    "task_id": "hb043",
+    "seed": "0",
+    "attempt": "1",
+    "git_commit": "59368ac78fd6455374e9690937d2d741c2b4c95a",
+    "sandbox": "local-gateway",
+    "started_at": "2026-07-28T04:35:00-04:00",
+    "ended_at": "2026-07-28T04:50:59-04:00",
+    "wall_time_s": 959.13,
+    "prompt": "The data file(s) for this task are in the directory `library/datasets/` (inspect the directory and load whatever files are present as appropriate). Sample labels and group assignments are deliberately withheld — they are recoverable from the expression data itself, which is the point of the task. No clarification is available and no additional metadata exists. You must commit to one specific answer in the requested format; hedging, an empty list, or 'cannot determine' is scored as wrong. The following dataset comes from a mixed cohort of male and female post-mortem prefrontal cortex samples. Using genes with known differential sex expression (i.e. XIST, RPS4Y1, EIF1AY, DDX3Y, UTY), identify which samples came from female subjects. Simply list all female samples as the answer (i.e. samples 1, 3, 5, 7... etc)"
+  },
+  "models": {
+    "orchestration": {
+      "model_id": "gpt-5.1",
+      "provider": "openai",
+      "api_model": "gpt-5.1",
+      "reasoning_effort": "high"
+    },
+    "worker": {
+      "model_id": "gpt-5.1",
+      "provider": "openai",
+      "api_model": "gpt-5.1",
+      "reasoning_effort": "high"
+    }
+  },
+  "limits": {
+    "MAX_EXECUTOR_RETRIES": 15,
+    "EXECUTOR_RECURSION_LIMIT": 60,
+    "MAX_STEP_RETRIES": 3,
+    "MAX_REPLANS": 2,
+    "MAX_PLANNER_RETRIES": 2,
+    "MAX_RECRUITER_RETRIES": 2,
+    "RECURSION_LIMIT": 100,
+    "MAX_OUTPUT_CHARS": 3000
+  },
+  "outcome": {
+    "final_answer": "ROUTE: DIRECT\nsamples 5, 6, 10, 11, 14, 15, 17, 28, 29, 33, 34, 37, 38, 40, 47, 48",
+    "terminal_state": "completed",
+    "error": null,
+    "message_count": 117,
+    "artifacts": [],
+    "route": "DIRECT",
+    "routes": [
+      "DIRECT"
+    ],
+    "degraded_to_direct": false
+  },
+  "usage": {
+    "input_tokens": 577732,
+    "output_tokens": 72614,
+    "total_tokens": 650346,
+    "llm_calls": 39,
+    "llm_time_seconds": 955.82,
+    "by_agent": {
+      "planner_agent": {
+        "input_tokens": 577732,
+        "output_tokens": 72614,
+        "time_seconds": 955.82,
+        "llm_calls": 39
+      }
+    },
+    "by_step": []
+  },
+  "troubleshooting": {
+    "layers": [
+      {
+        "layer": 1,
+        "name": "executor-self-correction",
+        "attempts": 0,
+        "successful": 0,
+        "limit_hits": 0,
+        "limit": 15,
+        "failed_executions": 0,
+        "executions": 0,
+        "max_consecutive": 0
+      },
+      {
+        "layer": 2,
+        "name": "manager-retry-step",
+        "attempts": 0,
+        "successful": 0,
+        "limit_hits": 0,
+        "limit": 3,
+        "refused": 0,
+        "steps_dispatched": 0,
+        "successful_is_lower_bound": false
+      },
+      {
+        "layer": 3,
+        "name": "evaluator-replan",
+        "attempts": 0,
+        "successful": 0,
+        "limit_hits": 0,
+        "limit": 2
+      }
+    ],
+    "totals": {
+      "attempts": 0,
+      "successful": 0,
+      "limit_hits": 0,
+      "recovery_rate": null
+    }
+  },
+  "loops": {
+    "replans_triggered": 0,
+    "replan_limit_hit": false,
+    "replan_history": [],
+    "replans_successful": 0,
+    "evaluator_verdicts": [],
+    "forced_report_at_cap": false,
+    "verdict_state_mismatch": null,
+    "replan_reasons": [],
+    "executor": {
+      "executions": 0,
+      "failures": 0,
+      "successes": 0,
+      "episodes": 0,
+      "recovered": 0,
+      "limit_hits": 0,
+      "max_consecutive": 0,
+      "by_language": {},
+      "by_step": []
+    },
+    "manager": {
+      "retry_step_calls": 0,
+      "retry_step_refused": 0,
+      "retry_step_dispatched": 0,
+      "next_step_calls": 0,
+      "step_retry_reasons": []
+    },
+    "planner_format_retries": 0,
+    "planner_retries_state_counter": 0,
+    "recruiter_retries": 0
+  },
+  "plan": {
+    "available": true,
+    "plan_status": "empty",
+    "steps_total": 0,
+    "status_counts": {},
+    "steps_failed": 0,
+    "step_retries_total": 0,
+    "steps_retried": 0,
+    "step_retry_limit_hits": 0,
+    "step_retry_recovered": 0,
+    "steps": []
+  }
+}

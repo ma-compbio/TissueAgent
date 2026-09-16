@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from queue import Queue
 from typing import Any, cast
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import (
     AIMessage,
@@ -23,11 +23,16 @@ from langchain_core.messages import (
 )
 from langgraph.graph import MessagesState
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.managed import RemainingSteps
 from langgraph.types import Command
 
 from agents.agent_utils import format_skill_prompt
-from config import DATA_DIR
-from graph.message_utils import sanitize_message, standardize_message_format
+from config import DATA_DIR, active_project_outputs
+from graph.message_utils import (
+    normalize_trailing_assistant,
+    sanitize_message,
+    standardize_message_format,
+)
 from graph.ui_events import (
     _get_subagent_context,
     emit_message,
@@ -41,9 +46,152 @@ from server.usage_tracker import usage_tracker
 
 
 class AgentState(MessagesState):
-    """Extended message state with optional skill prompt injection."""
+    """Extended message state with optional skill prompt injection.
+
+    ``system_prompt`` holds the fully-rendered system prompt (skills already
+    substituted) that the sub-agent was actually invoked with. It is written by
+    ``create_agent_node`` on each turn and read by
+    ``message_serializer.serialize_subagent_state`` so the trace UI can show the
+    exact prompt behind a dropdown. Last-write-wins is fine: every turn renders
+    the same prompt, so the final value is representative.
+    """
 
     skill_prompt: str
+    system_prompt: str
+
+
+class OrchestratorState(MessagesState):
+    """Top-level graph state: messages + the orchestration bookkeeping channels.
+
+    These fields MUST be declared as channels here. The main graph is compiled
+    with this schema; if a field the nodes write via ``Command(update=...)`` is
+    NOT a declared channel, LangGraph silently DROPS the write. That is exactly
+    how the replan/retry caps became inert: ``replan_count`` was updated by the
+    evaluator but never persisted, so every cycle read ``0``, ``new_count`` was
+    always ``1``, ``MAX_REPLANS`` never tripped, and the graph replanned until it
+    hit the top-level ``recursion_limit``. Same failure mode applies to each
+    retry counter below. Reproduced in isolation before this fix.
+
+    Plain (non-``Annotated``) fields get the default last-write-wins reducer,
+    which is correct for these: counters are overwritten with their new value,
+    and ``replan_history`` is rewritten with the full updated list by the writer.
+
+    ``remaining_steps`` is LangGraph's own managed value, not one of ours: it is
+    recomputed every super-step as ``recursion_limit - step`` and is read-only.
+    Declaring it here is what lets the budget guards in :mod:`graph.graph` see
+    how much of the graph budget is left and land the run on the reporter
+    instead of letting it die with ``GraphRecursionError``.
+    """
+
+    replan_count: int
+    replan_history: list
+    recruiter_retry_count: int
+    recruiter_validation_errors: object
+    planner_retry_count: int
+    planner_retry_phase: str
+    planner_validation_errors: object
+    original_user_request: str
+    remaining_steps: RemainingSteps
+
+
+# Anthropic silently declines to cache a prefix shorter than the model minimum
+# (1024 tokens for the current Sonnet/Opus tiers) — no error, just zeros in
+# input_token_details. Marking a short prompt costs a cache-write premium with no
+# reads to amortize it, so only mark prompts comfortably past the floor. Chars,
+# not tokens, to avoid a tokenizer round-trip on every node build (~4 chars/token,
+# so this is ~1150 tokens — clear of the 1024 minimum without being so high that
+# it excludes the agents that actually benefit).
+_MIN_CACHEABLE_PROMPT_CHARS = 4600
+
+
+def _build_system_message(prompt_text: str, cacheable: bool) -> SystemMessage:
+    """Wrap *prompt_text* in a SystemMessage, marking it cacheable when worthwhile.
+
+    Anthropic prompt caching is a prefix match: the first call writes the prefix at
+    ~1.25x input price, every later call with byte-identical bytes reads it at ~0.1x
+    and skips prefill. Our agent nodes resend a large static system prompt on every
+    turn of a tool loop (the coding agent alone did 24 turns x ~1.4k tokens in the
+    Fig2b run), which is exactly the shape this pays off on.
+
+    The *cacheable* gate is about the wire format, not about who benefits: OpenAI
+    caches prompts over ~1024 tokens automatically (~50% input discount, no opt-in,
+    best-effort eviction) and rejects Anthropic's ``cache_control`` field, so its
+    prompts must stay plain strings. Anthropic's caching is opt-in and does nothing
+    without the explicit breakpoint below — which is why only that path is marked.
+    """
+    if not cacheable or len(prompt_text) < _MIN_CACHEABLE_PROMPT_CHARS:
+        return SystemMessage(prompt_text)
+    return SystemMessage(
+        content=[
+            {
+                "type": "text",
+                "text": prompt_text,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
+    )
+
+
+def _rejects_assistant_prefill(model: BaseChatModel) -> bool:
+    """True when *model*'s provider 400s on a message list ending in an assistant turn.
+
+    Anthropic removed assistant-turn prefill in the 4.6 generation, so every Claude
+    model in our catalog rejects that shape. OpenAI (direct, and OpenRouter's
+    OpenAI-compatible gateway) still accepts it.
+
+    Detected from the bound model instance rather than the global selection so the
+    answer stays correct for sub-agents that were built with an explicit override.
+    Note this reads the *class*, not the model id: ``ChatAnthropic`` is only ever
+    constructed for the ``anthropic`` provider in :func:`models.build_chat_model`,
+    while OpenRouter-hosted Claude models go through ``ChatOpenAI`` and genuinely do
+    accept the trailing turn.
+
+    ``bind_tools()`` wraps the model in a ``RunnableBinding``, and every agent node
+    receives the *bound* model — so the wrapper chain must be unwrapped first or this
+    check silently returns False for exactly the models it exists to catch.
+    """
+    seen = 0
+    while (inner := getattr(model, "bound", None)) is not None and seen < 10:
+        model = inner
+        seen += 1
+    return any(base.__name__.startswith("ChatAnthropic") for base in type(model).__mro__)
+
+
+@dataclass
+class BudgetAction:
+    """What a node should do when the graph's step budget is running out.
+
+    Returned by a ``budget_guard`` (see :func:`create_agent_node`). Two shapes:
+
+    * ``goto`` set — the node skips the LLM call entirely, emits ``message`` as its
+      own turn, and routes straight to ``goto``. Costs one super-step instead of
+      the two-or-more a tool-calling turn would.
+    * ``directive`` only — the node still calls the LLM, but appends ``directive``
+      to the system prompt and strips any tool calls off the response, forcing the
+      turn to be terminal. Use this where the LLM's actual words matter (the
+      reporter's report) and only its tool loop needs to stop.
+
+    Both fields may be set; ``goto`` wins.
+    """
+
+    goto: str | None = None
+    message: str = ""
+    directive: str = ""
+
+
+def _strip_tool_calls(response: AIMessage) -> None:
+    """Remove tool calls from *response* so the turn terminates.
+
+    Clears every place LangChain keeps them: the normalized ``tool_calls`` list,
+    the parse failures in ``invalid_tool_calls``, and the raw provider payload in
+    ``additional_kwargs``. Missing any one of them leaves an assistant turn that
+    requests tools with no ToolMessage to answer it, which Anthropic and OpenAI
+    both reject on the next request.
+    """
+    response.tool_calls = []
+    response.invalid_tool_calls = []
+    response.additional_kwargs.pop("tool_calls", None)
+    response.additional_kwargs.pop("function_call", None)
 
 
 def create_agent_node(
@@ -54,6 +202,7 @@ def create_agent_node(
     exit_node: str | Callable[[AIMessage, MessagesState], str] | None = None,
     state_update_fn: Callable[[AIMessage, MessagesState], dict[str, Any] | None] | None = None,
     message_filter_fn: Callable[[list[BaseMessage]], list[BaseMessage]] | None = None,
+    budget_guard: Callable[[MessagesState], "BudgetAction | None"] | None = None,
 ) -> Callable[[MessagesState], Command]:
     """Build a LangGraph agent node that invokes an LLM and routes the result.
 
@@ -74,11 +223,15 @@ def create_agent_node(
             extra state updates to merge into the command payload.
         message_filter_fn: Optional callable that projects the full message history down to the
             subset relevant to this agent. Applied before the LLM call without mutating graph state.
+        budget_guard: Optional callable that inspects the state's ``remaining_steps`` before the
+            LLM call and returns a :class:`BudgetAction` when the graph is about to run out of
+            budget. This is what turns a ``GraphRecursionError`` into a finished run: the guard
+            short-circuits an agent's tool loop while enough super-steps remain to reach the
+            reporter. Returns ``None`` on every normal turn.
 
     Returns:
         A callable suitable for use as a LangGraph node function.
     """
-
     if callable(prompt):
         try:
             preview_text = prompt({"messages": []})
@@ -88,18 +241,57 @@ def create_agent_node(
         preview_text = prompt
     logging.info(f"System prompt for `{agent_node_id}`:\n{preview_text}")
 
+    # Provider traits are fixed for the life of the node (the graph is rebuilt when
+    # the model selection changes), so resolve once here rather than per turn.
+    is_anthropic = _rejects_assistant_prefill(agent_model)
+
     def agent_node(state: MessagesState) -> Command:
+        action = budget_guard(state) if budget_guard else None
+        if action is not None and action.goto:
+            # Out of budget: skip the model entirely. One super-step, one message,
+            # and control moves on to a node that can still finish the run.
+            forced = AIMessage(content=action.message)
+            forced.name = agent_node_id
+            logging.warning(
+                "%s: step budget exhausted (remaining_steps=%s) — routing to %s",
+                agent_node_id,
+                state.get("remaining_steps"),
+                action.goto,
+            )
+            emit_message(forced)
+            return Command(goto=action.goto, update={"messages": [forced]})
+
         messages = list(map(sanitize_message, state["messages"]))
         if message_filter_fn:
             messages = message_filter_fn(messages)
+        if is_anthropic:
+            messages = normalize_trailing_assistant(messages)
         prompt_text = prompt(state) if callable(prompt) else prompt
-        system_prompt = SystemMessage(prompt_text)
+        if action is not None and action.directive:
+            prompt_text = f"{prompt_text}\n\n{action.directive}"
+        system_prompt = _build_system_message(prompt_text, cacheable=is_anthropic)
         t0 = time.perf_counter()
         response = standardize_message_format(
             cast(AIMessage, agent_model.invoke([system_prompt] + messages))
         )
         elapsed = time.perf_counter() - t0
         response.name = agent_node_id
+
+        if action is not None and action.directive and getattr(response, "tool_calls", []):
+            # The directive told it to answer without tools and it called them anyway.
+            # Honouring the calls would cost two more super-steps we do not have, so
+            # drop them and let this turn be the agent's last.
+            logging.warning(
+                "%s: dropped %d tool call(s) — no step budget left to run them",
+                agent_node_id,
+                len(response.tool_calls),
+            )
+            _strip_tool_calls(response)
+            if not response.content:
+                response.content = (
+                    "Stopping here: the graph step budget ran out before this tool "
+                    "call could be run."
+                )
 
         # state_update_fn runs BEFORE emit_message so any mutation of
         # response.content (e.g. evaluator forcing a REPORT verdict when the
@@ -128,7 +320,10 @@ def create_agent_node(
                 if callable(exit_node) else exit_node
             )
 
-        update_payload = {"messages": [response]}
+        # Persist the rendered prompt so the trace UI can surface it. Harmless on
+        # graphs whose state schema doesn't declare ``system_prompt`` (main-graph
+        # nodes): LangGraph drops writes to undeclared channels.
+        update_payload = {"messages": [response], "system_prompt": prompt_text}
         if extra_update:
             update_payload.update(extra_update)
         if next_node is not None:
@@ -258,17 +453,33 @@ def _validate_step_artifacts(expected_artifacts: list[str]) -> tuple[list[str], 
         return path.exists()
 
     for artifact_path in expected_artifacts:
-        full_path = DATA_DIR / artifact_path
-        if readable_artifact(full_path):
-            found.append(artifact_path)
+        clean = artifact_path.lstrip("/")
+        if clean.startswith("project/outputs/"):
+            candidates = [(DATA_DIR, clean)]
+        elif clean.startswith("outputs/"):
+            candidates = [(active_project_outputs().parent, clean)]
         else:
-            matches = sorted(
-                path for path in DATA_DIR.glob(artifact_path) if readable_artifact(path)
-            )
-            if matches:
-                found.extend(str(m.relative_to(DATA_DIR)) for m in matches)
+            # Planner exemplars intentionally use concise paths such as
+            # ``tables/result.csv`` and ``figures/plot.png``. Coding agents write those
+            # beneath the active project's output root. Keep the legacy workspace-root
+            # lookup too for existing plans and non-project artifacts.
+            candidates = [
+                (DATA_DIR, clean),
+                (active_project_outputs(), clean),
+            ]
+
+        matches = []
+        for root, pattern in candidates:
+            exact = root / pattern
+            if exact.exists():
+                matches.append(exact)
             else:
-                missing.append(artifact_path)
+                matches.extend(sorted(root.glob(pattern)))
+        unique_matches = sorted(set(matches))
+        if unique_matches:
+            found.extend(str(match.relative_to(DATA_DIR)) for match in unique_matches)
+        else:
+            missing.append(artifact_path)
     return found, missing
 
 
@@ -422,12 +633,24 @@ def create_agent_invocation_tool(
     """
 
     def _resolve_step_context() -> tuple[str, StepContext | None]:
-        """Resolve context for the current step: skill prompt + step metadata."""
+        """Resolve context for the current step: skill prompt + step metadata.
+
+        Also snapshots exactly this step's folder-skill assets into the workspace
+        (clearing any prior step's), so a step never sees a later step's skill
+        files on disk. Done before ``format_skill_prompt`` so the assets-root
+        note it emits resolves against freshly-materialized directories.
+        """
         if not context_resolver:
             return "", None
         ctx = context_resolver(agent_node_id)
         if ctx is None:
             return "", None
+        try:
+            from agents.skills_workspace import sync_workspace_skills
+
+            sync_workspace_skills(ctx.skills)
+        except Exception as e:
+            logging.warning("per-step skill materialization failed: %s", e)
         if not ctx.skills:
             return "", ctx
         return format_skill_prompt(ctx.skills), ctx
@@ -448,6 +671,13 @@ def create_agent_invocation_tool(
             step_id=step_ctx.step_id if step_ctx else None,
         ) as invocation_id:
             final_state = agent.invoke({"messages": [message], "skill_prompt": skill_prompt_text})
+        # Ride the step's assigned skills along with the returned state so the
+        # UI trace can show which skills were loaded for this sub-agent. Keyed
+        # into the dict (not the state tuple) so it survives save/rehydrate via
+        # the ``{**state, ...}`` spreads in server.utils, and reaches
+        # ``serialize_subagent_state`` unchanged.
+        if isinstance(final_state, dict):
+            final_state["step_skills"] = list(step_ctx.skills) if step_ctx else []
         state_queue.put((agent_name, final_state, invocation_id))
         # Hand off to the wrapping tool_node so it can pair the final state
         # with the ToolMessage.id of the manager tool that called us

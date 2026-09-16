@@ -8,7 +8,7 @@ import {
 } from "react";
 import type { SerializedMessage, SubagentTranscript } from "../types/messages";
 import AgentAvatar from "./AgentAvatar";
-import MessageBubble, { AgentRunCard, FinalAnswerBox, extractFinalResponse, type AgentRun } from "./MessageBubble";
+import MessageBubble, { AgentRunCard, FinalAnswerBox, extractFinalResponse, extractTerminalPlannerAnswer, type AgentRun } from "./MessageBubble";
 import ResizeDivider from "./ResizeDivider";
 import TracePanel from "./TracePanel";
 
@@ -355,7 +355,13 @@ export default function ChatView({
 
               if (item.kind === "agent_run") {
                 const isReporter = item.run.agentName === "reporter_agent";
-                const finalResponse = isReporter ? extractFinalResponse(item.run.messages) : null;
+                // The reporter's answer ends a full pipeline run. A planner run
+                // that routed DIRECT/CLARIFY ends the graph on its own, so its
+                // body is the final answer and gets the same treatment —
+                // otherwise the turn renders as a folded card with nothing in it.
+                const finalResponse = isReporter
+                  ? extractFinalResponse(item.run.messages)
+                  : extractTerminalPlannerAnswer(item.run);
                 return (
                   <div key={item.run.syntheticId}>
                     <AgentRunCard

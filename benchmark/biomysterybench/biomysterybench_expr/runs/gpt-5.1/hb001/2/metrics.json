@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "run": {
+    "project_id": "2026-07-30_03-45-18",
+    "task_id": "hb001",
+    "seed": "2",
+    "attempt": "1",
+    "git_commit": "59368ac78fd6455374e9690937d2d741c2b4c95a",
+    "sandbox": "local-gateway",
+    "started_at": "2026-07-30T03:45:18-04:00",
+    "ended_at": "2026-07-30T04:39:30-04:00",
+    "wall_time_s": 3251.5,
+    "prompt": "The data file(s) for this task are in the directory `library/datasets/` (inspect the directory and load whatever files are present as appropriate). Sample labels and group assignments are deliberately withheld — they are recoverable from the expression data itself, which is the point of the task. No clarification is available and no additional metadata exists. You must commit to one specific answer in the requested format; hedging, an empty list, or 'cannot determine' is scored as wrong. Which organ is this cell type single-cell RNA-seq dataset derived from?"
+  },
+  "models": {
+    "orchestration": {
+      "model_id": "gpt-5.1",
+      "provider": "openai",
+      "api_model": "gpt-5.1",
+      "reasoning_effort": "high"
+    },
+    "worker": {
+      "model_id": "gpt-5.1",
+      "provider": "openai",
+      "api_model": "gpt-5.1",
+      "reasoning_effort": "high"
+    }
+  },
+  "limits": {
+    "MAX_EXECUTOR_RETRIES": 15,
+    "EXECUTOR_RECURSION_LIMIT": 60,
+    "MAX_STEP_RETRIES": 3,
+    "MAX_REPLANS": 2,
+    "MAX_PLANNER_RETRIES": 2,
+    "MAX_RECRUITER_RETRIES": 2,
+    "RECURSION_LIMIT": 100,
+    "MAX_OUTPUT_CHARS": 3000
+  },
+  "outcome": {
+    "final_answer": "spleen",
+    "terminal_state": "completed",
+    "error": null,
+    "message_count": 92,
+    "artifacts": [
+      "outputs/_trace/output/1556cab4f5d94b6397484f4f326146fa.txt",
+      "outputs/_trace/output/156e22a6a92f4272bafa8b63e523e81d.txt",
+      "outputs/_trace/output/34ae5b1b405a45b6b8b2dbaddacf2657.txt",
+      "outputs/_trace/output/4d430b9b679b47689afaf5a8cbdd7895.txt",
+      "outputs/_trace/output/53affacad7944ad1bca15e7af14da4a9.txt",
+      "outputs/_trace/output/72e6645aee7c41d595ccf6c453b585f8.txt",
+      "outputs/_trace/output/8adc36047edc46748006b1d49bbb2b5f.txt",
+      "outputs/_trace/output/9a5169e074214541bd40d099c7b08c6f.txt",
+      "outputs/_trace/output/bb1967180bca43f199c91436c546b8a9.txt",
+      "outputs/_trace/output/e76b554cfb054cf5be29f30c872eba39.txt",
+      "outputs/_trace/output/e955063e6c864a139fba3c3be53015de.txt",
+      "outputs/analysis.ipynb",
+      "outputs/figures/organ_signature_heatmap.png",
+      "outputs/figures/umap_clusters.png",
+      "outputs/reports/final_organ_call.txt",
+      "outputs/reports/organ_inference.md",
+      "outputs/tables/cell_summary.tsv",
+      "outputs/tables/cluster_markers_top50_per_cluster.tsv",
+      "outputs/tables/gene_summary.tsv",
+      "outputs/tables/global_top_expressed_genes.tsv",
+      "outputs/tables/organ_signature_definitions.tsv",
+      "outputs/tables/organ_signature_scores.tsv",
+      "outputs/tables/qc_metrics.tsv",
+      "outputs/tables/species_inference.txt"
+    ],
+    "route": "PLAN",
+    "routes": [
+      "PLAN"
+    ],
+    "degraded_to_direct": false
+  },
+  "usage": {
+    "input_tokens": 1750917,
+    "output_tokens": 172954,
+    "total_tokens": 1923871,
+    "llm_calls": 136,
+    "llm_time_seconds": 2718.3,
+    "by_agent": {
+      "planner_agent": {
+        "input_tokens": 8841,
+        "output_tokens": 1880,
+        "time_seconds": 31.75,
+        "llm_calls": 3
+      },
+      "recruiter_agent": {
+        "input_tokens": 3883,
+        "output_tokens": 907,
+        "time_seconds": 14.83,
+        "llm_calls": 1
+      },
+      "manager_agent": {
+        "input_tokens": 135756,
+        "output_tokens": 5720,
+        "time_seconds": 107.34,
+        "llm_calls": 15
+      },
+      "Coding Agent": {
+        "input_tokens": 1093414,
+        "output_tokens": 148081,
+        "time_seconds": 2256.44,
+        "llm_calls": 96
+      },
+      "evaluator_agent": {
+        "input_tokens": 416800,
+        "output_tokens": 16027,
+        "time_seconds": 299.04,
+        "llm_calls": 18
+      },
+      "reporter_agent": {
+        "input_tokens": 92223,
+        "output_tokens": 339,
+        "time_seconds": 8.9,
+        "llm_calls": 3
+      }
+    },
+    "by_step": [
+      {
+        "step_id": 1,
+        "agent_name": "Coding Agent",
+        "input_tokens": 47649,
+        "output_tokens": 25984,
+        "time_seconds": 353.72,
+        "llm_calls": 11
+      },
+      {
+        "step_id": 2,
+        "agent_name": "Coding Agent",
+        "input_tokens": 231084,
+        "output_tokens": 36276,
+        "time_seconds": 571.36,
+        "llm_calls": 19
+      },
+      {
+        "step_id": 3,
+        "agent_name": "Coding Agent",
+        "input_tokens": 531790,
+        "output_tokens": 73299,
+        "time_seconds": 1120.19,
+        "llm_calls": 46
+      },
+      {
+        "step_id": 4,
+        "agent_name": "Coding Agent",
+        "input_tokens": 282891,
+        "output_tokens": 12522,
+        "time_seconds": 211.16,
+        "llm_calls": 20
+      }
+    ]
+  },
+  "troubleshooting": {
+    "layers": [
+      {
+        "layer": 1,
+        "name": "executor-self-correction",
+        "attempts": 4,
+        "successful": 4,
+        "limit_hits": 0,
+        "limit": 15,
+        "failed_executions": 5,
+        "executions": 40,
+        "max_consecutive": 2
+      },
+      {
+        "layer": 2,
+        "name": "manager-retry-step",
+        "attempts": 0,
+        "successful": 0,
+        "limit_hits": 0,
+        "limit": 3,
+        "refused": 0,
+        "steps_dispatched": 5,
+        "successful_is_lower_bound": false
+      },
+      {
+        "layer": 3,
+        "name": "evaluator-replan",
+        "attempts": 0,
+        "successful": 0,
+        "limit_hits": 0,
+        "limit": 2
+      }
+    ],
+    "totals": {
+      "attempts": 4,
+      "successful": 4,
+      "limit_hits": 0,
+      "recovery_rate": 1.0
+    }
+  },
+  "loops": {
+    "replans_triggered": 0,
+    "replan_limit_hit": false,
+    "replan_history": [],
+    "replans_successful": 0,
+    "evaluator_verdicts": [
+      "REPORT"
+    ],
+    "forced_report_at_cap": false,
+    "verdict_state_mismatch": null,
+    "replan_reasons": [],
+    "executor": {
+      "executions": 40,
+      "failures": 5,
+      "successes": 35,
+      "episodes": 4,
+      "recovered": 4,
+      "limit_hits": 0,
+      "max_consecutive": 2,
+      "by_language": {
+        "python": {
+          "executions": 40,
+          "failures": 5
+        }
+      },
+      "by_step": [
+        {
+          "step_id": 1,
+          "executions": 7,
+          "failures": 0,
+          "episodes": 0,
+          "max_consecutive": 0,
+          "limit_hits": 0
+        },
+        {
+          "step_id": 2,
+          "executions": 12,
+          "failures": 4,
+          "episodes": 3,
+          "max_consecutive": 2,
+          "limit_hits": 0
+        },
+        {
+          "step_id": 3,
+          "executions": 13,
+          "failures": 0,
+          "episodes": 0,
+          "max_consecutive": 0,
+          "limit_hits": 0
+        },
+        {
+          "step_id": 4,
+          "executions": 8,
+          "failures": 1,
+          "episodes": 1,
+          "max_consecutive": 1,
+          "limit_hits": 0
+        }
+      ]
+    },
+    "manager": {
+      "retry_step_calls": 0,
+      "retry_step_refused": 0,
+      "retry_step_dispatched": 0,
+      "next_step_calls": 5,
+      "step_retry_reasons": []
+    },
+    "planner_format_retries": 0,
+    "planner_retries_state_counter": 0,
+    "recruiter_retries": 0
+  },
+  "plan": {
+    "available": true,
+    "plan_status": "recruited",
+    "steps_total": 4,
+    "status_counts": {
+      "done": 3,
+      "running": 1
+    },
+    "steps_failed": 0,
+    "step_retries_total": 0,
+    "steps_retried": 0,
+    "step_retry_limit_hits": 0,
+    "step_retry_recovered": 0,
+    "steps": [
+      {
+        "id": 1,
+        "title": "Load data and compute basic summaries",
+        "assigned_agent": "coding_agent",
+        "status": "done",
+        "retry_count": 0
+      },
+      {
+        "id": 2,
+        "title": "Cluster cells and identify marker genes",
+        "assigned_agent": "coding_agent",
+        "status": "done",
+        "retry_count": 0
+      },
+      {
+        "id": 3,
+        "title": "Score organ-specific gene signatures",
+        "assigned_agent": "coding_agent",
+        "status": "done",
+        "retry_count": 0
+      },
+      {
+        "id": 4,
+        "title": "Integrate evidence and select organ",
+        "assigned_agent": "coding_agent",
+        "status": "running",
+        "retry_count": 0
+      }
+    ]
+  }
+}

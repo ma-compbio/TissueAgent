@@ -106,15 +106,44 @@ def serialize_subagent_state(
     """
     avatar = SUBAGENT_BADGES.get(agent_name, SUBAGENT_DEFAULT_AVATAR)
 
+    # Skills assigned to the plan step this sub-agent executed, stashed onto the
+    # state dict by ``node_factories._agent_invocation_tool``. Absent for legacy
+    # sessions and for non-dict raw states — default to an empty list.
+    skills: List[str] = []
+    if isinstance(final_state, dict):
+        raw_skills = final_state.get("step_skills")
+        if isinstance(raw_skills, list):
+            skills = [str(s) for s in raw_skills]
+
+    # Fully-rendered system prompt the sub-agent ran with, written into state by
+    # ``create_agent_node`` (and the hypothesis agent's node). Absent for legacy
+    # sessions and non-dict raw states.
+    system_prompt: Optional[str] = None
+    if isinstance(final_state, dict):
+        raw_prompt = final_state.get("system_prompt")
+        if isinstance(raw_prompt, str) and raw_prompt:
+            system_prompt = raw_prompt
+
     transcript: Optional[List[Dict]] = None
     if isinstance(final_state, dict) and final_state.get("messages"):
-        transcript = [serialize_message(msg) for msg in final_state["messages"]]
+        # Guard against non-BaseMessage entries. Legacy sessions saved before
+        # sub-agent transcripts were round-tripped properly hold the lossy
+        # ``str(BaseMessage)`` repr instead of message objects; serializing
+        # those would raise ``'str' object has no attribute 'content'`` and
+        # take down the whole WebSocket handshake. Skip them instead.
+        transcript = [
+            serialize_message(msg)
+            for msg in final_state["messages"]
+            if isinstance(msg, BaseMessage)
+        ]
 
     return {
         "tool_id": tool_id,
         "agent_name": agent_name,
         "avatar": avatar,
         "transcript": transcript,
+        "skills": skills,
+        "system_prompt": system_prompt,
         "raw_state": str(final_state) if not isinstance(final_state, dict) else None,
     }
 

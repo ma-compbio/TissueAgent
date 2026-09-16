@@ -1,0 +1,172 @@
+{
+  "schema_version": 3,
+  "archives": [
+    {
+      "filename": "papers-20260711T025044Z-2-001.zip",
+      "sha256": "9b53f47c1a9fe4e8105dc63defdab2380ee27ae50b45069445fc52f9457a4503",
+      "member_count": 39,
+      "source_paper_ids": [
+        "2023_NC_SpaCET",
+        "2023_Nature_KidneyCellStateAtlas",
+        "2025_NBE_spEMO",
+        "2025_NC_Kasumi",
+        "2025_NM_Spotiphy",
+        "2026_NBT_ovrlpy",
+        "2026_NC_Renoir",
+        "2026_NG_INSPIRE"
+      ]
+    },
+    {
+      "filename": "papers-20260721T071755Z-1-001.zip",
+      "sha256": "f2a15c5fa374024651d3f44cbb3d8a08a6b815118ea5ebe6348307e6e9e088b7",
+      "member_count": 24,
+      "source_paper_ids": [
+        "2023_NC_NeST",
+        "2025_NM_STORIES",
+        "2026_NC_RESCUE"
+      ]
+    }
+  ],
+  "frozen_artifacts": {
+    "public_contexts_sha256": "1ac5275bf06c61a1b216601d22b1799b46132208baad102c38f168acbaafaffe",
+    "ground_truth_sha256": "eac2c5a57dec92da40681d3fea2379a167f80ccb06e0a778be6417b39a8a5b6b",
+    "scope_adjudication_sha256": "77c5977ff93ce7e9519ebb243481b780b8dca69169db8c121a614f2979e7fc99",
+    "spatial_overview_sha256": "34954dad7d5535ecad3d92e88d9cdc2a2fa9c90b5e3c7f8cad7ed4402a75114e",
+    "context_rule_version": "cellbench_intro_only_v2",
+    "ground_truth_schema_version": 2
+  },
+  "public_context_protocol": {
+    "id": "cellbench_intro_only_v2",
+    "definition": "Use two title-free introduction or background paragraphs only; exclude study-resource inventories, results, methods, and enumerations of analyses enabled by the data."
+  },
+  "spatial_overview_provenance": {
+    "source_path": "src/agents/agent_registry/cellvoyager_agent/upstream/cellvoyager/prompts/DeepResearch_Analyses.txt",
+    "source_sha256": "bd5f928be4745fe2380d513282e8d5517c30f0f704efcda0adc131b0a01d123d",
+    "adaptation": "Archive-blind seven-category spatial terminology adaptation"
+  },
+  "curation_protocol": {
+    "id": "cellbench_fig12_spatial_v2",
+    "definition": "Extract a detailed scientific context that does not reveal the analyses, then extract a comprehensive organized list of independently reported analyses that were actually performed and whose core input or inference depends on spatial omics or explicit tissue coordinates. Exclude stand-alone single-cell, bulk, clinical, genetic, and pathology-only analyses.",
+    "review": "Two independent extraction passes followed by analysis-level PDF adjudication, a final spatial-core scope audit, and page, section, and anchor evidence."
+  },
+  "curation_summary": {
+    "included_papers": 11,
+    "final_analysis_labels": 112,
+    "analysis_counts": {
+      "spcb_377c86462b": 9,
+      "spcb_3d9b1bdbd6": 12,
+      "spcb_4e967b72a1": 11,
+      "spcb_5940c8e4ea": 11,
+      "spcb_732f7ca9d3": 9,
+      "spcb_7e74c983be": 5,
+      "spcb_b4769977eb": 9,
+      "spcb_f4c0753473": 12,
+      "spcb_22b1a945e2": 11,
+      "spcb_fa0ad80e86": 11,
+      "spcb_783779446a": 12
+    },
+    "adjudication_status": "complete"
+  },
+  "eligibility_rule": "Include only papers whose primary research question or main result depends on spatial coordinates, tissue organization, or spatial-omics measurements.",
+  "papers": [
+    {
+      "opaque_id": "spcb_f4c0753473",
+      "source_paper_id": "2023_NC_SpaCET",
+      "title": "Estimation of cell lineages in tumors from spatial transcriptomics data",
+      "pdf_pages": 13,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["SpaCET", "Spatial Cellular Estimator for Tumors"]
+    },
+    {
+      "opaque_id": "spcb_7e74c983be",
+      "source_paper_id": "2023_Nature_KidneyCellStateAtlas",
+      "title": "An atlas of healthy and injured cell states and niches in the human kidney",
+      "pdf_pages": 50,
+      "paper_type": "atlas_resource",
+      "eligibility": "include",
+      "redaction_terms": ["HuBMAP", "KPMP", "Kidney Precision Medicine Project"]
+    },
+    {
+      "opaque_id": "spcb_5940c8e4ea",
+      "source_paper_id": "2025_NBE_spEMO",
+      "title": "Leveraging multi-modal foundation models for analysing spatial multi-omic and histopathology data",
+      "pdf_pages": 38,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["spEMO"]
+    },
+    {
+      "opaque_id": "spcb_b4769977eb",
+      "source_paper_id": "2025_NC_Kasumi",
+      "title": "Learning tissue representation by identification of persistent local patterns in spatial omics data",
+      "pdf_pages": 15,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["Kasumi", "persistent local patterns", "MISTy"]
+    },
+    {
+      "opaque_id": "spcb_4e967b72a1",
+      "source_paper_id": "2025_NM_Spotiphy",
+      "title": "Spotiphy enables single-cell spatial whole transcriptomics across an entire section",
+      "pdf_pages": 32,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["Spotiphy", "iscRNA"]
+    },
+    {
+      "opaque_id": "spcb_732f7ca9d3",
+      "source_paper_id": "2026_NBT_ovrlpy",
+      "title": "Identifying 3D signal overlaps in spatial transcriptomics data with ovrlpy",
+      "pdf_pages": 18,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["ovrlpy", "vertical signal integrity", "VSI"]
+    },
+    {
+      "opaque_id": "spcb_377c86462b",
+      "source_paper_id": "2026_NC_Renoir",
+      "title": "Charting spatial ligand-target activity using Renoir",
+      "pdf_pages": 23,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["Renoir"]
+    },
+    {
+      "opaque_id": "spcb_3d9b1bdbd6",
+      "source_paper_id": "2026_NG_INSPIRE",
+      "title": "Interpretable, flexible and spatially aware integration of multiple spatial transcriptomics datasets from diverse sources",
+      "pdf_pages": 23,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["INSPIRE"]
+    },
+    {
+      "opaque_id": "spcb_22b1a945e2",
+      "source_paper_id": "2023_NC_NeST",
+      "title": "NeST: nested hierarchical structure identification in spatial transcriptomic data",
+      "pdf_pages": 17,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["NeST", "coexpression hotspot"]
+    },
+    {
+      "opaque_id": "spcb_fa0ad80e86",
+      "source_paper_id": "2025_NM_STORIES",
+      "title": "STORIES: learning cell fate landscapes from spatial transcriptomics using optimal transport",
+      "pdf_pages": 32,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["STORIES", "SpatioTemporal Omics eneRgIES", "FGW"]
+    },
+    {
+      "opaque_id": "spcb_783779446a",
+      "source_paper_id": "2026_NC_RESCUE",
+      "title": "RESCUE: recovery of unattributed expression patterns in spatial transcriptomics",
+      "pdf_pages": 15,
+      "paper_type": "computational_method",
+      "eligibility": "include",
+      "redaction_terms": ["RESCUE", "unattributed transcriptome"]
+    }
+  ]
+}

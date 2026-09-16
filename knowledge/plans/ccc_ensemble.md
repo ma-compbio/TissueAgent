@@ -2,63 +2,123 @@
 name: ccc_ensemble
 status: enabled
 description: >
-  Ensemble cell-cell communication analysis on spatial transcriptomics data:
-  runs LIANA+, COMMOT, and stLearn on the same preprocessed object, then
-  aggregates per-(LR, sender, receiver) results across methods via Robust
-  Rank Aggregation. Produces a consensus ranked table, an intersection
-  shortlist of LRs significant under all three methods, and three figures.
+  Ensemble cell-cell communication on spatial transcriptomics: run four
+  complementary members — LIANA+ (non-spatial expression consensus), COMMOT
+  (spatial optimal transport), stLearn (spatial co-expression) and decoupler+PROGENy
+  (downstream transcriptional response) — on ONE shared monomeric ligand-receptor
+  resource and one immutable base object, then combine per-LR results by the mean of
+  the four members' percentile ranks. Produces a single ranked ensemble table of
+  ligand-receptor pairs supported across the expression, spatial and downstream axes.
 ---
 
 ## Inputs
-- AnnData (.h5ad) with .obsm['spatial'] (or obs['x','y']), human or mouse gene symbols, and a cell-type column in .obs.
+- AnnData (.h5ad) for **one spatial section** with `.obsm['spatial']` (native-unit coords, not
+  standardized), raw counts, human or mouse **gene symbols**, and a discrete cell-type / domain
+  label column in `.obs` (≥2 categories, ≥10 cells each). If no labels ship with the data,
+  derive spatial domains by unsupervised clustering in Step 1.
 
 ## Outputs
-- ccc_consensus_contact.csv — RRA consensus over (LR, sender, receiver) triples in the **contact/juxtacrine** regime (COMMOT `dis_thr_contact`; LIANA `bandwidth = 2 × median_nn`; stLearn direct-neighbour / gridded contact scale).
-- ccc_consensus_diffusion.csv — RRA consensus in the **secreted/diffusion** regime (larger dis_thr / bandwidth / gridded distance).
-- ccc_high_confidence.csv — intersection shortlist: triples significant (FDR < 0.05) in ≥2 methods AND present in ≥2 methods' LR universes (guarded against method-panel disjointness).
-- ccc_panel_coverage.csv — per-method LR-universe size, filtered size, and the pairwise intersection (essential to interpret consensus rankings).
-- figures/ccc_consensus_dotplot.png — top-N consensus interactions (RRA p-value); one panel per regime.
-- figures/ccc_method_overlap.png — UpSet/Venn of per-method significant sets, per regime.
-- figures/ccc_sender_receiver_chord.png — chord of cluster→cluster aggregate signal from the shortlist.
+- **ccc_ensemble.csv** — the final ranked table, one row per LR pair scored by **all four**
+  members, sorted by `ensemble_score` descending. Columns: `ligand, receptor, liana_score,
+  commot_score, stlearn_score, decoupler_score, liana_pct, commot_pct, stlearn_pct,
+  decoupler_pct, ensemble_score`. Ligand/receptor are single genes (shared monomeric resource);
+  `ensemble_score ∈ [0,1]` is the mean of the four tools' percentile ranks. The top rows are the
+  high-confidence ensemble calls.
+- Intermediates (all **data** files): `ccc_base.h5ad` (immutable base, carries `obs['_dact']`),
+  `ccc_lr_common.csv` (shared resource), `liana_scores.csv`, `commot_scores.csv`,
+  `stlearn_scores.csv`, `decoupler_scores.csv`, `logs/ccc_data_prep.json`.
 
-## Step Sketch
-Preprocess (with platform calibration) → LIANA+ (rank_aggregate + bivariate) → COMMOT (per-regime) → stLearn (Visium direct OR gridded imaging) → Aggregate + Plot per regime (5 steps total)
+## Step sketch
+Prep + shared resource + PROGENy activity → LIANA (rank_aggregate) → COMMOT (spatial OT) →
+stLearn (spatial co-expression) → decoupler (downstream response) → mean-of-percentile-ranks
+ensemble (6 steps).
+
+## ⚠️ Fixed, validated pipeline — do not deviate
+This ensemble is **exactly** LIANA+ ⊕ COMMOT ⊕ stLearn ⊕ decoupler combined by a
+mean-of-percentile-ranks consensus, reproduced from a validated analysis. Each step **ships a
+runnable script** under its skill's `scripts/` folder (materialized at
+`project/skills/<skill>/scripts/`); run it in the kernel with `%run` (or import its function) —
+do not paste code from the skill and do not reimplement the method. Cross-step communication
+flows only through the saved **data** artifacts (`ccc_base.h5ad`, `ccc_lr_common.csv`,
+`*_scores.csv`, the JSON log). Run each skill's shipped script **exactly** as written (do not
+edit the script bodies). Do **not**: drop or add a member
+(the four are fixed), add a second COMMOT/stLearn distance regime, add cluster-level permutation
+tests, change the scores or the mean-of-percentile-ranks combiner (not `min`, not weighted), add
+p-values/FDR, or add any evaluation/benchmark metrics. If a step fails, fix the environment or
+the inputs — never the method.
+
+## Architecture (read once)
+The four members measure genuinely different, weakly-correlated quantities, and that is the point:
+- **LIANA+ `rank_aggregate`** — non-spatial expression consensus. Rewards specific, strong LR
+  co-expression across cell groups; blind to physical location.
+- **COMMOT `spatial_communication`** — spatial optimal transport. Scores a pair only if ligand
+  can be routed to nearby receptor within a distance threshold; spatially precise but ignores
+  cell-group specificity and can route weak signal.
+- **stLearn `cci.lr`** — spatial co-expression. Rewards a ligand spot whose neighbours express
+  the receptor (and vice versa); a local co-presence statistic on the same radius graph,
+  complementary to COMMOT's global transport (the two are ~0.84 correlated).
+- **decoupler + PROGENy** — downstream transcriptional response. Asks whether the receiving
+  cells show a downstream pathway response; built on footprint genes disjoint from the LR genes,
+  so it is orthogonal to the three co-presence/routing members by construction (per-pair Spearman
+  ≈ 0.02–0.17 vs the others). This is the decorrelated member that lifts the ensemble above the
+  individual tools — the earlier 2-member (LIANA+COMMOT) ensemble was mid-pack; adding the
+  orthogonal spatial and downstream axes moves it to the top of a balanced multi-metric panel.
+
+The ensemble promotes a pair only when it ranks high **across these axes**, which strips each
+member's characteristic false positives. All four run on **one shared monomeric LR resource**
+(built in Step 1) — the members' native databases overlap only ~0.17 Jaccard, so without a
+shared resource "consensus" would measure database agreement, not method agreement. All spatial
+thresholds stay in the **native coordinate units** the methods consume (a multiple of
+`median_nn`); COMMOT does not convert pixels to µm.
 
 ## Details
-- Step 1 — Apply the `ccc-data-prep` skill. Produces the single, shared `adata` **and** the platform calibration record `logs/ccc_data_prep.json` containing `{platform, resolution_mode, coord_unit, median_nn_um, spot_diameter_um, small_panel}`. Every downstream skill reads this JSON and refuses to run without `median_nn_um`. Detects and REFUSES pre-normalized coordinates.
-- Step 2 — Apply the `ccc-liana` skill. Runs `li.mt.rank_aggregate` (cluster-level, orthogonal check) AND, on any spatial input, ALSO runs `li.mt.bivariate` on the `spatial_neighbors` graph with `bandwidth` derived from `median_nn_um`. Writes `liana_res.csv` and (when spatial) `liana_bivariate.csv`. `expr_prop` auto-drops to 0.05 for small (<1000 gene) imaging panels.
-- Step 3 — Apply the `ccc-commot` skill. Runs `ct.tl.spatial_communication` **three times, once per CellChatDB signaling category** (`Cell-Cell Contact`, `Secreted Signaling`, `ECM-Receptor`) with `dis_thr_contact / dis_thr_secreted / dis_thr_ecm` derived from `median_nn_um`. Each pathway gets its own `ct.tl.cluster_communication(n_permutations=500)`. Writes `commot_cluster_results.csv` with `signaling_type` + `dis_thr_um` tags on every row.
-- Step 4 — Apply the `ccc-stlearn` skill. On `spot_multicell` platforms: direct path (`distance=None`, `spot_mixtures=True` if deconv exists else `False`). On `single_cell` platforms: **grid first** (`st.tl.cci.grid(n_row=125, n_col=125, use_label='_ccc_cell_type')`) per stLearn's Xenium tutorial, then `distance = 3 × median_nn_um`, `spot_mixtures=True`. Writes `stlearn_lr_summary.csv`, `stlearn_per_lr_cci.csv`, and records `gridded=True/False` in `logs/ccc_stlearn.json`.
-- Step 5 — Aggregate and plot. Sub-steps:
+- **Step 1 — [[ccc-data-prep]].** Runs the shipped `ccc_data_prep.py` (via `%run` with
+  `--adata/--cell-type/--species` flags), which writes the **immutable** `ccc_base.h5ad` (log1p `.X`,
+  `layers['counts']`, `obs['_ct']`, native-unit `obsm['spatial']`, and `obs['_dact']` = the
+  PROGENy per-cell response amplitude); the **shared resource** `ccc_lr_common.csv` (monomeric,
+  expression-filtered, capped at `MAX_PAIRS`); and
+  `logs/ccc_data_prep.json` with `species`, `median_nn` (native units), `small_panel`,
+  `dis_mult`, `knn_k`, `n_footprint_genes`. Subsets to a contiguous central patch (`crop_central`,
+  `CROP_N`) and, **crucially, computes the PROGENy activity on the full transcriptome BEFORE
+  gene-slimming** (footprint genes are mostly non-LR), then `slim_to_lr_genes`. Every downstream
+  skill **copies** the base — nothing overwrites it.
+- **Step 2 — [[ccc-liana]].** `run_liana` → LIANA+ `rank_aggregate` on the shared resource
+  (`use_raw=False`), scoring each pair `liana_score = 1 - min magnitude_rank`. Emits
+  `liana_scores.csv` (`ligand, receptor, liana_score`).
+- **Step 3 — [[ccc-commot]].** `run_commot` → COMMOT `spatial_communication` on the shared
+  resource at a single `dis_thr = 1.5 × median_nn`, scoring each routed pair by total OT flow.
+  No global random subsampling (it invalidates the OT solution). Emits `commot_scores.csv`
+  (`ligand, receptor, commot_score`).
+- **Step 4 — [[ccc-stlearn]].** `run_stlearn` → the vectorised stLearn `cci.lr` co-expression
+  statistic on the shared resource at the **same** `dis_thr = 1.5 × median_nn`, scoring each
+  pair by its summed neighbourhood co-expression. Emits `stlearn_scores.csv`
+  (`ligand, receptor, stlearn_score`).
+- **Step 5 — [[ccc-decoupler]].** `run_decoupler` → on an independent kNN graph, scores each
+  pair by whether its actively-receiving cells (receptor present AND ligand arriving) co-locate
+  with the downstream PROGENy response `obs['_dact']` from Step 1. Emits `decoupler_scores.csv`
+  (`ligand, receptor, decoupler_score`).
+- **Step 6 — [[ccc-aggregate]].** `build_ensemble` → over the pairs scored by **all four**
+  members, percentile-rank each score and take the **mean**. Emits the final `ccc_ensemble.csv`,
+  sorted by `ensemble_score`.
 
-    **5a. Panel-coverage sanity check.** Build `ccc_panel_coverage.csv` reporting per-method: `n_lr_loaded`, `n_lr_after_expression_filter`, and pairwise intersection sizes. If pairwise intersection <20 LRs, warn — RRA aggregation across near-disjoint LR universes is unreliable.
+## Evaluation criteria (of the run, not the method)
+- `file_exists(ccc_ensemble.csv)` and it is non-empty (all four `*_scores.csv` had overlapping
+  LR pairs; empty ⇒ a run failure upstream, not a null result).
+- Each member is produced by running its skill's shipped script
+  (`%run project/skills/<skill>/scripts/*.py`) — not by pasting or reimplementing the code.
+  `ccc_base.h5ad`, `ccc_lr_common.csv`, `liana_scores.csv`, `commot_scores.csv`,
+  `stlearn_scores.csv`, `decoupler_scores.csv` all exist.
+- Every ensemble row has all four member scores populated (the universe is the intersection by
+  design) and single-gene ligand/receptor.
+- `ccc_base.h5ad` carries `obs['_dact']`; `logs/ccc_data_prep.json` has `median_nn` and
+  `n_footprint_genes` populated; COMMOT and stLearn used `dis_thr = dis_mult × median_nn`.
+- The cell/domain column used by LIANA is `_ct`.
 
-    **5b. Split by regime.** Route each method's rows into `contact` / `diffusion` buckets:
-    - LIANA+ `rank_aggregate` → `diffusion` bucket (it's cluster-level, no spatial scale; treat as the paracrine/co-expression signal).
-    - LIANA+ `bivariate` → `contact` bucket (`bandwidth = 2 × median_nn_um` is contact-scale).
-    - COMMOT rows → routed by their `signaling_type` column: `Cell-Cell Contact` → `contact`, `Secreted Signaling` + `ECM-Receptor` → `diffusion`.
-    - stLearn rows → `contact` when direct-neighbour or gridded contact-distance; when in Visium direct mode, treat as diffusion.
-
-    **5c. Per-method p-value harmonization.** For each method build `[ligand, receptor, source, target, method, pvalue, rank_normalized]`:
-    - LIANA+ `rank_aggregate` → use `specificity_rank` as pvalue.
-    - LIANA+ `bivariate` → use the local-score global p-value from Moran's R (or `1 - |cosine|` fallback).
-    - COMMOT → use the cluster-pair permutation `pvalue` directly.
-    - **stLearn (fix)** → RANK `n_sig_spots` within-method as `rank(method='average', pct=True)`, **only for LRs with n_spots ≥ min_spots**. Do NOT use the previous `1/(1 + n_sig_spots)` collapse — it ties every zero-hit LR at exactly the same value and biases the tail.
-
-    **5d. Segmentation-spillover autocrine filter (single-cell platforms only).** For `resolution_mode == 'single_cell'`, drop triples where `source == target` AND the contributing cell-pair distance distribution has median < 1.5 × `median_nn_um` (i.e. immediate segmentation neighbours). Xenium/MERFISH boundary spillover produces false-positive autocrine calls that would dominate the shortlist.
-
-    **5e. RRA within each regime.** For each `(ligand, receptor, source, target)` triple present in ≥2 methods AND in ≥2 methods' LR universes, apply Robust Rank Aggregation (Stuart's method) over per-method normalized ranks → `rra_pvalue`, then BH-FDR → `rra_fdr`. Emit `ccc_consensus_contact.csv` and `ccc_consensus_diffusion.csv`, each sorted by `rra_pvalue`.
-
-    **5f. High-confidence shortlist.** Triples with per-method raw `pvalue < 0.05` in ≥2 methods within the SAME regime → `ccc_high_confidence.csv` with a `regime` column.
-
-    **5g. Plot per regime.** LIANA `li.pl.dotplot` over top-20 RRA triples per regime (two panels); `upsetplot` UpSet of significant sets per regime; `pycirclize` chord of sender→receiver aggregate signal from the shortlist. Save as PNG (dpi=200) AND PDF.
-
-## Evaluation Criteria
-- file_exists(ccc_consensus_contact.csv) OR file_exists(ccc_consensus_diffusion.csv) — at least one regime must have rows (an ensemble producing zero contact AND zero diffusion is a run failure, not a null result).
-- file_exists(ccc_panel_coverage.csv) AND per-method pairwise LR intersection ≥ 20.
-- file_exists(ccc_high_confidence.csv).
-- file_exists(figures/ccc_consensus_dotplot.png), figures/ccc_method_overlap.png, figures/ccc_sender_receiver_chord.png.
-- Every triple in the consensus CSVs has a non-null rank from ≥2 methods and an `rra_pvalue` in [0, 1].
-- The cell-type column used by all three methods is identical (assert against `_ccc_cell_type` in step 5).
-- `logs/ccc_data_prep.json` has `median_nn_um` populated; `logs/ccc_commot.json` records `n_permutations >= 500` per regime; `logs/ccc_stlearn.json` records `n_permutations >= 500` and the chosen `spot_mixtures`.
-- For `resolution_mode == 'single_cell'`, the autocrine-spillover filter was applied (record the pre/post row counts in a diagnostic column of the consensus CSVs).
+## Notes on the members (not dataset-specific)
+- **stLearn ≈ COMMOT** (~0.84 correlated) — keep both anyway; together they still add a spatial
+  axis decorrelated from expression and downstream, and dropping stLearn is a different method.
+- **decoupler is the orthogonal member but the least reproducible** — it is what lifts the
+  ensemble on spatial coherence and cell-type adjacency, at some cost to cross-fold stability.
+  The `mean` combiner (not the old `min`) is what recovers its gains. On very sparse targeted-
+  imaging panels its PROGENy footprint overlap is small (~100 genes) and it is the least
+  reliable axis; report `n_footprint_genes` but do not drop the member.

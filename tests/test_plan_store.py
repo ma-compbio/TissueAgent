@@ -168,7 +168,7 @@ actual_outputs: []
 
 
 def test_provenance_round_trip() -> None:
-    """New-style provenance (template_names + decision) survives write -> read."""
+    """Provenance (template_names + justification) survives write -> read."""
     with tempfile.TemporaryDirectory() as tmp:
         store = PlanStore(plan_dir=Path(tmp))
         doc = PlanDocument(
@@ -177,14 +177,17 @@ def test_provenance_round_trip() -> None:
             steps=[PlanStep(id=1, title="Step", description="d")],
             provenance=PlanProvenance(
                 template_names=["lr_analysis", "spatial_scatter"],
-                decision="ADAPT",
+                justification="Adapted the LR template and added a spatial scatter step.",
             ),
         )
         store.write(doc)
         loaded = store.read()
         assert loaded.provenance is not None
         assert loaded.provenance.template_names == ["lr_analysis", "spatial_scatter"]
-        assert loaded.provenance.decision == "ADAPT"
+        assert (
+            loaded.provenance.justification
+            == "Adapted the LR template and added a spatial scatter step."
+        )
         print("OK: provenance_round_trip")
 
 
@@ -196,7 +199,7 @@ def test_denovo_provenance_round_trip() -> None:
             status="draft",
             user_request="r",
             steps=[PlanStep(id=1, title="T", description="d")],
-            provenance=PlanProvenance(template_names=[], decision=None),
+            provenance=PlanProvenance(template_names=[], justification=""),
         )
         store.write(doc)
         loaded = store.read()

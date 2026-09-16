@@ -1,0 +1,15 @@
+{
+  "SKILL.md": "af99fa0ad3f05bd0b12edc16c196f7a5010343c8d9a9d127d5db111aa076d45b",
+  "references/debugging-playbook.md": "071eecbc3f88c03e2c21079a58087a99cc31d66b260f58841f21314e13d4081c",
+  "references/domain-recipes.md": "f57c2cbb9af6a678512ed77791d7c5aa4f7d75dbc420ffe7e4d9f16f213b3a61",
+  "references/fidelity-check.md": "56cebc41eaaa464868ed009943770fa50023f64738274b4183c4e22be5632b6d",
+  "references/panel-geometry.md": "8b537d7bf5850a2b1913c97fd5b13b08d784908259a1a29cee8daca00a7e47cd",
+  "references/reflect-and-retry.md": "cf8d8b26946cf34de775de8393df5ca2c18fcd08dbadc57b02db5424818eea23",
+  "scripts/build_colormap.py": "c8f3dd4244e3c473bee997889b0587418503c5bc337cddf44c3eec5cd940c3cb",
+  "scripts/compare_figures.py": "1277973a85467b9e6da3b27963c6db39cd949f9eddb181116fa7ebc1819c2236",
+  "scripts/env_preflight.py": "4a1ccd523e19be4c5816d0105078eeaf781ead9fb97a2ff728c7bbf87c68a110",
+  "scripts/extract_pdf_figure.py": "ccdb9e884e0a0a747fc4bfd0d379f12727f1d671efeeb5c307ce939126836369",
+  "scripts/extract_reference_spec.py": "11230479a8a92cf0aebae5ef206dc770e914c947e63e84b078e6169709d3a514",
+  "scripts/inspect_dataset.py": "de8edbc72c5083b45d03e241534d2427538b4c76d243f00eb01ee5c481f9442c",
+  "scripts/requirements.txt": "49c556bbd346611c79eb7364cf01714c291824fa6fd94bcafef8201dbddbff56"
+}

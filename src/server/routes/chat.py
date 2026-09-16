@@ -361,6 +361,7 @@ async def _handle_user_message(ws: WebSocket, data: dict):
     emit_message(user_message)
 
     session.agent_state["messages"].append(user_message)
+    session.agent_state["original_user_request"] = text
     session.agent_state.setdefault("replan_count", 0)
     session.agent_state.setdefault("replan_history", [])
     session.agent_state.setdefault("recruiter_retry_count", 0)
@@ -871,6 +872,10 @@ async def _rewind_to_planner_with_feedback(ws: WebSocket, text: str) -> None:
     )
     emit_message(feedback_message)
     session.agent_state["messages"].append(feedback_message)
+    original_request = str(session.agent_state.get("original_user_request", "")).strip()
+    session.agent_state["original_user_request"] = (
+        f"{original_request}\n\n[Copilot feedback from user] {feedback}".strip()
+    )
     session.append_display_message(feedback_message)
     await ws.send_json({
         "type": "message",
@@ -974,14 +979,22 @@ async def _drain_queues(ws: WebSocket):
                 })
 
             elif event_type == "subagent_message":
+                data = {
+                    "invocation_id": payload["invocation_id"],
+                    "agent_name": payload["agent_name"],
+                    "message": serialize_message(payload["message"]),
+                }
+                if payload.get("stream_id") is not None:
+                    data["stream_id"] = payload["stream_id"]
+                if payload.get("source") is not None:
+                    data["source"] = payload["source"]
                 await ws.send_json({
                     "type": "subagent_message",
-                    "data": {
-                        "invocation_id": payload["invocation_id"],
-                        "agent_name": payload["agent_name"],
-                        "message": serialize_message(payload["message"]),
-                    },
+                    "data": data,
                 })
+
+            elif event_type == "subagent_token":
+                await ws.send_json({"type": "subagent_token", "data": payload})
 
             elif event_type == "subagent_end":
                 await ws.send_json({

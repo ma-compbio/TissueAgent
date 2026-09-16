@@ -12,13 +12,41 @@ import re
 from pathlib import Path
 from typing import Literal
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 
 from agents.agent_utils import truncate_output
 from agents.workspace_paths import resolve_project_output, workspace_relative
 from config import ACTIVE_PROJECT_DIR, DATA_DIR, LIBRARY_DIR, MAX_OUTPUT_CHARS, NOTEBOOK_DIR
 
 ### file read tools
+
+
+# Magic-byte signatures for the image formats providers accept. Extension-based
+# detection (``mimetypes.guess_type``) is not enough: plotting code routinely
+# writes PNG bytes to a ``.jpg`` path, and Anthropic validates the declared media
+# type against the actual bytes and rejects the mismatch with a 400 ("the image
+# appears to be a image/png image"). OpenAI accepts it, which is why this only
+# surfaces on Claude. Sniff the content and let the bytes win.
+_IMAGE_MAGIC: tuple[tuple[bytes, str], ...] = (
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"GIF87a", "image/gif"),
+    (b"GIF89a", "image/gif"),
+)
+
+
+def _sniff_image_mime(raw: bytes, fallback: str | None) -> str | None:
+    """Return the media type implied by *raw*'s magic bytes, else *fallback*.
+
+    WEBP needs a two-part check ("RIFF" container + "WEBP" form type), so it is
+    handled separately from the simple prefix table above.
+    """
+    for signature, mime in _IMAGE_MAGIC:
+        if raw.startswith(signature):
+            return mime
+    if raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":
+        return "image/webp"
+    return fallback
 
 
 # Roots the agent is allowed to traverse. Anything else inside DATA_DIR
@@ -98,7 +126,7 @@ def _glob(pattern: str) -> str:
     matches = sorted({str(p.relative_to(DATA_DIR)) for p in _iter_visible_files(pattern)})
     if not matches:
         return f"No matches for '{pattern}'."
-    return truncate_output("\n".join(matches), MAX_OUTPUT_CHARS)
+    return truncate_output("\n".join(matches), MAX_OUTPUT_CHARS, spill=True)
 
 
 # Cap grep at 10 MB per file. Larger files are skipped rather than pulled
@@ -139,7 +167,7 @@ def _grep(pattern: str, include: str = "**/*") -> str:
             continue
     if not hits:
         return "No matches found."
-    return truncate_output("\n".join(hits), MAX_OUTPUT_CHARS)
+    return truncate_output("\n".join(hits), MAX_OUTPUT_CHARS, spill=True)
 
 
 def _read(file_path: str, offset: int = 1, limit: int | None = None):
@@ -157,7 +185,10 @@ def _read(file_path: str, offset: int = 1, limit: int | None = None):
 
         mime, _ = mimetypes.guess_type(str(path))
         if mime and mime.startswith("image/"):
-            b64 = base64.b64encode(path.read_bytes()).decode()
+            raw = path.read_bytes()
+            # Trust the bytes over the extension — see _sniff_image_mime.
+            mime = _sniff_image_mime(raw, mime)
+            b64 = base64.b64encode(raw).decode()
             return [
                 {"type": "text", "text": f"Image: {file_path}"},
                 {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
@@ -177,7 +208,17 @@ def _read(file_path: str, offset: int = 1, limit: int | None = None):
             )
         end = start + limit if limit is not None else len(lines)
         selected = "".join(lines[start:end])
-        return truncate_output(selected, MAX_OUTPUT_CHARS)
+        # No spill here: the content is already a file on disk, and the caller
+        # holds its path. Spilling would write a redundant copy and cite a worse
+        # path than the one it just used. Paging via offset/limit is the recovery
+        # mechanism — that's what the notice below points at.
+        truncated = truncate_output(selected, MAX_OUTPUT_CHARS)
+        if truncated is not selected:
+            truncated += (
+                f"\n\n[Re-read {file_path} with a larger offset to see the rest "
+                f"(showing from line {offset} of {len(lines)}).]"
+            )
+        return truncated
     except Exception as e:
         return f"Error: {e}"
 

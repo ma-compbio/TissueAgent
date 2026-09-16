@@ -31,7 +31,14 @@ from agents.agent_defns import (
 )
 from agents.agent_utils import substitute_shared_prompts, truncate_output
 from agents.planner_agent.prompt import PlannerReplanPrompt
-from config import MAX_PLANNER_RETRIES, MAX_RECRUITER_RETRIES, MAX_REPLANS
+from config import (
+    MANAGER_STEP_RESERVE,
+    MAX_PLANNER_RETRIES,
+    MAX_RECRUITER_RETRIES,
+    MAX_REPLANS,
+    REPLAN_STEP_COST,
+    REPORTER_STEP_RESERVE,
+)
 from agents.manager_agent.tools import create_manager_step_tools
 from graph.message_filters import (
     filter_for_execution_phase,
@@ -42,12 +49,15 @@ from graph.message_filters import (
 )
 from graph.node_factories import (
     AgentState,
+    BudgetAction,
+    OrchestratorState,
     create_agent_invocation_tool,
     create_agent_node,
     create_step_context_resolver,
     create_tool_node,
 )
 from graph.plan_output import create_planner_state_update, create_recruiter_state_update
+from graph.replan_state import effective_replan_count
 
 
 class TissueAgentState(MessagesState):
@@ -66,6 +76,8 @@ def create_tissueagent_graph(
     state_queue: Queue,
     model_proc_fn: Callable[..., BaseChatModel],
     domain_agents: list | None = None,
+    *,
+    allow_targeted_replanning: bool = True,
     **custom_agent_kwargs,
 ) -> StateGraph:
     """Build the full TissueAgent state graph (uncompiled).
@@ -87,6 +99,10 @@ def create_tissueagent_graph(
         domain_agents: Optional override of the recruitable domain-agent list. Defaults to
             :data:`AgentDefns`. Benchmark ablations may pass a filtered copy (e.g. without
             ``cellvoyager_agent``).
+        allow_targeted_replanning: Whether an evaluator ``ROUTE: REPLAN`` verdict may return to
+            the planner. Set to ``False`` for the static-plan architecture ablation: planning,
+            recruitment, execution, evaluation, and reporting remain intact, but the initial plan
+            cannot be revised after execution begins.
         **custom_agent_kwargs: Extra keyword arguments forwarded to :class:`CustomAgent`
             constructors. Each ctor receives only the kwargs it declares in its signature (filtered
             via ``inspect.signature``). For example, ``kernel_client=...`` is consumed by the coding
@@ -235,7 +251,7 @@ def create_tissueagent_graph(
         prior planner response (not the recruiter-annotated plan_store), and the
         message filter strips the same response so it isn't shown twice.
         """
-        if int(state.get("replan_count", 0) or 0) > 0:
+        if effective_replan_count(state) > 0:
             previous_plan = find_last_planner_final_content(state.get("messages", []))
             return replan_prompt.replace("{{previous_plan}}", previous_plan)
         return initial_planner_prompt
@@ -266,6 +282,22 @@ def create_tissueagent_graph(
     manager_node_id = assign_agent_node_id(ManagerAgent.id)
     manager_tool_node_id = assign_tool_node_id(ManagerAgent.id)
 
+    def remaining_steps(state) -> int | None:
+        value = state.get("remaining_steps")
+        return int(value) if value is not None else None
+
+    def manager_budget_guard(state) -> BudgetAction | None:
+        remaining = remaining_steps(state)
+        if remaining is not None and remaining <= MANAGER_STEP_RESERVE:
+            return BudgetAction(
+                goto=evaluator_node_id,
+                message=(
+                    "Execution stopped because the remaining graph budget is reserved for "
+                    "evaluation and reporting. Evaluate the artifacts produced so far."
+                ),
+            )
+        return None
+
     ### Evaluator agent
 
     evaluator_model = model_proc_fn(EvaluatorAgent.model_ctor().bind_tools(EvaluatorAgent.tools))
@@ -274,6 +306,19 @@ def create_tissueagent_graph(
     evaluator_node_id = assign_agent_node_id(EvaluatorAgent.id)
     evaluator_tool_node_id = assign_tool_node_id(EvaluatorAgent.id)
 
+    def evaluator_budget_guard(state) -> BudgetAction | None:
+        remaining = remaining_steps(state)
+        if remaining is not None and remaining <= REPLAN_STEP_COST:
+            return BudgetAction(
+                goto=reporter_node_id,
+                message=(
+                    "Evaluation and replanning stopped because insufficient graph budget "
+                    "remains for another execution cycle. Report the available artifacts and "
+                    "any remaining limitations."
+                ),
+            )
+        return None
+
     ### Reporter agent
 
     reporter_model = model_proc_fn(ReporterAgent.model_ctor().bind_tools(ReporterAgent.tools))
@@ -281,6 +326,17 @@ def create_tissueagent_graph(
     reporter_prompt = substitute_shared_prompts(ReporterAgent.prompt)
     reporter_node_id = assign_agent_node_id(ReporterAgent.id)
     reporter_tool_node_id = assign_tool_node_id(ReporterAgent.id)
+
+    def reporter_budget_guard(state) -> BudgetAction | None:
+        remaining = remaining_steps(state)
+        if remaining is not None and remaining <= REPORTER_STEP_RESERVE:
+            return BudgetAction(
+                directive=(
+                    "The graph step budget is nearly exhausted. Give the final report now; "
+                    "do not call any tools."
+                )
+            )
+        return None
 
     # Create graph nodes
 
@@ -303,7 +359,7 @@ def create_tissueagent_graph(
         head = text.splitlines()[0].upper() if text else ""
         if head.startswith("ROUTE: DIRECT") or head.startswith("ROUTE: CLARIFY"):
             return END
-        if int(state.get("replan_count", 0) or 0) > 0:
+        if effective_replan_count(state) > 0:
             if state.get("planner_validation_errors"):
                 return planner_node_id
             return recruiter_node_id
@@ -367,6 +423,7 @@ def create_tissueagent_graph(
         manager_tool_node_id,
         evaluator_node_id,
         message_filter_fn=filter_for_manager(manager_node_id),
+        budget_guard=manager_budget_guard,
     )
 
     ### Evaluator node
@@ -376,8 +433,8 @@ def create_tissueagent_graph(
     def evaluator_state_update(response, state):
         content = (response.content or "").strip()
         head = content.splitlines()[0].upper() if content else ""
-        if head.startswith("ROUTE: REPLAN"):
-            prior = int(state.get("replan_count", 0) or 0)
+        if head.startswith("ROUTE: REPLAN") and allow_targeted_replanning:
+            prior = effective_replan_count(state)
             new_count = prior + 1
             history = list(state.get("replan_history", []))
             history.append(datetime.now(timezone.utc).isoformat())
@@ -404,7 +461,7 @@ def create_tissueagent_graph(
         """
         text = (response.content or "").strip()
         head = text.splitlines()[0].upper() if text else ""
-        if head.startswith("ROUTE: REPLAN"):
+        if head.startswith("ROUTE: REPLAN") and allow_targeted_replanning:
             return planner_node_id
         return reporter_node_id
 
@@ -416,6 +473,7 @@ def create_tissueagent_graph(
         exit_node=evaluator_router,
         state_update_fn=evaluator_state_update,
         message_filter_fn=filter_for_execution_phase,
+        budget_guard=evaluator_budget_guard,
     )
 
     ### Reporter node
@@ -428,9 +486,14 @@ def create_tissueagent_graph(
         reporter_tool_node_id,
         END,
         message_filter_fn=filter_for_execution_phase,
+        budget_guard=reporter_budget_guard,
     )
 
-    graph = StateGraph(TissueAgentState)
+    # OrchestratorState (not bare MessagesState): declares replan_count and the
+    # retry counters as channels so their Command(update=...) writes persist.
+    # With bare MessagesState those writes were dropped and every replan/retry
+    # cap was inert -- see OrchestratorState docstring.
+    graph = StateGraph(OrchestratorState)
 
     graph.add_edge(START, planner_node_id)
 

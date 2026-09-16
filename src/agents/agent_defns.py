@@ -10,11 +10,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 from langchain_core.language_models.chat_models import BaseChatModel
 
-import agents.agent_registry.coding_agent.model as CodingAgent
 import agents.agent_registry.hypothesis_agent.model as HypothesisAgent
+from agents.coding_agent_selection import coding_agent_ctor
 from agents.agent_registry.cell_annotater_agent.prompt import (
     CellTissueAnnotationDescription,
     CellTissueAnnotationPrompt,
@@ -28,6 +28,10 @@ from agents.agent_registry.critic_agent.prompt import (
 from agents.agent_registry.cellvoyager_agent import agent_definition as CellVoyagerAgentDef
 from agents.agent_registry.critic_agent.tools import CriticTools
 from agents.agent_registry.gene_agent import agent_definition as GeneAgentDef
+from agents.agent_registry.genegpt_agent import agent_definition as GeneGPTDef
+from agents.agent_registry.mllmcelltype_agent import (
+    agent_definition as MLLMCelltypeAgentDef,
+)
 from agents.agent_registry.hypothesis_agent.prompt import HypothesisAgentDescription
 from agents.agent_registry.pdf_reader_agent.prompt import (
     PDFReaderAgentDescription,
@@ -163,12 +167,13 @@ ReporterAgent = ReActAgent(
     model_ctor=DefaultModelCtor,
 )
 
+
 AgentDefns: list[ReActAgent | CustomAgent] = [
     CustomAgent(
         id="coding",
         name="Coding Agent",
         description=CodingAgentDescription,
-        ctor=CodingAgent.create_coding_agent,
+        ctor=coding_agent_ctor(),
     ),
     ReActAgent(
         id="pdf_reader",
@@ -225,6 +230,22 @@ AgentDefns: list[ReActAgent | CustomAgent] = [
         prompt=CellVoyagerAgentDef.prompt,
         tools=CellVoyagerAgentDef.tools,
         model_ctor=CellVoyagerAgentDef.model_ctor,
+    ),
+    ReActAgent(
+        id=MLLMCelltypeAgentDef.id,
+        name=MLLMCelltypeAgentDef.name,
+        description=MLLMCelltypeAgentDef.description,
+        prompt=MLLMCelltypeAgentDef.prompt,
+        tools=MLLMCelltypeAgentDef.tools,
+        model_ctor=MLLMCelltypeAgentDef.model_ctor,
+    ),
+    ReActAgent(
+        id=GeneGPTDef.id,
+        name=GeneGPTDef.name,
+        description=GeneGPTDef.description,
+        prompt=GeneGPTDef.prompt,
+        tools=GeneGPTDef.tools,
+        model_ctor=GeneGPTDef.model_ctor,
     ),
     ReActAgent(
         id="cell_annotator",
