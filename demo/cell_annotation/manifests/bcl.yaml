@@ -1,0 +1,60 @@
+schema_version: "1.0"
+dataset_id: bcl
+title: Primary central nervous system diffuse large B-cell lymphoma
+species: human
+tissue: central nervous system
+disease: primary central nervous system diffuse large B-cell lymphoma
+developmental_stage: adult
+study_context: >-
+  The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies.
+  The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune-
+  and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may
+  nevertheless be present.
+annotation_scope:
+  primary_scope: lymphoma tumor and tumor-immune microenvironment
+  secondary_scope: CNS-resident populations may be present
+  sampling_context: dissociated surgical biopsies; not a representative whole-brain atlas
+  requested_output: >-
+    cell identity and, when supported by expression evidence, disease or malignancy state
+source:
+  publication_doi: 10.1038/s41421-023-00559-7
+  zenodo_record: 7813151
+query:
+  kind: local_h5ad
+  path: demo/data/cell_annotation/inputs/bcl/full.h5ad
+  expected_n_obs: 49910
+  expected_n_vars: 36601
+  size_bytes: 294091660
+  sha256: 790106bd504a5de030e005cb4a12e20cc978ead100bcc3af7a85a90230e829be
+  require_spatial: false
+  selection_blind_allowed_metadata:
+    obs: [sample]
+    obsm: []
+    obsp: []
+    uns: [species]
+ground_truth:
+  column: refined_clusters
+  held_out_columns: [refined_clusters]
+  path: demo/data/cell_annotation/inputs/bcl/full.ground_truth.tsv
+reference_audit:
+  require_agent_generated: true
+  require_live_discovery: true
+  require_zero_observation_id_overlap: true
+  forbidden_collection_dois: [10.1038/s41421-023-00559-7]
+baselines:
+  celltypist:
+    mode: builtin
+    model: Immune_All_Low.pkl
+  gptcelltype:
+    tissue_name: central nervous system lymphoma
+    species_name: human
+    model: gpt-5.1
+  biomni:
+    model: gpt-5.1
+    source: OpenAI
+    expected_version: 0.0.8
+  spatialagent:
+    model: gpt-5.1
+    use_azure: false
+    source_revision: e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6
+mapping: demo/cell_annotation/mappings/bcl.json

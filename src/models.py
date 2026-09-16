@@ -25,8 +25,10 @@ from __future__ import annotations
 
 import os
 import threading
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
-from collections.abc import Callable
+
 from typing import Any, Dict, List, Literal, Optional
 
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -330,6 +332,7 @@ class Selection:
 
 _selection = Selection()
 _selection_lock = threading.Lock()
+_model_seed: Optional[int] = None
 
 # Bumped whenever the selection changes. The server compares the value
 # observed when the graph was last compiled against the current value to
@@ -372,6 +375,36 @@ def get_model_id(role: Role) -> str:
     """Return the model ID for the given role ('orchestration' or 'worker')."""
     with _selection_lock:
         return _selection.orchestration if role == "orchestration" else _selection.worker
+
+
+def get_model_seed() -> Optional[int]:
+    """Return the request seed applied to supported chat-model providers."""
+    with _selection_lock:
+        return _model_seed
+
+
+def set_model_seed(seed: Optional[int]) -> Optional[int]:
+    """Set the request seed used by subsequently constructed chat models."""
+    if seed is not None and (
+        isinstance(seed, bool) or not isinstance(seed, int) or not 0 <= seed <= 2_147_483_647
+    ):
+        raise ValueError("Model seed must be None or an integer from 0 to 2147483647.")
+    global _model_seed, _revision
+    with _selection_lock:
+        _model_seed = seed
+        _revision += 1
+    return seed
+
+
+@contextmanager
+def model_seed_context(seed: Optional[int]) -> Iterator[None]:
+    """Temporarily apply one request seed across a complete graph execution."""
+    prior_seed = get_model_seed()
+    set_model_seed(seed)
+    try:
+        yield
+    finally:
+        set_model_seed(prior_seed)
 
 
 # ---------------------------------------------------------------------------
@@ -446,8 +479,8 @@ def build_chat_model(
 ) -> BaseChatModel:
     """Instantiate a fresh chat model for *model_id*.
 
-    ``overrides`` are forwarded to the underlying constructor. Provider- specific arguments not understood by the other
-    provider are dropped.
+    ``overrides`` are forwarded to the underlying constructor. Provider-specific
+    arguments not understood by the other provider are dropped.
     """
     spec = get_model_spec(model_id, role=role)
 
@@ -464,6 +497,8 @@ def build_chat_model(
         key = get_api_key("openai")
         if key:
             kwargs["api_key"] = key
+        if model_seed is not None:
+            kwargs["seed"] = model_seed
         kwargs.update(overrides)
         return ChatOpenAI(**kwargs)
 
@@ -476,7 +511,9 @@ def build_chat_model(
         # Overridable via `overrides` below.
         kwargs = {"model": spec.api_model, "max_tokens": ANTHROPIC_DEFAULT_MAX_TOKENS}
         # Drop OpenAI-only kwargs callers may pass.
-        for k in ("reasoning_effort",):
+        if model_seed is not None:
+            raise ValueError("Model request seeds are not supported by the Anthropic provider.")
+        for k in ("reasoning_effort", "seed"):
             overrides.pop(k, None)
         key = get_api_key("anthropic")
         if key:
@@ -525,8 +562,9 @@ def build_chat_model(
 def model_ctor_for_role(role: Role, **overrides: Any) -> Callable[..., BaseChatModel]:
     """Return a zero-argument callable that resolves the current model for *role*.
 
-    The model id is looked up at *call time*, so changing the selection affects the next graph build without needing to
-    re-wire ``model_ctor`` fields on every agent definition.
+    The model id is looked up at *call time*, so changing the selection affects the
+    next graph build without needing to re-wire ``model_ctor`` fields on every agent
+    definition.
     """
 
     def ctor() -> BaseChatModel:

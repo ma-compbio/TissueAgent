@@ -1,0 +1,331 @@
+{
+  "mapping_version": "bcl_cl_disease_v1",
+  "mapping_frozen_at_utc": "2026-07-27T00:00:00Z",
+  "ontology": {
+    "name": "Cell Ontology",
+    "version": "2026-06-08",
+    "source": "https://www.ebi.ac.uk/ols4/ontologies/cl",
+    "disease_context": {
+      "id": "MONDO:0017596",
+      "label": "diffuse large B-cell lymphoma of the central nervous system"
+    }
+  },
+  "primary_metric": "macro_f1",
+  "evaluation_notes": [
+    "The strict target space reproduces the published GPTCellType BCL benchmark while grounding each lineage in Cell Ontology.",
+    "Malignant B cell is represented as the intersection of B-cell lineage and malignant state because Cell Ontology has no single exact term.",
+    "Generic B-cell predictions are not credited as malignant in the strict view.",
+    "B14 is excluded only in the primary biological view because the source study identified it as a likely doublet; the all-cell sensitivity view includes it as malignant for published-benchmark comparability."
+  ],
+  "target_labels": [
+    "malignant B cell",
+    "B cell",
+    "CD8-positive, alpha-beta T cell",
+    "CD4-positive, alpha-beta T cell",
+    "regulatory T cell",
+    "natural killer cell",
+    "gamma-delta T cell",
+    "myeloid cell",
+    "oligodendrocyte",
+    "Unassigned"
+  ],
+  "target_label_definitions": {
+    "malignant B cell": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000236",
+          "label": "B cell"
+        },
+        {
+          "id": "CL:0001064",
+          "label": "malignant cell"
+        }
+      ],
+      "definition": "A malignant cell with B-cell lineage in the PCNS-DLBCL disease context."
+    },
+    "B cell": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000236",
+          "label": "B cell"
+        }
+      ],
+      "definition": "Non-malignant B cell in the publisher benchmark."
+    },
+    "CD8-positive, alpha-beta T cell": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000625",
+          "label": "CD8-positive, alpha-beta T cell"
+        }
+      ]
+    },
+    "CD4-positive, alpha-beta T cell": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000624",
+          "label": "CD4-positive, alpha-beta T cell"
+        }
+      ]
+    },
+    "regulatory T cell": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000815",
+          "label": "regulatory T cell"
+        }
+      ]
+    },
+    "natural killer cell": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000623",
+          "label": "natural killer cell"
+        }
+      ]
+    },
+    "gamma-delta T cell": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000798",
+          "label": "gamma-delta T cell"
+        }
+      ]
+    },
+    "myeloid cell": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000763",
+          "label": "myeloid cell"
+        }
+      ]
+    },
+    "oligodendrocyte": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000128",
+          "label": "oligodendrocyte"
+        }
+      ]
+    },
+    "Unassigned": {
+      "ontology_terms": [],
+      "definition": "Benchmark sentinel for missing, abstained, or biologically ambiguous predictions."
+    }
+  },
+  "ground_truth_mapping": {
+    "B0": "B cell",
+    "B1": "malignant B cell",
+    "B2": "malignant B cell",
+    "B3": "malignant B cell",
+    "B4": "malignant B cell",
+    "B5": "malignant B cell",
+    "B6": "malignant B cell",
+    "B7": "malignant B cell",
+    "B8": "malignant B cell",
+    "B9": "malignant B cell",
+    "B10": "malignant B cell",
+    "B11": "malignant B cell",
+    "B12": "malignant B cell",
+    "B13": "malignant B cell",
+    "B14": "malignant B cell",
+    "B15": "malignant B cell",
+    "exhausted CD8 T-1": "CD8-positive, alpha-beta T cell",
+    "exhausted CD8 T-2": "CD8-positive, alpha-beta T cell",
+    "exhausted CD8 T-3": "CD8-positive, alpha-beta T cell",
+    "exhausted CD8 T-4": "CD8-positive, alpha-beta T cell",
+    "exhausted CD8 T-5": "CD8-positive, alpha-beta T cell",
+    "exhausted CD8 T-6": "CD8-positive, alpha-beta T cell",
+    "prolif CD8 T": "CD8-positive, alpha-beta T cell",
+    "memory-like CD8 T": "CD8-positive, alpha-beta T cell",
+    "activeted CD4 T": "CD4-positive, alpha-beta T cell",
+    "cytotoxic CD4 T": "CD4-positive, alpha-beta T cell",
+    "Treg": "regulatory T cell",
+    "NK": "natural killer cell",
+    "gd T": "gamma-delta T cell",
+    "Myeloid cells": "myeloid cell",
+    "Oligo": "oligodendrocyte"
+  },
+  "primary_excluded_ground_truth_labels": [
+    "B14"
+  ],
+  "secondary_label_spaces": {
+    "cell_ontology_lineage": {
+      "target_labels": [
+        "B cell",
+        "CD8-positive, alpha-beta T cell",
+        "CD4-positive, alpha-beta T cell",
+        "regulatory T cell",
+        "natural killer cell",
+        "gamma-delta T cell",
+        "myeloid cell",
+        "oligodendrocyte",
+        "Unassigned"
+      ],
+      "mapping_from_primary": {
+        "malignant B cell": "B cell",
+        "B cell": "B cell",
+        "CD8-positive, alpha-beta T cell": "CD8-positive, alpha-beta T cell",
+        "CD4-positive, alpha-beta T cell": "CD4-positive, alpha-beta T cell",
+        "regulatory T cell": "regulatory T cell",
+        "natural killer cell": "natural killer cell",
+        "gamma-delta T cell": "gamma-delta T cell",
+        "myeloid cell": "myeloid cell",
+        "oligodendrocyte": "oligodendrocyte",
+        "Unassigned": "Unassigned"
+      }
+    }
+  },
+  "prediction_mapping_status": "complete",
+  "common_prediction_mapping": {},
+  "method_prediction_mapping": {
+    "tissueagent": {
+      "activated CD8-positive, alpha-beta T cell": "CD8-positive, alpha-beta T cell",
+      "B cell": "B cell",
+      "CD16-negative, CD56-bright natural killer cell, human": "natural killer cell",
+      "CD16-positive, CD56-dim natural killer cell, human": "natural killer cell",
+      "CD4-positive helper T cell": "CD4-positive, alpha-beta T cell",
+      "CD4-positive, alpha-beta cytotoxic T cell": "CD4-positive, alpha-beta T cell",
+      "CD4-positive, alpha-beta memory T cell": "CD4-positive, alpha-beta T cell",
+      "CD4-positive, alpha-beta T cell": "CD4-positive, alpha-beta T cell",
+      "CD8-positive, alpha-beta memory T cell": "CD8-positive, alpha-beta T cell",
+      "CD8-positive, alpha-beta memory T cell, CD45RO-positive": "CD8-positive, alpha-beta T cell",
+      "CD8-positive, alpha-beta T cell": "CD8-positive, alpha-beta T cell",
+      "conventional dendritic cell": "myeloid cell",
+      "effector CD8-positive, alpha-beta T cell": "CD8-positive, alpha-beta T cell",
+      "effector memory CD4-positive, alpha-beta T cell": "CD4-positive, alpha-beta T cell",
+      "effector memory CD8-positive, alpha-beta T cell, terminally differentiated": "CD8-positive, alpha-beta T cell",
+      "gamma-delta T cell": "gamma-delta T cell",
+      "macrophage": "myeloid cell",
+      "malignant cell": "malignant B cell",
+      "myeloid cell": "myeloid cell",
+      "naive thymus-derived CD4-positive, alpha-beta T cell": "CD4-positive, alpha-beta T cell",
+      "naive thymus-derived CD8-positive, alpha-beta T cell": "CD8-positive, alpha-beta T cell",
+      "natural killer cell": "natural killer cell",
+      "oligodendrocyte": "oligodendrocyte",
+      "plasmacytoid dendritic cell": "myeloid cell",
+      "plasmacytoid dendritic cell, human": "myeloid cell",
+      "regulatory T cell": "regulatory T cell",
+      "T follicular helper cell": "CD4-positive, alpha-beta T cell"
+    },
+    "celltypist": {
+      "Age-associated B cells": "B cell",
+      "Alveolar macrophages": "myeloid cell",
+      "B cells": "B cell",
+      "CD16+ NK cells": "natural killer cell",
+      "CD16- NK cells": "natural killer cell",
+      "CD8a/a": "CD8-positive, alpha-beta T cell",
+      "CD8a/b(entry)": "CD8-positive, alpha-beta T cell",
+      "CMP": "myeloid cell",
+      "Classical monocytes": "myeloid cell",
+      "CRTAM+ gamma-delta T cells": "gamma-delta T cell",
+      "Cycling B cells": "B cell",
+      "Cycling NK cells": "natural killer cell",
+      "Cycling T cells": "Unassigned",
+      "Cycling gamma-delta T cells": "gamma-delta T cell",
+      "Cycling monocytes": "myeloid cell",
+      "DC": "myeloid cell",
+      "DC1": "myeloid cell",
+      "DC2": "myeloid cell",
+      "DC precursor": "myeloid cell",
+      "DC3": "myeloid cell",
+      "Double-negative thymocytes": "Unassigned",
+      "Double-positive thymocytes": "Unassigned",
+      "Early erythroid": "Unassigned",
+      "Early lymphoid/T lymphoid": "Unassigned",
+      "Endothelial cells": "Unassigned",
+      "Epithelial cells": "Unassigned",
+      "Erythrocytes": "Unassigned",
+      "Erythrophagocytic macrophages": "myeloid cell",
+      "Fibroblasts": "Unassigned",
+      "Follicular B cells": "B cell",
+      "Follicular helper T cells": "CD4-positive, alpha-beta T cell",
+      "Germinal center B cells": "B cell",
+      "Hofbauer cells": "myeloid cell",
+      "ILC": "Unassigned",
+      "ILC2": "Unassigned",
+      "ILC3": "Unassigned",
+      "Intermediate macrophages": "myeloid cell",
+      "Intestinal macrophages": "myeloid cell",
+      "Kupffer cells": "myeloid cell",
+      "Large pre-B cells": "B cell",
+      "MAIT cells": "Unassigned",
+      "MEMP": "Unassigned",
+      "MNP": "myeloid cell",
+      "Macrophages": "myeloid cell",
+      "Mast cells": "myeloid cell",
+      "Memory B cells": "B cell",
+      "Memory CD4+ cytotoxic T cells": "CD4-positive, alpha-beta T cell",
+      "Migratory DCs": "myeloid cell",
+      "Mono-mac": "myeloid cell",
+      "Monocyte precursor": "myeloid cell",
+      "Monocytes": "myeloid cell",
+      "Myelocytes": "myeloid cell",
+      "NK cells": "natural killer cell",
+      "NKT cells": "Unassigned",
+      "Naive B cells": "B cell",
+      "Non-classical monocytes": "myeloid cell",
+      "pDC": "myeloid cell",
+      "Plasma cells": "B cell",
+      "Plasmablasts": "B cell",
+      "Proliferative germinal center B cells": "B cell",
+      "Regulatory T cells": "regulatory T cell",
+      "Small pre-B cells": "B cell",
+      "T(agonist)": "Unassigned",
+      "Tcm/Naive cytotoxic T cells": "CD8-positive, alpha-beta T cell",
+      "Tcm/Naive helper T cells": "CD4-positive, alpha-beta T cell",
+      "Tem/Effector helper T cells": "CD4-positive, alpha-beta T cell",
+      "Tem/Temra cytotoxic T cells": "CD8-positive, alpha-beta T cell",
+      "Tem/Trm cytotoxic T cells": "CD8-positive, alpha-beta T cell",
+      "Transitional B cells": "B cell",
+      "Transitional NK": "natural killer cell",
+      "Treg(diff)": "regulatory T cell",
+      "Trm cytotoxic T cells": "CD8-positive, alpha-beta T cell",
+      "Type 1 helper T cells": "CD4-positive, alpha-beta T cell",
+      "Type 17 helper T cells": "CD4-positive, alpha-beta T cell",
+      "gamma-delta T cells": "gamma-delta T cell"
+    },
+    "gptcelltype": {
+      "Activated B cell": "B cell",
+      "Activated B cells / germinal center–like B cells": "B cell",
+      "Activated B cells": "B cell",
+      "Activated CD4⁺ T cell (T helper)": "CD4-positive, alpha-beta T cell",
+      "Activated CD4⁺ T cell": "CD4-positive, alpha-beta T cell",
+      "Antigen-presenting B cell": "B cell",
+      "Astrocytes": "Unassigned",
+      "Central memory / regulatory-like CD4⁺ T cell": "CD4-positive, alpha-beta T cell",
+      "Class-switched memory B cell": "B cell",
+      "CXCL13⁺ T follicular helper cell": "CD4-positive, alpha-beta T cell",
+      "Cycling B cell": "B cell",
+      "Cycling germinal center B cell": "B cell",
+      "Cycling proliferating cell": "Unassigned",
+      "Cycling proliferating cell (unassigned lineage)": "Unassigned",
+      "Cytotoxic CD4⁺/CD8⁺ T cell": "Unassigned",
+      "Cytotoxic CD8⁺ T cell": "CD8-positive, alpha-beta T cell",
+      "Cytotoxic effector CD4⁺ T cell": "CD4-positive, alpha-beta T cell",
+      "Cytotoxic NK cell": "natural killer cell",
+      "Cytotoxic NK/T cell": "Unassigned",
+      "Cytotoxic T cell with immunoglobulin expression (T–B hybrid / doublet)": "Unassigned",
+      "Dendritic cells": "myeloid cell",
+      "Germinal center B cell": "B cell",
+      "Mature B cell": "B cell",
+      "Memory B cell": "B cell",
+      "Memory B cells": "B cell",
+      "Microglia": "myeloid cell",
+      "Microglia / CNS macrophage": "myeloid cell",
+      "Microglia/macrophage": "myeloid cell",
+      "Migratory/activated dendritic cells": "myeloid cell",
+      "Mitochondria-high (unassigned / low-RNA-identity)": "Unassigned",
+      "Mitochondria-high cell (unassigned lineage)": "Unassigned",
+      "Myeloid cell / macrophage": "myeloid cell",
+      "Myeloid cell (microglia/macrophage-like)": "myeloid cell",
+      "Naive/central memory CD4⁺ T cell": "CD4-positive, alpha-beta T cell",
+      "Plasma cell": "B cell",
+      "Plasma cells": "B cell",
+      "Plasmacytoid dendritic cells": "myeloid cell",
+      "Pre-germinal center B cell": "B cell",
+      "Ribosomal/housekeeping (unassigned)": "Unassigned",
+      "Ribosomal/protein synthesis–high cell (unassigned lineage)": "Unassigned"
+    }
+  }
+}

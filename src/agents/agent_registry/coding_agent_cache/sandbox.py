@@ -1,7 +1,7 @@
 """Docker sandbox with Jupyter Kernel Gateway for isolated code execution.
 
-Provides ContainerManager for Docker lifecycle and KernelClient for executing Python/R code via the Jupyter wire
-protocol.
+Provides ContainerManager for Docker lifecycle and KernelClient for executing Python/R code via
+the Jupyter wire protocol.
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from config import (
 )
 from agents.agent_utils import truncate_output
 
-EXECUTION_TIMEOUT = 300  # 5 minutes
+EXECUTION_TIMEOUT = 900  # 15 minutes
 
 IMAGE_MIME_TYPES = {"image/png", "image/jpeg"}
 
@@ -47,6 +47,7 @@ class KernelUnavailableError(RuntimeError):
     """
 
     def __init__(self, url: str):
+        """Initialize the error with the unavailable gateway URL."""
         super().__init__(
             f"Could not reach a Jupyter Kernel Gateway at {url}. No code "
             f"backend is running. Either enable the Docker sandbox from the "
@@ -179,6 +180,7 @@ class LocalKernelGateway:
     """
 
     def __init__(self) -> None:
+        """Initialize local gateway process state."""
         self._proc: subprocess.Popen | None = None
         self._adopted_external = False
 

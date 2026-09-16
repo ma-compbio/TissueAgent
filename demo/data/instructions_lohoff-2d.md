@@ -1,5 +1,41 @@
-### Cell–cell contact map inference
+###  Cell neighborhood network construction. 
+To construct a cell neighborhood
+network, for each cell within a given embryo and z slice, we extracted the
+polygon representation of the cell’s segmentation corresponding to a set of vertex
+coordinates. We then calculated an expanded segmentation by constructing a new
+polygon where each expanded vertex was lengthened along the line containing
+the original vertex and the center of the polygon. We performed a multiplicative
+expansion of 1.3 for each vertex. To construct the cell neighborhood network,
+we then identified the other cells in which segmentation vertices were found to
+be within the expanded polygon. Cell neighborhood networks were considered
+separately for each embryo and z slice combination.
 
+### Cell–cell contact map inference. 
+We constructed cell–cell contact maps for multiple
+cell annotation labelings, including mapped cell types, subclusters within each
+cell type and mapped gut tube subtypes. To do this, for each embryo and z
+slice combination, we extracted the cell neighborhood network and cell-level
+annotation. We then generated cell–cell contact maps by first calculating the
+number of edges for which a particular pair of annotated groups was observed.
+We then randomly reassigned (500 times) the annotation by sampling without
+replacement and calculated the number of edges for all pairs of annotated groups.
+To construct the cell–cell contact map, we reported the proportion of times the
+randomly reassigned number of edges was larger than or equal to the observed
+number of edges. Small values correspond to the pair of annotation groups being
+more segregated, and large values correspond to them being more integrated in
+physical space than a random allocation. To combine these cell–cell contact maps
+for each embryo and z slice combination, we further calculated the element-wise
+mean for each pair of cell labels. We visualized this in a heat map, ordering the
+annotation groups using hierarchical clustering with Euclidean distance and
+complete linkage. In the case of the gut tube subtypes, we ordered these classes by
+the anterior–posterior ordering given by Nowotschin et al.2. In the brain subtypes,
+we ordered these classes by their approximate anatomical location, from the
+forebrain to the hindbrain region.
+
+
+
+<!-- ### Cell–cell contact map inference -->
+<!-- 
 Construct cell–cell contact maps using `obs['celltype_mapped_refined']` as the annotation and
 `obsm['spatial']` as the cell coordinates. Parse embryo and *z* slice identity from observation names
 of the form `embryo<id>_Pos<position>_cell<id>_z<slice>`. Exclude cells annotated as `Low quality`,
@@ -34,4 +70,4 @@ Visualize the clustered result as a lower-triangular heat map with matching row 
 dendrograms, diagonal cell-type labels, and cell-type annotation strips. Include a horizontal scale
 labelled `Integrated` at the large-value end and `Segregated` at the small-value end. Save the mean
 matrix, per-stratum matrices, pair-support counts, clustering order/linkage, permutation settings,
-and a concise methodology/QC report alongside the final figure.
+and a concise methodology/QC report alongside the final figure. -->

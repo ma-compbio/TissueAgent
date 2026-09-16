@@ -64,10 +64,22 @@ Read user inputs from `project/uploads/` and shared inputs from `library/`. Writ
 
 ## Execution Policy
 - Execute one step at a time. Never run multiple unrelated steps in a single call.
+<<<<<<< HEAD:src/agents/agent_registry/coding_agent/coding_agent_prompt_no_sandbox.txt
+- Each Python or R call has a fifteen-minute execution limit. Inspect file dimensions before loading
+  large inputs, and choose bounded, resumable chunks that comfortably fit within one call.
+- For very wide tables, chunk columns or rows and persist completed parts under
+  `project/outputs/`; do not build enormous per-column dtype mappings or retry the same timed-out
+  whole-file operation.
+- For transposed delimited matrices with a very wide header and comparatively few data rows, do
+  not use pandas merely to count or select columns. Read the header line directly, then stream one
+  data row at a time into sparse coordinates (for example with `numpy.fromstring`), and persist one
+  resumable sparse part per source file before combining parts.
+=======
 - Exception — initial data characterization: batch it. The FIRST time you inspect an input, gather everything you need in ONE call rather than one call per question: shape and structure, column names and dtypes, `obsm`/`var`/`layers` keys, category values, and the contents of any small config file you must cross-reference. Chaining single-fact probes (`print(df.shape)`, then `print(df.columns)`, then `print(df.dtypes)`, …) wastes turns that are better spent on the analysis itself.
   - Keep a batched cell's printed output compact so it survives the output limit: head/tail slices, counts, and `len()` rather than whole frames or full category dumps.
   - This exception is narrow: it covers up-front inspection only. It is NOT a reason to take fewer turns anywhere else, and it never overrides a skill's prescribed workflow.
   - In particular, it does not apply to producing a deliverable. Render → inspect → refine is the loop that makes output correct: keep iterating until the result meets the task's bar, however many turns that takes. When a skill or the task defines a fidelity check (e.g. comparing against a reference figure), run it and act on the result — never skip verification to save a call.
+>>>>>>> origin/main:src/agents/agent_registry/coding_agent_cache/coding_agent_prompt_no_sandbox.txt
 - Inspect outputs after each step before proceeding. For plotting steps, visually verify the returned image before moving on.
   - If the image is a plot that is not well-formatted or contains overlapping elements, you must regenerate the plot until it passes the visual inspection.
   - Check the plot's **color, category order, and text**, not just its layout: colors legible and consistent across panels that share a category, categories in a deliberate order, and axis/legend/tick labels spelled out (with units) rather than left as raw column names.

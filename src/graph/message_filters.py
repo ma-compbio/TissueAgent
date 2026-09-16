@@ -23,11 +23,14 @@ def _last_index_of_final(messages: list[BaseMessage], agent_name: str) -> int | 
 
 
 def filter_for_recruiter(messages: list[BaseMessage]) -> list[BaseMessage]:
-    """Recruiter sees: user query + planner's final plan output only.
+    """Keep the task, latest failure assessment, and planner's revised plan.
 
     Strips the planner's intermediate tool calls (template reads, globs, etc.).
     """
     result = [msg for msg in messages if isinstance(msg, HumanMessage)]
+    feedback = _last_index_of_final(messages, "evaluator_agent")
+    if feedback is not None:
+        result.append(messages[feedback])
     idx = _last_index_of_final(messages, "planner_agent")
     if idx is not None:
         result.append(messages[idx])
@@ -95,7 +98,7 @@ def filter_for_execution_phase(messages: list[BaseMessage]) -> list[BaseMessage]
 def filter_for_manager(
     manager_agent_name: str,
 ) -> Callable[[list[BaseMessage]], list[BaseMessage]]:
-    """Build a filter that shows the manager only its own tool-call history.
+    """Build a filter that shows the manager its current plan's tool-call history.
 
     The manager's situational context (plan + assignments + user request) is baked
     into its system prompt via :class:`agents.manager_agent.prompt.ManagerPrompt`, so
@@ -104,7 +107,9 @@ def filter_for_manager(
     From that trail the manager derives which steps have been dispatched and what
     the most recent sub-agent returned.
 
-    The returned filter drops:
+    A replan produces a new recruiter final. Manager history from before that final
+    belongs to the failed plan and must not influence dispatch of the replacement
+    plan. The returned filter therefore drops:
 
     * HumanMessages (the user request is in the system prompt).
     * Planner / recruiter / evaluator AIMessages and their paired ToolMessages.
@@ -119,7 +124,11 @@ def filter_for_manager(
     def _filter(messages: list[BaseMessage]) -> list[BaseMessage]:
         kept: list[BaseMessage] = []
         kept_tool_call_ids: set[str] = set()
-        for msg in messages:
+        recruiter_idx = _last_index_of_final(messages, "recruiter_agent")
+        current_plan_messages = (
+            messages[recruiter_idx + 1 :] if recruiter_idx is not None else messages
+        )
+        for msg in current_plan_messages:
             if isinstance(msg, AIMessage) and getattr(msg, "name", "") == manager_agent_name:
                 kept.append(msg)
                 for tc in getattr(msg, "tool_calls", []) or []:

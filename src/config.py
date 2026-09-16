@@ -1,7 +1,7 @@
 """Global configuration constants and directory paths for TissueAgent.
 
-Defines the canonical directory layout (workspace, dataset, uploads, PDFs, notebooks, sessions, logs) and runtime
-settings such as the graph recursion limit and log file location.
+Defines the canonical directory layout (workspace, dataset, uploads, PDFs, notebooks, sessions,
+logs) and runtime settings such as the graph recursion limit and log file location.
 """
 
 # TODO (dm): need to clean up this file. Most of these settings are either unnecessary or should be

@@ -134,6 +134,9 @@ benchmark/biomysterybench/biomysterybench_expr/runs/**
 
 workspace/cellvoyager_agent/
 
+# Tissue-niche agent benchmark data and run artifacts
+# /demo/data/
+# /demo/outputs/
 # Local public-paper archives used to curate Spatial CellBench
 /papers-*.zip
 

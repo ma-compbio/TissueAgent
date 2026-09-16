@@ -282,6 +282,31 @@ tissueagent --attach ./markers.csv "Interpret the genes in uploads/markers.csv"
 Set your API credentials first (see [LLM credentials](#llm-credentials)). Runs are
 saved as projects, so a CLI run also shows up in the web UI's project list.
 
+### Cell annotation reviewer benchmark
+
+The production Cell Annotator first gathers leakage-safe query/reference evidence and official
+CellTypist model descriptions, then chooses one of Harmony, CellTypist, or GPTCellType. All three
+backends preserve the query observation order and write a common `cell_annotation_*` output schema
+plus method-specific provenance.
+
+Production CellTypist support is installed by the standard `uv sync`. The direct benchmark's
+OmicVerse GPTCellType comparison remains an isolated optional dependency:
+
+```bash
+uv sync --frozen --extra cell-annotation-benchmarks
+```
+
+This installs only the versions pinned in `uv.lock`; the demo never installs packages at runtime.
+Biomni and SpatialAgent baselines use their own upstream environments to avoid dependency conflicts
+and expose configurable base models through the same benchmark runner/output path. See
+[`docs/cell_annotation_agent_baselines.md`](docs/cell_annotation_agent_baselines.md) for setup and
+[`demo/cell_annotation_benchmark.ipynb`](demo/cell_annotation_benchmark.ipynb) for the developing
+human heart, BCL, and Han mouse brain Stereo-seq quick/full demo. The guide also includes a
+saved-results plotting command that needs no API keys or expression data.
+The ovarian Seurat conversion additionally requires an existing R installation with
+Seurat and Matrix. Missing R packages are reported explicitly and are never installed by
+TissueAgent.
+
 > [!TIP]
 > All agents use GPT-5 by default. To save API tokens, models with lower reasoning capabilities can be used. This can be configured globally by modifying `DefaultModelCtor` in `src/config.py` or changed on the subagent level by modifying `src/agents/agent_defns.py`.
 
@@ -419,6 +444,8 @@ All datasets referenced in the manuscript are publicly available:
 - Single-cell reference dataset for cell type deconvolution: [CellxGene collection b52eb423](https://cellxgene.cziscience.com/collections/b52eb423-5d0d-4645-b217-e1c6d38b2e72)
 - 10x Visium Alzheimer's disease spatial transcriptomics dataset (Miyoshi et al., 2024): GEO accession [GSE233208](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE233208)
 - Spatial mouse atlas (Lohoff et al., 2022): [https://crukci.shinyapps.io/SpatialMouseAtlas/](https://crukci.shinyapps.io/SpatialMouseAtlas/)
+- Mouse CNS STARmap PLUS atlas (Shi et al., 2023): [Zenodo record 8327576](https://zenodo.org/records/8327576)
+- Ovarian cancer spatial atlas (Vázquez-García et al., 2024): [Zenodo record 12613839](https://zenodo.org/records/12613839)
 - Spatiotemporal transcriptomics dataset (Chen et al., 2022): CNGBdb accession [STDS0000058](https://db.cngb.org/search/project/STDS0000058/)
 
 ### License

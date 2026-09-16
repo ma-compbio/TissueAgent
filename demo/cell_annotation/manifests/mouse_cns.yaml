@@ -1,0 +1,71 @@
+schema_version: "1.0"
+dataset_id: mouse_cns
+title: Whole mouse central nervous system STARmap PLUS
+species: mouse
+tissue: central nervous system
+disease: healthy
+query:
+  kind: zenodo_8327576_mouse_cns_csv
+  path: demo/data/cell_annotation/mouse_cns_csvs
+  publisher_manifest: demo/data/cell_annotation/mouse_cns_csvs/zenodo_8327576_manifest.tsv
+  converted_path: demo/data/cell_annotation/intermediates/benchmarks/mouse_cns/full.h5ad
+  expected_n_obs: 1091280
+  expected_n_vars: 1022
+  required_roles: [raw_expression, spatial, global_metadata, cluster]
+  ignored_roles: [processed_expression, spot_meta]
+ground_truth:
+  column: Main_molecular_cell_type
+  held_out_columns:
+    - Main_molecular_cell_type
+    - Sub_molecular_cell_type
+    - Main_molecular_tissue_region
+    - Sub_molecular_tissue_region
+    - Molecular_spatial_cell_type
+reference:
+  kind: cellxgene_subset
+  dataset_ids:
+    - dbb4e1ed-d820-4e83-981f-88ef7eb55a35
+    - e0ed3c55-aff6-4bb7-b6ff-98a2d90b890c
+  census_version: "2025-11-08"
+  organism: Mus musculus
+  path: demo/data/cell_annotation/intermediates/references/mouse_cns_cellxgene_subset.h5ad
+  cell_type_column: cell_type
+  max_cells_per_label: 500
+  random_state: 42
+  include_labels:
+    - neuron
+    - glutamatergic neuron
+    - inhibitory interneuron
+    - interneuron
+    - Purkinje cell
+    - cerebellar granule cell
+    - cerebellar Golgi cell
+    - astrocyte
+    - astrocyte of the cerebellum
+    - Bergmann glial cell
+    - oligodendrocyte
+    - oligodendrocyte precursor cell
+    - ependymal cell
+    - hypendymal cell
+    - tanycyte
+    - microglial cell
+    - macrophage
+    - endothelial cell
+    - endothelial stalk cell
+    - mural cell
+    - fibroblast
+  note: A pinned, label-balanced subset spans hypothalamic, cerebellar, ependymal, immune, glial, and vascular populations without downloading the two full source H5ADs.
+tissueagent:
+  min_cells: 10
+  n_pcs: 30
+  min_shared_genes: 50
+  harmony_max_iter: 20
+  preserve_all_spatial_obs: true
+celltypist:
+  mode: builtin
+  model: Mouse_Whole_Brain.pkl
+gptcelltype:
+  tissue_name: central nervous system
+  species_name: mouse
+  model: gpt-5.1
+mapping: demo/cell_annotation/mappings/mouse_cns.json

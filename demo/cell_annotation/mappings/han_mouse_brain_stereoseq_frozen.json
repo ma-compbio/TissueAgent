@@ -1,0 +1,495 @@
+{
+  "mapping_version": "han_mouse_brain_stereoseq_subclass_v2",
+  "prediction_mapping_status": "complete",
+  "ontology": {
+    "name": "Cell Ontology",
+    "release": "2026-06-08",
+    "version_iri": "https://purl.obolibrary.org/obo/cl/releases/2026-06-08/cl.obo",
+    "snapshot_sha256": "7e19b4aef8e7fe7720b0c4474c6a5b8713c904ea9ab7b7d5d96f2cb28b8fc51f",
+    "term_resolution_evidence": {
+      "status": "verified",
+      "path": "demo/data/cell_annotation/mouse_brain/han_mouse_brain_stereoseq/ontology/cl-2026-06-08.obo",
+      "size_bytes": 17353259,
+      "sha256": "7e19b4aef8e7fe7720b0c4474c6a5b8713c904ea9ab7b7d5d96f2cb28b8fc51f",
+      "resolved_terms": {
+        "CL:0000065": "ependymal cell",
+        "CL:0000108": "cholinergic neuron",
+        "CL:0000110": "peptidergic neuron",
+        "CL:0000115": "endothelial cell",
+        "CL:0000127": "astrocyte",
+        "CL:0000128": "oligodendrocyte",
+        "CL:0000129": "microglial cell",
+        "CL:0000540": "neuron",
+        "CL:0000617": "GABAergic neuron",
+        "CL:0000679": "glutamatergic neuron",
+        "CL:0000700": "dopaminergic neuron",
+        "CL:0000706": "choroid plexus epithelial cell",
+        "CL:0000850": "serotonergic neuron",
+        "CL:0002453": "oligodendrocyte precursor cell",
+        "CL:0008025": "noradrenergic neuron",
+        "CL:0011028": "olfactory ensheathing cell",
+        "CL:0011109": "hypocretin-secreting neuron",
+        "CL:0011110": "histaminergic neuron",
+        "CL:1000042": "forebrain neuroblast",
+        "CL:2000089": "dentate gyrus granule cell",
+        "CL:4023051": "vascular leptomeningeal cell",
+        "CL:4023181": "hypendymal cell"
+      }
+    },
+    "composite_policy": "Preserve all publisher subclasses; dataset-defined anatomical neuronal groups use broader CL anchors in the fine taxonomy. The headline ontology-shared space collapses those anatomical branches to CL:0000540 neuron."
+  },
+  "target_label_definition": {
+    "source_column": "cell_subclass",
+    "source_hierarchy_context": "cell_class and cell_cluster",
+    "method_predictions_used": false,
+    "resolution": "All 19 Han Spatial-ID publisher subclasses plus one prediction bridge",
+    "frozen_before_method_mapping": true
+  },
+  "target_labels": [
+    "astrocyte",
+    "cerebral nuclei neuroblast",
+    "cholinergic/monoaminergic/peptidergic neuron",
+    "choroid plexus epithelial cell",
+    "dentate gyrus granule cell",
+    "diencephalon/mesencephalon neuron",
+    "endothelial cell",
+    "ependymal cell",
+    "hypendymal cell",
+    "microglial cell",
+    "olfactory bulb excitatory neuron",
+    "olfactory bulb inhibitory neuron",
+    "olfactory ensheathing cell",
+    "oligodendrocyte precursor cell",
+    "oligodendrocyte",
+    "rhombencephalon neuron",
+    "telencephalon excitatory neuron",
+    "telencephalon inhibitory neuron",
+    "vascular leptomeningeal cell",
+    "neuron",
+    "Unassigned"
+  ],
+  "target_label_definitions": {
+    "astrocyte": {
+      "cell_ontology_term_ids": [
+        "CL:0000127"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Astrocyte."
+    },
+    "cerebral nuclei neuroblast": {
+      "cell_ontology_term_ids": [
+        "CL:1000042"
+      ],
+      "ontology_relation": "broader",
+      "definition": "Forebrain neuroblast qualified to the cerebral nuclei source branch."
+    },
+    "cholinergic/monoaminergic/peptidergic neuron": {
+      "cell_ontology_term_ids": [
+        "CL:0000540",
+        "CL:0000108",
+        "CL:0000110",
+        "CL:0011110",
+        "CL:0000700",
+        "CL:0000850",
+        "CL:0008025",
+        "CL:0011109"
+      ],
+      "ontology_relation": "composite",
+      "definition": "Publisher composite of cholinergic, histaminergic, dopaminergic, serotonergic, noradrenergic, hypocretin-secreting, and other peptidergic neurons."
+    },
+    "choroid plexus epithelial cell": {
+      "cell_ontology_term_ids": [
+        "CL:0000706"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Choroid plexus epithelial cell."
+    },
+    "dentate gyrus granule cell": {
+      "cell_ontology_term_ids": [
+        "CL:2000089"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Granule cell of the dentate gyrus."
+    },
+    "diencephalon/mesencephalon neuron": {
+      "cell_ontology_term_ids": [
+        "CL:0000540"
+      ],
+      "ontology_relation": "broader",
+      "definition": "Neuron from a mixed transmitter diencephalon or mesencephalon branch."
+    },
+    "endothelial cell": {
+      "cell_ontology_term_ids": [
+        "CL:0000115"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Endothelial cell."
+    },
+    "ependymal cell": {
+      "cell_ontology_term_ids": [
+        "CL:0000065"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Ependymal cell."
+    },
+    "hypendymal cell": {
+      "cell_ontology_term_ids": [
+        "CL:4023181"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Hypendymal cell."
+    },
+    "microglial cell": {
+      "cell_ontology_term_ids": [
+        "CL:0000129"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Microglial cell."
+    },
+    "olfactory bulb excitatory neuron": {
+      "cell_ontology_term_ids": [
+        "CL:0000679"
+      ],
+      "ontology_relation": "broader",
+      "definition": "Glutamatergic neuron qualified to the olfactory bulb source branch."
+    },
+    "olfactory bulb inhibitory neuron": {
+      "cell_ontology_term_ids": [
+        "CL:0000617"
+      ],
+      "ontology_relation": "broader",
+      "definition": "GABAergic neuron qualified to the olfactory bulb source branch."
+    },
+    "olfactory ensheathing cell": {
+      "cell_ontology_term_ids": [
+        "CL:0011028"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Olfactory ensheathing cell."
+    },
+    "oligodendrocyte precursor cell": {
+      "cell_ontology_term_ids": [
+        "CL:0002453"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Oligodendrocyte precursor cell."
+    },
+    "oligodendrocyte": {
+      "cell_ontology_term_ids": [
+        "CL:0000128"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Oligodendrocyte."
+    },
+    "rhombencephalon neuron": {
+      "cell_ontology_term_ids": [
+        "CL:0000540"
+      ],
+      "ontology_relation": "broader",
+      "definition": "Neuron from a mixed transmitter rhombencephalon branch, including cerebellar cells."
+    },
+    "telencephalon excitatory neuron": {
+      "cell_ontology_term_ids": [
+        "CL:0000679"
+      ],
+      "ontology_relation": "broader",
+      "definition": "Glutamatergic neuron qualified to a telencephalon source branch."
+    },
+    "telencephalon inhibitory neuron": {
+      "cell_ontology_term_ids": [
+        "CL:0000617"
+      ],
+      "ontology_relation": "broader",
+      "definition": "GABAergic neuron qualified to a telencephalon source branch."
+    },
+    "vascular leptomeningeal cell": {
+      "cell_ontology_term_ids": [
+        "CL:4023051"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Vascular leptomeningeal cell."
+    },
+    "neuron": {
+      "cell_ontology_term_ids": [
+        "CL:0000540"
+      ],
+      "ontology_relation": "exact",
+      "definition": "Prediction-only bridge for neuronal labels that lack the anatomical qualifier required by the 19-subclass Han taxonomy."
+    },
+    "Unassigned": {
+      "cell_ontology_term_ids": [],
+      "ontology_relation": "sentinel",
+      "definition": "Missing, unsupported, or biologically ambiguous prediction."
+    }
+  },
+  "prediction_only_targets": [
+    "neuron"
+  ],
+  "prediction_only_target_scope": "primary fine-taxonomy space only",
+  "ground_truth_mapping": {
+    "Astrocytes": "astrocyte",
+    "Cerebral nuclei neuroblasts": "cerebral nuclei neuroblast",
+    "Cholinergic, monoaminergic, peptidergic neurons": "cholinergic/monoaminergic/peptidergic neuron",
+    "Choroid plexus epithelial cells": "choroid plexus epithelial cell",
+    "Dentate gyrus granule neurons": "dentate gyrus granule cell",
+    "Di- and mesencephalon neurons": "diencephalon/mesencephalon neuron",
+    "Endothelial cells": "endothelial cell",
+    "Ependymal cells": "ependymal cell",
+    "Hypendymal cells": "hypendymal cell",
+    "Microglia": "microglial cell",
+    "Olfactory bulb excitatory neurons": "olfactory bulb excitatory neuron",
+    "Olfactory bulb inhibitory neurons": "olfactory bulb inhibitory neuron",
+    "Olfactory ensheathing cells": "olfactory ensheathing cell",
+    "Oligodendrocyte precursor cells": "oligodendrocyte precursor cell",
+    "Oligodendrocytes": "oligodendrocyte",
+    "Rhombencephalon neurons": "rhombencephalon neuron",
+    "Telencephalon excitatory neurons": "telencephalon excitatory neuron",
+    "Telencephalon inhibitory neurons": "telencephalon inhibitory neuron",
+    "Vascular and leptomeningeal cells": "vascular leptomeningeal cell"
+  },
+  "ground_truth_target_counts": {
+    "astrocyte": 57218,
+    "cerebral nuclei neuroblast": 75,
+    "cholinergic/monoaminergic/peptidergic neuron": 5770,
+    "choroid plexus epithelial cell": 5617,
+    "dentate gyrus granule cell": 4587,
+    "diencephalon/mesencephalon neuron": 19413,
+    "endothelial cell": 21373,
+    "ependymal cell": 8603,
+    "hypendymal cell": 802,
+    "microglial cell": 36268,
+    "olfactory bulb excitatory neuron": 4398,
+    "olfactory bulb inhibitory neuron": 9962,
+    "olfactory ensheathing cell": 2761,
+    "oligodendrocyte precursor cell": 6247,
+    "oligodendrocyte": 49129,
+    "rhombencephalon neuron": 12634,
+    "telencephalon excitatory neuron": 133939,
+    "telencephalon inhibitory neuron": 49220,
+    "vascular leptomeningeal cell": 50724,
+    "neuron": 0,
+    "Unassigned": 0
+  },
+  "primary_metric": "macro_f1 on cell_ontology_shared",
+  "headline_label_space": "cell_ontology_shared",
+  "secondary_label_spaces": {
+    "cell_ontology_shared": {
+      "purpose": "Headline shared cell-type space; anatomical neuron branches are not scored as distinct cell types.",
+      "target_labels": [
+        "astrocyte",
+        "forebrain neuroblast",
+        "neuron",
+        "choroid plexus epithelial cell",
+        "endothelial cell",
+        "ependymal cell",
+        "hypendymal cell",
+        "microglial cell",
+        "olfactory ensheathing cell",
+        "oligodendrocyte precursor cell",
+        "oligodendrocyte",
+        "vascular leptomeningeal cell",
+        "Unassigned"
+      ],
+      "target_label_definitions": {
+        "astrocyte": {
+          "cell_ontology_term_ids": [
+            "CL:0000127"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Astrocyte."
+        },
+        "neuron": {
+          "cell_ontology_term_ids": [
+            "CL:0000540"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Neuron; common collapse of neuronal truth branches and predictions."
+        },
+        "choroid plexus epithelial cell": {
+          "cell_ontology_term_ids": [
+            "CL:0000706"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Choroid plexus epithelial cell."
+        },
+        "endothelial cell": {
+          "cell_ontology_term_ids": [
+            "CL:0000115"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Endothelial cell."
+        },
+        "ependymal cell": {
+          "cell_ontology_term_ids": [
+            "CL:0000065"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Ependymal cell."
+        },
+        "hypendymal cell": {
+          "cell_ontology_term_ids": [
+            "CL:4023181"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Hypendymal cell."
+        },
+        "microglial cell": {
+          "cell_ontology_term_ids": [
+            "CL:0000129"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Microglial cell."
+        },
+        "olfactory ensheathing cell": {
+          "cell_ontology_term_ids": [
+            "CL:0011028"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Olfactory ensheathing cell."
+        },
+        "oligodendrocyte precursor cell": {
+          "cell_ontology_term_ids": [
+            "CL:0002453"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Oligodendrocyte precursor cell."
+        },
+        "oligodendrocyte": {
+          "cell_ontology_term_ids": [
+            "CL:0000128"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Oligodendrocyte."
+        },
+        "vascular leptomeningeal cell": {
+          "cell_ontology_term_ids": [
+            "CL:4023051"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Vascular leptomeningeal cell."
+        },
+        "Unassigned": {
+          "cell_ontology_term_ids": [],
+          "ontology_relation": "sentinel",
+          "definition": "Missing, unsupported, or biologically ambiguous prediction."
+        },
+        "forebrain neuroblast": {
+          "cell_ontology_term_ids": [
+            "CL:1000042"
+          ],
+          "ontology_relation": "exact",
+          "definition": "Forebrain neuroblast."
+        }
+      },
+      "mapping_from_primary": {
+        "astrocyte": "astrocyte",
+        "cerebral nuclei neuroblast": "forebrain neuroblast",
+        "cholinergic/monoaminergic/peptidergic neuron": "neuron",
+        "choroid plexus epithelial cell": "choroid plexus epithelial cell",
+        "dentate gyrus granule cell": "neuron",
+        "diencephalon/mesencephalon neuron": "neuron",
+        "endothelial cell": "endothelial cell",
+        "ependymal cell": "ependymal cell",
+        "hypendymal cell": "hypendymal cell",
+        "microglial cell": "microglial cell",
+        "olfactory bulb excitatory neuron": "neuron",
+        "olfactory bulb inhibitory neuron": "neuron",
+        "olfactory ensheathing cell": "olfactory ensheathing cell",
+        "oligodendrocyte precursor cell": "oligodendrocyte precursor cell",
+        "oligodendrocyte": "oligodendrocyte",
+        "rhombencephalon neuron": "neuron",
+        "telencephalon excitatory neuron": "neuron",
+        "telencephalon inhibitory neuron": "neuron",
+        "vascular leptomeningeal cell": "vascular leptomeningeal cell",
+        "neuron": "neuron",
+        "Unassigned": "Unassigned"
+      }
+    }
+  },
+  "evaluation_notes": [
+    "The 19-subclass section panel and target biology were frozen before inference; the ontology-shared collapse is deterministic and prediction-independent.",
+    "Every selected cell must receive a prediction and remain in exact query order.",
+    "Generic neuronal predictions map to the prediction-only neuron bridge and are scorable in cell_ontology_shared without inventing an anatomical branch.",
+    "Accuracy and macro precision are reported with section-grouped uncertainty.",
+    "Spatial-ID truth is a computational transfer from matched snRNA-seq and is scored as concordance with the Han taxonomy rather than absolute biological ground truth."
+  ],
+  "primary_excluded_ground_truth_labels": [],
+  "common_prediction_mapping": {},
+  "method_prediction_mapping": {
+    "tissueagent": {},
+    "celltypist": {
+      "262 Pineal Crx Glut": "Unassigned",
+      "316 Bergmann NN": "astrocyte",
+      "317 Astro-CB NN": "astrocyte",
+      "318 Astro-NT NN": "astrocyte",
+      "319 Astro-TE NN": "astrocyte",
+      "320 Astro-OLF NN": "astrocyte",
+      "321 Astroependymal NN": "Unassigned",
+      "322 Tanycyte NN": "ependymal cell",
+      "323 Ependymal NN": "ependymal cell",
+      "324 Hypendymal NN": "hypendymal cell",
+      "325 CHOR NN": "choroid plexus epithelial cell",
+      "326 OPC NN": "oligodendrocyte precursor cell",
+      "327 Oligo NN": "oligodendrocyte",
+      "328 OEC NN": "olfactory ensheathing cell",
+      "329 ABC NN": "Unassigned",
+      "330 VLMC NN": "vascular leptomeningeal cell",
+      "331 Peri NN": "Unassigned",
+      "332 SMC NN": "Unassigned",
+      "333 Endo NN": "endothelial cell",
+      "334 Microglia NN": "microglial cell",
+      "335 BAM NN": "Unassigned",
+      "336 Monocytes NN": "Unassigned",
+      "337 DC NN": "Unassigned",
+      "338 Lymphoid NN": "Unassigned"
+    },
+    "gptcelltype": {
+      "Purkinje cells": "rhombencephalon neuron",
+      "Interneuron (mixed CCK/SST/NPY-positive GABAergic interneurons)": "neuron",
+      "Hypothalamic peptidergic neurons (Hcrt/Pmch-expressing)": "cholinergic/monoaminergic/peptidergic neuron",
+      "Excitatory glutamatergic neurons": "neuron",
+      "Hypothalamic neuroendocrine neurons (AVP/SST-expressing)": "cholinergic/monoaminergic/peptidergic neuron",
+      "Oligodendrocytes": "oligodendrocyte",
+      "GABAergic interneurons (Calb2/Gad1/Npy-positive)": "neuron",
+      "Striatal medium spiny neurons": "telencephalon inhibitory neuron",
+      "Choroid plexus/ependyma": "choroid plexus epithelial cell",
+      "Purkinje cells / cerebellar interneurons mixture": "rhombencephalon neuron"
+    }
+  },
+  "method_prediction_rules": {
+    "celltypist": [
+      {
+        "numeric_prefix_min": 1,
+        "numeric_prefix_max": 261,
+        "target": "neuron"
+      },
+      {
+        "numeric_prefix_min": 263,
+        "numeric_prefix_max": 315,
+        "target": "neuron"
+      }
+    ],
+    "gptcelltype": [],
+    "tissueagent": []
+  },
+  "prediction_mapping_provenance": {
+    "status": "complete",
+    "completed_utc": "2026-08-02T00:41:20Z",
+    "target_contract_sha256": "3569ec3fdb88169b1c484089fe7756ab9c16d849abfb41e2f28b3f1ef1c61f21",
+    "fine_19_subclass_target_frozen_before_predictions": true,
+    "ontology_shared_reporting_space_timing": "Added during pre-evaluation audit after TissueAgent and direct CellTypist inference, but before any prediction crosswalk or outcome computation; it is a deterministic collapse of the frozen publisher targets.",
+    "prediction_only_neuron_bridge_timing": "Added with the ontology-shared reporting space before crosswalk and evaluation.",
+    "mapping_basis": "Raw prediction semantics, frozen target definitions, pinned Cell Ontology terms, and GPTCellType marker biology only.",
+    "forbidden_mapping_evidence_used": [],
+    "outcomes_or_confusion_matrices_used": false,
+    "tissueagent_mapping_method": "celltypist",
+    "celltypist_policy": "Official Mouse_Whole_Brain numeric classes 001-261 and 263-315 map to the neuron bridge; exact supported non-neuronal classes map by ontology and unsupported classes map to Unassigned.",
+    "gptcelltype_policy": "Anatomically or transmitter-qualified labels map to matching Han taxonomy branches; generic neuronal labels use the neuron bridge; the mixed choroid/ependyma label is resolved by its Ttr/Folr1/Clic6/Kl marker program.",
+    "independent_reviews": [
+      "celltypist_crosswalk",
+      "gpt_crosswalk",
+      "shared_space_audit",
+      "gpt_artifact_audit"
+    ]
+  }
+}

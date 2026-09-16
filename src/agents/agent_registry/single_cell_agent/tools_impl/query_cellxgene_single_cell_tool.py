@@ -124,7 +124,7 @@ def query_cellxgene_census_live(
     Args:
         query: CensusQuery with your criteria.
         census_version: 'latest' or a pinned version.
-        enrich_metadata: join dataset title/collection info from get_datasets().
+        enrich_metadata: join dataset title and collection metadata from Census.
         max_results: if provided, truncates to top-N by n_cells.
     """
     org = _normalize_species(query.species)
@@ -158,7 +158,7 @@ def query_cellxgene_census_live(
         for tbl in reader:
             df = tbl.to_pandas(types_mapper=None)
             # Update aggregations
-            for ds_id, sub in df.groupby("dataset_id", dropna=True):
+            for ds_id, sub in df.groupby("dataset_id", dropna=True, observed=False):
                 n = len(sub)
                 if n == 0:  # shouldn't happen, but be safe
                     continue
@@ -229,30 +229,58 @@ def query_cellxgene_census_live(
     if max_results is not None and max_results > 0:
         out = out.head(max_results).reset_index(drop=True)
 
-    # Enrich with dataset/collection metadata
+    # Enrich with dataset/collection metadata from the versioned Census itself.
     if enrich_metadata:
         try:
-            meta = cg.get_datasets(census_version=census_version)  # returns a DataFrame
-            # Keep a few useful columns if present
+            selected_ids = out["dataset_id"].astype(str).tolist()
+            with cg.open_soma(census_version=census_version) as census:
+                datasets = census["census_info"]["datasets"]
+                available = set(datasets.schema.names)
+                requested = [
+                    "dataset_id",
+                    "dataset_version_id",
+                    "dataset_title",
+                    "dataset_h5ad_path",
+                    "dataset_total_cell_count",
+                    "collection_id",
+                    "collection_name",
+                    "collection_doi",
+                    "collection_doi_label",
+                    "citation",
+                ]
+                table = datasets.read(
+                    value_filter=_or_equals("dataset_id", selected_ids),
+                    column_names=[column for column in requested if column in available],
+                ).concat()
+                meta = table.to_pandas(types_mapper=None)
             keep_cols = [
                 "dataset_id",
+                "dataset_version_id",
                 "dataset_title",
-                "dataset_asset_h5ad_uri",
+                "dataset_h5ad_path",
+                "dataset_total_cell_count",
                 "collection_id",
                 "collection_name",
                 "collection_doi",
-                "collection_is_published",
-                "dataset_published_at",
-                "collection_url",
-                "dataset_url",
-                "explorer_url",
-                "reference_organism",
+                "collection_doi_label",
+                "citation",
             ]
             meta = meta[[c for c in keep_cols if c in meta.columns]].drop_duplicates("dataset_id")
+            if "collection_id" in meta:
+                meta["collection_url"] = meta["collection_id"].map(
+                    lambda value: (
+                        f"https://cellxgene.cziscience.com/collections/{value}"
+                        if pd.notna(value) and str(value).strip()
+                        else None
+                    )
+                )
+            meta["dataset_url"] = meta["dataset_id"].map(
+                lambda value: f"https://cellxgene.cziscience.com/e/{value}.cxg/"
+            )
             out = out.merge(meta, on="dataset_id", how="left")
-        except Exception as e:
-            # Non-fatal if metadata fetch fails
-            out["metadata_error"] = str(e)
+        except Exception:
+            # Non-fatal if metadata fetch fails.
+            pass
 
     return out
 

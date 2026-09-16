@@ -52,6 +52,12 @@ from agents.agent_registry.spot_agent.prompt import (
     SpotDescription,
     SpotPrompt,
 )
+from agents.agent_registry.data_onboarding_agent.prompt import (
+    DataOnboardingDescription,
+    DataOnboardingPrompt,
+)
+from agents.agent_registry.data_onboarding_agent.tools import DataOnboardingTools
+
 from agents.agent_registry.spot_agent.tools import SpotTools
 from agents.evaluator_agent.prompt import EvaluatorPrompt
 from agents.evaluator_agent.tools import EvaluatorTools
@@ -191,6 +197,14 @@ AgentDefns: list[ReActAgent | CustomAgent] = [
         description=SingleCellDescription,
         prompt=SingleCellPrompt,
         tools=SingleCellTools,
+        model_ctor=WorkerModelCtor,
+    ),
+    ReActAgent(
+        id="data_onboarding",
+        name="Data Onboarding Agent",
+        description=DataOnboardingDescription,
+        prompt=DataOnboardingPrompt,
+        tools=DataOnboardingTools,
         model_ctor=WorkerModelCtor,
     ),
     ReActAgent(

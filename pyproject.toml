@@ -21,6 +21,7 @@ dependencies = [
     # line above — no deepagents release supports langchain 0.3.x.
     "deepagents==0.7.9",
     "pyyaml>=6.0",
+    "requests>=2.32.5",
     "matplotlib==3.9.4",
     "numpy>=2.0.2",
     "pandas==2.2.3",
@@ -34,7 +35,6 @@ dependencies = [
     "uvicorn[standard]>=0.34.0",
     "python-multipart>=0.0.18",
     "websockets>=14.0",
-    "tiledbsoma==1.17.1",
     "google-search-results==2.4.2",
     "pymed==0.8.9",
     "watchdog>=6.0.0",
@@ -83,9 +83,18 @@ dependencies = [
     "jupyter-kernel-gateway>=3.0.1",
     "mygene==3.2.2",
     "harmonypy==0.0.10",
+    "celltypist==1.7.1",
     "tiledbsoma==1.17.1",
     "docker>=7.0.0",
     "websocket-client>=1.7.0",
+    "utag",
+
+]
+
+[project.optional-dependencies]
+cell-annotation-benchmarks = [
+    "omicverse==2.2.3",
+
     "stlearn>=0.2.5",
     "commot>=0.0.3",
 ]
@@ -123,5 +132,7 @@ convention = "google"
 "notebooks/**" = ["ALL"]
 "**/deprecated/**" = ["ALL"]
 
+[tool.uv.sources]
+utag = { git = "https://github.com/ElementoLab/utag" }
 [dependency-groups]
 dev = []

@@ -1,0 +1,182 @@
+{
+  "mapping_version": "developing_human_heart_cl_v2",
+  "mapping_frozen_at_utc": "2026-07-28T00:15:18Z",
+  "ontology": {
+    "name": "Cell Ontology",
+    "version": "2026-06-08",
+    "source": "https://www.ebi.ac.uk/ols4/ontologies/cl"
+  },
+  "primary_metric": "macro_f1",
+  "evaluation_notes": [
+    "The target space was frozen from publisher ground truth and Cell Ontology before current method outputs were generated.",
+    "Macro F1 is primary because cardiomyocyte classes dominate the natural-prevalence dataset.",
+    "Developmental subtypes are rolled up only where the 238-gene panel and independent reference do not support a common finer label space."
+  ],
+  "target_labels": [
+    "cardiomyocyte",
+    "endothelial",
+    "fibroblast",
+    "smooth muscle",
+    "pericyte",
+    "epicardial/mesothelium",
+    "neural cell",
+    "immune",
+    "Unassigned"
+  ],
+  "target_label_definitions": {
+    "cardiomyocyte": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000746",
+          "label": "cardiac muscle cell"
+        }
+      ]
+    },
+    "endothelial": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000115",
+          "label": "endothelial cell"
+        }
+      ]
+    },
+    "fibroblast": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000057",
+          "label": "fibroblast"
+        }
+      ]
+    },
+    "smooth muscle": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000192",
+          "label": "smooth muscle cell"
+        }
+      ]
+    },
+    "pericyte": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000669",
+          "label": "pericyte"
+        }
+      ]
+    },
+    "epicardial/mesothelium": {
+      "ontology_terms": [
+        {
+          "id": "CL:0011019",
+          "label": "mesothelial cell of epicardium"
+        },
+        {
+          "id": "CL:0000077",
+          "label": "mesothelial cell"
+        }
+      ]
+    },
+    "neural cell": {
+      "ontology_terms": [
+        {
+          "id": "CL:0002319",
+          "label": "neural cell"
+        }
+      ]
+    },
+    "immune": {
+      "ontology_terms": [
+        {
+          "id": "CL:0000738",
+          "label": "leukocyte"
+        }
+      ]
+    },
+    "Unassigned": {
+      "ontology_terms": [],
+      "definition": "Benchmark sentinel for missing, abstained, or biologically unmappable predictions."
+    }
+  },
+  "ground_truth_mapping": {
+    "VIC": "fibroblast",
+    "vCM-LV-AV": "cardiomyocyte",
+    "vCM-RV-AV": "cardiomyocyte",
+    "ncCM-AVC-like": "cardiomyocyte",
+    "EPDC": "fibroblast",
+    "aFibro": "fibroblast",
+    "BEC": "endothelial",
+    "VSMC": "smooth muscle",
+    "vFibro": "fibroblast",
+    "VEC": "endothelial",
+    "aCM-RA": "cardiomyocyte",
+    "aEndocardial": "endothelial",
+    "aCM-LA": "cardiomyocyte",
+    "WBC": "immune",
+    "vEndocardial": "endothelial",
+    "vCM-His-Purkinje": "cardiomyocyte",
+    "LEC": "endothelial",
+    "vCM-RV-Compact": "cardiomyocyte",
+    "vCM-LV-Compact": "cardiomyocyte",
+    "vCM-Proliferating": "cardiomyocyte",
+    "Pericyte": "pericyte",
+    "vCM-RV-Trabecular": "cardiomyocyte",
+    "vCM-LV-Trabecular": "cardiomyocyte",
+    "Epicardial": "epicardial/mesothelium",
+    "Neuronal": "neural cell",
+    "adFibro": "fibroblast",
+    "ncCM-IFT-like": "cardiomyocyte"
+  },
+  "primary_excluded_ground_truth_labels": [],
+  "secondary_label_spaces": {},
+  "prediction_mapping_status": "complete",
+  "common_prediction_mapping": {},
+  "method_prediction_mapping": {
+    "tissueagent": {
+      "adipocyte": "Unassigned",
+      "capillary endothelial cell": "endothelial",
+      "cardiac mesenchymal cell": "fibroblast",
+      "cardiac muscle cell": "cardiomyocyte",
+      "endocardial cell": "endothelial",
+      "endothelial cell": "endothelial",
+      "endothelial cell of artery": "endothelial",
+      "fetal cardiomyocyte": "cardiomyocyte",
+      "fibroblast": "fibroblast",
+      "innate lymphoid cell": "immune",
+      "mesothelial cell of epicardium": "epicardial/mesothelium",
+      "myeloid cell": "immune",
+      "neuron": "neural cell",
+      "pericyte": "pericyte",
+      "smooth muscle cell": "smooth muscle",
+      "unknown": "Unassigned",
+      "vein endothelial cell": "endothelial"
+    },
+    "celltypist": {
+      "EC7_endocardial": "endothelial",
+      "FB4_activated": "fibroblast",
+      "NC2_glial_NGF+": "neural cell",
+      "T/NK_cycling": "immune",
+      "aCM4": "cardiomyocyte",
+      "vCM4": "cardiomyocyte"
+    },
+    "gptcelltype": {
+      "Activated cardiac fibroblast": "fibroblast",
+      "Activated cardiac fibroblast / myofibroblast": "fibroblast",
+      "Atrial cardiomyocyte / conduction-like cardiomyocyte": "cardiomyocyte",
+      "Atrial cardiomyocyte / pacemaker-like cardiomyocyte (mixed)": "cardiomyocyte",
+      "Cardiac fibroblast": "fibroblast",
+      "Endothelial / endocardial cell": "endothelial",
+      "Endothelial cell": "endothelial",
+      "Epicardial / epicardium-derived fibroblast-like cell": "fibroblast",
+      "Epicardial-derived fibroblast / stromal cell": "fibroblast",
+      "His-Purkinje / conduction system cardiomyocyte": "cardiomyocyte",
+      "Lymphatic endothelial cell": "endothelial",
+      "Perivascular / adventitial fibroblast": "fibroblast",
+      "Sinoatrial nodal cardiomyocyte": "cardiomyocyte",
+      "Sinoatrial node pacemaker cardiomyocyte": "cardiomyocyte",
+      "Vascular smooth muscle cell / pericyte": "Unassigned",
+      "Ventricular cardiomyocyte": "cardiomyocyte",
+      "Ventricular cardiomyocyte (with conduction system / nodal-like features)": "cardiomyocyte",
+      "Ventricular conduction system cardiomyocyte": "cardiomyocyte"
+    }
+  }
+}

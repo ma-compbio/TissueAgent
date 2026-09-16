@@ -315,7 +315,10 @@ def create_agent_node(
 
         next_node = tool_node_id if getattr(response, "tool_calls", []) else None
         if not next_node and exit_node is not None:
-            next_node = exit_node(response, state) if callable(exit_node) else exit_node
+            next_node = (
+                exit_node(response, {**state, **extra_update})
+                if callable(exit_node) else exit_node
+            )
 
         # Persist the rendered prompt so the trace UI can surface it. Harmless on
         # graphs whose state schema doesn't declare ``system_prompt`` (main-graph
@@ -442,6 +445,13 @@ def _validate_step_artifacts(expected_artifacts: list[str]) -> tuple[list[str], 
     """
     found: list[str] = []
     missing: list[str] = []
+    def readable_artifact(path):
+        if path.suffix.lower() == ".h5ad":
+            import h5py
+
+            return path.is_file() and h5py.is_hdf5(path)
+        return path.exists()
+
     for artifact_path in expected_artifacts:
         clean = artifact_path.lstrip("/")
         if clean.startswith("project/outputs/"):

@@ -1,0 +1,24 @@
+dataset_id: developing_human_heart
+source_h5ad: demo/data/cell_annotation/inputs/developing_human_heart/full.h5ad
+truth_h5ad: scratch/old_notebooks/Cell_Annotation/Plotting/tissue_annotated_overall_merfish.h5ad
+truth_key: harmonized_tissue_niche_labels
+celltype_key: populations
+spatial_key: spatial
+section_key: sample_id
+expected_shape: [228635, 238]
+exclude_truth_labels: []
+public_context:
+  species: human
+  tissue: developing heart
+  assay: MERFISH
+  expression_state: log1p normalized expression; do not normalize or log-transform again
+  coordinate_units: source spatial coordinate units
+labels:
+  - Flow Tracts
+  - Valves
+  - Conduction System
+  - Left Atrium
+  - Right Atrium
+  - Right Ventricle
+  - Subepicardial
+  - Left Ventricle

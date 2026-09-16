@@ -1,0 +1,74 @@
+schema_version: '1.0'
+dataset_id: han_mouse_brain_stereoseq
+label_contract_sha256: 3569ec3fdb88169b1c484089fe7756ab9c16d849abfb41e2f28b3f1ef1c61f21
+require_pending_label_mapping: true
+title: Han whole adult mouse-brain Stereo-seq 15-section evaluation panel
+species: mouse
+tissue: whole adult mouse brain
+disease: normal
+developmental_stage: 11-week adult
+source:
+  publication_doi: 10.1016/j.neuron.2025.02.015
+  bdsc_doi: 10.12412/BSDC.1699433096.20001
+  bdsc_dataset_id: '1888062851995131906'
+  mouse: mouse_f001
+  cohort: All 478,740 annotated cells in 15 sections frozen at source indices 0,9,17,26,35,44,52,61,70,78,87,96,105,113,122.
+  note: Spatial-ID annotations are transfers from the matched Han snRNA-seq taxonomy;
+    they are not orthogonally measured identities.
+query:
+  kind: local_h5ad
+  path: demo/data/cell_annotation/inputs/han_mouse_brain_stereoseq/full.h5ad
+  expected_n_obs: 478740
+  expected_n_vars: 27159
+  size_bytes: 937145045
+  sha256: 7247b476b7137397401de0c843b265bfbe3478319dfef346005291a6e40cf320
+  require_spatial: true
+  selection_blind_allowed_metadata:
+    obs: []
+    obsm:
+    - spatial
+    obsp: []
+    uns: []
+  blinding_threat_model: The blinded query contains no annotation metadata and is staged
+    under an opaque agent-visible path. Exact public observation identifiers and coordinates
+    are retained for source auditability; the evaluation therefore protects against incidental
+    label leakage, not deliberate public-atlas re-identification.
+ground_truth:
+  column: cell_subclass
+  held_out_columns:
+  - cell_subclass
+  path: demo/data/cell_annotation/inputs/han_mouse_brain_stereoseq/full.ground_truth.tsv
+  sha256: 0106199d103f383651990c506784f1b2df8fdbbaa61b154ffdbacd2cd136a9ac
+  grouped_bootstrap_column: section_id
+  note: Score concordance with the publisher's 19-subclass Spatial-ID taxonomy.
+reference_audit:
+  require_agent_generated: true
+  require_live_discovery: true
+  require_zero_observation_id_overlap: true
+  forbidden_collection_dois: [10.1016/j.neuron.2025.02.015]
+baselines:
+  celltypist:
+    mode: builtin
+    model: Mouse_Whole_Brain.pkl
+    model_size_bytes: 7672163
+    model_sha256: 1e11d918da423015956341e68b56b585ae6e0887da2a23ab8005429e1267ca1f
+    training_source_doi: 10.1038/s41586-023-06812-z
+  gptcelltype:
+    tissue_name: whole adult mouse brain
+    species_name: mouse
+    model: gpt-5.1
+    max_marker_cells_per_cluster: 500
+    max_marker_cells_total: 50000
+    marker_sampling_random_seed: 42
+    training_data_independence: not_certifiable
+  biomni:
+    model: gpt-5.1
+    source: OpenAI
+    agent_timeout_seconds: 10800
+    expected_version: 0.0.8
+  spatialagent:
+    model: gpt-5.1
+    use_azure: false
+    act_timeout_seconds: 10800
+    source_revision: e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6
+mapping: demo/cell_annotation/mappings/han_mouse_brain_stereoseq.json

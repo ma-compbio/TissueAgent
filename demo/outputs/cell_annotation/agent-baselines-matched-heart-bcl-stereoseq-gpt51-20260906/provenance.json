@@ -1,0 +1,1429 @@
+{
+  "created_utc": "2026-09-06T22:45:07Z",
+  "tissueagent_study": {
+    "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/tissueagent-repeatability-heart-bcl-scope-v11-han-20260825-v1/study_manifest_posthoc_mapping_v1.json",
+    "sha256": "76de977d6e8cd54fb9d507e3a7d45d3938f71b6b6170af4b24747d26707ae8b7"
+  },
+  "existing_baselines": {
+    "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/final-heart-bcl-han-stereoseq-20260801-v1/cell_annotation_final_heart_bcl_han_stereoseq_provenance.json",
+    "sha256": "b3b366d73e3ae82e54d29c3f5a7043cff0708590a384170529832cb785178bc8"
+  },
+  "comparison_checks": "matching original query bytes, saved TissueAgent scientific task prompts, truth, label contracts, mappings and exclusions; no adapter preprocessing",
+  "new_baselines": [
+    {
+      "dataset_id": "developing_human_heart",
+      "method": "biomni",
+      "metrics_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/metrics_biomni.tsv",
+      "metrics_sha256": "993c0bd3de0051e47d742238498ca8a21e9e5814fb182ab690ff44a5cf4372af",
+      "metadata_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/metrics_biomni.json",
+      "metadata_sha256": "44b59811dc39485b602cd54810dff9cdcabcdc17b582e584a0e46f15f9e3009c",
+      "run": {
+        "status": "success",
+        "method": "biomni",
+        "version": "0.0.8",
+        "model": "gpt-5.1",
+        "worker_python": "/data/magroup/etrop/tissueagent-conda/envs/tissueagent_biomni_008/bin/python",
+        "process_timeout_seconds": 43200,
+        "query_sha256": "6c45b5c82fe20f88537d9d77d45667b2b7a110aa056cd2bfb21a35acf66d5dd1",
+        "n_input_cells": 228635,
+        "n_predictions": 228635,
+        "n_nonmissing_predictions": 228635,
+        "prediction_row_coverage": 1.0,
+        "upstream_observation_order_preserved": true,
+        "prediction_column": "cell_type",
+        "confidence_column": null,
+        "prompt_sha256": "5521af69a40e059e0da2e954cf3fed83301874f2e9a6fbc432a041e7fd8571b0",
+        "output_path": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni_predictions.tsv",
+        "annotated_h5ad": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/annotated.h5ad",
+        "annotated_h5ad_sha256": "cea4222748832370f461adb13f1bfcd493844c12fbc1bf64fe739e68f3d04117",
+        "worker_request_path": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_request.json",
+        "worker_request_sha256": "b45f79edd6cc1d1bd7d183ee9891b72bebe9086f2d9b7b59d9ac5cac8be76ea1",
+        "worker_result_path": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_result.json",
+        "worker_result_sha256": "75dd731e380b4d09401e188f5aec9ddf658b53aaa7390cee5e979dde7f7ce9e2",
+        "worker_stdout_path": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_stdout.log",
+        "worker_stderr_path": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_stderr.log",
+        "data_sent_to_provider": "agent-selected context derived from the selection-blind query",
+        "timestamp_utc": "2026-09-06T18:42:52Z",
+        "source": "OpenAI",
+        "task_prompt_template": "Annotate cell types in spatial AnnData '<QUERY_H5AD>'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "task_prompt": "Annotate cell types in spatial AnnData '/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/benchmark_input/387fe763941e9fefd8140864e003da/query.h5ad'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to '/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/annotated.h5ad'.",
+        "query_preprocessing": {
+          "adapter_transform": "none",
+          "responsibility": "Biomni agent; see execution transcript for decisions",
+          "agent_input_h5ad": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/benchmark_input/387fe763941e9fefd8140864e003da/query.h5ad"
+        },
+        "h5ad_compatibility": {
+          "removed_null_metadata": []
+        },
+        "llm_output_normalization": "AIMessage.text",
+        "runtime_dependencies": {
+          "scanpy": "1.11.4",
+          "igraph": "0.11.9",
+          "leidenalg": "0.10.2"
+        },
+        "pythonpath": "/home/etrop/TissueAgent/data/cache/biomni/python-dependencies"
+      },
+      "task_prompt_alignment": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/task_prompt_alignment.json",
+        "sha256": "1583ca42697ddf00a053dd32e3659a8bb2c6c74aa7254b695f4296cfedd9ea01",
+        "protocol": "matched_task_original_query_v1",
+        "task_prompt_template": "Annotate cell types in spatial AnnData '<QUERY_H5AD>'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "template_sha256": "12ca1eb4fd534af826972dbb4c5ff9fcc07e9312ad90a78a951197056d68dc37",
+        "tissueagent_prompt_sources": [
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1-replacement3/tissueagent_run.json",
+            "sha256": "f6c8ab209e19234bd9ae90b42487a04c4e7fe0ad3965b141254697b856ac4b5d",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/5aba4d8464918e5a51efc5be38027a4c/query.h5ad'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/5aba4d8464918e5a51efc5be38027a4c/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2/tissueagent_run.json",
+            "sha256": "cc1768ffa87d08a47cff488c88c1e6c482e9e482f2cfcf4c1b0740ab65dd8f55",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/0df3ec48aeec86c02813224361d92b54/query.h5ad'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/0df3ec48aeec86c02813224361d92b54/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3-replacement1/tissueagent_run.json",
+            "sha256": "e627a9de87e96f1340cf4a6f6a21f131aeea67fa7e74bed29c0fdd16b70fe645",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/691c6b879748263b0e3589c025ac8fc0/query.h5ad'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/691c6b879748263b0e3589c025ac8fc0/tissueagent_annotated.h5ad'."
+          }
+        ],
+        "changes_to_scientific_task": "input and output paths only",
+        "adapter_preprocessing": "none",
+        "execution_timeout_seconds": 21600,
+        "process_timeout_seconds": 43200,
+        "runtime_environment": {
+          "PYTHONPATH": "/home/etrop/TissueAgent/data/cache/biomni/python-dependencies",
+          "TMPDIR": "/home/etrop/TissueAgent/workspace/cache/runtime",
+          "XDG_CACHE_HOME": "/home/etrop/TissueAgent/workspace/cache/runtime/xdg",
+          "HF_HOME": "/home/etrop/TissueAgent/workspace/cache/runtime/huggingface"
+        }
+      },
+      "reference_files": [],
+      "annotation_outcome": {
+        "status": "all_generic_labels",
+        "interpretation": "annotation_failure",
+        "method": "biomni",
+        "dataset_id": "developing_human_heart",
+        "process_completed": true,
+        "n_prediction_rows": 228635,
+        "raw_prediction_labels": [
+          "cell"
+        ],
+        "query_sha256": "6c45b5c82fe20f88537d9d77d45667b2b7a110aa056cd2bfb21a35acf66d5dd1",
+        "cause": "Biomni's generated code treated adata.var.index.name is None as missing gene identifiers and replaced valid var_names with gene_0, gene_1, etc. in its working copy. It subsequently concluded that marker annotation was impossible and explicitly assigned the generic label cell to every observation.",
+        "input_check": "The original query contains 238 valid gene symbols in var_names, including ABCC9, ADAMTS6, ADAMTS8, ADGRL1 and ADGRL2. The input file was not mutated. The final saved file reloads the original expression and gene names but contains only generic cell labels.",
+        "evidence": {
+          "transcript": "biomni/worker_stdout.log",
+          "incorrect_index_check_line": 351,
+          "generic_label_decision_line": 517,
+          "final_response": "biomni/worker_result.json"
+        },
+        "scoring": "Retain this first completed output. Generic cell labels map to Unassigned under the unchanged frozen scoring policy, producing zero accuracy and macro F1.",
+        "primary_result_replaced": false,
+        "audit_artifact": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v3-biomni/annotation_outcome.json",
+          "sha256": "3dbe3ca84b3440e8c34fe7159d5ad3615cae07cb774b846dedea7ddeb3082663"
+        }
+      }
+    },
+    {
+      "dataset_id": "developing_human_heart",
+      "method": "spatialagent",
+      "metrics_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/metrics_spatialagent.tsv",
+      "metrics_sha256": "bbe139a600d60ae3d0cb68eb69d61d9719c9423deaa809a2c826dd399e064262",
+      "metadata_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/metrics_spatialagent.json",
+      "metadata_sha256": "aac00f7cd01aa34a143e998f9d78e7cb5cd68227cf3b599ebee4691054c249f8",
+      "run": {
+        "status": "success",
+        "method": "spatialagent",
+        "version": "e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6",
+        "model": "gpt-5.1",
+        "worker_python": "/data/magroup/etrop/tissueagent-conda/envs/tissueagent_spatialagent_e51ec0f/bin/python",
+        "process_timeout_seconds": 43200,
+        "query_sha256": "6c45b5c82fe20f88537d9d77d45667b2b7a110aa056cd2bfb21a35acf66d5dd1",
+        "n_input_cells": 228635,
+        "n_predictions": 228635,
+        "n_nonmissing_predictions": 228635,
+        "prediction_row_coverage": 1.0,
+        "upstream_observation_order_preserved": true,
+        "prediction_column": "cell_type",
+        "confidence_column": null,
+        "prompt_sha256": "12085ae58798519d94129be7a97d8a39227fed08e593f02d4c83be00c20b33c3",
+        "output_path": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent_predictions.tsv",
+        "annotated_h5ad": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/celltype_annotated.h5ad",
+        "annotated_h5ad_sha256": "35e4abdb02f26886f8312fbead00b3164378841eabd24047c4637ac6db81abf2",
+        "worker_request_path": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/worker_request.json",
+        "worker_request_sha256": "aa01e5b47cc0014af493c905085f36c1a56ecef6d3d1d0bd20a8244940757480",
+        "worker_result_path": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/worker_result.json",
+        "worker_result_sha256": "02a516273f4d872565f43505e870c8b1cad0cdb8d684bd6e90082fb5ba7e04c5",
+        "worker_stdout_path": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/worker_stdout.log",
+        "worker_stderr_path": "demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/worker_stderr.log",
+        "data_sent_to_provider": "agent-selected context derived from the selection-blind query",
+        "timestamp_utc": "2026-09-06T19:06:24Z",
+        "source_revision": "e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6",
+        "use_azure": false,
+        "use_local_embeddings": true,
+        "embedding_cache_path": "/home/etrop/TissueAgent/data/cache/spatialagent/embedding_cache",
+        "task_prompt_template": "Annotate cell types in spatial AnnData '<QUERY_H5AD>'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "task_prompt": "Annotate cell types in spatial AnnData '/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/benchmark_input/b97a29b0509239c6539aab4f81f85d/query.h5ad'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to '/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/celltype_annotated.h5ad'.",
+        "harmony_compatibility": {
+          "harmonypy_version": "2.0.0",
+          "scanpy_version": "1.11.5",
+          "corrected_orientation": "cells_by_components"
+        },
+        "h5ad_compatibility": {
+          "removed_null_metadata": [
+            "uns.log1p.base",
+            "uns.pca.params.mask_var",
+            "uns.rank_genes_groups.params.layer"
+          ]
+        }
+      },
+      "task_prompt_alignment": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/task_prompt_alignment.json",
+        "sha256": "f12669d3bae9e83ec658f9b4fa62817553bbedd75e441f8057ff70dc94137ccc",
+        "protocol": "matched_task_original_query_v1",
+        "task_prompt_template": "Annotate cell types in spatial AnnData '<QUERY_H5AD>'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "template_sha256": "12ca1eb4fd534af826972dbb4c5ff9fcc07e9312ad90a78a951197056d68dc37",
+        "tissueagent_prompt_sources": [
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1-replacement3/tissueagent_run.json",
+            "sha256": "f6c8ab209e19234bd9ae90b42487a04c4e7fe0ad3965b141254697b856ac4b5d",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/5aba4d8464918e5a51efc5be38027a4c/query.h5ad'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/5aba4d8464918e5a51efc5be38027a4c/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2/tissueagent_run.json",
+            "sha256": "cc1768ffa87d08a47cff488c88c1e6c482e9e482f2cfcf4c1b0740ab65dd8f55",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/0df3ec48aeec86c02813224361d92b54/query.h5ad'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/0df3ec48aeec86c02813224361d92b54/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3-replacement1/tissueagent_run.json",
+            "sha256": "e627a9de87e96f1340cf4a6f6a21f131aeea67fa7e74bed29c0fdd16b70fe645",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/691c6b879748263b0e3589c025ac8fc0/query.h5ad'. Biological context: species='human', tissue='developing human heart', disease='healthy', developmental_stage='embryonic and fetal'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/691c6b879748263b0e3589c025ac8fc0/tissueagent_annotated.h5ad'."
+          }
+        ],
+        "changes_to_scientific_task": "input and output paths only",
+        "adapter_preprocessing": "none",
+        "execution_timeout_seconds": 21600,
+        "process_timeout_seconds": 43200
+      },
+      "reference_files": [
+        {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/czi_reference/sc_reference_99e317c0-1fab-4f73-b511-859e752fd1c3.h5ad",
+          "sha256": "149ee207aed813daca3bf22929a1889f1616db7788449889296f3349b337f43c",
+          "dataset_id": "99e317c0-1fab-4f73-b511-859e752fd1c3",
+          "collection_doi": "10.1161/CIRCULATIONAHA.120.051921",
+          "dataset_title": "Sex-Specific Control of Human Heart Maturation by the Progesterone Receptor.",
+          "observation_id_overlap": 0,
+          "forbidden_source_check": "passed"
+        }
+      ],
+      "annotation_outcome": {
+        "status": "not_flagged"
+      }
+    },
+    {
+      "dataset_id": "bcl",
+      "method": "biomni",
+      "metrics_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/metrics_biomni.tsv",
+      "metrics_sha256": "54d62ad1bfea74a7c14c9a708fa1b572ba138fc94ba00dd4cfe65c595b8f0537",
+      "metadata_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/metrics_biomni.json",
+      "metadata_sha256": "6d10cb611e859391e06100621f45931ab28d10261d4bef9429bc5a1fcd9f7330",
+      "run": {
+        "status": "success",
+        "method": "biomni",
+        "version": "0.0.8",
+        "model": "gpt-5.1",
+        "worker_python": "/data/magroup/etrop/tissueagent-conda/envs/tissueagent_biomni_008/bin/python",
+        "process_timeout_seconds": 43200,
+        "query_sha256": "30e89b96220b7c481fa619d65aa0f3f7a508a2438a0cb8a6a341621c2b86ddc8",
+        "n_input_cells": 49910,
+        "n_predictions": 49910,
+        "n_nonmissing_predictions": 49910,
+        "prediction_row_coverage": 1.0,
+        "upstream_observation_order_preserved": true,
+        "prediction_column": "cell_type",
+        "confidence_column": null,
+        "prompt_sha256": "474df3a2b95aaa03d61732e148a8a795f3ac0d307032a55f94ca82985cebdf32",
+        "output_path": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni_predictions.tsv",
+        "annotated_h5ad": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/annotated.h5ad",
+        "annotated_h5ad_sha256": "3a8eb9a43d7112a3cd3dd7f3f7443b741da48e47355c9045d89dc52f84eae249",
+        "worker_request_path": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_request.json",
+        "worker_request_sha256": "59640bfdfd4d85e23474726d3fb9bd372925278ad031a63ad03994d323ecdc30",
+        "worker_result_path": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_result.json",
+        "worker_result_sha256": "16dc9c5b3b6cb5ec644d0237b876775e3516165595ccffb5477d1958458e92b3",
+        "worker_stdout_path": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_stdout.log",
+        "worker_stderr_path": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_stderr.log",
+        "data_sent_to_provider": "agent-selected context derived from the selection-blind query",
+        "timestamp_utc": "2026-09-06T18:26:47Z",
+        "source": "OpenAI",
+        "task_prompt_template": "Annotate cell types in AnnData '<QUERY_H5AD>'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "task_prompt": "Annotate cell types in AnnData '/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/benchmark_input/ea282b2f90c16933fc1025a8092fcb/query.h5ad'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to '/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/annotated.h5ad'.",
+        "query_preprocessing": {
+          "adapter_transform": "none",
+          "responsibility": "Biomni agent; see execution transcript for decisions",
+          "agent_input_h5ad": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/benchmark_input/ea282b2f90c16933fc1025a8092fcb/query.h5ad"
+        },
+        "h5ad_compatibility": {
+          "removed_null_metadata": [
+            "uns.log1p.base",
+            "uns.rank_genes_groups.params.layer"
+          ]
+        },
+        "llm_output_normalization": "AIMessage.text",
+        "runtime_dependencies": {
+          "scanpy": "1.11.4",
+          "igraph": "0.11.9",
+          "leidenalg": "0.10.2"
+        },
+        "pythonpath": "/home/etrop/TissueAgent/data/cache/biomni/python-dependencies"
+      },
+      "task_prompt_alignment": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v3-biomni/task_prompt_alignment.json",
+        "sha256": "29d316f3cd99b2c87157fbb08d297770b4ce226f4a844e5d01cf4c4e947cd91f",
+        "protocol": "matched_task_original_query_v1",
+        "task_prompt_template": "Annotate cell types in AnnData '<QUERY_H5AD>'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "template_sha256": "0867ba3eaad82f4c28dba6edac87e95342c3763b93cd9f890725c5720431491c",
+        "tissueagent_prompt_sources": [
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r1/tissueagent_run.json",
+            "sha256": "07ae79cbe82957d67949ead022eb37e3f837ece23e7a0c0ae2df8c7539fb8b54",
+            "prompt": "Annotate cell types in AnnData 'project/uploads/benchmark_inputs/blind/c34e3ea7f3c138c7e2131970ce65d89c/query.h5ad'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/c34e3ea7f3c138c7e2131970ce65d89c/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r2/tissueagent_run.json",
+            "sha256": "98f0392d706443a8148bb636da4830318646406c76dbe9083da84f1e08689d4a",
+            "prompt": "Annotate cell types in AnnData 'project/uploads/benchmark_inputs/blind/1f6d35e2c7c81c630e455f7dc7eb5b17/query.h5ad'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/1f6d35e2c7c81c630e455f7dc7eb5b17/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r3-replacement1/tissueagent_run.json",
+            "sha256": "393bc2d94ef1b0af2e6f4d3b5a36e3069ea658d18846e534a0fd6c64a53b7b83",
+            "prompt": "Annotate cell types in AnnData 'project/uploads/benchmark_inputs/blind/bab5efdefdb95e0e84c5f0cf068b9d3d/query.h5ad'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/bab5efdefdb95e0e84c5f0cf068b9d3d/tissueagent_annotated.h5ad'."
+          }
+        ],
+        "changes_to_scientific_task": "input and output paths only",
+        "adapter_preprocessing": "none",
+        "execution_timeout_seconds": 21600,
+        "process_timeout_seconds": 43200,
+        "runtime_environment": {
+          "PYTHONPATH": "/home/etrop/TissueAgent/data/cache/biomni/python-dependencies",
+          "TMPDIR": "/home/etrop/TissueAgent/workspace/cache/runtime",
+          "XDG_CACHE_HOME": "/home/etrop/TissueAgent/workspace/cache/runtime/xdg",
+          "HF_HOME": "/home/etrop/TissueAgent/workspace/cache/runtime/huggingface"
+        }
+      },
+      "reference_files": [],
+      "annotation_outcome": {
+        "status": "not_flagged"
+      }
+    },
+    {
+      "dataset_id": "bcl",
+      "method": "spatialagent",
+      "metrics_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/metrics_spatialagent.tsv",
+      "metrics_sha256": "aaccda17e2c9e73af6e7e11a209fd3a56286304f314dff927f5737919600411d",
+      "metadata_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/metrics_spatialagent.json",
+      "metadata_sha256": "5eb6785e8802944c11ce809621c5f0d194dfc62e829f3989966713164b2ec2cd",
+      "run": {
+        "status": "success",
+        "method": "spatialagent",
+        "version": "e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6",
+        "model": "gpt-5.1",
+        "worker_python": "/data/magroup/etrop/tissueagent-conda/envs/tissueagent_spatialagent_e51ec0f/bin/python",
+        "process_timeout_seconds": 43200,
+        "query_sha256": "30e89b96220b7c481fa619d65aa0f3f7a508a2438a0cb8a6a341621c2b86ddc8",
+        "n_input_cells": 49910,
+        "n_predictions": 49910,
+        "n_nonmissing_predictions": 49910,
+        "prediction_row_coverage": 1.0,
+        "upstream_observation_order_preserved": true,
+        "prediction_column": "cell_type",
+        "confidence_column": null,
+        "prompt_sha256": "cbf4ee3105b46de5302214bdde7e67b583e5d1d6dbeb088391eb617096d756c3",
+        "output_path": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent_predictions.tsv",
+        "annotated_h5ad": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/celltype_annotated.h5ad",
+        "annotated_h5ad_sha256": "78b3507f50734bbbdd13ebd92931bd7b9625fe0705b4017455d49ce0503cd154",
+        "worker_request_path": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/worker_request.json",
+        "worker_request_sha256": "4e1a19945d0fd8b09f572d05b941efdc60bc1b012dcd2a429995ae4eb4a618be",
+        "worker_result_path": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/worker_result.json",
+        "worker_result_sha256": "49fda99e41496afa17fde8630875b12374bd15e70332adf106ff9edec21828c5",
+        "worker_stdout_path": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/worker_stdout.log",
+        "worker_stderr_path": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/worker_stderr.log",
+        "data_sent_to_provider": "agent-selected context derived from the selection-blind query",
+        "timestamp_utc": "2026-09-06T18:16:57Z",
+        "source_revision": "e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6",
+        "use_azure": false,
+        "use_local_embeddings": true,
+        "embedding_cache_path": "/home/etrop/TissueAgent/data/cache/spatialagent/embedding_cache",
+        "task_prompt_template": "Annotate cell types in AnnData '<QUERY_H5AD>'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "task_prompt": "Annotate cell types in AnnData '/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/benchmark_input/b73069298e9021aec144e7f361e5dd/query.h5ad'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to '/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/celltype_annotated.h5ad'.",
+        "harmony_compatibility": {
+          "harmonypy_version": "2.0.0",
+          "scanpy_version": "1.11.5",
+          "corrected_orientation": "cells_by_components"
+        },
+        "h5ad_compatibility": {
+          "removed_null_metadata": [
+            "uns.log1p.base",
+            "uns.pca.params.mask_var",
+            "uns.rank_genes_groups.params.layer"
+          ]
+        }
+      },
+      "task_prompt_alignment": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/task_prompt_alignment.json",
+        "sha256": "0731e95b0f53c60f9f45c3b33f5417c5eb28f98890a96b559413fdeb9ac3c5a4",
+        "protocol": "matched_task_original_query_v1",
+        "task_prompt_template": "Annotate cell types in AnnData '<QUERY_H5AD>'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "template_sha256": "0867ba3eaad82f4c28dba6edac87e95342c3763b93cd9f890725c5720431491c",
+        "tissueagent_prompt_sources": [
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r1/tissueagent_run.json",
+            "sha256": "07ae79cbe82957d67949ead022eb37e3f837ece23e7a0c0ae2df8c7539fb8b54",
+            "prompt": "Annotate cell types in AnnData 'project/uploads/benchmark_inputs/blind/c34e3ea7f3c138c7e2131970ce65d89c/query.h5ad'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/c34e3ea7f3c138c7e2131970ce65d89c/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r2/tissueagent_run.json",
+            "sha256": "98f0392d706443a8148bb636da4830318646406c76dbe9083da84f1e08689d4a",
+            "prompt": "Annotate cell types in AnnData 'project/uploads/benchmark_inputs/blind/1f6d35e2c7c81c630e455f7dc7eb5b17/query.h5ad'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/1f6d35e2c7c81c630e455f7dc7eb5b17/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r3-replacement1/tissueagent_run.json",
+            "sha256": "393bc2d94ef1b0af2e6f4d3b5a36e3069ea658d18846e534a0fd6c64a53b7b83",
+            "prompt": "Annotate cell types in AnnData 'project/uploads/benchmark_inputs/blind/bab5efdefdb95e0e84c5f0cf068b9d3d/query.h5ad'. Biological context: species='human', tissue='central nervous system', disease='primary central nervous system diffuse large B-cell lymphoma', developmental_stage='adult'. Study context: The dataset contains 5-prime single-cell RNA sequencing from dissociated surgical biopsies. The study focuses on the lymphoma tumor and tumor-immune microenvironment. This is an immune- and tumor-focused cohort, not a representative whole-brain atlas; CNS-resident cells may nevertheless be present. Annotation scope contract: {\"primary_scope\":\"lymphoma tumor and tumor-immune microenvironment\",\"requested_output\":\"cell identity and, when supported by expression evidence, disease or malignancy state\",\"sampling_context\":\"dissociated surgical biopsies; not a representative whole-brain atlas\",\"secondary_scope\":\"CNS-resident populations may be present\"}. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/bab5efdefdb95e0e84c5f0cf068b9d3d/tissueagent_annotated.h5ad'."
+          }
+        ],
+        "changes_to_scientific_task": "input and output paths only",
+        "adapter_preprocessing": "none",
+        "execution_timeout_seconds": 21600,
+        "process_timeout_seconds": 43200
+      },
+      "reference_files": [
+        {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/czi_reference/sc_reference_f64e1be1-de15-4d27-8da4-82225cd4c035.h5ad",
+          "sha256": "af51019115c6497cd5dee361e1a72528b64b26072e7a3c955e7a314ed0218ed9",
+          "dataset_id": "f64e1be1-de15-4d27-8da4-82225cd4c035",
+          "collection_doi": "10.1016/j.ccell.2021.09.008",
+          "dataset_title": "Immune cells",
+          "observation_id_overlap": 0,
+          "forbidden_source_check": "passed"
+        }
+      ],
+      "annotation_outcome": {
+        "status": "not_flagged"
+      }
+    },
+    {
+      "dataset_id": "han_mouse_brain_stereoseq",
+      "method": "biomni",
+      "metrics_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/metrics_biomni.tsv",
+      "metrics_sha256": "96e6a56b2f8c2bfb73ea3a02b7634c8d1c26e6a041a24253b0c05ee41a9e48ae",
+      "metadata_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/metrics_biomni.json",
+      "metadata_sha256": "021198b4570b85efd38d1c2faee6358f45635d6992dc8a58fa9deeaf93638520",
+      "run": {
+        "status": "success",
+        "method": "biomni",
+        "version": "0.0.8",
+        "model": "gpt-5.1",
+        "worker_python": "/data/magroup/etrop/tissueagent-conda/envs/tissueagent_biomni_008/bin/python",
+        "process_timeout_seconds": 43200,
+        "query_sha256": "7247b476b7137397401de0c843b265bfbe3478319dfef346005291a6e40cf320",
+        "n_input_cells": 478740,
+        "n_predictions": 478740,
+        "n_nonmissing_predictions": 478740,
+        "prediction_row_coverage": 1.0,
+        "upstream_observation_order_preserved": true,
+        "prediction_column": "cell_type",
+        "confidence_column": null,
+        "prompt_sha256": "1a3cc5310b697b0113ccbc7caf9c4453bdb659910b18d2900325f47ebfa04185",
+        "output_path": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni_predictions.tsv",
+        "annotated_h5ad": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/annotated.h5ad",
+        "annotated_h5ad_sha256": "1a52befafc4d802ab9bc7e18b1aaac3c4fc119feec66a3c8654843acb2f36a74",
+        "worker_request_path": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_request.json",
+        "worker_request_sha256": "7240bb81dfbd767ea73336a5496184ea36f434276204c50630c91d38d4002d00",
+        "worker_result_path": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_result.json",
+        "worker_result_sha256": "328f479b517ff3dc941cb277451ec633d1361792527ec2d5e82245df4d8cadb8",
+        "worker_stdout_path": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_stdout.log",
+        "worker_stderr_path": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/worker_stderr.log",
+        "data_sent_to_provider": "agent-selected context derived from the selection-blind query",
+        "timestamp_utc": "2026-09-06T20:28:32Z",
+        "source": "OpenAI",
+        "task_prompt_template": "Annotate cell types in spatial AnnData '<QUERY_H5AD>'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "task_prompt": "Annotate cell types in spatial AnnData '/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/benchmark_input/defae54ddfebeae70630671af6abfa/query.h5ad'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to '/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/biomni/annotated.h5ad'.",
+        "query_preprocessing": {
+          "adapter_transform": "none",
+          "responsibility": "Biomni agent; see execution transcript for decisions",
+          "agent_input_h5ad": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/benchmark_input/defae54ddfebeae70630671af6abfa/query.h5ad"
+        },
+        "h5ad_compatibility": {
+          "removed_null_metadata": [
+            "uns.log1p.base",
+            "uns.rank_genes_groups.params.layer"
+          ]
+        },
+        "llm_output_normalization": "AIMessage.text",
+        "runtime_dependencies": {
+          "scanpy": "1.11.4",
+          "igraph": "0.11.9",
+          "leidenalg": "0.10.2"
+        },
+        "pythonpath": "/home/etrop/TissueAgent/data/cache/biomni/python-dependencies"
+      },
+      "task_prompt_alignment": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v3-biomni/task_prompt_alignment.json",
+        "sha256": "c4f18179bb40925fcadcc1bb99a22e716e82f23d14abba0a23917e1032947ee7",
+        "protocol": "matched_task_original_query_v1",
+        "task_prompt_template": "Annotate cell types in spatial AnnData '<QUERY_H5AD>'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "template_sha256": "e9bd1c89760968a63108f353b536571b94cecee153e8fbfe1eab5c104a9b54ee",
+        "tissueagent_prompt_sources": [
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1/tissueagent_run.json",
+            "sha256": "42f9210d3bafdd13681ebea11a4bbb78a8a7822f12c0d66b8469b03f83e475d8",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/210b5a1afee09920c075e181fd8e06ea/query.h5ad'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/210b5a1afee09920c075e181fd8e06ea/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2-replacement3/tissueagent_run.json",
+            "sha256": "304eb2f071e29e3d8c31dee80e4681c29ef88e478dfdd1f1d356ad9fbedadfd4",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/10f871b46198ab3b43d5cc4591d99196/query.h5ad'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/10f871b46198ab3b43d5cc4591d99196/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3/tissueagent_run.json",
+            "sha256": "b2faf708277dae225d1310ad5d7edf670062cae5eaaf54afecd9a4e52361599e",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/ce760e4b6e2bb2bd47ec02a4eadffadd/query.h5ad'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/ce760e4b6e2bb2bd47ec02a4eadffadd/tissueagent_annotated.h5ad'."
+          }
+        ],
+        "changes_to_scientific_task": "input and output paths only",
+        "adapter_preprocessing": "none",
+        "execution_timeout_seconds": 21600,
+        "process_timeout_seconds": 43200,
+        "runtime_environment": {
+          "PYTHONPATH": "/home/etrop/TissueAgent/data/cache/biomni/python-dependencies",
+          "TMPDIR": "/home/etrop/TissueAgent/workspace/cache/runtime",
+          "XDG_CACHE_HOME": "/home/etrop/TissueAgent/workspace/cache/runtime/xdg",
+          "HF_HOME": "/home/etrop/TissueAgent/workspace/cache/runtime/huggingface"
+        }
+      },
+      "reference_files": [],
+      "annotation_outcome": {
+        "status": "not_flagged"
+      }
+    },
+    {
+      "dataset_id": "han_mouse_brain_stereoseq",
+      "method": "spatialagent",
+      "metrics_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/metrics_spatialagent.tsv",
+      "metrics_sha256": "4d301557282301d14e2574cf218b487dec6d0d11a2920eda9a3391cbafb9c476",
+      "metadata_path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/metrics_spatialagent.json",
+      "metadata_sha256": "f395b3d524e95f987a4802b7e475a8831de5bdd751916392b5898df3e0853557",
+      "run": {
+        "status": "success",
+        "method": "spatialagent",
+        "version": "e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6",
+        "model": "gpt-5.1",
+        "worker_python": "/data/magroup/etrop/tissueagent-conda/envs/tissueagent_spatialagent_e51ec0f/bin/python",
+        "process_timeout_seconds": 43200,
+        "query_sha256": "7247b476b7137397401de0c843b265bfbe3478319dfef346005291a6e40cf320",
+        "n_input_cells": 478740,
+        "n_predictions": 478740,
+        "n_nonmissing_predictions": 478740,
+        "prediction_row_coverage": 1.0,
+        "upstream_observation_order_preserved": true,
+        "prediction_column": "cell_type",
+        "confidence_column": null,
+        "prompt_sha256": "bf7d74d1a65584e5f8bafc49812ed79a3271307b3c14069197b948ea92a4d898",
+        "output_path": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent_predictions.tsv",
+        "annotated_h5ad": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/celltype_annotated.h5ad",
+        "annotated_h5ad_sha256": "74dae7399fac358cfc3b75c9a58a79e8a323723bfc52ec264abe2b8e9f97dde8",
+        "worker_request_path": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/worker_request.json",
+        "worker_request_sha256": "2984d8b8dbede8ea7ce607a5ab549493d215c7810144760a021d012d318ea845",
+        "worker_result_path": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/worker_result.json",
+        "worker_result_sha256": "62b8c0caec00159eb70139bf194a2ddcfeda8355870cb7e1114d778e3959f487",
+        "worker_stdout_path": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/worker_stdout.log",
+        "worker_stderr_path": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/worker_stderr.log",
+        "data_sent_to_provider": "agent-selected context derived from the selection-blind query",
+        "timestamp_utc": "2026-09-06T22:43:52Z",
+        "source_revision": "e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6",
+        "use_azure": false,
+        "use_local_embeddings": true,
+        "embedding_cache_path": "/home/etrop/TissueAgent/data/cache/spatialagent/embedding_cache",
+        "resume_from": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent",
+        "resumed_artifacts": [
+          {
+            "source": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/preprocessed.h5ad",
+            "destination": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/preprocessed.h5ad",
+            "sha256": "2ff9bdafa47b589393f3f533ff2e183a4e5d3e26ea3cb61905d56ecb7e6b030b"
+          },
+          {
+            "source": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/celltype_transferred.csv",
+            "destination": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/celltype_transferred.csv",
+            "sha256": "fd54ff632166758ed2d2c8159dac35666d700d515f9397a90f28dec18aa90ba4"
+          },
+          {
+            "source": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/czi_reference/reference_info_3bbb6cf9-72b9-41be-b568-656de6eb18b5.txt",
+            "destination": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/czi_reference/reference_info_3bbb6cf9-72b9-41be-b568-656de6eb18b5.txt",
+            "sha256": "b0735b53493b3ef163d5dc4fe92da9f85a87ee15b453d5e023e854d46ca39b9b"
+          },
+          {
+            "source": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/czi_reference/sc_reference_3bbb6cf9-72b9-41be-b568-656de6eb18b5.h5ad",
+            "destination": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/czi_reference/sc_reference_3bbb6cf9-72b9-41be-b568-656de6eb18b5.h5ad",
+            "sha256": "e5e3dbaaa9c88708567fd20d9c575912ea71a5c39eb743337cd0f900992e77a8"
+          },
+          {
+            "source": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/celltype-transferred_1.h5ad",
+            "destination": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/celltype-transferred_1.h5ad",
+            "sha256": "a5e6cdf2acd78612d943348d0134fb6a728268ab8f9b646a734af0bf14c439ec"
+          }
+        ],
+        "task_prompt_template": "Annotate cell types in spatial AnnData '<QUERY_H5AD>'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "task_prompt": "Annotate cell types in spatial AnnData '/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/benchmark_input/5e3d02f099c3ae9a16d9d00c8c32c9/query.h5ad'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to '/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/celltype_annotated.h5ad'.",
+        "harmony_compatibility": {
+          "harmonypy_version": "2.0.0",
+          "scanpy_version": "1.11.5",
+          "corrected_orientation": "cells_by_components"
+        },
+        "h5ad_compatibility": {
+          "removed_null_metadata": [
+            "uns.log1p.base",
+            "uns.pca.params.mask_var",
+            "uns.rank_genes_groups.params.layer"
+          ]
+        }
+      },
+      "task_prompt_alignment": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/task_prompt_alignment.json",
+        "sha256": "bf35856009d0814ff3688310b220daac4b5cd2ba998443078faac031f88c35d3",
+        "protocol": "matched_task_original_query_v1",
+        "task_prompt_template": "Annotate cell types in spatial AnnData '<QUERY_H5AD>'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to '<ANNOTATED_H5AD>'.",
+        "template_sha256": "e9bd1c89760968a63108f353b536571b94cecee153e8fbfe1eab5c104a9b54ee",
+        "tissueagent_prompt_sources": [
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1/tissueagent_run.json",
+            "sha256": "42f9210d3bafdd13681ebea11a4bbb78a8a7822f12c0d66b8469b03f83e475d8",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/210b5a1afee09920c075e181fd8e06ea/query.h5ad'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/210b5a1afee09920c075e181fd8e06ea/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2-replacement3/tissueagent_run.json",
+            "sha256": "304eb2f071e29e3d8c31dee80e4681c29ef88e478dfdd1f1d356ad9fbedadfd4",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/10f871b46198ab3b43d5cc4591d99196/query.h5ad'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/10f871b46198ab3b43d5cc4591d99196/tissueagent_annotated.h5ad'."
+          },
+          {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3/tissueagent_run.json",
+            "sha256": "b2faf708277dae225d1310ad5d7edf670062cae5eaaf54afecd9a4e52361599e",
+            "prompt": "Annotate cell types in spatial AnnData 'project/uploads/benchmark_inputs/blind/ce760e4b6e2bb2bd47ec02a4eadffadd/query.h5ad'. Biological context: species='mouse', tissue='whole adult mouse brain', disease='normal', developmental_stage='11-week adult'. Save the annotated H5AD to 'project/outputs/cell_annotation_runs/blind/ce760e4b6e2bb2bd47ec02a4eadffadd/tissueagent_annotated.h5ad'."
+          }
+        ],
+        "changes_to_scientific_task": "input and output paths only",
+        "adapter_preprocessing": "none",
+        "execution_timeout_seconds": 21600,
+        "process_timeout_seconds": 43200,
+        "runtime_environment": {
+          "PYTHONPATH": null,
+          "TMPDIR": "/home/etrop/TissueAgent/workspace/cache/runtime",
+          "XDG_CACHE_HOME": "/home/etrop/TissueAgent/workspace/cache/runtime/xdg",
+          "HF_HOME": "/home/etrop/TissueAgent/workspace/cache/runtime/huggingface"
+        }
+      },
+      "reference_files": [
+        {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-spatialagent/spatialagent/czi_reference/sc_reference_3bbb6cf9-72b9-41be-b568-656de6eb18b5.h5ad",
+          "sha256": "e5e3dbaaa9c88708567fd20d9c575912ea71a5c39eb743337cd0f900992e77a8",
+          "dataset_id": "3bbb6cf9-72b9-41be-b568-656de6eb18b5",
+          "collection_doi": "10.1016/j.cell.2022.12.010",
+          "dataset_title": "BrainAgingSpatialAtlas_snRNAseq",
+          "observation_id_overlap": 0,
+          "forbidden_source_check": "passed"
+        }
+      ],
+      "annotation_outcome": {
+        "status": "not_flagged"
+      }
+    }
+  ],
+  "existing_inputs": [
+    {
+      "dataset": "Developing human heart",
+      "metrics_tsv": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/heart-blinded-policy-final-20260728-v4/metrics_final_certified_v2.tsv",
+        "sha256": "d51312dffc7c149b64e4a7d97631b4d6881e9749cf408b74a4603a1ac1f9dcba"
+      },
+      "metrics_json": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/heart-blinded-policy-final-20260728-v4/metrics_final_certified_v2.json",
+        "sha256": "d739c953e7cb0425d92df963319242ae4e83a67caa3ba2739eff5438d26a17aa"
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "primary",
+        "target_labels": [
+          "cardiomyocyte",
+          "endothelial",
+          "fibroblast",
+          "smooth muscle",
+          "pericyte",
+          "epicardial/mesothelium",
+          "neural cell",
+          "immune",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [],
+        "label_contract_sha256": "680980cc253dd8ae28c24c35f52878c3d6397bb4e77dd82327d3e42eec16c61f",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/heart-blinded-policy-final-20260728-v4/ground_truth.tsv",
+            "sha256": "943f59717573571a137a6bef5197be626187f1c979f8f67c5f602ea934ceef2d"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/heart-blinded-policy-final-20260728-v4/label_mapping.json",
+            "sha256": "4f7d33d2cd8ad30f132695ba6c65e2eee2b4f21ccee79245aca42a4c7cfd8ac4"
+          },
+          "predictions": {
+            "celltypist": {
+              "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/heart-blinded-final-gpt51-20260728-v4/celltypist_predictions.tsv",
+              "sha256": "572bb5986058f8dcae6ea113c176a52ed7ce48caf5028da1de78e3a5cdeee538"
+            },
+            "gptcelltype": {
+              "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/heart-blinded-final-gpt51-20260728-v4/gptcelltype_predictions.tsv",
+              "sha256": "7ba19dcd9db1be5275fac7be646f58c95e1622f40dfbfd07b0e1a8af9fd9dec5"
+            },
+            "tissueagent": {
+              "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/heart-blinded-policy-final-20260728-v4/tissueagent_predictions.tsv",
+              "sha256": "663c557f8156b843b3fa7e12005eced965afb7bd03064b91b24e8c5d20f538e6"
+            }
+          }
+        }
+      }
+    },
+    {
+      "dataset": "BCL",
+      "metrics_tsv": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/bcl-blinded-policy-final-20260728-v6/metrics_final_certified_v2.tsv",
+        "sha256": "cf5f6b1936b536ab4d971579b372577fb5c373939ce4878c32047b7e0c3bcbac"
+      },
+      "metrics_json": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/bcl-blinded-policy-final-20260728-v6/metrics_final_certified_v2.json",
+        "sha256": "19039ebf8b8c4dca19e370c7f6db69155b2275000fc6c227105c166905f48bd3"
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "primary",
+        "target_labels": [
+          "malignant B cell",
+          "B cell",
+          "CD8-positive, alpha-beta T cell",
+          "CD4-positive, alpha-beta T cell",
+          "regulatory T cell",
+          "natural killer cell",
+          "gamma-delta T cell",
+          "myeloid cell",
+          "oligodendrocyte",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [
+          "B14"
+        ],
+        "label_contract_sha256": "6153f62a39bdb7858e28187b10fb5b820eddc8a383bf83c12fc90211ec306025",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/bcl-blinded-policy-final-20260728-v6/ground_truth.tsv",
+            "sha256": "e9e19b7475c43a50ce3d9744f42fd0d5cce1ed721394ab83281e43397ed623dc"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/bcl-blinded-policy-final-20260728-v6/label_mapping.json",
+            "sha256": "4616feed9c36242bd8a87766eaa25349b8a659952f09bcd423941c16152adf74"
+          },
+          "predictions": {
+            "celltypist": {
+              "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/bcl-blinded-final-gpt51-20260728-v4/celltypist_predictions.tsv",
+              "sha256": "e2b617642106550b02dd162cec05144a8dff15c70fc1a9d54015ea13326a8c2a"
+            },
+            "gptcelltype": {
+              "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/bcl-blinded-final-gpt51-20260728-v4/gptcelltype_predictions.tsv",
+              "sha256": "2c7f530161a90c8b2b4cd287449724e109b92ed3485298d1e16337df175131c2"
+            },
+            "tissueagent": {
+              "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/bcl-blinded-policy-final-20260728-v6/tissueagent_predictions.tsv",
+              "sha256": "4d41c0ae7a739a43b6e4c450375047aa2541708d388e4ce4d974cf96d9bb8172"
+            }
+          }
+        }
+      }
+    },
+    {
+      "dataset": "Han whole-brain Stereo-seq",
+      "metrics_tsv": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/han-stereoseq-full-20260801-v1/metrics_final.tsv",
+        "sha256": "c244cc22899d66bc06712031c78c27854d65d848e76eb15e9f4bf567386e220a"
+      },
+      "metrics_json": {
+        "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/han-stereoseq-full-20260801-v1/metrics_final.json",
+        "sha256": "712239fa45c393f6547124980d44ca956bf0afa41b5d330090201ad3ccf57f81"
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "cell_ontology_shared",
+        "target_labels": [
+          "astrocyte",
+          "forebrain neuroblast",
+          "neuron",
+          "choroid plexus epithelial cell",
+          "endothelial cell",
+          "ependymal cell",
+          "hypendymal cell",
+          "microglial cell",
+          "olfactory ensheathing cell",
+          "oligodendrocyte precursor cell",
+          "oligodendrocyte",
+          "vascular leptomeningeal cell",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [],
+        "label_contract_sha256": "3569ec3fdb88169b1c484089fe7756ab9c16d849abfb41e2f28b3f1ef1c61f21",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/han-stereoseq-full-20260801-v1/ground_truth.tsv",
+            "sha256": "0106199d103f383651990c506784f1b2df8fdbbaa61b154ffdbacd2cd136a9ac"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/han-stereoseq-full-20260801-v1/label_mapping.json",
+            "sha256": "1a250a515fbf614333c4900422478899f34d371e5d359f4cfb9d807f951218a7"
+          },
+          "predictions": {
+            "celltypist": {
+              "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/han-stereoseq-full-20260801-v1/celltypist_predictions.tsv",
+              "sha256": "e52ef5d19edf4ac96a818636c2ea1601c24b8310020452b32a6975dcada74a96"
+            },
+            "gptcelltype": {
+              "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/han-stereoseq-full-20260801-v1/gptcelltype_predictions.tsv",
+              "sha256": "a88c15b7b51232b4431a9f36c41ea096d8e1ed73d0ee04fa2649753b0457baff"
+            },
+            "tissueagent": {
+              "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/han-stereoseq-full-20260801-v1/tissueagent_predictions.tsv",
+              "sha256": "3386675cacad6c06f8687ace8a6f3b7d2eaacc7da5f9a4265de28eae6d520ad4"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "tissueagent_inputs": [
+    {
+      "dataset_id": "developing_human_heart",
+      "display_name": "Developing human heart",
+      "replicate": 1,
+      "run_id": "tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1-replacement3",
+      "annotation_method": "harmony",
+      "selection_blind_id": "5aba4d8464918e5a51efc5be38027a4c",
+      "reference_sha256": "3bb0d150f218e7723d60835adfbd1957eb47a945492ba1ac700041a1c5df6298",
+      "reference_dataset_ids_json": "[\"5500c673-1610-40a0-86d9-64d987ae50e6\"]",
+      "evaluation_project_id": "tissueagent-eval-5aba4d8464918e5a51efc5be38027a4c",
+      "artifacts": {
+        "prepared_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1-replacement3/prepared_run.json",
+          "sha256": "f1f5bc3a44a7d80f336af72e4ea3dc8cf3ef8e082496ee9d9a23c1d358a63fa6"
+        },
+        "tissueagent_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1-replacement3/tissueagent_run.json",
+          "sha256": "f6c8ab209e19234bd9ae90b42487a04c4e7fe0ad3965b141254697b856ac4b5d"
+        },
+        "metrics_tsv": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1-replacement3/metrics_repeatability.tsv",
+          "sha256": "b9190ea26cf8dd79f6cde8ea2d47011190082a0d93b12e08de72f10f46862ccc"
+        },
+        "metrics_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1-replacement3/metrics_repeatability.json",
+          "sha256": "450e2d5d4420281eed5185e41e9e8440a1384e7745cf40a2fd55263b15c17e69"
+        }
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "primary",
+        "target_labels": [
+          "cardiomyocyte",
+          "endothelial",
+          "fibroblast",
+          "smooth muscle",
+          "pericyte",
+          "epicardial/mesothelium",
+          "neural cell",
+          "immune",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [],
+        "label_contract_sha256": "680980cc253dd8ae28c24c35f52878c3d6397bb4e77dd82327d3e42eec16c61f",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1-replacement3/ground_truth.tsv",
+            "sha256": "943f59717573571a137a6bef5197be626187f1c979f8f67c5f602ea934ceef2d"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1-replacement3/label_mapping.json",
+            "sha256": "4f7d33d2cd8ad30f132695ba6c65e2eee2b4f21ccee79245aca42a4c7cfd8ac4"
+          },
+          "prediction": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1-replacement3/tissueagent_predictions.tsv",
+            "sha256": "0d2a6f0fa104ffc562f11f526f7a602b9b4551cdf08cc205d48e8cbb55f2874b"
+          }
+        }
+      }
+    },
+    {
+      "dataset_id": "developing_human_heart",
+      "display_name": "Developing human heart",
+      "replicate": 2,
+      "run_id": "tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2",
+      "annotation_method": "harmony",
+      "selection_blind_id": "0df3ec48aeec86c02813224361d92b54",
+      "reference_sha256": "3bb0d150f218e7723d60835adfbd1957eb47a945492ba1ac700041a1c5df6298",
+      "reference_dataset_ids_json": "[\"5500c673-1610-40a0-86d9-64d987ae50e6\"]",
+      "evaluation_project_id": "tissueagent-eval-0df3ec48aeec86c02813224361d92b54",
+      "artifacts": {
+        "prepared_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2/prepared_run.json",
+          "sha256": "a351f7b5a3f6d82dfcd0c0f0f641ec666582ec3e972cb301685860d87e6e56ef"
+        },
+        "tissueagent_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2/tissueagent_run.json",
+          "sha256": "cc1768ffa87d08a47cff488c88c1e6c482e9e482f2cfcf4c1b0740ab65dd8f55"
+        },
+        "metrics_tsv": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2/metrics_repeatability.tsv",
+          "sha256": "b9190ea26cf8dd79f6cde8ea2d47011190082a0d93b12e08de72f10f46862ccc"
+        },
+        "metrics_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2/metrics_repeatability.json",
+          "sha256": "91e9b79c15e74f494be69e79a0e092e64363f7ed021523a3c7a231d2caf21bad"
+        }
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "primary",
+        "target_labels": [
+          "cardiomyocyte",
+          "endothelial",
+          "fibroblast",
+          "smooth muscle",
+          "pericyte",
+          "epicardial/mesothelium",
+          "neural cell",
+          "immune",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [],
+        "label_contract_sha256": "680980cc253dd8ae28c24c35f52878c3d6397bb4e77dd82327d3e42eec16c61f",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2/ground_truth.tsv",
+            "sha256": "943f59717573571a137a6bef5197be626187f1c979f8f67c5f602ea934ceef2d"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2/label_mapping.json",
+            "sha256": "4f7d33d2cd8ad30f132695ba6c65e2eee2b4f21ccee79245aca42a4c7cfd8ac4"
+          },
+          "prediction": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2/tissueagent_predictions.tsv",
+            "sha256": "2689ffce455d2daef40fd2bc8760faf80f619f2eaededa8033930a6881ce7125"
+          }
+        }
+      }
+    },
+    {
+      "dataset_id": "developing_human_heart",
+      "display_name": "Developing human heart",
+      "replicate": 3,
+      "run_id": "tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3-replacement1",
+      "annotation_method": "harmony",
+      "selection_blind_id": "691c6b879748263b0e3589c025ac8fc0",
+      "reference_sha256": "2b84d790d8a74e10986a62fe77b669d9ea13c7085d867d903d6ab868fb996e96",
+      "reference_dataset_ids_json": "[\"5500c673-1610-40a0-86d9-64d987ae50e6\"]",
+      "evaluation_project_id": "tissueagent-eval-691c6b879748263b0e3589c025ac8fc0",
+      "artifacts": {
+        "prepared_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3-replacement1/prepared_run.json",
+          "sha256": "c07ee0c5d85268b650ffce56ec2e0ff8467785c7e5b8bb54ce1877a8b9f40979"
+        },
+        "tissueagent_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3-replacement1/tissueagent_run.json",
+          "sha256": "e627a9de87e96f1340cf4a6f6a21f131aeea67fa7e74bed29c0fdd16b70fe645"
+        },
+        "metrics_tsv": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3-replacement1/metrics_repeatability.tsv",
+          "sha256": "829eb4a69e46a897ce7ba5f9088f1ef7fa6daf59da557c61476012b6e96c29db"
+        },
+        "metrics_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3-replacement1/metrics_repeatability.json",
+          "sha256": "9f6a442f5ff5c438eea1ba3b118f832bef3d517e847719782b848a26619fb18b"
+        }
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "primary",
+        "target_labels": [
+          "cardiomyocyte",
+          "endothelial",
+          "fibroblast",
+          "smooth muscle",
+          "pericyte",
+          "epicardial/mesothelium",
+          "neural cell",
+          "immune",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [],
+        "label_contract_sha256": "680980cc253dd8ae28c24c35f52878c3d6397bb4e77dd82327d3e42eec16c61f",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3-replacement1/ground_truth.tsv",
+            "sha256": "943f59717573571a137a6bef5197be626187f1c979f8f67c5f602ea934ceef2d"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3-replacement1/label_mapping.json",
+            "sha256": "4f7d33d2cd8ad30f132695ba6c65e2eee2b4f21ccee79245aca42a4c7cfd8ac4"
+          },
+          "prediction": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3-replacement1/tissueagent_predictions.tsv",
+            "sha256": "d6730f389c6658d81021ad78cd7bb1c10abbd1a4aa536e157fbc88cf8b1425f2"
+          }
+        }
+      }
+    },
+    {
+      "dataset_id": "bcl",
+      "display_name": "BCL",
+      "replicate": 1,
+      "run_id": "tissueagent-bcl-immutable-scope-v11-20260825-v1-r1",
+      "annotation_method": "harmony",
+      "selection_blind_id": "c34e3ea7f3c138c7e2131970ce65d89c",
+      "reference_sha256": "3bfc7e60dc02a08c6af50f7a35886614721cbaceb1966a2efbcf5597f65d8a5b",
+      "reference_dataset_ids_json": "[\"0bf30b02-db97-4560-b9cd-0fe3588892af\"]",
+      "evaluation_project_id": "tissueagent-eval-c34e3ea7f3c138c7e2131970ce65d89c",
+      "artifacts": {
+        "prepared_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r1/prepared_run.json",
+          "sha256": "4446dc732678d39f51a1bbc60076c68b3d0db7c68678891e15d86364c1546ca1"
+        },
+        "tissueagent_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r1/tissueagent_run.json",
+          "sha256": "07ae79cbe82957d67949ead022eb37e3f837ece23e7a0c0ae2df8c7539fb8b54"
+        },
+        "metrics_tsv": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r1/metrics_repeatability_posthoc_v1.tsv",
+          "sha256": "4903b77de01c50e233273eb8a5bd8930e91e2d4f2eac0ec7d142435152210836"
+        },
+        "metrics_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r1/metrics_repeatability_posthoc_v1.json",
+          "sha256": "911e073b13c374c5e61cefbb28f51c14e4a4d6097dfc5580801929fba0272677"
+        }
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "primary",
+        "target_labels": [
+          "malignant B cell",
+          "B cell",
+          "CD8-positive, alpha-beta T cell",
+          "CD4-positive, alpha-beta T cell",
+          "regulatory T cell",
+          "natural killer cell",
+          "gamma-delta T cell",
+          "myeloid cell",
+          "oligodendrocyte",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [
+          "B14"
+        ],
+        "label_contract_sha256": "6153f62a39bdb7858e28187b10fb5b820eddc8a383bf83c12fc90211ec306025",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r1/ground_truth.tsv",
+            "sha256": "e9e19b7475c43a50ce3d9744f42fd0d5cce1ed721394ab83281e43397ed623dc"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r1/label_mapping.json",
+            "sha256": "4616feed9c36242bd8a87766eaa25349b8a659952f09bcd423941c16152adf74"
+          },
+          "prediction": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r1/tissueagent_predictions.tsv",
+            "sha256": "dbdd5da2a2a4b60d31b71a81a21b5b108a0d8de69e4f10717026796d3aa9c65f"
+          }
+        }
+      }
+    },
+    {
+      "dataset_id": "bcl",
+      "display_name": "BCL",
+      "replicate": 2,
+      "run_id": "tissueagent-bcl-immutable-scope-v11-20260825-v1-r2",
+      "annotation_method": "gptcelltype",
+      "selection_blind_id": "1f6d35e2c7c81c630e455f7dc7eb5b17",
+      "reference_sha256": "f83ae877b798a1c37f61b8517ce5cb6755effed2ae69516fd9d4271a9f80e930",
+      "reference_dataset_ids_json": "[\"74014ef8-d2d0-4cbc-8ba2-037f30753ffd\"]",
+      "evaluation_project_id": "tissueagent-eval-1f6d35e2c7c81c630e455f7dc7eb5b17",
+      "artifacts": {
+        "prepared_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r2/prepared_run.json",
+          "sha256": "09a356a252c378d6c976b26aa9de0568851aa8fdfbccc72b77b7fae97fa62e24"
+        },
+        "tissueagent_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r2/tissueagent_run.json",
+          "sha256": "98f0392d706443a8148bb636da4830318646406c76dbe9083da84f1e08689d4a"
+        },
+        "metrics_tsv": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r2/metrics_repeatability_posthoc_v1.tsv",
+          "sha256": "7f2eaca145ed9a0cd8a8c75688ed14b47ac7449c278de212b8091f7a8e8beb97"
+        },
+        "metrics_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r2/metrics_repeatability_posthoc_v1.json",
+          "sha256": "93e5da404774bdf1727bda1811006e518d7c00d056c467791a9d50e1f6f3be16"
+        }
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "primary",
+        "target_labels": [
+          "malignant B cell",
+          "B cell",
+          "CD8-positive, alpha-beta T cell",
+          "CD4-positive, alpha-beta T cell",
+          "regulatory T cell",
+          "natural killer cell",
+          "gamma-delta T cell",
+          "myeloid cell",
+          "oligodendrocyte",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [
+          "B14"
+        ],
+        "label_contract_sha256": "6153f62a39bdb7858e28187b10fb5b820eddc8a383bf83c12fc90211ec306025",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r2/ground_truth.tsv",
+            "sha256": "e9e19b7475c43a50ce3d9744f42fd0d5cce1ed721394ab83281e43397ed623dc"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r2/label_mapping.json",
+            "sha256": "4616feed9c36242bd8a87766eaa25349b8a659952f09bcd423941c16152adf74"
+          },
+          "prediction": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r2/tissueagent_predictions.tsv",
+            "sha256": "bd47365dc012b685c9746577ac2dc426b205c941ff973bdec897d749b145f9a9"
+          }
+        }
+      }
+    },
+    {
+      "dataset_id": "bcl",
+      "display_name": "BCL",
+      "replicate": 3,
+      "run_id": "tissueagent-bcl-immutable-scope-v11-20260825-v1-r3-replacement1",
+      "annotation_method": "gptcelltype",
+      "selection_blind_id": "bab5efdefdb95e0e84c5f0cf068b9d3d",
+      "reference_sha256": "54f23b68394e25f4d263f752b44bcddd645a6188c48b4fe711408c8ef7379157",
+      "reference_dataset_ids_json": "[\"21722308-5091-4b63-9c07-4f116ab9a7b3\"]",
+      "evaluation_project_id": "tissueagent-eval-bab5efdefdb95e0e84c5f0cf068b9d3d",
+      "artifacts": {
+        "prepared_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r3-replacement1/prepared_run.json",
+          "sha256": "b14bf541554e4db67e6c2a5bc4883e3dc7381fa618bf435f0f39a8d9f7a27aae"
+        },
+        "tissueagent_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r3-replacement1/tissueagent_run.json",
+          "sha256": "393bc2d94ef1b0af2e6f4d3b5a36e3069ea658d18846e534a0fd6c64a53b7b83"
+        },
+        "metrics_tsv": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r3-replacement1/metrics_repeatability_posthoc_v1.tsv",
+          "sha256": "d04c08801fcb422252202d3bb3f9a77456b3bdd216a9f9366a40a5968e48df71"
+        },
+        "metrics_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r3-replacement1/metrics_repeatability_posthoc_v1.json",
+          "sha256": "ce0b43d7b87b58bcb9a9c09871a5f387a2e5456846677153b7b5bb93412640bc"
+        }
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "primary",
+        "target_labels": [
+          "malignant B cell",
+          "B cell",
+          "CD8-positive, alpha-beta T cell",
+          "CD4-positive, alpha-beta T cell",
+          "regulatory T cell",
+          "natural killer cell",
+          "gamma-delta T cell",
+          "myeloid cell",
+          "oligodendrocyte",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [
+          "B14"
+        ],
+        "label_contract_sha256": "6153f62a39bdb7858e28187b10fb5b820eddc8a383bf83c12fc90211ec306025",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r3-replacement1/ground_truth.tsv",
+            "sha256": "e9e19b7475c43a50ce3d9744f42fd0d5cce1ed721394ab83281e43397ed623dc"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r3-replacement1/label_mapping.json",
+            "sha256": "4616feed9c36242bd8a87766eaa25349b8a659952f09bcd423941c16152adf74"
+          },
+          "prediction": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/tissueagent-bcl-immutable-scope-v11-20260825-v1-r3-replacement1/tissueagent_predictions.tsv",
+            "sha256": "329fbd9a8caa78b4bad498371ee1e1db2b67cb972b069038d65e64bf757c2d28"
+          }
+        }
+      }
+    },
+    {
+      "dataset_id": "han_mouse_brain_stereoseq",
+      "display_name": "Mouse brain Stereo-seq",
+      "replicate": 1,
+      "run_id": "tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1",
+      "annotation_method": "celltypist",
+      "selection_blind_id": "210b5a1afee09920c075e181fd8e06ea",
+      "reference_sha256": "33b28f02d037722836c6079a58da875a8df0242ba0f33a733965c5f797afee58",
+      "reference_dataset_ids_json": "[\"3bbb6cf9-72b9-41be-b568-656de6eb18b5\"]",
+      "evaluation_project_id": "tissueagent-eval-210b5a1afee09920c075e181fd8e06ea",
+      "artifacts": {
+        "prepared_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1/prepared_run.json",
+          "sha256": "c0ae3e7721c11b25f7c5392a5437e603c5c5c279fe2c99fde094b2acac67bb59"
+        },
+        "tissueagent_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1/tissueagent_run.json",
+          "sha256": "42f9210d3bafdd13681ebea11a4bbb78a8a7822f12c0d66b8469b03f83e475d8"
+        },
+        "metrics_tsv": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1/metrics_repeatability.tsv",
+          "sha256": "06540233658ff0f78350053195410ee113f85548f5a5d6fbf7e8b78be7bc2159"
+        },
+        "metrics_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1/metrics_repeatability.json",
+          "sha256": "84e6e97d54b8802de490a0202f105eab4c38e908c30702c89187695f63621484"
+        }
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "cell_ontology_shared",
+        "target_labels": [
+          "astrocyte",
+          "forebrain neuroblast",
+          "neuron",
+          "choroid plexus epithelial cell",
+          "endothelial cell",
+          "ependymal cell",
+          "hypendymal cell",
+          "microglial cell",
+          "olfactory ensheathing cell",
+          "oligodendrocyte precursor cell",
+          "oligodendrocyte",
+          "vascular leptomeningeal cell",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [],
+        "label_contract_sha256": "3569ec3fdb88169b1c484089fe7756ab9c16d849abfb41e2f28b3f1ef1c61f21",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1/ground_truth.tsv",
+            "sha256": "0106199d103f383651990c506784f1b2df8fdbbaa61b154ffdbacd2cd136a9ac"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1/label_mapping.json",
+            "sha256": "1a250a515fbf614333c4900422478899f34d371e5d359f4cfb9d807f951218a7"
+          },
+          "prediction": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r1/tissueagent_predictions.tsv",
+            "sha256": "3386675cacad6c06f8687ace8a6f3b7d2eaacc7da5f9a4265de28eae6d520ad4"
+          }
+        }
+      }
+    },
+    {
+      "dataset_id": "han_mouse_brain_stereoseq",
+      "display_name": "Mouse brain Stereo-seq",
+      "replicate": 2,
+      "run_id": "tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2-replacement3",
+      "annotation_method": "celltypist",
+      "selection_blind_id": "10f871b46198ab3b43d5cc4591d99196",
+      "reference_sha256": "bd3afc3aee27dcf6c727b7a685731fb39e4f6b6aa4a02018e1129c80f35cdd5c",
+      "reference_dataset_ids_json": "[\"35081d47-99bf-4507-9541-735428df9a9f\", \"3bbb6cf9-72b9-41be-b568-656de6eb18b5\", \"dbb4e1ed-d820-4e83-981f-88ef7eb55a35\", \"e0ed3c55-aff6-4bb7-b6ff-98a2d90b890c\"]",
+      "evaluation_project_id": "tissueagent-eval-10f871b46198ab3b43d5cc4591d99196",
+      "artifacts": {
+        "prepared_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2-replacement3/prepared_run.json",
+          "sha256": "367d66d65e7328c85d37a9752588c46b5444ed77b48a216f87f1a0507c789488"
+        },
+        "tissueagent_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2-replacement3/tissueagent_run.json",
+          "sha256": "304eb2f071e29e3d8c31dee80e4681c29ef88e478dfdd1f1d356ad9fbedadfd4"
+        },
+        "metrics_tsv": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2-replacement3/metrics_repeatability.tsv",
+          "sha256": "06540233658ff0f78350053195410ee113f85548f5a5d6fbf7e8b78be7bc2159"
+        },
+        "metrics_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2-replacement3/metrics_repeatability.json",
+          "sha256": "695acb97699a00031d52258d5c9c3b12cdc90b3819049debfcebe8dc71592aad"
+        }
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "cell_ontology_shared",
+        "target_labels": [
+          "astrocyte",
+          "forebrain neuroblast",
+          "neuron",
+          "choroid plexus epithelial cell",
+          "endothelial cell",
+          "ependymal cell",
+          "hypendymal cell",
+          "microglial cell",
+          "olfactory ensheathing cell",
+          "oligodendrocyte precursor cell",
+          "oligodendrocyte",
+          "vascular leptomeningeal cell",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [],
+        "label_contract_sha256": "3569ec3fdb88169b1c484089fe7756ab9c16d849abfb41e2f28b3f1ef1c61f21",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2-replacement3/ground_truth.tsv",
+            "sha256": "0106199d103f383651990c506784f1b2df8fdbbaa61b154ffdbacd2cd136a9ac"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2-replacement3/label_mapping.json",
+            "sha256": "1a250a515fbf614333c4900422478899f34d371e5d359f4cfb9d807f951218a7"
+          },
+          "prediction": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r2-replacement3/tissueagent_predictions.tsv",
+            "sha256": "3386675cacad6c06f8687ace8a6f3b7d2eaacc7da5f9a4265de28eae6d520ad4"
+          }
+        }
+      }
+    },
+    {
+      "dataset_id": "han_mouse_brain_stereoseq",
+      "display_name": "Mouse brain Stereo-seq",
+      "replicate": 3,
+      "run_id": "tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3",
+      "annotation_method": "celltypist",
+      "selection_blind_id": "ce760e4b6e2bb2bd47ec02a4eadffadd",
+      "reference_sha256": "7997232c2ab7666c9f610847070cfc2c8dfbe164b15cbfaa30e069ab36259403",
+      "reference_dataset_ids_json": "[\"812fa7bd-db15-4357-b2c9-efc8e1eb0450\", \"dbb4e1ed-d820-4e83-981f-88ef7eb55a35\", \"e0ed3c55-aff6-4bb7-b6ff-98a2d90b890c\"]",
+      "evaluation_project_id": "tissueagent-eval-ce760e4b6e2bb2bd47ec02a4eadffadd",
+      "artifacts": {
+        "prepared_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3/prepared_run.json",
+          "sha256": "7dd79aeac8b976b509358c02da813eb236cedb1780e85414c15af4d2becd4d5c"
+        },
+        "tissueagent_run_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3/tissueagent_run.json",
+          "sha256": "b2faf708277dae225d1310ad5d7edf670062cae5eaaf54afecd9a4e52361599e"
+        },
+        "metrics_tsv": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3/metrics_repeatability.tsv",
+          "sha256": "06540233658ff0f78350053195410ee113f85548f5a5d6fbf7e8b78be7bc2159"
+        },
+        "metrics_json": {
+          "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3/metrics_repeatability.json",
+          "sha256": "442563d7383df9abbc517c56233772fb3faa43e0c232c51503567429dd1cb4a4"
+        }
+      },
+      "evaluation": {
+        "schema_version": "1.0",
+        "label_space": "cell_ontology_shared",
+        "target_labels": [
+          "astrocyte",
+          "forebrain neuroblast",
+          "neuron",
+          "choroid plexus epithelial cell",
+          "endothelial cell",
+          "ependymal cell",
+          "hypendymal cell",
+          "microglial cell",
+          "olfactory ensheathing cell",
+          "oligodendrocyte precursor cell",
+          "oligodendrocyte",
+          "vascular leptomeningeal cell",
+          "Unassigned"
+        ],
+        "excluded_ground_truth_raw_labels": [],
+        "label_contract_sha256": "3569ec3fdb88169b1c484089fe7756ab9c16d849abfb41e2f28b3f1ef1c61f21",
+        "sources": {
+          "ground_truth": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3/ground_truth.tsv",
+            "sha256": "0106199d103f383651990c506784f1b2df8fdbbaa61b154ffdbacd2cd136a9ac"
+          },
+          "label_mapping": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3/label_mapping.json",
+            "sha256": "1a250a515fbf614333c4900422478899f34d371e5d359f4cfb9d807f951218a7"
+          },
+          "prediction": {
+            "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/tissueagent-end-to-end-repeatability-heart-bcl-han-20260806-v1-r3/tissueagent_predictions.tsv",
+            "sha256": "3386675cacad6c06f8687ace8a6f3b7d2eaacc7da5f9a4265de28eae6d520ad4"
+          }
+        }
+      }
+    }
+  ],
+  "reference_metadata_snapshot": {
+    "path": "/home/etrop/TissueAgent/data/cache/biomni/biomni_data/data_lake/czi_census_datasets_v4.parquet",
+    "sha256": "a99be951b8710616edc6ba5af1bc5c219d71f725a83bae74a12207ad0166b348"
+  },
+  "attempt_selection": "First completed evaluation per dataset/method; no score-based selection.",
+  "failed_or_interrupted_attempts": [
+    {
+      "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/developing_human_heart/agent-baselines-matched-gpt51-full-20260906-v1-biomni/interruption.json",
+      "sha256": "c36fae954e64594160604d86f717656fd927f44e1ddd48fb44de3b28d067eb5b",
+      "status": "interrupted",
+      "method": "biomni",
+      "stage": "agent-selected preprocessing, before annotation",
+      "reason": "The isolated environment lacks leidenalg. Restart with project-local leidenalg==0.10.2 so Biomni can execute its chosen Scanpy Leiden workflow.",
+      "predictions_produced": false,
+      "selection_basis": "execution dependency, not annotation performance"
+    },
+    {
+      "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-biomni/biomni_predictions.run.json",
+      "sha256": "dbd4166378dd3f30e20384b51914e7dde8658823942381be151dad4d4cdaea13",
+      "status": "error",
+      "method": "biomni",
+      "model": "gpt-5.1",
+      "error_type": "FileNotFoundError",
+      "message": "biomni completed without producing the required output: /home/etrop/TissueAgent/demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-biomni/biomni/annotated.h5ad",
+      "workspace": "demo/outputs/cell_annotation/bcl/agent-baselines-matched-gpt51-full-20260906-v1-biomni/biomni",
+      "timestamp_utc": "2026-09-06T18:01:08Z"
+    },
+    {
+      "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-biomni/biomni_predictions.run.json",
+      "sha256": "3db84d61caa482904a422b3cf2b58376ab3f3610fbe5433e824d6133703c57df",
+      "status": "error",
+      "method": "biomni",
+      "model": "gpt-5.1",
+      "error_type": "FileNotFoundError",
+      "message": "biomni completed without producing the required output: /home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-biomni/biomni/annotated.h5ad",
+      "workspace": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-biomni/biomni",
+      "timestamp_utc": "2026-09-06T17:55:03Z"
+    },
+    {
+      "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent_predictions.run.json",
+      "sha256": "099b00cfa69497a96f624c6c8c9423b6004e37cc87ed5d834bf65a96672da014",
+      "status": "error",
+      "method": "spatialagent",
+      "model": "gpt-5.1",
+      "error_type": "FileNotFoundError",
+      "message": "spatialagent completed without producing the required output: /home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent/celltype_annotated.h5ad",
+      "workspace": "demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v1-spatialagent/spatialagent",
+      "timestamp_utc": "2026-09-06T21:06:24Z"
+    },
+    {
+      "path": "/home/etrop/TissueAgent/demo/outputs/cell_annotation/han_mouse_brain_stereoseq/agent-baselines-matched-gpt51-full-20260906-v2-biomni/interruption.json",
+      "sha256": "c1280d74a8c9b3cfef4c44dc709b991a1ddf8981f9c5b08ae92430121c0b5c75",
+      "status": "interrupted",
+      "method": "biomni",
+      "stage": "agent-selected preprocessing, before annotation",
+      "reason": "The isolated environment lacks leidenalg. Restart with project-local leidenalg==0.10.2 so Biomni can execute Scanpy Leiden if selected, consistently with the other cohorts.",
+      "predictions_produced": false,
+      "selection_basis": "execution dependency, not annotation performance"
+    }
+  ]
+}

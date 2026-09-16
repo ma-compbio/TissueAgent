@@ -1,0 +1,58 @@
+schema_version: "1.0"
+dataset_id: mouse_spinal_cord
+title: Adult mouse spinal cord MERFISH
+species: mouse
+source:
+  publication_doi: 10.64898/2026.01.10.698734
+  benchmark_doi: 10.64898/2026.06.16.732716
+  zenodo_record: 18039571
+query:
+  kind: local_h5ad
+  path: demo/data/cell_annotation/mouse_spinal_cord/mouse_spinal_cord.h5ad
+  expected_n_obs: 146621
+  expected_n_vars: 500
+  size_bytes: 98970238
+  sha256: 567011c8bca5bb83d20ba5ff36d22eeff3fb3f2c387a843cd1cf35bda54b937d
+ground_truth:
+  column: MERFISH cell type annotation
+  held_out_columns:
+    - 1st round cluster
+    - 2nd round subcluster
+    - MERFISH cell type annotation
+    - Region
+    - Excitatory_vs_Inhibitory
+    - Markers
+    - Note
+    - Neurotransmitter
+    - Laminae
+reference:
+  kind: local_h5ad
+  path: workspace/project/outputs/references/mouse_spinal_cord_harmonized_atlas_reference.h5ad
+  size_bytes: 110915935
+  sha256: 76afb4695ce308fb602402fe854d83345b57a905f01c046ea7356464ef5e1309
+  cell_type_column: benchmark_cell_type
+  random_state: 42
+  source_collection_id: 554fe96e-832b-4651-ac1b-a2df9a6735c3
+  source_dataset_id: 1fd5987c-c4c3-4138-900a-5aea2b59a6f7
+  source_url: https://datasets.cellxgene.cziscience.com/03b71780-8180-4bf0-b00e-ec40a1743b9e.h5ad
+  source_size_bytes: 440556263
+  source_sha256: 2d84ef07125ac9c072ceeffa21a0aa7269f1911bca8595d82317fec6cd168bde
+  preparation_script: scratch/prepare_mouse_spinal_cord_reference.py
+  max_cells_per_label: all
+  note: The raw-count independent harmonized mouse spinal cord single-cell atlas covers all eleven frozen evaluation classes at its published natural class composition without using query cells.
+tissueagent:
+  min_cells: 10
+  n_pcs: 30
+  min_shared_genes: 50
+  harmony_max_iter: 30
+  classifier: knn
+  knn_neighbors: 51
+  preserve_all_spatial_obs: true
+celltypist:
+  mode: builtin
+  model: Mouse_Whole_Brain.pkl
+gptcelltype:
+  tissue_name: spinal cord
+  species_name: mouse
+  model: gpt-5.1
+mapping: demo/cell_annotation/mappings/mouse_spinal_cord.json
