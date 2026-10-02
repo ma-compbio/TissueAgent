@@ -2,7 +2,7 @@
 
 from typing import List
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 
 from agents.agent_registry.data_onboarding_agent.tools_impl.onboarding import (
     convert_spatial_data,

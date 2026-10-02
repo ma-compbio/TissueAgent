@@ -103,7 +103,21 @@ def _parse_json_stdout(stdout: str) -> dict[str, Any]:
     return {}
 
 
+def _answer_for_scoring(result: dict[str, Any]) -> str:
+    """Use the repaired runner's answer while preserving historical scoring.
+
+An evidence-derived answer is distinct from the last raw model completion,
+which may still be a URL. Old artifacts lack answer_source and continue to
+use their original raw completion without retrospective reinterpretation.
+"""
+    if "answer_source" in result:
+        return str(result.get("answer") or "") if result.get("answer_source") else ""
+    return result.get("raw_completion") or ""
+
+
 def _score(raw: str, gold: Any, task: str) -> tuple[Any, float]:
+    if not (raw or "").strip():
+        return "", 0.0
     sys.path.insert(0, str(_UPSTREAM))
     try:
         from evaluate import get_answer  # type: ignore[import-not-found]
@@ -256,6 +270,7 @@ def _run_direct(index: int, question: str, out_dir: Path) -> dict[str, Any]:
     return {
         "status": result.get("status"),
         "answer": result.get("answer"),
+        "answer_source": result.get("answer_source"),
         "raw_completion": result.get("raw_completion") or "",
         "num_calls": result.get("num_calls", 0),
         "model_used": result.get("model_used"),
@@ -351,6 +366,7 @@ def _run_tissueagent(
         "exit_code": proc.returncode,
         "prompt": prompt,
         "answer": tool_result.get("answer"),
+        "answer_source": tool_result.get("answer_source"),
         "raw_completion": tool_result.get("raw_completion") or "",
         "num_calls": tool_result.get("num_calls", 0),
         "model_used": tool_result.get("model_used"),
@@ -376,7 +392,7 @@ def _summarize(records: list[dict[str, Any]]) -> dict[str, Any]:
     for record in records:
         for arm in ("direct", "tissueagent"):
             result = record.get(arm) or {}
-            pred, score = _score(result.get("raw_completion") or "", record["gold"], record["task"])
+            pred, score = _score(_answer_for_scoring(result), record["gold"], record["task"])
             result["normalised_pred"] = pred
             result["score"] = score
         record["normalised_answer_agreement"] = (

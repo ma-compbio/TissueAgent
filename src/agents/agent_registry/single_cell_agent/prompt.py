@@ -55,7 +55,11 @@ Use ReAct INTERNALLY and STOP once the dataset(s) are identified, downloaded, or
   description such as `adult` is not necessarily a literal `development_stage` value. For broad
   life-stage requirements, omit the exact development-stage filter during discovery and inspect
   each result's returned `development_stages` to select adult-compatible sources. Use the filter
-  only when exact ontology labels are known.
+  only with exact ontology labels returned by discovery. Do not require a literal age match: prefer
+  an exact label when available, otherwise accept the same broad or nearest adjacent life stage.
+  For a mixed-stage source, pass the nearest compatible returned labels during bounded retrieval
+  when practical (for example, a returned 4-week mouse subset for an approximately 7-week query)
+  rather than rejecting the source or retrieving a clearly distant-age subset.
 - For a query spanning several tissues or anatomical regions, treat the requested scope as a
   coverage requirement, not as a single conjunctive tissue filter. Prefer one comprehensive atlas
   with relevant biological overlap. If no single result covers the scope, use the adjusted query

@@ -77,14 +77,14 @@ _CELLXGENE_PROVENANCE_KEYS = (
     "tissues",
     "diseases",
 )
+
+
 _MAX_REFERENCE_METADATA_VALUES = 50
 _CELLTYPIST_CACHE_PATH = "cell_annotation/celltypist_cache"
 _CELLTYPIST_MODEL_STRING_FIELDS = ("source", "url", "version", "date")
 _CELLTYPIST_MODEL_CATALOG_VERSION = "celltypist_model_catalog_v1"
 _MAX_CELLTYPIST_MODEL_SHORTLIST = 3
-_CELLTYPIST_MAJORITY_VOTING_POLICY_VERSION = (
-    "celltypist_majority_voting_policy_v1"
-)
+_CELLTYPIST_MAJORITY_VOTING_POLICY_VERSION = "celltypist_majority_voting_policy_v1"
 _CELLTYPIST_MAJORITY_VOTING_MIN_NONZERO_CELLS = 51
 _REFERENCE_CONTEXT_DISCLOSURE_CODES = {
     "tissues": "reference_tissue_context_heterogeneity",
@@ -99,6 +99,14 @@ _ANNOTATION_SCOPE_FIELDS = (
     "requested_output",
 )
 _ANNOTATION_CONTEXT_IDENTITY_VERSION = "cell_annotation_context_contract_v1"
+_DEVELOPMENTAL_STAGE_COMPATIBILITY_VERSION = "developmental_stage_compatibility_v1"
+_DEVELOPMENTAL_STAGE_ORDER = {
+    "prenatal": 0,
+    "neonatal": 1,
+    "juvenile": 2,
+    "adult": 3,
+    "aged": 4,
+}
 
 
 def _json_safe(value: Any) -> Any:
@@ -122,6 +130,284 @@ def _clean_context_value(value: str | None) -> str | None:
         return None
     cleaned = value.strip()
     return cleaned or None
+
+
+def _normalized_stage_text(value: str) -> str:
+    """Normalize a free-text developmental-stage label for comparison."""
+    return " ".join(re.findall(r"[a-z0-9.]+", value.casefold()))
+
+
+def _stage_age_days(value: str) -> float | None:
+    """Extract the first explicit age and convert it to approximate days."""
+    match = re.search(
+        r"(?P<age>\d+(?:\.\d+)?)\s*[- ]?"
+        r"(?P<unit>day|week|month|year)s?\b",
+        value.casefold(),
+    )
+    if match is None:
+        return None
+    factors = {
+        "day": 1.0,
+        "week": 7.0,
+        "month": 30.4375,
+        "year": 365.25,
+    }
+    return float(match.group("age")) * factors[match.group("unit")]
+
+
+def _numeric_life_stage(age_days: float, species: str) -> str:
+    """Map an explicit chronological age to a broad species-aware life stage."""
+    normalized_species = species.casefold()
+    if "mus musculus" in normalized_species or "mouse" in normalized_species:
+        if age_days < 21:
+            return "neonatal"
+        if age_days < 42:
+            return "juvenile"
+        if age_days < 540:
+            return "adult"
+        return "aged"
+    if "homo sapiens" in normalized_species or "human" in normalized_species:
+        if age_days < 28:
+            return "neonatal"
+        if age_days < 18 * 365.25:
+            return "juvenile"
+        if age_days < 65 * 365.25:
+            return "adult"
+        return "aged"
+    if age_days < 28:
+        return "neonatal"
+    if age_days < 18 * 365.25:
+        return "juvenile"
+    if age_days < 65 * 365.25:
+        return "adult"
+    return "aged"
+
+
+def _stage_descriptor(value: str, species: str) -> dict[str, Any]:
+    """Describe one stage label without requiring a controlled-vocabulary match."""
+    normalized = _normalized_stage_text(value)
+    tokens = set(normalized.split())
+    age_days = _stage_age_days(value)
+    life_stage: str | None = None
+    source = "unresolved"
+    if tokens.intersection({"embryo", "embryonic", "fetal", "foetal", "prenatal", "gestational"}):
+        life_stage = "prenatal"
+        source = "lexical"
+    elif tokens.intersection({"neonate", "neonatal", "newborn"}):
+        life_stage = "neonatal"
+        source = "lexical"
+    elif tokens.intersection({"aged", "elderly", "geriatric", "senescent"}):
+        life_stage = "aged"
+        source = "lexical"
+    elif "adult" in tokens:
+        life_stage = "adult"
+        source = "lexical"
+    elif tokens.intersection(
+        {"juvenile", "adolescent", "child", "childhood", "infant", "pediatric"}
+    ):
+        life_stage = "juvenile"
+        source = "lexical"
+    elif age_days is not None:
+        life_stage = _numeric_life_stage(age_days, species)
+        source = "numeric_age"
+    return {
+        "value": value,
+        "normalized": normalized,
+        "age_days": age_days,
+        "life_stage": life_stage,
+        "classification_source": source,
+    }
+
+
+def _stage_relation(query: Mapping[str, Any], reference: Mapping[str, Any]) -> tuple[str, str]:
+    """Classify one reference stage relative to the query stage."""
+    if query["normalized"] == reference["normalized"]:
+        return "exact", "normalized stage labels match"
+    query_stage = query.get("life_stage")
+    reference_stage = reference.get("life_stage")
+    if query_stage is None or reference_stage is None:
+        return "unknown", "a broad life stage could not be resolved"
+    if query_stage == reference_stage:
+        query_age = query.get("age_days")
+        reference_age = reference.get("age_days")
+        if query_age and reference_age:
+            ratio = max(query_age, reference_age) / min(query_age, reference_age)
+            if ratio > 4:
+                return "distant", "same broad life stage but chronologically distant"
+        return "broad", "same broad life stage"
+    distance = abs(
+        _DEVELOPMENTAL_STAGE_ORDER[query_stage] - _DEVELOPMENTAL_STAGE_ORDER[reference_stage]
+    )
+    query_age = query.get("age_days")
+    reference_age = reference.get("age_days")
+    if query_age and reference_age:
+        ratio = max(query_age, reference_age) / min(query_age, reference_age)
+        if ratio > 4 and distance <= 1:
+            return "distant", "adjacent life stages but chronologically distant"
+        if ratio <= 2:
+            return "adjacent", "explicit ages are within twofold"
+    if distance == 1:
+        return "adjacent", "adjacent broad life stages"
+    return "incompatible", "non-adjacent broad life stages"
+
+
+def _developmental_stage_compatibility(
+    query_stage: str | None,
+    reference_stage_values: list[str],
+    species: str | None,
+) -> dict[str, Any]:
+    """Build a permissive hierarchy for reference developmental-stage suitability."""
+    cleaned_query = _clean_context_value(query_stage)
+    cleaned_species = _clean_context_value(species) or ""
+    values = list(dict.fromkeys(value.strip() for value in reference_stage_values if value.strip()))
+    result: dict[str, Any] = {
+        "version": _DEVELOPMENTAL_STAGE_COMPATIBILITY_VERSION,
+        "query_value": cleaned_query,
+        "species": cleaned_species or None,
+        "reference_values": values,
+        "per_value": [],
+        "preferred_reference_values": [],
+        "nonpreferred_reference_values": [],
+        "hard_conflict": False,
+    }
+    if cleaned_query is None:
+        result.update(
+            status="not_requested",
+            guidance=(
+                "No query developmental stage was supplied; do not infer an exact-stage "
+                "requirement."
+            ),
+        )
+        return result
+    if not values:
+        result.update(
+            status="unavailable",
+            guidance="Reference stage metadata is unavailable; keep stage suitability unresolved.",
+        )
+        return result
+
+    query_descriptor = _stage_descriptor(cleaned_query, cleaned_species)
+    result["query_descriptor"] = query_descriptor
+    for value in values:
+        descriptor = _stage_descriptor(value, cleaned_species)
+        relation, reason = _stage_relation(query_descriptor, descriptor)
+        result["per_value"].append({**descriptor, "relation": relation, "reason": reason})
+
+    acceptable = {"exact", "broad", "adjacent"}
+    preferred = [item["value"] for item in result["per_value"] if item["relation"] in acceptable]
+    nonpreferred = [
+        item["value"]
+        for item in result["per_value"]
+        if item["relation"] in {"distant", "incompatible"}
+    ]
+    relations = {item["relation"] for item in result["per_value"]}
+    result["preferred_reference_values"] = preferred
+    result["nonpreferred_reference_values"] = nonpreferred
+    if preferred and relations.difference(acceptable):
+        result.update(
+            status="compatible_subset_available",
+            guidance=(
+                "Keep Harmony eligible and prefer or subset to the compatible stage values; "
+                "do not reject the entire mixed-stage reference."
+            ),
+        )
+    elif "exact" in relations:
+        result.update(status="exact_match", guidance="Exact stage metadata is available.")
+    elif "broad" in relations:
+        result.update(
+            status="broad_match",
+            guidance=(
+                "The same broad life stage is suitable; exact chronological age is not required."
+            ),
+        )
+    elif "adjacent" in relations:
+        result.update(
+            status="adjacent_match",
+            guidance="The nearest adjacent life stage remains eligible with a disclosed warning.",
+        )
+    elif relations == {"distant"}:
+        result.update(
+            status="distant_age_warning",
+            guidance="Keep Harmony eligible but disclose the chronological distance.",
+        )
+    elif relations == {"incompatible"}:
+        result.update(
+            status="incompatible",
+            hard_conflict=True,
+            guidance=(
+                "Reject Harmony because every resolved reference stage is biologically "
+                "incompatible."
+            ),
+        )
+    else:
+        result.update(
+            status="unresolved",
+            guidance=(
+                "Stage evidence is incomplete or mixed without a compatible subset; keep it "
+                "unresolved."
+            ),
+        )
+    return result
+
+
+def _refresh_assessment_reason_codes(assessment: dict[str, Any]) -> None:
+    """Keep a method assessment's combined reason-code list synchronized."""
+    assessment["reason_codes"] = list(
+        dict.fromkeys(
+            [
+                *assessment.get("supporting_codes", []),
+                *assessment.get("adverse_codes", []),
+                *assessment.get("unresolved_codes", []),
+            ]
+        )
+    )
+
+
+def _apply_developmental_stage_compatibility(
+    assessment: Mapping[str, Any], compatibility: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Add deterministic stage evidence without upgrading unrelated Harmony risk."""
+    updated = dict(assessment)
+    annotations = dict(updated.get("evidence_annotations", {}))
+    annotations["developmental_stage_compatibility"] = dict(compatibility)
+    updated["evidence_annotations"] = annotations
+    supporting = list(updated.get("supporting_codes", []))
+    adverse = list(updated.get("adverse_codes", []))
+    unresolved = list(updated.get("unresolved_codes", []))
+    status = compatibility.get("status")
+    support_codes = {
+        "exact_match": "reference_developmental_stage_exact_match",
+        "broad_match": "reference_developmental_stage_broad_match",
+        "adjacent_match": "reference_developmental_stage_adjacent_match",
+        "compatible_subset_available": (
+            "reference_developmental_stage_compatible_subset_available"
+        ),
+    }
+    if status in support_codes and support_codes[status] not in supporting:
+        supporting.append(support_codes[status])
+    if status == "compatible_subset_available":
+        code = "reference_developmental_stage_subset_recommended"
+        if code not in unresolved:
+            unresolved.append(code)
+    elif status == "distant_age_warning":
+        code = "reference_developmental_stage_distant_age_warning"
+        if code not in unresolved:
+            unresolved.append(code)
+    elif status in {"unavailable", "unresolved"}:
+        code = "reference_developmental_stage_unresolved"
+        if code not in unresolved:
+            unresolved.append(code)
+    elif status == "incompatible" and compatibility.get("hard_conflict") is True:
+        code = "reference_developmental_stage_conflict"
+        if code not in adverse:
+            adverse.append(code)
+        updated["evidence_tier"] = "adverse"
+        updated["risk_tier"] = "high"
+    updated["supporting_codes"] = supporting
+    updated["adverse_codes"] = adverse
+    updated["unresolved_codes"] = unresolved
+    _refresh_assessment_reason_codes(updated)
+    return updated
 
 
 def _normalize_annotation_scope(
@@ -314,9 +600,7 @@ def _reference_source_breakdown(
     for source_id in source_ids[:_MAX_REFERENCE_METADATA_VALUES]:
         source_mask = source_values == source_id
         if label_column in dataset.obs:
-            labels = (
-                dataset.obs.loc[source_mask, label_column].dropna().astype(str).map(str.strip)
-            )
+            labels = dataset.obs.loc[source_mask, label_column].dropna().astype(str).map(str.strip)
             labels = labels[labels != ""]
             label_counts = labels.value_counts()
             label_inventory = [
@@ -345,9 +629,7 @@ def _reference_source_breakdown(
                     key=lambda value: (value.casefold(), value),
                 )
             metadata_values[name] = unique_values[:_MAX_REFERENCE_METADATA_VALUES]
-            metadata_values_truncated[name] = (
-                len(unique_values) > _MAX_REFERENCE_METADATA_VALUES
-            )
+            metadata_values_truncated[name] = len(unique_values) > _MAX_REFERENCE_METADATA_VALUES
         breakdown.append(
             {
                 "source_id": source_id,
@@ -427,22 +709,14 @@ def _reference_coverage(
 
         spatial_obs_names = {str(value) for value in spatial.obs_names}
         reference_obs_names = {str(value) for value in reference.obs_names}
-        observation_name_overlap_count = len(
-            spatial_obs_names.intersection(reference_obs_names)
-        )
+        observation_name_overlap_count = len(spatial_obs_names.intersection(reference_obs_names))
         observation_name_overlap = {
             "status": (
-                "overlap_detected"
-                if observation_name_overlap_count
-                else "no_overlap_detected"
+                "overlap_detected" if observation_name_overlap_count else "no_overlap_detected"
             ),
             "exact_count": int(observation_name_overlap_count),
-            "query_fraction": float(
-                observation_name_overlap_count / max(1, spatial.n_obs)
-            ),
-            "reference_fraction": float(
-                observation_name_overlap_count / max(1, reference.n_obs)
-            ),
+            "query_fraction": float(observation_name_overlap_count / max(1, spatial.n_obs)),
+            "reference_fraction": float(observation_name_overlap_count / max(1, reference.n_obs)),
             "warning": (
                 "Exact query/reference observation-name overlap may indicate data leakage or "
                 "an identifier collision; review dataset provenance before using the reference."
@@ -497,9 +771,7 @@ def _reference_coverage(
             None,
         )
         if source_column:
-            source_values = (
-                reference.obs[source_column].astype("string").fillna("").str.strip()
-            )
+            source_values = reference.obs[source_column].astype("string").fillna("").str.strip()
             source_count = len({value for value in source_values if value})
         else:
             source_count = None
@@ -597,9 +869,7 @@ def _private_feature_representations(path: Path) -> dict[str, list[str]]:
     """Read full feature identifiers privately for supervised method preflights."""
     dataset = ad.read_h5ad(path, backed="r")
     try:
-        representations = {
-            "var_names": [str(value).strip() for value in dataset.var_names]
-        }
+        representations = {"var_names": [str(value).strip() for value in dataset.var_names]}
         for column in (*GENE_SYMBOL_COLUMNS, *GENE_ID_COLUMNS):
             if column in dataset.var:
                 representations[f"var['{column}']"] = [
@@ -813,10 +1083,9 @@ def _decision_rules() -> list[str]:
             "disease, labels, or feature overlap in that reasoning."
         ),
         (
-            "Strong GPTCellType readiness is affirmative independent evidence and is not merely a "
-            "fallback after rejecting supervised methods. Moderate readiness requires caution, "
-            "weak readiness is adverse evidence, and not-assessable or errored readiness is "
-            "unknown."
+            "GPTCellType is excluded from automatic primary selection. Inspect its readiness only "
+            "when the immutable original request explicitly asks to use GPTCellType as the "
+            "legacy primary backend."
         ),
         (
             "Choose exactly one method only after naming the strongest alternative and recording "
@@ -824,17 +1093,17 @@ def _decision_rules() -> list[str]:
             "benchmark identities, outcomes, or calibrated performance thresholds."
         ),
         (
-            "Pass all three qualitative suitability levels to selection validation. Do not "
-            "select a method when another runnable method has higher assessed suitability."
+            "Pass all three qualitative suitability levels to selection validation for audit. "
+            "These narrative ratings do not override the supervised-first authorized candidate."
         ),
         (
             "When a candidate reference was inspected, state exactly: Candidate reference "
             "evidence was used only to assess Harmony."
         ),
         (
-            "Follow selection_policy.default_candidates. A high-risk method is a fallback only "
-            "when no non-high-risk affirmative candidate exists or the user explicitly requested "
-            "that otherwise runnable method."
+            "Follow selection_policy.authorized_candidates exactly: suitable Harmony first, "
+            "otherwise suitable CellTypist. If the list is empty, abstain without invoking an "
+            "annotation backend."
         ),
         (
             "When default candidates tie, prefer evidence specific to the supplied disease or "
@@ -864,16 +1133,10 @@ def _reference_rationale_disclosures(
 
     disclosures: list[dict[str, Any]] = []
     preflight = reference.get("query_panel_preflight")
-    label_coherence = (
-        preflight.get("label_coherence")
-        if isinstance(preflight, Mapping)
-        else None
-    )
+    label_coherence = preflight.get("label_coherence") if isinstance(preflight, Mapping) else None
     if isinstance(label_coherence, Mapping):
         n_placeholder = label_coherence.get("n_placeholder_labeled_observations")
-        placeholder_fraction = label_coherence.get(
-            "placeholder_labeled_observation_fraction"
-        )
+        placeholder_fraction = label_coherence.get("placeholder_labeled_observation_fraction")
         if (
             isinstance(n_placeholder, int)
             and not isinstance(n_placeholder, bool)
@@ -883,36 +1146,24 @@ def _reference_rationale_disclosures(
                 {
                     "code": "reference_placeholder_label_prevalence",
                     "category": "placeholder_label_prevalence",
-                    "evidence_path": (
-                        "reference.query_panel_preflight.label_coherence"
-                    ),
+                    "evidence_path": ("reference.query_panel_preflight.label_coherence"),
                     "n_placeholder_labeled_observations": n_placeholder,
                     "placeholder_labeled_observation_fraction": placeholder_fraction,
                 }
             )
 
     coverage = reference.get("coverage")
-    metadata_coverage = (
-        coverage.get("metadata_coverage")
-        if isinstance(coverage, Mapping)
-        else None
-    )
+    metadata_coverage = coverage.get("metadata_coverage") if isinstance(coverage, Mapping) else None
     if isinstance(metadata_coverage, Mapping):
         for category, code in _REFERENCE_CONTEXT_DISCLOSURE_CODES.items():
             summary = metadata_coverage.get(category)
             n_unique = summary.get("n_unique") if isinstance(summary, Mapping) else None
-            if (
-                isinstance(n_unique, int)
-                and not isinstance(n_unique, bool)
-                and n_unique > 1
-            ):
+            if isinstance(n_unique, int) and not isinstance(n_unique, bool) and n_unique > 1:
                 disclosures.append(
                     {
                         "code": code,
                         "category": category,
-                        "evidence_path": (
-                            f"reference.coverage.metadata_coverage.{category}"
-                        ),
+                        "evidence_path": (f"reference.coverage.metadata_coverage.{category}"),
                         "n_unique": n_unique,
                     }
                 )
@@ -927,16 +1178,12 @@ def _celltypist_majority_voting_recommendation(
     readiness = query.get("gptcelltype_readiness")
     readiness = readiness if isinstance(readiness, Mapping) else {}
     component_grades = readiness.get("component_grades")
-    component_grades = (
-        component_grades if isinstance(component_grades, Mapping) else {}
-    )
+    component_grades = component_grades if isinstance(component_grades, Mapping) else {}
     sampling = readiness.get("sampling")
     sampling = sampling if isinstance(sampling, Mapping) else {}
     n_nonzero = sampling.get("n_sampled_nonzero_cells")
     valid_n_nonzero = (
-        isinstance(n_nonzero, int)
-        and not isinstance(n_nonzero, bool)
-        and n_nonzero >= 0
+        isinstance(n_nonzero, int) and not isinstance(n_nonzero, bool) and n_nonzero >= 0
     )
 
     prerequisites = celltypist_assessment.get("prerequisites")
@@ -944,14 +1191,10 @@ def _celltypist_majority_voting_recommendation(
     readiness_success = readiness.get("status") == "success"
     coherence_strong = component_grades.get("coherence") == "strong"
     sufficient_nonzero_cells = bool(
-        valid_n_nonzero
-        and n_nonzero >= _CELLTYPIST_MAJORITY_VOTING_MIN_NONZERO_CELLS
+        valid_n_nonzero and n_nonzero >= _CELLTYPIST_MAJORITY_VOTING_MIN_NONZERO_CELLS
     )
     recommended = bool(
-        prerequisites_met
-        and readiness_success
-        and coherence_strong
-        and sufficient_nonzero_cells
+        prerequisites_met and readiness_success and coherence_strong and sufficient_nonzero_cells
     )
 
     reason_codes = [
@@ -991,9 +1234,7 @@ def _celltypist_majority_voting_recommendation(
             "gptcelltype_readiness_status": readiness.get("status"),
             "coherence_grade": component_grades.get("coherence"),
             "n_sampled_nonzero_cells": n_nonzero if valid_n_nonzero else None,
-            "minimum_sampled_nonzero_cells": (
-                _CELLTYPIST_MAJORITY_VOTING_MIN_NONZERO_CELLS
-            ),
+            "minimum_sampled_nonzero_cells": (_CELLTYPIST_MAJORITY_VOTING_MIN_NONZERO_CELLS),
             "source": "query.gptcelltype_readiness",
         },
         "rule": (
@@ -1014,9 +1255,7 @@ def _method_selection_policy(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Build method assessments and categorical dominance policy from preflight evidence."""
     reference_preflight = (
-        reference.get("query_panel_preflight")
-        if reference.get("provided") is True
-        else None
+        reference.get("query_panel_preflight") if reference.get("provided") is True else None
     )
     candidate_assessments = celltypist.get("candidate_model_assessments")
     if isinstance(candidate_assessments, Mapping) and candidate_assessments:
@@ -1090,29 +1329,26 @@ def _method_selection_policy(
     def disease_families(value: str) -> set[str]:
         tokens = set(re.findall(r"[a-z0-9]+", value.casefold()))
         return {
-            family
-            for family, terms in _DISEASE_FAMILY_TERMS.items()
-            if tokens.intersection(terms)
+            family for family, terms in _DISEASE_FAMILY_TERMS.items() if tokens.intersection(terms)
         }
 
-    supplied_disease = str((context or {}).get("disease") or "").strip()
-    normalized_disease = " ".join(re.findall(r"[a-z0-9]+", supplied_disease.casefold()))
-    reference_disease = (
-        reference.get("coverage", {}).get("metadata_coverage", {}).get("diseases", {})
-    )
+    context_values = context or {}
+    supplied_disease = str(context_values.get("disease") or "").strip()
+    supplied_stage = str(context_values.get("developmental_stage") or "").strip()
+    supplied_species = str(context_values.get("species") or "").strip()
+    reference_metadata = reference.get("coverage", {}).get("metadata_coverage", {})
+    reference_disease = reference_metadata.get("diseases", {})
     reference_disease_values = [
-        str(value).strip()
-        for value in reference_disease.get("values", [])
-        if str(value).strip()
+        str(value).strip() for value in reference_disease.get("values", []) if str(value).strip()
     ]
+    normalized_disease = " ".join(re.findall(r"[a-z0-9]+", supplied_disease.casefold()))
     disease_specific_query = bool(
         normalized_disease and normalized_disease not in _HEALTHY_DISEASE_VALUES
     )
     normal_only_reference = bool(
         reference_disease_values
         and all(
-            " ".join(re.findall(r"[a-z0-9]+", value.casefold()))
-            in _HEALTHY_DISEASE_VALUES
+            " ".join(re.findall(r"[a-z0-9]+", value.casefold())) in _HEALTHY_DISEASE_VALUES
             for value in reference_disease_values
         )
     )
@@ -1126,7 +1362,20 @@ def _method_selection_policy(
         and not normal_only_reference
         and not query_disease_families.intersection(reference_disease_families)
     )
-    harmony_assessment = method_assessments["harmony"]
+    reference_stage_values = [
+        str(value).strip()
+        for value in reference_metadata.get("developmental_stages", {}).get("values", [])
+        if str(value).strip()
+    ]
+    stage_compatibility = _developmental_stage_compatibility(
+        supplied_stage or None,
+        reference_stage_values,
+        supplied_species or None,
+    )
+    harmony_assessment = _apply_developmental_stage_compatibility(
+        method_assessments["harmony"], stage_compatibility
+    )
+    method_assessments["harmony"] = harmony_assessment
     harmony_annotations = dict(harmony_assessment.get("evidence_annotations", {}))
     harmony_annotations["biological_context_match"] = {
         "query_disease": supplied_disease or None,
@@ -1137,11 +1386,10 @@ def _method_selection_policy(
             "disease_specific_query_with_normal_only_reference"
             if disease_specific_query and normal_only_reference
             else (
-                "disease_family_mismatch"
-                if disease_family_mismatch
-                else "requires_agent_reasoning"
+                "disease_family_mismatch" if disease_family_mismatch else "requires_agent_reasoning"
             )
         ),
+        "developmental_stage": stage_compatibility,
     }
     harmony_assessment["evidence_annotations"] = harmony_annotations
     if disease_specific_query and normal_only_reference:
@@ -1151,14 +1399,7 @@ def _method_selection_policy(
         if "reference_disease_context_mismatch" not in adverse_codes:
             adverse_codes.append("reference_disease_context_mismatch")
         harmony_assessment["adverse_codes"] = adverse_codes
-        harmony_assessment["reason_codes"] = list(
-            dict.fromkeys(
-                [
-                    *harmony_assessment.get("supporting_codes", []),
-                    *adverse_codes,
-                ]
-            )
-        )
+        _refresh_assessment_reason_codes(harmony_assessment)
     elif disease_family_mismatch:
         harmony_assessment["evidence_tier"] = "adverse"
         harmony_assessment["risk_tier"] = "high"
@@ -1166,15 +1407,11 @@ def _method_selection_policy(
         if "reference_disease_family_mismatch" not in adverse_codes:
             adverse_codes.append("reference_disease_family_mismatch")
         harmony_assessment["adverse_codes"] = adverse_codes
-        harmony_assessment["reason_codes"] = list(
-            dict.fromkeys(
-                [
-                    *harmony_assessment.get("supporting_codes", []),
-                    *adverse_codes,
-                ]
-            )
-        )
-    selection_policy = build_method_selection_policy(method_assessments)
+        _refresh_assessment_reason_codes(harmony_assessment)
+    selection_policy = build_method_selection_policy(
+        method_assessments,
+        allow_gptcelltype_fallback=(context_values.get("allow_gptcelltype_fallback") is True),
+    )
     disclosures = _reference_rationale_disclosures(reference)
     rationale_guard = selection_policy["rationale_guard"]
     rationale_guard["reference_disclosures"] = disclosures
@@ -1204,6 +1441,7 @@ def inspect_cell_annotation_methods_tool(
     disease: str | None = None,
     developmental_stage: str | None = None,
     *,
+    allow_gptcelltype_fallback: bool = False,
     annotation_scope: Mapping[str, str] | None = None,
     annotation_context_sha256: str | None = None,
     celltypist_model_names: Annotated[
@@ -1235,10 +1473,10 @@ def inspect_cell_annotation_methods_tool(
             "developmental_stage": _clean_context_value(developmental_stage),
         }
         agent_supplied_context = {
-            field: value
-            for field, value in agent_supplied_context.items()
-            if value is not None
+            field: value for field, value in agent_supplied_context.items() if value is not None
         }
+        if allow_gptcelltype_fallback:
+            agent_supplied_context["allow_gptcelltype_fallback"] = True
         try:
             agent_scope = _normalize_annotation_scope(annotation_scope)
         except ValueError:
@@ -1252,6 +1490,8 @@ def inspect_cell_annotation_methods_tool(
                 for field in ("species", "tissue", "disease", "developmental_stage")
             }
             context = {field: value for field, value in context.items() if value is not None}
+            if bound_context.get("allow_gptcelltype_fallback") is True:
+                context["allow_gptcelltype_fallback"] = True
             bound_scope = _normalize_annotation_scope(bound_context.get("annotation_scope"))
             if bound_scope is not None:
                 context["annotation_scope"] = bound_scope
@@ -1293,8 +1533,7 @@ def inspect_cell_annotation_methods_tool(
         "caller_binding_verified": True,
         "agent_supplied_sha256": supplied_context_sha256,
         "agent_supplied_context_matches": (
-            agent_supplied_context == context
-            and supplied_context_sha256 == observed_context_sha256
+            agent_supplied_context == context and supplied_context_sha256 == observed_context_sha256
         ),
     }
     try:
@@ -1305,10 +1544,20 @@ def inspect_cell_annotation_methods_tool(
         query = _inspect_expression_matrix(spatial_path, role="query")
         query["gene_identifiers"] = _gene_identifier_summary(spatial_path)
         query_feature_representations = _private_feature_representations(spatial_path)
-        query["gptcelltype_readiness"] = inspect_gptcelltype_readiness(
-            spatial_path,
-            query,
-        )
+        if context.get("allow_gptcelltype_fallback") is True:
+            query["gptcelltype_readiness"] = inspect_gptcelltype_readiness(
+                spatial_path,
+                query,
+            )
+        else:
+            query["gptcelltype_readiness"] = {
+                "status": "disabled_by_default",
+                "readiness_grade": "not_assessable",
+                "reason": (
+                    "GPTCellType is excluded from automatic primary selection because the "
+                    "original request did not explicitly select it as the legacy primary backend."
+                ),
+            }
     except Exception as exc:
         return _error_result(operation, "inspect_query", exc)
 
@@ -1410,11 +1659,9 @@ def inspect_cell_annotation_methods_tool(
         worker_llm,
         context,
     )
-    celltypist["majority_voting_recommendation"] = (
-        _celltypist_majority_voting_recommendation(
-            method_assessments["celltypist"],
-            query,
-        )
+    celltypist["majority_voting_recommendation"] = _celltypist_majority_voting_recommendation(
+        method_assessments["celltypist"],
+        query,
     )
     result = {
         "status": "success",

@@ -91,6 +91,10 @@ def filter_for_execution_phase(messages: list[BaseMessage]) -> list[BaseMessage]
     if recruiter_idx is not None:
         result.append(messages[recruiter_idx])
         result.extend(messages[recruiter_idx + 1 :])
+    elif planner_idx is not None:
+        # Orchestration-only ablations bypass recruitment. Preserve the Manager's
+        # execution and tool evidence for evaluation/reporting in that case.
+        result.extend(messages[planner_idx + 1 :])
 
     return result
 

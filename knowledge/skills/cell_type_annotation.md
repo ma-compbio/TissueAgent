@@ -33,7 +33,12 @@ type per observation. Spot-level mixtures require deconvolution instead.
    `convert_spatial_data_tool` and `validate_spatial_data_tool`. If the converter does not support
    the detected format, use the Coding Agent for conversion and validate its result with
    `validate_spatial_data_tool`.
-2. Inside the single Cell Annotator plan step, call `list_celltypist_model_catalog_tool` exactly once.
+2. When the manager binds an explicit `celltypist_execution_request` from the original
+   user task, call `run_requested_celltypist_tool` with no arguments and then the requested
+   evidence inspection/review. This fixed reference-trained CellTypist experiment replaces
+   automatic catalog/method ranking and selection validation; it preserves seed-controlled
+   raw/voted predictions and never substitutes Harmony. Otherwise, inside the single Cell
+   Annotator plan step, call `list_celltypist_model_catalog_tool` exactly once.
    Review the complete verified catalog against the known query biology and shortlist one to three
    exact filenames; no code-generated model rank is provided. Treat the immutable
    `annotation_scope.primary_scope` as the dominant objective; secondary coverage and a tissue-name
@@ -64,8 +69,12 @@ type per observation. Spot-level mixtures require deconvolution instead.
    `best_supported_unresolved` with the exact phrase `best-supported unresolved option`, and
    include every required disclosure code for observed reference placeholder prevalence or
    context heterogeneity verbatim. Prioritize a specific supplied
-   disease/developmental match over generic tissue-only evidence; an official catalog default is
-   only a final model tie-break. Assign `high`, `moderate`, or `low` suitability confidence to all
+   disease/developmental match over generic tissue-only evidence. For developmental stage, use the
+   inspector's structured compatibility hierarchy: prefer exact age, accept the same broad or an
+   adjacent life stage, and keep a mixed-stage reference eligible when a compatible subset is
+   reported. A distant-age warning alone is not adverse; only an `incompatible` result is a hard
+   stage conflict, while missing or unresolved stage metadata remains unknown. An official catalog
+   default is only a final model tie-break. Assign `high`, `moderate`, or `low` suitability confidence to all
    three methods before choosing, pass the exact mapping as `method_suitability_confidences`, add
    one evidence-scoped explanation per method in `method_suitability_rationales` with candidate-
    reference evidence confined to Harmony, and
@@ -96,7 +105,11 @@ type per observation. Spot-level mixtures require deconvolution instead.
      configuration contract, then pass identical values to one `harmony_transfer_tool` call. The
      backend verifies the preprocessing decision again before full loading. Set
      `gene_mapping_species`, select reference-only `reference_min_genes` when raw preprocessing is
-     required, and select assay-appropriate `min_shared_genes`.
+     required, and select assay-appropriate `min_shared_genes`. Set `feature_scaling` explicitly:
+     use `unit_variance` when query and reference were independently normalized so high-variance
+     genes do not dominate the joint PCA, and use `none` only when compatible feature scaling is
+     already established. Treat cross-domain distance, entropy, and predicted-prior diagnostics as
+     transfer-risk evidence; they never use query truth or directly rewrite labels.
    - **CellTypist** after semantically comparing every shortlisted model's disease or population
      coverage, tissue, developmental stage, label inventory, training provenance, and technical
      preflight. Choose a built-in model only when the match is convincing and its bounded query
@@ -147,7 +160,6 @@ type per observation. Spot-level mixtures require deconvolution instead.
    estimates. Method selection is an evidence-backed hypothesis, not an oracle guarantee.
 6. Preserve the original query observation count and order. A successful backend must assign a
    prediction to every query observation or surface exclusions explicitly.
-
 ## Output contract
 
 Every annotated H5AD contains:

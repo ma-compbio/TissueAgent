@@ -1,7 +1,7 @@
 # Tissue-niche annotation: TissueAgent, Biomni and SpatialAgent
 
 The named-annotation benchmark has its own preparation, adapters, worker, evaluator and plotting
-modules in `demo/tissue_niche/`. It does not import the cell-annotation scripts. LLMiniST/SPEAK is
+modules in `benchmark/niche_annotation/`. It does not import the cell-annotation scripts. LLMiniST/SPEAK is
 deferred. The older BANKSY/scNiche clustering comparison remains separate.
 
 ## Input and annotation contract
@@ -28,10 +28,10 @@ does not prescribe tools, skills, inspection order, clustering, preprocessing, p
 model settings or benchmark access rules. Native agent system prompts, tools and skills remain
 part of each method. A native agent may still choose to generate plots or a report.
 
-The complete [heart prompt](../demo/tissue_niche/prompt_examples/developing_human_heart.txt)
-and [OVCA prompt](../demo/tissue_niche/prompt_examples/ovca_xenium_spatialfusion.txt) are available
-under `demo/tissue_niche/prompt_examples/`. These examples are generated from the public dataset
-manifests by [the prompt builder](../demo/tissue_niche/protocol.py), which is the source used by
+The complete [heart prompt](../benchmark/niche_annotation/prompt_examples/developing_human_heart.txt)
+and [OVCA prompt](../benchmark/niche_annotation/prompt_examples/ovca_xenium_spatialfusion.txt) are available
+under `benchmark/niche_annotation/prompt_examples/`. These examples are generated from the public dataset
+manifests by [the prompt builder](../benchmark/niche_annotation/protocol.py), which is the source used by
 the runner. The examples use TissueAgent project paths; runtime paths are substituted per method.
 
 Model configuration, stripped inputs, input-hash checks, returned cell-type checks and cell-ID
@@ -52,7 +52,7 @@ through a local `BIOMNI_PYTHONPATH` dependency overlay.
 Baseline collection now uses the same canonical/unambiguous annotation selection as TissueAgent.
 Valid saved annotations survive a later native workflow error as partial runs. Export failures
 retain the native messages and error details. No failed attempt is replaced using its score.
-`demo.tissue_niche.final_agent_evaluation` audits a frozen TissueAgent study, runs the two
+`benchmark.niche_annotation.final_agent_evaluation` audits a frozen TissueAgent study, runs the two
 baselines, and composes a comparison referencing the original immutable records. It rejects
 different prompts, input/truth cohorts, models, budgets, seeds, and missing or duplicate attempts.
 
@@ -174,7 +174,7 @@ overlay when needed; the generic parent `PYTHONPATH` is not inherited. Interpret
 also be configured per method using `python_executable` and `source_path`. Biomni provider selection
 uses `biomni.source`; SpatialAgent's Azure routing uses `spatialagent.use_azure`.
 
-The checked-in [study configuration](../demo/tissue_niche/configs/agent_comparison.yaml) selects both
+The checked-in [study configuration](../benchmark/niche_annotation/configs/agent_comparison.yaml) selects both
 datasets, all three methods, GPT-5.1, and requested seeds 42, 43, 44. Temporary runtime files default
 to `/scratch/tissue_niche_agents`; use `--runtime-root` for another writable execution directory.
 Runtime directories are retained for debugging and named in run records.
@@ -189,18 +189,18 @@ make no model requests. `run` executes the agents and incurs normal provider usa
 
 ```bash
 # Download the requested archive, verify MD5, and extract only processed_OVCA.h5ad.
-uv run --no-sync python -m demo.tissue_niche.spatialfusion_ovca download
+uv run --no-sync python -m benchmark.niche_annotation.spatialfusion_ovca download
 
 # Build strict inputs for both datasets. Add --dataset developing_human_heart for heart only.
-uv run --no-sync python -m demo.tissue_niche.run_agents prepare
-uv run --no-sync python -m demo.tissue_niche.run_agents preflight
+uv run --no-sync python -m benchmark.niche_annotation.run_agents prepare
+uv run --no-sync python -m benchmark.niche_annotation.run_agents preflight
 
 # Fresh study: all three methods, both datasets, all configured repetitions.
-uv run --no-sync python -m demo.tissue_niche.run_agents run \
+uv run --no-sync python -m benchmark.niche_annotation.run_agents run \
   --study-id tissue-niche-agents-gpt51-v3
 
 # Or run just the two new baselines on heart in a separate study.
-uv run --no-sync python -m demo.tissue_niche.run_agents run \
+uv run --no-sync python -m benchmark.niche_annotation.run_agents run \
   --dataset developing_human_heart --method biomni --method spatialagent \
   --model gpt-5.1 --seed 42 --study-id heart-agent-baselines-v3
 ```
@@ -209,7 +209,7 @@ Acquisition uses bounded HTTP range requests because the full archive may exceed
 Interrupted downloads resume from the assembled prefix and the complete archive is checked
 against the published MD5 before extraction. The H5AD gets a separate SHA256 acquisition record.
 
-Studies live under `demo/outputs/tissue_niche/agent_comparisons/<study-id>/`. Each dataset, method,
+Studies live under `benchmark/niche_annotation/outputs/agent_comparisons/<study-id>/`. Each dataset, method,
 seed and section has a run record, full prompts, native artifacts, logs, raw labels and canonical
 per-cell predictions. Input, prediction and worker/source provenance is retained. Run directories
 are immutable. `--resume` with the same configuration skips finalized attempts, including failures,
@@ -218,11 +218,11 @@ Use a new study ID for changed prompts, configuration or a deliberately new atte
 interruption leaving an unindexed run directory requires inspection before resuming that study.
 
 ```bash
-uv run --no-sync python -m demo.tissue_niche.evaluate_agents \
-  --study-dir demo/outputs/tissue_niche/agent_comparisons/tissue-niche-agents-gpt51-v3
+uv run --no-sync python -m benchmark.niche_annotation.evaluate_agents \
+  --study-dir benchmark/niche_annotation/outputs/agent_comparisons/tissue-niche-agents-gpt51-v3
 
-uv run --no-sync python -m demo.tissue_niche.plot_agent_comparison \
-  --study-dir demo/outputs/tissue_niche/agent_comparisons/tissue-niche-agents-gpt51-v3
+uv run --no-sync python -m benchmark.niche_annotation.plot_agent_comparison \
+  --study-dir benchmark/niche_annotation/outputs/agent_comparisons/tissue-niche-agents-gpt51-v3
 ```
 
 Evaluation writes `evaluation/metrics.tsv`, `summary.tsv`, per-section and per-class reports, and
@@ -244,7 +244,7 @@ tables without expression, coordinates, API keys or baseline environments.
 When a baseline has only one configured seed, its spatial panel is reused alongside each selected
 TissueAgent seed and explicitly labeled with its own seed. It still counts as one run in metrics.
 
-The [agent demo notebook](../demo/tissue_niche_agent_baselines.ipynb) calls these same functions.
+The [agent benchmark notebook](../notebooks/tissue_niche_agent_baselines.ipynb) calls these same functions.
 
 ## Validation
 
@@ -265,10 +265,10 @@ Keep each revision in a fresh study directory. The comparator verifies frozen ru
 input identities and evaluates every cell, counting missing sections as Unmatched:
 
 ```bash
-python -m demo.tissue_niche.compare_tissueagent_revisions \
+python -m benchmark.niche_annotation.compare_tissueagent_revisions \
   --study Old=path/to/archived-study \
   --study Revised=path/to/new-study \
-  --output-dir demo/outputs/tissue_niche/revision-comparison
+  --output-dir benchmark/niche_annotation/outputs/revision-comparison
 ```
 
 It writes pooled and per-section metrics, per-class results, an execution inventory, spatial

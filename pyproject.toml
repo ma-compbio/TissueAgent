@@ -84,7 +84,13 @@ dependencies = [
     "mygene==3.2.2",
     "harmonypy==0.0.10",
     "celltypist==1.7.1",
-    "tiledbsoma==1.17.1",
+    # Optional-at-runtime QC used only for raw, sufficiently broad count matrices.
+    # Review degrades to an explicit not_assessable status if its prerequisites fail.
+    "scrublet>=0.2.3,<0.3",
+    # 1.17.1's bundled macOS TLS runtime fails against the current CELLxGENE
+    # Census S3 certificate chain (libcurl error 60). 2.3.0 opens the same
+    # release with verification enabled.
+    "tiledbsoma==2.3.0",
     "docker>=7.0.0",
     "websocket-client>=1.7.0",
     "utag",

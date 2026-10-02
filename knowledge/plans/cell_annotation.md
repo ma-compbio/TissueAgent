@@ -22,9 +22,45 @@ description: >
 
 ## Step Sketch
 
+**Explicit CellTypist execution request:** when the original user task specifies
+`primary_method='celltypist'` and a complete `CellTypist execution request:` JSON
+contract, use one Cell Annotater step: `run_requested_celltypist_tool` (no arguments),
+then the requested evidence inspection and selective review. The manager binds the
+original request; the tool validates input hashes, reference independence, seed and
+output paths. This user-selected reference-trained experiment replaces the automatic
+catalog/selection sequence below. Do not rank methods, use Harmony, download an unrelated
+official model, or substitute coding-agent annotation. Preserve raw and normal-voted
+predictions. All other requests retain the adaptive workflow below.
+
 Onboard the query if needed → reuse or retrieve a candidate reference when appropriate → inspect
 method suitability inside Cell Annotater → validate one selection → run exactly one annotation
 backend
+
+When the user requests annotation with evidence review/refinement, append two tool actions inside
+the same Cell Annotater step: `inspect_annotation_evidence_tool` then
+`refine_cell_annotations_tool`. Reserve `<requested_stem>_primary.h5ad` for selection validation
+and primary execution; the review writes the caller's final path. The primary selection contract
+remains scoped to one backend; a separate evidence SHA-256 binds review input, context and row
+assignments. Keep the primary artifact, review evidence/assignments, final `.review.json`, and
+final `.run_meta.json`. These necessary review artifacts are permitted in this variant despite
+the minimal-artifact guidance below. Do not stop after primary execution when review is requested.
+Only native primary predictions and query expression enter this review; no held-out labels,
+benchmark mappings or historical scores. The reviewer can keep, revise, broaden or mark groups
+unresolved, with explicit evidence for changes and distinct minority groups handled separately.
+Reference subsets retain donor, developmental stage, ontology IDs and primary-data status.
+Use explicit development-stage filters when supported by discovery; do not guess exact Census
+stage names from a broad user description. Placeholder labels are excluded from supervised
+targets and recorded in provenance. Existing caches with different requests or older policies
+must use a new filename. Pin the Census release and the sampling seed for repeatability.
+
+For an explicit selective/subgroup-specific review request, replace the legacy refinement
+action with `refine_cell_annotations_selective_tool`, preserving the exact evidence hash and
+caller-declared `max_review_groups` (default 48). Keep selection, primary, inspection and
+review in the same Cell Annotater step. Screen all clusters but review only specific
+marker-supported conflicts. Retain fine predictions otherwise; report budget-deferred
+groups separately from reviewed groups. Preserve all cells. CellTypist uses its normal
+contract-bound voting recommendation, preserves raw and voted labels, and does not apply
+the experimental fixed-80%-dominance voting guard. Do not force a backend from prior scores.
 
 ## Details
 
@@ -71,7 +107,11 @@ backend
   `best-supported unresolved option`; every required disclosure code for observed reference
   placeholder prevalence or context heterogeneity must appear verbatim. Ties are resolved from raw
   evidence, with specific supplied disease/developmental coverage ahead of generic tissue-only
-  evidence. Before choosing, the agent assigns `high`, `moderate`, or `low` suitability confidence
+  evidence. Developmental-stage suitability is hierarchical rather than an exact-string gate:
+  exact age is preferred; broad and adjacent life-stage matches remain eligible; and mixed-stage
+  references remain eligible when a compatible subset is identified. Chronological distance alone
+  is a warning, only `incompatible` is a hard stage conflict, and missing or unresolved stage
+  metadata remains unknown. Before choosing, the agent assigns `high`, `moderate`, or `low` suitability confidence
   to all three methods. Harmony confidence specifically measures how well the selected reference
   matches the supplied species, tissue or compartment, disease, developmental stage, and needed
   population or label inventory, followed by technical compatibility. Shared genes,
@@ -134,6 +174,10 @@ backend
   verbatim into the backend call; do not replace them with values derived from the output path. If the
   reference is preprocessed, choose `reference_min_genes` from reference detected-gene evidence; it
   must never filter query observations. Choose an explicit assay-appropriate `min_shared_genes`.
+  Set `feature_scaling` explicitly to `unit_variance` for independently normalized inputs, or
+  `none` only when compatible scaling is already established. Preserve raw classifier confidence
+  and use the separate support-calibrated confidence plus truth-blind cross-domain diagnostics for
+  downstream uncertainty decisions.
   When the caller supplies human or mouse context, pass that exact known species as
   `gene_mapping_species`; use `auto` only when species is genuinely unresolved.
 - **CellTypist:** semantically compare every shortlisted official model's population or disease

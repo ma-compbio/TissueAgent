@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from queue import Queue
 
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.tools import StructuredTool
 from langgraph.graph import END, START, MessagesState, StateGraph
 
 from agents.agent_defns import (
@@ -58,6 +59,8 @@ from graph.node_factories import (
 )
 from graph.plan_output import create_planner_state_update, create_recruiter_state_update
 from graph.replan_state import effective_replan_count
+from graph.niche_review import guard_niche_review_verdict
+from server.plan_store import plan_store
 
 
 class TissueAgentState(MessagesState):
@@ -78,6 +81,8 @@ def create_tissueagent_graph(
     domain_agents: list | None = None,
     *,
     allow_targeted_replanning: bool = True,
+    native_execution_tools: list[StructuredTool] | None = None,
+    native_execution_prompt: str | None = None,
     **custom_agent_kwargs,
 ) -> StateGraph:
     """Build the full TissueAgent state graph (uncompiled).
@@ -103,6 +108,10 @@ def create_tissueagent_graph(
             the planner. Set to ``False`` for the static-plan architecture ablation: planning,
             recruitment, execution, evaluation, and reporting remain intact, but the initial plan
             cannot be revised after execution begins.
+        native_execution_tools: Explicit orchestration-only ablation. Requires
+            ``domain_agents=[]`` and a ``native_execution_prompt``. Bypasses recruitment
+            and gives the Manager these direct tools instead of specialist dispatch tools.
+        native_execution_prompt: Manager instructions for the orchestration-only ablation.
         **custom_agent_kwargs: Extra keyword arguments forwarded to :class:`CustomAgent`
             constructors. Each ctor receives only the kwargs it declares in its signature (filtered
             via ``inspect.signature``). For example, ``kernel_client=...`` is consumed by the coding
@@ -112,6 +121,13 @@ def create_tissueagent_graph(
         An uncompiled :class:`~langgraph.graph.StateGraph` ready to be compiled via ``.compile()``.
     """
     agents = list(domain_agents) if domain_agents is not None else list(AgentDefns)
+    native_execution = native_execution_tools is not None
+    if native_execution and (domain_agents is None or agents or not native_execution_prompt):
+        raise ValueError(
+            "Native execution requires an explicitly empty domain_agents list and a Manager prompt."
+        )
+    if native_execution_prompt is not None and not native_execution:
+        raise ValueError("native_execution_prompt requires native_execution_tools.")
     assign_agent_node_id = lambda id: f"{id}_agent"
     assign_tool_node_id = lambda id: f"{id}_tools"
 
@@ -268,7 +284,11 @@ def create_tissueagent_graph(
 
     ### Manager agent
 
-    manager_step_tools = create_manager_step_tools(invocation_tools_by_agent)
+    manager_step_tools = (
+        list(native_execution_tools)
+        if native_execution
+        else create_manager_step_tools(invocation_tools_by_agent)
+    )
     manager_tools = ManagerAgent.tools + manager_step_tools
     manager_model = model_proc_fn(ManagerAgent.model_ctor().bind_tools(manager_tools))
 
@@ -277,6 +297,14 @@ def create_tissueagent_graph(
     _manager_prompt_render = ManagerAgent.prompt(agent_id_descriptions)
 
     def manager_prompt(state) -> str:
+        if native_execution:
+            from dataclasses import asdict
+
+            return (
+                substitute_shared_prompts(native_execution_prompt)
+                + "\n\nCurrent evolving plan:\n"
+                + json.dumps(asdict(plan_store.read()), ensure_ascii=False)
+            )
         return substitute_shared_prompts(_manager_prompt_render(state))
 
     manager_node_id = assign_agent_node_id(ManagerAgent.id)
@@ -362,9 +390,9 @@ def create_tissueagent_graph(
         if effective_replan_count(state) > 0:
             if state.get("planner_validation_errors"):
                 return planner_node_id
-            return recruiter_node_id
+            return manager_node_id if native_execution else recruiter_node_id
         if head.startswith("ROUTE: PLAN"):
-            return recruiter_node_id
+            return manager_node_id if native_execution else recruiter_node_id
         # Invalid format — loop back (state_update_fn already injected feedback)
         return planner_node_id
 
@@ -422,7 +450,10 @@ def create_tissueagent_graph(
         manager_prompt,
         manager_tool_node_id,
         evaluator_node_id,
-        message_filter_fn=filter_for_manager(manager_node_id),
+        message_filter_fn=(
+            filter_for_execution_phase
+            if native_execution else filter_for_manager(manager_node_id)
+        ),
         budget_guard=manager_budget_guard,
     )
 
@@ -432,6 +463,9 @@ def create_tissueagent_graph(
 
     def evaluator_state_update(response, state):
         content = (response.content or "").strip()
+        if content.upper().startswith("ROUTE: REPORT") and not response.tool_calls:
+            content = guard_niche_review_verdict(content, plan_store.read())
+            response.content = content
         head = content.splitlines()[0].upper() if content else ""
         if head.startswith("ROUTE: REPLAN") and allow_targeted_replanning:
             prior = effective_replan_count(state)
@@ -447,7 +481,8 @@ def create_tissueagent_graph(
                     "ROUTE: REPORT\n\n"
                     f"EVALUATION: Replan limit reached (maximum {MAX_REPLANS}). Returning latest evaluator assessment.\n\n"
                     "NOTE: The evaluator attempted to trigger replanning beyond the limit; "
-                    "please review earlier feedback for unresolved blockers."
+                    "please review earlier feedback for unresolved blockers.\n\n"
+                    + content
                 )
             return {"replan_count": new_count, "replan_history": history}
         return {}

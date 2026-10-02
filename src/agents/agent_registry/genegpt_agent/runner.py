@@ -37,6 +37,16 @@ from pathlib import Path
 from typing import Optional
 
 from agents.llm_compat import patch_openai_legacy_api
+from agents.agent_registry.genegpt_agent.answer_recovery import (
+    extract_terminal_answer,
+    recover_gene_symbol,
+)
+from agents.agent_registry.genegpt_agent.alignment_recovery import (
+    blast_request,
+    normalize_blast_url,
+    recover_alignment,
+    request_id as blast_request_id,
+)
 from config import active_project_outputs
 from logger import logger
 
@@ -84,7 +94,14 @@ _SYSTEM_INSTRUCTION = (
     "call, do not use markdown, do not add commentary — emit only the bracketed "
     "URL. You will receive the API response and may then emit the next URL. "
     "When you have enough information, reply with a line starting 'Answer:' "
-    "followed by the concise final answer."
+    "followed by the concise final answer. A BLAST RID only identifies a queued "
+    "job; retrieve that same RID with CMD=Get before answering. A waiting/error "
+    "page is not an alignment. For human alignment, subject coordinates on a "
+    "clone, transcript, RefSeqGene or synthetic construct are not chromosome "
+    "coordinates. Report only the chromosome if no reference-coordinate mapping "
+    "is available. Do not substitute coordinates from a hit's title. For species "
+    "identification, do not resolve equally strong hits from different species "
+    "by choosing the first hit."
 )
 
 
@@ -150,16 +167,6 @@ def _import_upstream_helpers():
     return main_turbo.get_prompt_header, _call_api
 
 
-def _extract_answer(text: str) -> str:
-    """Pull the final answer out of the model's terminal completion.
-
-    GeneGPT's convention is an ``Answer: <...>`` span (upstream examples). Fall
-    back to the whole stripped text when no marker is present.
-    """
-    m = re.search(r"Answer:\s*(.+)", text, flags=re.DOTALL)
-    return (m.group(1) if m else text).strip()
-
-
 def run_genegpt_question(
     question: str,
     mask: str = _DEFAULT_MASK,
@@ -182,8 +189,9 @@ def run_genegpt_question(
           - status: "ok" | "error"
           - answer: the extracted final answer (present on success)
           - raw_completion: the model's final untrimmed text
-          - api_trace: list of {url, response_excerpt} for each executed call
-          - num_calls: how many NCBI calls were made
+          - api_trace: URL, full response, and display excerpt for each NCBI call
+          - num_calls: number of model completions (legacy field name)
+          - answer_source, answer_evidence: final-answer provenance
           - model_used, run_directory, artifact_path
         On error: status "error" with error/error_type.
 
@@ -205,6 +213,7 @@ def run_genegpt_question(
 
     mask_bits = [bool(int(x)) for x in mask]
     api_trace: list[dict] = []
+    llm_trace: list[dict] = []
     num_calls = 0
 
     logger.info(
@@ -224,15 +233,21 @@ def run_genegpt_question(
             q_prompt = prompt + f"Question: {question}\n"
 
             final_text = ""
-            while True:
-                if len(q_prompt) > _CUT_LENGTH:
-                    q_prompt = q_prompt[len(q_prompt) - _CUT_LENGTH:]
+            answer = None
+            answer_source = None
+            answer_evidence = None
+            stop_reason = "call_limit"
+            blast_polled_at = {}
+            while num_calls < _MAX_CALLS:
+                # Keep the current question explicit even after truncation.
+                current_task = f"\n\nCurrent question: {question}\nContinue this question only.\n"
+                model_prompt = q_prompt[-max(1, _CUT_LENGTH - len(current_task)):] + current_task
 
                 completion = openai.ChatCompletion.create(  # -> pinned model
                     model="ignored-shim-overrides",
                     messages=[
                         {"role": "system", "content": _SYSTEM_INSTRUCTION},
-                        {"role": "user", "content": q_prompt},
+                        {"role": "user", "content": model_prompt},
                     ],
                     temperature=0.0,
                     stop=["->", "\n\nQuestion"],
@@ -244,31 +259,67 @@ def run_genegpt_question(
                 text = completion.choices[0]["message"]["content"]
                 num_calls += 1
                 final_text = text
+                llm_trace.append({"completion": text, "finish_reason": completion.choices[0]["finish_reason"]})
 
                 url = _find_url(text)
                 if url:
-                    if "blast" in url and "Get" in url:
-                        time.sleep(30)  # wait for BLAST result on NCBI
+                    requested_url = url
+                    try:
+                        url = normalize_blast_url(url, api_trace)
+                    except ValueError as exc:
+                        stop_reason = "invalid_blast_request"
+                        q_prompt += f"\nRequest not executed: {exc}\n"
+                        continue
+                    blast_query = blast_request(url)
+                    if blast_query and blast_query.get("CMD") == ["Get"]:
+                        rid = blast_query["RID"][0]
+                        # Keep repeated polling of the same job at least a minute apart.
+                        delay = max(0, 60 - (time.monotonic() - blast_polled_at.get(rid, float("-inf"))))
+                        if delay:
+                            time.sleep(delay)
+                        blast_polled_at[rid] = time.monotonic()
                     call = call_api(url)
 
-                    # BLAST Put returns a Request ID to poll with.
-                    if "blast" in url and "Put" in url:
-                        rid = re.search(r"RID = (.*)\n", call.decode("utf-8"))
-                        call = rid.group(1) if rid else call
-
                     call_bytes = call if isinstance(call, (bytes, str)) else str(call)
-                    if len(call_bytes) > 20000:
-                        call_bytes = call_bytes[:20000]
-
-                    excerpt = (
+                    response = (
                         call_bytes.decode("utf-8", "replace")
                         if isinstance(call_bytes, bytes) else str(call_bytes)
                     )
-                    api_trace.append({"url": url, "response_excerpt": excerpt[:2000]})
-                    q_prompt = f"{q_prompt}{text}->[{call_bytes}]\n"
+                    api_trace.append({"url": url, "requested_url": requested_url,
+                                      "response": response, "response_excerpt": response[:2000]})
+                    prompt_response = response[:20000]
+                    if blast_query and blast_query.get("CMD") == ["Put"]:
+                        rid = blast_request_id(response)
+                        if rid is None:
+                            raise RuntimeError("BLAST submission returned no valid RID.")
+                        # Archive the full submission response, but keep the
+                        # model-facing message free of irrelevant HTML.
+                        prompt_response = f"BLAST submitted. RID={rid}. Retrieve results with CMD=Get using this RID."
+                        blast_polled_at[rid] = time.monotonic()
+                    recovered = recover_gene_symbol(question, api_trace)
+                    if recovered["reason"] == "unsupported_question":
+                        recovered = recover_alignment(question, api_trace)
+                    if recovered["answer"] is not None:
+                        answer = recovered["answer"]
+                        answer_source = "ncbi_evidence_extraction"
+                        answer_evidence = recovered
+                        stop_reason = "evidence_answer"
+                        break
+                    if blast_query and blast_query.get("CMD") == ["Get"] and "BLASTN" not in response:
+                        prompt_response = f"No completed BLAST text report was returned for RID={blast_query['RID'][0]}. Check its status; do not infer an alignment from this page.\n" + response[:1000]
+                    q_prompt = f"{q_prompt}[{url}]->[{prompt_response}]\n"
                 else:
-                    # No URL -> the model has produced its answer.
-                    break
+                    answer = extract_terminal_answer(text)
+                    if answer and blast_request_id(answer.strip("[]")) and any(blast_request(t["url"]) for t in api_trace):
+                        answer = None  # A BLAST request identifier is not a scientific answer.
+                    if answer is not None:
+                        answer_source = "model_final_answer"
+                        stop_reason = "final_answer"
+                        break
+                    # A new example/question is not an answer. Retry within
+                    # the same cap, retaining the question and existing evidence.
+                    stop_reason = "invalid_terminal_completion"
+                    q_prompt += "\nReturn Answer: <final answer> for the current question, or one NCBI URL. Do not generate a new question.\n"
 
                 if num_calls >= _MAX_CALLS:
                     logger.warning(
@@ -278,14 +329,21 @@ def run_genegpt_question(
                     break
 
         result: dict = {
-            "status": "ok",
-            "answer": _extract_answer(final_text),
+            "status": "ok" if answer is not None else "error",
+            "answer": answer,
+            "answer_source": answer_source,
+            "answer_evidence": answer_evidence,
+            "stop_reason": stop_reason,
             "raw_completion": final_text,
             "api_trace": api_trace,
+            "llm_trace": llm_trace,
             "num_calls": num_calls,
+            "ncbi_calls": len(api_trace),
             "model_used": _PINNED_MODEL,
             "mask": mask,
         }
+        if answer is None:
+            result.update(error_type="NoFinalAnswer", error="No valid final answer within the model-call limit.")
     except Exception as exc:  # noqa: BLE001 — report, don't crash the graph
         logger.error("GeneGPT[%s]: failed (%s): %s",
                      run_identifier, type(exc).__name__, exc)

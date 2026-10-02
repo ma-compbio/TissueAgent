@@ -15,6 +15,7 @@ import numpy as np
 from scipy import sparse
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
 import mygene
 
@@ -63,6 +64,128 @@ SPECIES_ALIASES = {
 }
 DETECTED_GENE_QC_MAX_ROWS = 256
 HARMONY_PCA_FEATURE_MASK = "_tissueagent_harmony_pca_feature"
+TRANSFER_DIAGNOSTIC_MAX_CELLS = 4096
+
+
+def _jensen_shannon_divergence(left: np.ndarray, right: np.ndarray) -> float:
+    """Return bounded base-2 Jensen-Shannon divergence for two distributions."""
+    left = np.asarray(left, dtype=float)
+    right = np.asarray(right, dtype=float)
+    left = left / left.sum()
+    right = right / right.sum()
+    midpoint = 0.5 * (left + right)
+
+    def _kl(values: np.ndarray) -> float:
+        present = values > 0
+        return float(np.sum(values[present] * np.log2(values[present] / midpoint[present])))
+
+    return 0.5 * (_kl(left) + _kl(right))
+
+
+def _cross_domain_transfer_diagnostics(
+    X_reference: np.ndarray,
+    X_query: np.ndarray,
+    reference_labels: np.ndarray,
+    prediction_probs: np.ndarray,
+    classifier_classes: np.ndarray,
+) -> dict[str, Any]:
+    """Measure truth-blind embedding support, entropy, and class-prior shift.
+
+    Diagnostics use deterministic bounded samples and never inspect query labels. The returned
+    support factor calibrates confidence only; it must not change transferred labels.
+    """
+    n_reference = int(X_reference.shape[0])
+    n_query = int(X_query.shape[0])
+    classes = np.asarray(classifier_classes).astype(str)
+    labels = np.asarray(reference_labels).astype(str)
+    source_counts = np.asarray([(labels == value).sum() for value in classes], dtype=float)
+    source_prior = source_counts / source_counts.sum()
+    soft_query_prior = np.asarray(prediction_probs, dtype=float).mean(axis=0)
+    hard_query = classes[np.argmax(prediction_probs, axis=1)]
+    hard_counts = np.asarray([(hard_query == value).sum() for value in classes], dtype=float)
+    hard_prior = hard_counts / hard_counts.sum()
+    eps = np.finfo(float).eps
+    entropy = -np.sum(prediction_probs * np.log(np.clip(prediction_probs, eps, 1.0)), axis=1)
+    normalized_entropy = entropy / max(np.log(max(len(classes), 2)), eps)
+
+    diagnostics: dict[str, Any] = {
+        "version": "harmony_cross_domain_diagnostics_v1",
+        "truth_blind": True,
+        "n_reference_cells": n_reference,
+        "n_query_cells": n_query,
+        "n_classes": int(len(classes)),
+        "mean_normalized_prediction_entropy": float(np.mean(normalized_entropy)),
+        "source_class_prior": {
+            label: float(value) for label, value in zip(classes, source_prior, strict=True)
+        },
+        "query_soft_class_prior": {
+            label: float(value) for label, value in zip(classes, soft_query_prior, strict=True)
+        },
+        "query_hard_class_prior": {
+            label: float(value) for label, value in zip(classes, hard_prior, strict=True)
+        },
+        "source_to_query_soft_prior_js_divergence": _jensen_shannon_divergence(
+            source_prior, soft_query_prior
+        ),
+        "support_confidence_factor": 1.0,
+        "risk_level": "not_assessable",
+        "risk_reasons": [],
+    }
+    if n_reference < 2 or n_query < 1:
+        diagnostics["risk_reasons"] = ["insufficient_cells_for_embedding_support"]
+        return diagnostics
+
+    reference_indices = _evenly_spaced_indices(n_reference, TRANSFER_DIAGNOSTIC_MAX_CELLS)
+    query_indices = _evenly_spaced_indices(n_query, TRANSFER_DIAGNOSTIC_MAX_CELLS)
+    reference_sample = np.asarray(X_reference[reference_indices], dtype=np.float32)
+    query_sample = np.asarray(X_query[query_indices], dtype=np.float32)
+    neighbors = NearestNeighbors(n_neighbors=2, metric="euclidean", n_jobs=-1)
+    neighbors.fit(reference_sample)
+    reference_distances = neighbors.kneighbors(reference_sample, return_distance=True)[0][:, 1]
+    query_distances = neighbors.kneighbors(
+        query_sample, n_neighbors=1, return_distance=True
+    )[0][:, 0]
+    reference_median = float(np.median(reference_distances))
+    query_median = float(np.median(query_distances))
+    distance_ratio = query_median / max(reference_median, eps)
+    reference_p95 = float(np.quantile(reference_distances, 0.95))
+    beyond_reference_p95 = float(np.mean(query_distances > reference_p95))
+    confidence_factor = float(1.0 / (1.0 + max(0.0, np.log2(max(distance_ratio, 1.0)))))
+
+    reasons: list[str] = []
+    if distance_ratio >= 2.0:
+        reasons.append("query_embedding_distance_at_least_twice_reference_baseline")
+    elif distance_ratio >= 1.5:
+        reasons.append("query_embedding_distance_elevated")
+    if beyond_reference_p95 >= 0.5:
+        reasons.append("most_query_sample_cells_beyond_reference_p95_support")
+    if diagnostics["source_to_query_soft_prior_js_divergence"] >= 0.2:
+        reasons.append("large_predicted_class_prior_shift")
+    if diagnostics["mean_normalized_prediction_entropy"] >= 0.6:
+        reasons.append("high_prediction_entropy")
+    if distance_ratio >= 1.5 and float(np.mean(np.max(prediction_probs, axis=1))) >= 0.9:
+        reasons.append("high_raw_confidence_despite_embedding_shift")
+    if distance_ratio >= 2.0 or len(reasons) >= 3:
+        risk_level = "high"
+    elif reasons:
+        risk_level = "moderate"
+    else:
+        risk_level = "low"
+    diagnostics.update(
+        {
+            "reference_sample_size": int(len(reference_sample)),
+            "query_sample_size": int(len(query_sample)),
+            "reference_nearest_neighbor_distance_median": reference_median,
+            "reference_nearest_neighbor_distance_p95": reference_p95,
+            "query_to_reference_distance_median": query_median,
+            "query_to_reference_distance_ratio": float(distance_ratio),
+            "query_sample_fraction_beyond_reference_p95": beyond_reference_p95,
+            "support_confidence_factor": confidence_factor,
+            "risk_level": risk_level,
+            "risk_reasons": reasons,
+        }
+    )
+    return diagnostics
 
 
 def _resolve_path(path_like: str, *, must_exist: bool) -> Path:
@@ -474,6 +597,7 @@ def harmony_transfer_tool(
     min_cells: int = 10,
     target_sum: float = 1e4,
     n_top_genes: int = 2000,
+    feature_scaling: str = "none",
     n_pcs: int = 30,
     min_shared_genes: int | None = None,
     harmony_key: str = "batch",
@@ -504,9 +628,7 @@ def harmony_transfer_tool(
             }
         preprocess_spatial = not skip_preprocessing
         preprocess_reference = not skip_preprocessing
-    elif not isinstance(preprocess_spatial, bool) or not isinstance(
-        preprocess_reference, bool
-    ):
+    elif not isinstance(preprocess_spatial, bool) or not isinstance(preprocess_reference, bool):
         return {
             "status": "error",
             "stage": "validate_preprocessing_decision",
@@ -583,6 +705,13 @@ def harmony_transfer_tool(
             "error_type": "ValueError",
             "message": "classifier must be either 'mlp' or 'knn'.",
         }
+    if feature_scaling not in {"none", "unit_variance"}:
+        return {
+            "status": "error",
+            "stage": "validate_feature_scaling",
+            "error_type": "ValueError",
+            "message": "feature_scaling must be either 'none' or 'unit_variance'.",
+        }
     if isinstance(knn_neighbors, bool) or not isinstance(knn_neighbors, int) or knn_neighbors < 1:
         return {
             "status": "error",
@@ -638,18 +767,14 @@ def harmony_transfer_tool(
         return {
             "status": "error",
             "stage": "validate_preprocessing_preflight",
-            "error_type": preprocessing_inspection.get(
-                "error_type", "UnsafePreprocessingDecision"
-            ),
+            "error_type": preprocessing_inspection.get("error_type", "UnsafePreprocessingDecision"),
             "message": (
                 "Harmony's internal preprocessing preflight could not make a safe decision: "
                 f"{preprocessing_inspection.get('message', 'unknown inspection failure')}"
             ),
             "preprocessing_audit": preprocessing_inspection,
         }
-    recommended_preprocess_spatial = preprocessing_inspection.get(
-        "recommended_preprocess_spatial"
-    )
+    recommended_preprocess_spatial = preprocessing_inspection.get("recommended_preprocess_spatial")
     recommended_preprocess_reference = preprocessing_inspection.get(
         "recommended_preprocess_reference"
     )
@@ -743,7 +868,17 @@ def harmony_transfer_tool(
             ),
         }
 
+    gene_mapping_stats = {}
     try:
+        from .reference_labels import biological_label_mask, REFERENCE_LABEL_POLICY
+
+        valid_targets = biological_label_mask(adata_ref.obs[cell_type_column])
+        n_placeholder_reference_cells = int((~valid_targets).sum())
+        adata_ref = adata_ref[valid_targets.to_numpy()].copy()
+        if adata_ref.obs[cell_type_column].nunique() < 2:
+            raise ValueError(
+                "Reference needs at least two biological labels after removing placeholders."
+            )
         stage = "harmonize_gene_identifiers"
         gene_mapping_stats = {}
 
@@ -838,6 +973,13 @@ def harmony_transfer_tool(
             adata_spatial,
         )
         n_pca_selected_genes = int(np.count_nonzero(pca_feature_mask))
+        if feature_scaling == "unit_variance":
+            adata_ref = adata_ref[:, pca_feature_mask].copy()
+            adata_spatial = adata_spatial[:, pca_feature_mask].copy()
+            sc.pp.scale(adata_ref, zero_center=False, max_value=10)
+            sc.pp.scale(adata_spatial, zero_center=False, max_value=10)
+            pca_feature_mask = np.ones(n_pca_selected_genes, dtype=bool)
+            pca_feature_selection_policy += "+independent_unit_variance_scaling"
 
         # Keep labels outside AnnData.concat. Reference-only .obs columns are not
         # guaranteed to survive concat across supported AnnData versions.
@@ -864,7 +1006,9 @@ def harmony_transfer_tool(
             str(batch): int(count)
             for batch, count in pd.concat(
                 [adata_ref.obs[harmony_key], adata_spatial.obs[harmony_key]]
-            ).value_counts().items()
+            )
+            .value_counts()
+            .items()
         }
         adata_combined = ad.concat(
             {"reference": adata_ref, "spatial": adata_spatial},
@@ -965,6 +1109,18 @@ def harmony_transfer_tool(
 
         # Get prediction confidence (max probability)
         prediction_confidence = np.max(prediction_probs, axis=1)
+        transfer_diagnostics = _cross_domain_transfer_diagnostics(
+            X_ref_scaled,
+            X_spatial_scaled,
+            y_ref,
+            prediction_probs,
+            label_classifier.classes_,
+        )
+        support_calibrated_confidence = np.clip(
+            prediction_confidence * transfer_diagnostics["support_confidence_factor"],
+            0.0,
+            1.0,
+        )
 
         stage = "attach_predictions"
         # Add predictions to the output object. By default, preserve the input
@@ -980,6 +1136,7 @@ def harmony_transfer_tool(
             pd.Index(adata_spatial.obs_names),
             predicted_labels,
             prediction_confidence,
+            support_calibrated_confidence,
             excluded_obs_names=spatial_obs_filtered_by_preprocessing,
             exclusion_reason="not_transferred",
         )
@@ -1009,6 +1166,9 @@ def harmony_transfer_tool(
                 if execution_contract is not None
                 else ""
             ),
+            "cross_domain_diagnostics_json": json.dumps(
+                transfer_diagnostics, sort_keys=True, separators=(",", ":")
+            ),
         }
 
         stage = "write_outputs"
@@ -1037,6 +1197,7 @@ def harmony_transfer_tool(
                 "min_cells": min_cells,
                 "target_sum": target_sum,
                 "n_top_genes": n_top_genes,
+                "feature_scaling": feature_scaling,
                 "pca_feature_selection_policy": pca_feature_selection_policy,
                 "n_pca_selected_genes": n_pca_selected_genes,
                 "n_pcs": n_pcs,
@@ -1075,12 +1236,18 @@ def harmony_transfer_tool(
                     len(spatial_obs_filtered_by_preprocessing)
                 ),
                 "n_reference_input_cells": reference_input_n_obs,
+                "reference_label_policy": REFERENCE_LABEL_POLICY,
+                "n_reference_placeholder_cells_excluded": n_placeholder_reference_cells,
                 "n_reference_cells_after_preprocessing": int(adata_ref.n_obs),
                 "n_reference_cells_filtered_by_preprocessing": int(
                     len(reference_obs_filtered_by_preprocessing)
                 ),
                 "n_unique_cell_types": int(len(cell_type_counts)),
                 "mean_prediction_confidence": float(np.mean(prediction_confidence)),
+                "mean_support_calibrated_confidence": float(
+                    np.mean(support_calibrated_confidence)
+                ),
+                "cross_domain_diagnostics": transfer_diagnostics,
                 "n_shared_genes": int(len(shared_genes)),
                 "pca_feature_selection_policy": pca_feature_selection_policy,
                 "n_pca_selected_genes": n_pca_selected_genes,
@@ -1111,6 +1278,8 @@ def harmony_transfer_tool(
                 len(spatial_obs_filtered_by_preprocessing)
             ),
             "n_reference_input_cells": reference_input_n_obs,
+            "reference_label_policy": REFERENCE_LABEL_POLICY,
+            "n_reference_placeholder_cells_excluded": n_placeholder_reference_cells,
             "n_reference_cells_after_preprocessing": int(adata_ref.n_obs),
             "n_reference_cells_filtered_by_preprocessing": int(
                 len(reference_obs_filtered_by_preprocessing)
@@ -1119,6 +1288,10 @@ def harmony_transfer_tool(
             "n_unique_cell_types": len(cell_type_counts),
             "cell_type_counts": cell_type_counts.to_dict(),
             "mean_prediction_confidence": float(np.mean(prediction_confidence)),
+            "mean_support_calibrated_confidence": float(
+                np.mean(support_calibrated_confidence)
+            ),
+            "cross_domain_diagnostics": transfer_diagnostics,
             "n_shared_genes": len(shared_genes),
             "pca_feature_selection_policy": pca_feature_selection_policy,
             "n_pca_selected_genes": n_pca_selected_genes,
@@ -1151,6 +1324,7 @@ def _apply_spatial_predictions(
     predicted_obs_names: pd.Index,
     predicted_labels: np.ndarray,
     prediction_confidence: np.ndarray,
+    support_calibrated_confidence: np.ndarray,
     *,
     excluded_obs_names: pd.Index,
     exclusion_reason: str,
@@ -1171,11 +1345,13 @@ def _apply_spatial_predictions(
         index=output_obs_names,
     )
     confidence_series = pd.Series(np.nan, index=output_obs_names, dtype=float)
+    support_confidence_series = pd.Series(np.nan, index=output_obs_names, dtype=float)
     status_series = pd.Series("not_transferred", index=output_obs_names, dtype="object")
     reason_series = pd.Series("not_transferred", index=output_obs_names, dtype="object")
 
     label_series.loc[predicted_obs_names] = predicted_labels
     confidence_series.loc[predicted_obs_names] = prediction_confidence
+    support_confidence_series.loc[predicted_obs_names] = support_calibrated_confidence
     status_series.loc[predicted_obs_names] = "transferred"
     reason_series.loc[predicted_obs_names] = "not_excluded"
 
@@ -1186,15 +1362,17 @@ def _apply_spatial_predictions(
 
     adata_output.obs["harmony_predicted_cell_type"] = label_series
     adata_output.obs["harmony_prediction_confidence"] = confidence_series
+    adata_output.obs["harmony_support_calibrated_confidence"] = support_confidence_series
     adata_output.obs["harmony_transfer_status"] = pd.Categorical(status_series)
     adata_output.obs["harmony_exclusion_reason"] = pd.Categorical(reason_series)
     adata_output.obs["cell_annotation_predicted_cell_type"] = label_series.copy()
     adata_output.obs["cell_annotation_prediction_confidence"] = confidence_series
+    adata_output.obs["cell_annotation_support_calibrated_confidence"] = (
+        support_confidence_series
+    )
     adata_output.obs["cell_annotation_status"] = pd.Categorical(status_series)
     adata_output.obs["cell_annotation_exclusion_reason"] = pd.Categorical(reason_series)
-    adata_output.obs["cell_annotation_method"] = pd.Categorical(
-        ["harmony"] * adata_output.n_obs
-    )
+    adata_output.obs["cell_annotation_method"] = pd.Categorical(["harmony"] * adata_output.n_obs)
     adata_output.obs["label"] = adata_output.obs["harmony_predicted_cell_type"]
 
 

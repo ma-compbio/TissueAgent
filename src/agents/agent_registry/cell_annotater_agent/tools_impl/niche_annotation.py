@@ -18,6 +18,10 @@ from scipy import sparse
 from scipy.spatial import cKDTree
 
 from agents.tissue_niche_context import get_tissue_niche_context
+from .niche_artifacts import (
+    attach_niche_receipt,
+    recover_niche_annotation_artifacts_tool,
+)
 from .niche_spatial import (
     RadiusGraphLimitError,
     graph_diagnostics,
@@ -399,6 +403,8 @@ def niche_annotation_tool(
     output_path: Optional[str] = None,
     dataset_context: Optional[Dict[str, Any]] = None,
     preview_only: bool = False,
+    label_batch_size: int = 8,
+    label_run_id: str = "default",
 ) -> Dict[str, Any]:
     """Discover or reuse spatial niches, then label and save a validated H5AD."""
     context = get_tissue_niche_context()
@@ -407,7 +413,8 @@ def niche_annotation_tool(
     annotation_col = context.get("annotation_col", annotation_col)
     allowed_labels = context.get("allowed_labels", allowed_labels)
     unmatched_label = context.get("unmatched_label", unmatched_label)
-    output_path = context.get("output_path", output_path)
+    # The bound destination is a default, not a replacement for a derived candidate.
+    output_path = output_path if output_path is not None else context.get("output_path")
     dataset_context = context.get("dataset_context", dataset_context) or {}
     if not preview_only and (
         not allowed_labels or not any(label != unmatched_label for label in allowed_labels)
@@ -602,6 +609,9 @@ def niche_annotation_tool(
             llm_queries,
             allowed_labels=label_space,
             unmatched_label=unmatched_label,
+            checkpoint_path=output_dir_path / "label_checkpoint.json",
+            batch_size=label_batch_size,
+            run_id=label_run_id,
         )
     except Exception as exc:
         return {
@@ -612,20 +622,6 @@ def niche_annotation_tool(
     utag_output_path = annotated_output_path
     llm_queries_path = output_dir_path / "niche_llm_queries.json"
     llm_results_path = output_dir_path / "niche_llm_results.json"
-
-    try:
-        _write_json(output_dir_path / "spatial_evidence.json", evidence)
-        if annotation_col in utag_results.obs:
-            for artifact in (llm_queries_path, llm_results_path):
-                if artifact.exists():
-                    artifact.rename(artifact.with_stem(artifact.stem + "_before_refinement"))
-        _write_json(llm_queries_path, llm_queries)
-        _write_json(llm_results_path, llm_results)
-    except Exception as exc:
-        return {
-            "status": "error",
-            "message": f"Failed while writing niche annotation artifacts: {exc}",
-        }
 
     if annotation_col in utag_results.obs:
         utag_results.obs[f"{annotation_col}_before_refinement"] = utag_results.obs[annotation_col]
@@ -639,6 +635,67 @@ def niche_annotation_tool(
         unmatched_label=unmatched_label,
     )
 
+    counts = utag_results.obs[annotation_col].value_counts(dropna=False)
+    counts = counts.reindex(label_space, fill_value=0)
+    annotation_counts = {str(label): int(count) for label, count in counts.items()}
+    niche_id_to_label = {niche_id: result["label"] for niche_id, result in llm_results.items()}
+
+    logs_dir = active_project_outputs() / "logs"
+    meta_path = logs_dir / "niche_annotation_run_meta.json"
+
+    metadata = {
+        "status": "success",
+        "annotation_status": "complete",
+        "review_status": "not_verified",
+        "method": "UTAG + internal LLM niche labeling",
+        "dataset_context": dataset_context,
+        "spatial_evidence": evidence,
+        "clustering_source": "native_utag" if utag_apply_clustering else "existing_clusters",
+        "parameters": {
+            "slide_key_requested": slide_key,
+            "slide_key_resolved": resolved_slide_key,
+            "celltype_key_requested": celltype_key,
+            "celltype_key_resolved": resolved_celltype_key,
+            "spatial_key": spatial_key,
+            "niche_key": niche_key,
+            "annotation_col": annotation_col,
+            "justification_col": justification_col,
+            "allowed_labels": label_space,
+            "unmatched_label": unmatched_label,
+            "top_n_celltypes": top_n_celltypes,
+            "top_n_marker_genes": top_n_marker_genes,
+            "utag_max_dist": utag_max_dist,
+            "utag_normalization_mode": utag_normalization_mode,
+            "utag_apply_clustering": utag_apply_clustering,
+            "utag_clustering_method": utag_clustering_method,
+            "utag_resolutions": utag_resolutions,
+            "label_batch_size": label_batch_size,
+            "label_run_id": label_run_id,
+        },
+        "parameter_selection": {
+            "rationale": parameter_rationale.strip(),
+            "preflight_sha256": preflight_sha256,
+        },
+        "runtime": {
+            "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        },
+        "inputs": {
+            "spatial_anndata_path": _relative_to_data_dir(spatial_path),
+            "validation_input_path": context.get("input_path") or _relative_to_data_dir(spatial_path),
+        },
+        "outputs": {
+            "utag_object_h5ad": _relative_to_data_dir(utag_output_path),
+            "annotated_object_h5ad": _relative_to_data_dir(annotated_output_path),
+            "niche_llm_queries_json": _relative_to_data_dir(llm_queries_path),
+            "niche_llm_results_json": _relative_to_data_dir(llm_results_path),
+        },
+        "summary": {
+            "n_cells": int(utag_results.n_obs),
+            "n_niches": int(len(llm_results)),
+            "annotation_counts": annotation_counts,
+        },
+    }
+    attach_niche_receipt(utag_results, metadata, llm_queries, llm_results)
     try:
         if not utag_results.obs_names.equals(adata.obs_names):
             utag_results = utag_results[adata.obs_names].copy()
@@ -664,72 +721,45 @@ def niche_annotation_tool(
             "message": f"Failed while writing the final annotated AnnData artifact: {exc}",
         }
 
-    counts = utag_results.obs[annotation_col].value_counts(dropna=False)
-    counts = counts.reindex(label_space, fill_value=0)
-    annotation_counts = {str(label): int(count) for label, count in counts.items()}
-    niche_id_to_label = {niche_id: result["label"] for niche_id, result in llm_results.items()}
-
-    logs_dir = active_project_outputs() / "logs"
-    logs_dir.mkdir(parents=True, exist_ok=True)
-    meta_path = logs_dir / "niche_annotation_run_meta.json"
-
-    metadata = {
-        "status": "success",
-        "method": "UTAG + internal LLM niche labeling",
-        "dataset_context": dataset_context,
-        "spatial_evidence": evidence,
-        "clustering_source": "native_utag" if utag_apply_clustering else "existing_clusters",
-        "parameters": {
-            "slide_key_requested": slide_key,
-            "slide_key_resolved": resolved_slide_key,
-            "celltype_key_requested": celltype_key,
-            "celltype_key_resolved": resolved_celltype_key,
-            "spatial_key": spatial_key,
-            "niche_key": niche_key,
-            "annotation_col": annotation_col,
-            "justification_col": justification_col,
-            "allowed_labels": label_space,
-            "unmatched_label": unmatched_label,
-            "top_n_celltypes": top_n_celltypes,
-            "top_n_marker_genes": top_n_marker_genes,
-            "utag_max_dist": utag_max_dist,
-            "utag_normalization_mode": utag_normalization_mode,
-            "utag_apply_clustering": utag_apply_clustering,
-            "utag_clustering_method": utag_clustering_method,
-            "utag_resolutions": utag_resolutions,
-        },
-        "parameter_selection": {
-            "rationale": parameter_rationale.strip(),
-            "preflight_sha256": preflight_sha256,
-        },
-        "runtime": {
-            "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        },
-        "inputs": {
-            "spatial_anndata_path": _relative_to_data_dir(spatial_path),
-        },
-        "outputs": {
-            "utag_object_h5ad": _relative_to_data_dir(utag_output_path),
+    if f"{annotation_col}_before_refinement" in utag_results.obs:
+        try:
+            for artifact in (llm_queries_path, llm_results_path):
+                if artifact.exists():
+                    artifact.rename(artifact.with_stem(artifact.stem + "_before_refinement"))
+        except OSError as exc:
+            return {
+                "status": "error", "annotation_status": "complete", "recoverable": True,
+                "annotated_object_h5ad": _relative_to_data_dir(annotated_output_path),
+                "message": f"Annotation saved; previous audit archival failed: {exc}",
+                "next_action": "Preserve the saved annotation and repair audits without relabeling.",
+            }
+    artifacts = recover_niche_annotation_artifacts_tool(
+        annotated_h5ad=_relative_to_data_dir(annotated_output_path),
+        output_dir=_relative_to_data_dir(output_dir_path),
+    )
+    if artifacts["status"] != "success":
+        return {
+            **artifacts,
             "annotated_object_h5ad": _relative_to_data_dir(annotated_output_path),
-            "niche_llm_queries_json": _relative_to_data_dir(llm_queries_path),
-            "niche_llm_results_json": _relative_to_data_dir(llm_results_path),
-        },
-        "summary": {
-            "n_cells": int(utag_results.n_obs),
-            "n_niches": int(len(llm_results)),
-            "annotation_counts": annotation_counts,
-        },
-    }
-    _write_json(meta_path, metadata)
+            "recoverable": True,
+        }
+    # Retain the historical log path; the authoritative run metadata is per output directory.
+    try:
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        _write_json(meta_path, metadata)
+    except OSError as exc:
+        artifacts["log_warning"] = str(exc)
 
     return {
+        **artifacts,
+        "annotation_reused": False,
         "status": "success",
         "output_dir": _relative_to_data_dir(output_dir_path),
         "utag_object_h5ad": _relative_to_data_dir(utag_output_path),
         "annotated_object_h5ad": _relative_to_data_dir(annotated_output_path),
         "niche_llm_queries_json": _relative_to_data_dir(llm_queries_path),
         "niche_llm_results_json": _relative_to_data_dir(llm_results_path),
-        "run_meta_json": _relative_to_data_dir(meta_path),
+        "native_log_meta_json": _relative_to_data_dir(meta_path),
         "niche_key": niche_key,
         "celltype_key": resolved_celltype_key,
         "annotation_col": annotation_col,
@@ -1099,7 +1129,18 @@ def _label_niches_with_llm(
     llm_queries: Dict[str, str],
     allowed_labels: Optional[List[str]],
     unmatched_label: str,
+    checkpoint_path: Optional[Path] = None,
+    batch_size: int = 8,
+    run_id: str = "default",
 ) -> Dict[str, Dict[str, str]]:
+    if checkpoint_path is not None:
+        from config import DefaultModelCtor
+        from .niche_batch import label_niche_batches
+
+        return label_niche_batches(
+            llm_queries, list(allowed_labels or []), unmatched_label,
+            DefaultModelCtor(), checkpoint_path, batch_size=batch_size, run_id=run_id,
+        )
     from langchain_core.messages import HumanMessage, SystemMessage
 
     from config import DefaultModelCtor

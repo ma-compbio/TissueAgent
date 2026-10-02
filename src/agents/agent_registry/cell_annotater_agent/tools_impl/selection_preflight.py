@@ -43,7 +43,7 @@ CELLTYPIST_TOTAL_DOWNLOAD_SECONDS = 60
 CELLTYPIST_OFFICIAL_HOST = "celltypist.cog.sanger.ac.uk"
 CELLTYPIST_BACKEND_MIN_FEATURE_OVERLAP = 50
 METHOD_ASSESSMENT_VERSION = "cell_annotation_method_assessment_v1"
-SELECTION_POLICY_VERSION = "cell_annotation_selection_policy_v6"
+SELECTION_POLICY_VERSION = "cell_annotation_selection_policy_v7_supervised_first"
 RATIONALE_GUARD_VERSION = "cell_annotation_rationale_guard_v1"
 STRUCTURAL_MAJORITY_FRACTION = 0.5
 GENERALIZATION_COLLAPSE_RATIO = 0.5
@@ -615,44 +615,44 @@ def assess_gptcelltype_selection_evidence(
 
 def build_method_selection_policy(
     method_assessments: Mapping[str, Mapping[str, Any]],
+    *,
+    allow_gptcelltype_fallback: bool = False,
 ) -> dict[str, Any]:
-    """Apply categorical dominance without learning from benchmark outcomes."""
+    """Authorize a supervised-first primary backend without benchmark outcomes."""
     assessments = {
         method: method_assessments.get(method, {})
         for method in METHOD_ORDER
     }
-    eligible_non_high = {
-        method: assessment
-        for method, assessment in assessments.items()
-        if assessment.get("prerequisites") == "met"
-        and assessment.get("risk_tier") != "high"
-    }
-    strong = [
-        method
-        for method in METHOD_ORDER
-        if eligible_non_high.get(method, {}).get("evidence_tier") == "strong"
-    ]
-    conditional = [
-        method
-        for method in METHOD_ORDER
-        if eligible_non_high.get(method, {}).get("evidence_tier") == "conditional"
-    ]
-    if strong:
-        default_candidates = strong
-        dominant_evidence_tier = "strong"
-    elif conditional:
-        default_candidates = conditional
-        dominant_evidence_tier = "conditional"
-    else:
-        default_candidates = []
-        dominant_evidence_tier = None
+    affirmative_tiers = {"strong", "conditional"}
 
-    fallback_candidates = [
-        method
-        for method in METHOD_ORDER
-        if assessments[method].get("prerequisites") == "met"
-        and method not in default_candidates
+    def is_eligible(method: str) -> bool:
+        assessment = assessments[method]
+        return (
+            assessment.get("prerequisites") == "met"
+            and assessment.get("risk_tier") != "high"
+            and assessment.get("evidence_tier") in affirmative_tiers
+        )
+
+    authorized_candidates = [
+        method for method in ("harmony", "celltypist") if is_eligible(method)
     ]
+    if (
+        allow_gptcelltype_fallback
+        and is_eligible("gptcelltype")
+    ):
+        authorized_candidates.append("gptcelltype")
+
+    default_candidates = authorized_candidates[:1]
+    if default_candidates == ["harmony"]:
+        selection_basis = "matched_reference_supervised_priority"
+    elif default_candidates == ["celltypist"]:
+        selection_basis = "pretrained_supervised_fallback"
+    elif default_candidates == ["gptcelltype"]:
+        selection_basis = "explicit_legacy_gptcelltype_request"
+    else:
+        selection_basis = "no_suitable_supervised_primary"
+
+    fallback_candidates: list[str] = []
     unknown_candidates = [
         method
         for method in METHOD_ORDER
@@ -669,16 +669,25 @@ def build_method_selection_policy(
         if assessments[method].get("risk_tier") == "high"
     ]
     status = (
-        "policy_resolved"
-        if len(default_candidates) == 1
-        else "requires_agent_reasoning"
+        "abstain_required"
+        if not authorized_candidates
+        else "policy_resolved"
+        if len(authorized_candidates) == 1
+        else "priority_requires_suitability"
+    )
+    dominant_evidence_tier = (
+        assessments[authorized_candidates[0]].get("evidence_tier")
+        if authorized_candidates
+        else None
     )
     claim_status_by_method = {
         method: (
             "affirmative_candidate"
-            if method in default_candidates
+            if method in authorized_candidates
             else "fallback_only"
             if method in fallback_candidates
+            else "disabled_legacy_fallback"
+            if method == "gptcelltype" and not allow_gptcelltype_fallback
             else "best_supported_unresolved"
             if method in unknown_candidates
             else "ineligible"
@@ -689,16 +698,25 @@ def build_method_selection_policy(
         "version": SELECTION_POLICY_VERSION,
         "status": status,
         "default_candidates": default_candidates,
+        "authorized_candidates": authorized_candidates,
         "fallback_candidates": fallback_candidates,
         "unknown_candidates": unknown_candidates,
         "excluded_methods": excluded_methods,
         "high_risk_methods": high_risk_methods,
         "dominant_evidence_tier": dominant_evidence_tier,
-        "tie_requires_agent_reasoning": len(default_candidates) != 1,
+        "tie_requires_agent_reasoning": False,
+        "selection_basis": selection_basis,
+        "automatic_priority": ["harmony", "celltypist"],
+        "allow_gptcelltype_fallback": allow_gptcelltype_fallback,
+        "abstain_required": not authorized_candidates,
+        "abstain_if_all_authorized_low_suitability": True,
         "selection_rule": (
-            "Choose from the strongest non-high-risk affirmative tier. High-risk methods are "
-            "fallbacks only when no non-high-risk affirmative method exists or the user "
-            "explicitly requests an otherwise runnable method."
+            "Authorize eligible non-high-risk affirmative Harmony first, otherwise eligible "
+            "CellTypist. An authorized lower-priority backend can be selected only when every "
+            "earlier candidate is rated low suitability from its permitted evidence. If no "
+            "authorized candidate is suitable, abstain. GPTCellType is "
+            "authorized only when the immutable original request explicitly asks for it as "
+            "the primary backend and its own affirmative prerequisites are met."
         ),
         "unknown_evidence_rule": (
             "Unknown evidence is neutral: it is neither affirmative nor adverse and never "

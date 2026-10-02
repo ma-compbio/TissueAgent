@@ -4,7 +4,24 @@ from __future__ import annotations
 
 from typing import Any
 
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
+
+from agents.agent_registry.cell_annotater_agent.tools_impl.niche_artifacts import (
+    recover_niche_annotation_artifacts_tool,
+)
+from agents.agent_registry.cell_annotater_agent.tools_impl.niche_review import (
+    review_tissue_niches_tool,
+)
+from agents.agent_registry.cell_annotater_agent.tools_impl.annotation_review import (
+    inspect_annotation_evidence_tool,
+    refine_cell_annotations_tool,
+)
+from agents.agent_registry.cell_annotater_agent.tools_impl.selective_annotation_review import (
+    refine_cell_annotations_selective_tool,
+)
+from agents.agent_registry.cell_annotater_agent.tools_impl.requested_celltypist import (
+    run_requested_celltypist_tool,
+)
 
 from agents.agent_registry.cell_annotater_agent.tools_impl.celltypist_annotation import (
     celltypist_annotation_tool as _celltypist_annotation_impl,
@@ -50,6 +67,7 @@ def harmony_transfer_tool(
     min_cells: int = 10,
     target_sum: float = 1e4,
     n_top_genes: int = 2000,
+    feature_scaling: str = "none",
     n_pcs: int = 30,
     min_shared_genes: int | None = None,
     harmony_key: str = "batch",
@@ -73,6 +91,7 @@ def harmony_transfer_tool(
         "min_cells": min_cells,
         "target_sum": target_sum,
         "n_top_genes": n_top_genes,
+        "feature_scaling": feature_scaling,
         "n_pcs": n_pcs,
         "min_shared_genes": min_shared_genes,
         "harmony_key": harmony_key,
@@ -119,6 +138,7 @@ def harmony_transfer_tool(
         min_cells=min_cells,
         target_sum=target_sum,
         n_top_genes=n_top_genes,
+        feature_scaling=feature_scaling,
         n_pcs=n_pcs,
         min_shared_genes=min_shared_genes,
         harmony_key=harmony_key,
@@ -250,6 +270,58 @@ def gptcelltype_annotation_tool(
 
 CellAnnotaterTools: list[StructuredTool] = [
     StructuredTool.from_function(
+        func=run_requested_celltypist_tool,
+        name="run_requested_celltypist_tool",
+        description=(
+            "Run an explicit original-user CellTypist execution request bound by the manager. "
+            "No arguments: query/reference hashes, training label column, output path, seed "
+            "and normal majority voting are fixed by that original request. Trains a fresh "
+            "reference model and predicts all query cells; preserves raw/voted labels. "
+            "Use only when celltypist_execution_request is present in the bound context. "
+            "Replaces automatic catalog/method selection for this user-selected experiment; "
+            "does not change default adaptive policy. Follow with requested evidence review."
+        ),
+    ),
+    StructuredTool.from_function(
+        func=refine_cell_annotations_selective_tool,
+        name="refine_cell_annotations_selective_tool",
+        description=(
+            "Opt-in selective review after inspect_annotation_evidence_tool. Pass its exact "
+            "evidence_path, evidence_sha256, a new final output_path and the caller's declared "
+            "max_review_groups (default 48). Screen all clusters and select only specific "
+            "marker-supported conflicts, rather than every subgroup in a mixed cluster. "
+            "Retain original fine predictions otherwise; preserve rare populations and cell "
+            "states. Budget-deferred groups retain primary predictions and are explicitly "
+            "flagged, never described as fully reviewed. Does not change backend selection."
+        ),
+    ),
+    StructuredTool.from_function(
+        func=inspect_annotation_evidence_tool,
+        name="inspect_annotation_evidence_tool",
+        description=(
+            "After one successful primary backend, build deterministic expression-cluster and "
+            "primary-label-group evidence. Preserve original predictions. Pass original species, "
+            "tissue, disease and developmental context, an unused output_prefix, and the exact "
+            "run random_state (default 42). Returns "
+            "evidence_path and its binding SHA-256. It carries unique reference Cell Ontology "
+            "IDs, binds a versioned ontology snapshot when available, and records non-destructive "
+            "doublet/ambient QC or explicit not_assessable reasons. Never supply truth or "
+            "benchmark mappings."
+        ),
+    ),
+    StructuredTool.from_function(
+        func=refine_cell_annotations_tool,
+        name="refine_cell_annotations_tool",
+        description=(
+            "After evidence inspection, pass its exact evidence_path and evidence_sha256 and a "
+            "new final output_path. Internally screen marker/prediction conflicts then review "
+            "disputed groups with the worker model. Keep, revise, broaden or mark unresolved; "
+            "validate ontology-aware broadening, keep optional cell state separate from cell type, "
+            "and preserve minority evidence, primary predictions, QC flags and full audit. "
+            "No new primary backend or reference selection is performed."
+        ),
+    ),
+    StructuredTool.from_function(
         func=list_celltypist_model_catalog_tool,
         name="list_celltypist_model_catalog_tool",
         description=(
@@ -266,14 +338,14 @@ CellAnnotaterTools: list[StructuredTool] = [
         description=(
             "Required input-preserving decision context for cell-type annotation. Inspect the "
             "query and optional Harmony candidate reference exactly once before choosing a "
-            "backend. It reports three method-scoped evidence branches: Harmony-only candidate-"
+            "backend. It reports supervised method-scoped evidence: Harmony-only candidate-"
             "reference query-panel separability plus "
             "label/source coherence, exact feature, label-inventory, and retained-coefficient "
-            "support for every agent-shortlisted official CellTypist model, and query-only "
-            "GPTCellType cluster/marker "
-            "readiness. It preserves the raw evidence and emits versioned categorical method "
-            "assessments plus selection-policy v6 default candidates using fixed majority and "
-            "twofold structural guardrails. Its structured rationale guard marks unknown "
+            "support for every agent-shortlisted official CellTypist model. Query-only "
+            "GPTCellType readiness runs only for an orchestrator-bound explicit legacy-primary "
+            "request. It preserves raw evidence and emits categorical assessments plus "
+            "supervised-first selection-policy v7: suitable Harmony, otherwise suitable "
+            "CellTypist, otherwise abstain. Its structured rationale guard marks unknown "
             "candidates as best_supported_unresolved and requires exact disclosure codes for "
             "observed reference placeholder prevalence and context heterogeneity. It does not "
             "rank or select a CellTypist model. It emits the exact query-only "
@@ -289,8 +361,8 @@ CellAnnotaterTools: list[StructuredTool] = [
             "selection, or GPTCellType suitability; the returned method_evidence_scopes records "
             "and the selection contract binds that boundary. When the caller supplies an "
             "annotation scope and context SHA-256, every context value is immutable and the tool "
-            "rejects any rewritten or omitted value. The Cell Annotater must compare all "
-            "three method-scoped assessments and explain the final choice."
+            "rejects any rewritten or omitted value. The Cell Annotater must follow the ordered "
+            "authorized candidates and choose the first non-low-suitability method or abstain."
         ),
     ),
     StructuredTool.from_function(
@@ -312,8 +384,8 @@ CellAnnotaterTools: list[StructuredTool] = [
             "parameter-policy "
             "version, and complete scientific and operational mappings containing every field "
             "listed for that method. It rejects partial configurations, parameter drift, input "
-            "mutation, unsupported GPTCellType readiness profiles, methods outside policy, and "
-            "a selected method rated below another runnable method; "
+            "mutation, unsupported GPTCellType readiness profiles, and methods outside the "
+            "ordered supervised-first authorization list; "
             "structurally retains required unresolved-status language, reference disclosures, "
             "adverse reason codes, and the Harmony-only candidate-reference scope. It never "
             "authorizes the Harmony candidate as a CellTypist training source. Pass its one-time "
@@ -353,9 +425,14 @@ CellAnnotaterTools: list[StructuredTool] = [
             "reference_min_genes from the inspection evidence; it filters reference cells only. "
             "Query observations are "
             "never filtered by detected-gene count. Both decisions are recorded in run metadata. "
+            "Set feature_scaling explicitly: unit_variance is intended for independently "
+            "normalized query/reference inputs, while none requires compatible existing scale. "
             "Gene mapping is symmetric and species-aware. The output keeps every query row and "
-            "records explicit transfer status and exclusion reason columns. Predictions, "
-            "confidence, and label are written to .obs. Relative outputs must be beneath "
+            "records explicit transfer status and exclusion reason columns. Bounded truth-blind "
+            "embedding-distance, entropy, and predicted-prior diagnostics are recorded, with a "
+            "separate support-calibrated confidence that never changes the raw transferred label. "
+            "Predictions, raw confidence, support-calibrated confidence, and label are written "
+            "to .obs. Relative outputs must be beneath "
             "project/outputs; existing outputs "
             "are never overwritten. Pass the one-time selection_execution_token and exact "
             "configuration_sha256 returned by validate_cell_annotation_selection_tool."
@@ -421,7 +498,42 @@ CellAnnotaterTools: list[StructuredTool] = [
             "spatial/composition evidence without model labeling. Then label the chosen candidate "
             "with preview_only=False. To label existing clusters, set utag_apply_clustering=False "
             "and their actual niche_key; this skips UTAG. It performs no external reference "
-            "acquisition."
+            "acquisition. Explicit output_path is honored for a candidate; when omitted, the "
+            "bound final destination is used. Returns niche_evidence_tsv, annotation_parameters_json, "
+            "validation_summary_tsv and run_meta_json. For missing audit files or a filename "
+            "mismatch after annotation, use recover_niche_annotation_artifacts_tool instead of "
+            "repeating clustering or labeling. A completed annotation does not certify review."
+            " Native labeling uses batches of 8 by default and checkpoints each completed batch; "
+            "set label_run_id for an independent replicate and reuse the same evidence/output "
+            "directory to resume interrupted labeling."
+        ),
+    ),
+    StructuredTool.from_function(
+        func=review_tissue_niches_tool,
+        name="review_tissue_niches_tool",
+        description=(
+            "Screen every annotated niche for measured spatial conflicts, then review only "
+            "flagged spatial subregions in small checkpointed batches. Uses an annotated_h5ad "
+            "from the native niche tool and writes a NEW output_path; preserves primary labels "
+            "and changes only regions supported by measured gene and local spatial evidence. "
+            "No UTAG or whole-dataset relabeling. max_review_groups defaults to 48; deferred groups "
+            "keep primary labels and are reported explicitly. At most one refinement pass. "
+            "Optional use_anchor_evidence=True adds soft evidence from explicitly regional "
+            "supplied cell-type names; it never directly assigns final labels. Use that option "
+            "only when requested. Report n_groups_screened/reviewed/deferred and n_cells_changed."
+        ),
+    ),
+    StructuredTool.from_function(
+        func=recover_niche_annotation_artifacts_tool,
+        name="recover_niche_annotation_artifacts_tool",
+        description=(
+            "Validate an existing niche-annotated H5AD and restore evidence, parameter and "
+            "validation files from its saved receipt without clustering or model calls. "
+            "Use for missing audit files or output filename mismatches. Pass annotated_h5ad "
+            "and output_dir; optional output_path copies the unchanged binary to an exact "
+            "destination. Optional evidence_path, parameters_path, validation_path and metadata_path "
+            "satisfy exact plan filenames. It preserves predictions and does not execute or "
+            "certify a separate spatial review."
         ),
     ),
 ]

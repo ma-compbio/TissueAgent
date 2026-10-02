@@ -11,7 +11,13 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
-from run_genegpt_paired_pilot import _checkpoint, _run_direct, _run_tissueagent, _score
+from run_genegpt_paired_pilot import (
+    _answer_for_scoring,
+    _checkpoint,
+    _run_direct,
+    _run_tissueagent,
+    _score,
+)
 
 _HERE = Path(__file__).resolve().parent
 _REPO = _HERE.parent
@@ -94,7 +100,7 @@ def _score_record(record: dict[str, Any]) -> None:
         return
     for arm in ("direct", "tissueagent"):
         result = record[arm]
-        raw = result.get("raw_completion") or ""
+        raw = _answer_for_scoring(result)
         try:
             if record["scoreable"]:
                 pred, score = _score(raw, record["gold"], record["task"])

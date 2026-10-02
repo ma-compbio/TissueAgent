@@ -5,14 +5,14 @@ Stereo-seq. TissueAgent is compared with GPTCellType, CellTypist, Biomni, and Sp
 
 ## Review and redraw the saved results
 
-The committed [results bundle](../demo/outputs/cell_annotation/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906/README.md)
+The committed [results bundle](../benchmark/cell_type_annotation/outputs/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906/README.md)
 contains the final PNG/PDF, summary and individual-run metric tables, and provenance. From the
 repository root, redraw the figure into a new directory with:
 
 ```bash
-uv run --no-sync python -m demo.cell_annotation.plot_agent_baseline_comparison \
-  --results-dir demo/outputs/cell_annotation/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906 \
-  --output-dir demo/outputs/cell_annotation/local-comparison-replot
+uv run --no-sync python -m benchmark.cell_type_annotation.plot_agent_baseline_comparison \
+  --results-dir benchmark/cell_type_annotation/outputs/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906 \
+  --output-dir benchmark/cell_type_annotation/outputs/local-comparison-replot
 ```
 
 Run `uv sync` first if the TissueAgent environment has not been installed. Redrawing needs only
@@ -30,10 +30,10 @@ redraw the committed figure or run a new comparison.
 
 ## Prepare inputs for a new evaluation
 
-All evaluation input data lives under `demo/data/cell_annotation/inputs/`:
+All evaluation input data lives under `benchmark/cell_type_annotation/data/inputs/`:
 
 ```text
-demo/data/cell_annotation/inputs/
+benchmark/cell_type_annotation/data/inputs/
 ├── developing_human_heart/
 │   └── full.h5ad
 ├── bcl/
@@ -61,31 +61,31 @@ references needed by the agents are acquired during their native workflows.
 To rebuild the archive from the repository root:
 
 ```bash
-.venv/bin/python -m demo.cell_annotation.package_inputs
+.venv/bin/python -m benchmark.cell_type_annotation.package_inputs
 ```
 
-This writes `demo/data/cell_annotation/cell_annotation_eval_inputs.zip`, checks the input hashes,
+This writes `benchmark/cell_type_annotation/data/cell_annotation_eval_inputs.zip`, checks the input hashes,
 and refuses to overwrite an existing archive. Use `--output /path/to/new-name.zip` for another
 destination. Data and the ZIP remain ignored by Git.
 
-The three manifests are in `demo/cell_annotation/manifests/`, with frozen label contracts in
-`demo/cell_annotation/mappings/`. Source locations, hashes, and reference requirements are recorded
+The three manifests are in `benchmark/cell_type_annotation/manifests/`, with frozen label contracts in
+`benchmark/cell_type_annotation/mappings/`. Source locations, hashes, and reference requirements are recorded
 in each manifest. Developing human heart uses its existing prepared source. BCL and Han Stereo-seq
 have preparation commands (run `--help` before downloading or building large inputs):
 
 ```bash
-uv run python -m demo.cell_annotation.bcl --help
-uv run python -m demo.cell_annotation.han_mouse_brain_stereoseq --help
+uv run python -m benchmark.cell_type_annotation.bcl --help
+uv run python -m benchmark.cell_type_annotation.han_mouse_brain_stereoseq --help
 ```
 
-`demo/cell_annotation_benchmark.ipynb` is an interactive quick/full demo for these three datasets,
+`notebooks/cell_annotation_benchmark.ipynb` is an interactive quick/full benchmark for these three datasets,
 not a replay of the archived matched-task study. Its direct smoke-test scoring does not apply the
 study's post-hoc name mapping, BCL exclusions, or mouse shared-ontology scoring. For the published
 comparison protocol, use the configuration-driven comparison command below.
 
 ## Run a fresh comparison
 
-[configs/agent_comparison.yaml](../demo/cell_annotation/configs/agent_comparison.yaml) records the
+[configs/agent_comparison.yaml](../benchmark/cell_type_annotation/configs/agent_comparison.yaml) records the
 original scientific task text, full-cohort input hashes, evaluation mappings, scoring settings,
 GPT-5.1 model, and baseline time limits. The runner prepares inputs from the dataset manifests and
 checks that their query and truth bytes match the original experiment. It needs the dataset source
@@ -94,7 +94,7 @@ files listed above; it does not read any previous study, run record, or predicti
 From the repository root, prepare without making model requests:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m demo.cell_annotation.run_agent_baseline_comparison \
+PYTHONPATH=src .venv/bin/python -m benchmark.cell_type_annotation.run_agent_baseline_comparison \
   --method tissueagent --method biomni --method spatialagent \
   --run-id teammate-comparison-v1 --prepare-only
 ```
@@ -102,13 +102,13 @@ PYTHONPATH=src .venv/bin/python -m demo.cell_annotation.run_agent_baseline_compa
 After configuring the baseline environments below, run and score all three agents:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m demo.cell_annotation.run_agent_baseline_comparison \
+PYTHONPATH=src .venv/bin/python -m benchmark.cell_type_annotation.run_agent_baseline_comparison \
   --method tissueagent --method biomni --method spatialagent \
   --run-id teammate-comparison-v1
 ```
 
 Use one `--method` to run that agent alone, and repeat `--dataset` to select datasets. Runs are
-written to `demo/outputs/cell_annotation/<dataset>/<run-id>-<method>/`. Existing predictions are
+written to `benchmark/cell_type_annotation/outputs/<dataset>/<run-id>-<method>/`. Existing predictions are
 reused. `--evaluate-only` requires existing inputs and predictions; it may make evaluator model
 requests if the prediction-name mapping has not yet been generated. SpatialAgent's `--resume-from`
 continues an earlier native attempt into the selected run as before.
@@ -131,7 +131,7 @@ The cell-annotation benchmark exposes both upstream agents through the same entr
 contract as CellTypist and GPTCellType:
 
 ```python
-from demo.cell_annotation.baselines import run_biomni, run_spatialagent
+from benchmark.cell_type_annotation.baselines import run_biomni, run_spatialagent
 
 biomni_result = run_biomni(prepared, model="gpt-5.1")
 spatialagent_result = run_spatialagent(prepared, model="gpt-5.1")
@@ -192,7 +192,7 @@ When using that project-local dependency overlay, launch Biomni with it explicit
 
 ```bash
 PYTHONPATH="$PWD/src:$PWD/data/cache/biomni/python-dependencies" \
-  .venv/bin/python -m demo.cell_annotation.run_agent_baseline_comparison \
+  .venv/bin/python -m benchmark.cell_type_annotation.run_agent_baseline_comparison \
   --method biomni --run-id my-matched-rerun
 ```
 
@@ -215,7 +215,7 @@ baselines:
 ```
 
 For one comparison run, pass `model="..."` to the corresponding runner or change
-`BASELINE_MODELS` in `demo/cell_annotation_benchmark.ipynb`. Biomni's global configuration, main
+`BASELINE_MODELS` in `notebooks/cell_annotation_benchmark.ipynb`. Biomni's global configuration, main
 agent, and native single-cell annotation tool are all bound to that model. SpatialAgent receives the
 model for its main agent, retrieval, subagents, and annotation calls; its separate default
 web-search model is disabled for the benchmark. Its database-search tools use the upstream local

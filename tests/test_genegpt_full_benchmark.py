@@ -119,3 +119,40 @@ def test_tissueagent_timeout_is_retryable(tmp_path: Path, monkeypatch) -> None:
     assert result["error_type"] == "TimeoutExpired"
     assert (tmp_path / "logs/01_tissueagent.stdout").is_file()
     assert (tmp_path / "logs/01_tissueagent.stderr").is_file()
+
+
+def test_recovered_answer_is_scored_without_overwriting_raw_completion():
+    """A repaired runner's final answer can be derived from its last API call."""
+    result = {"status": "ok", "answer": "SLC12A6", "answer_source": "ncbi_evidence_extraction",
+              "raw_completion": "[https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=gene&id=9990]"}
+    record = {"task": "Gene name conversion", "gold": "SLC12A6", "scoreable": True,
+              "direct": copy.deepcopy(result), "tissueagent": copy.deepcopy(result)}
+    full._score_record(record)
+    for arm in ("direct", "tissueagent"):
+        assert record[arm]["score"] == 1
+        assert record[arm]["raw_completion"] == result["raw_completion"]
+    summary = pilot._summarize([record])
+    assert summary["direct_accuracy"] == summary["tissueagent_accuracy"] == 1
+
+
+def test_historical_scoring_does_not_replace_raw_completion_with_answer():
+    result = {"answer": "SLC12A6", "raw_completion": "What is BRCA1?"}
+    assert pilot._answer_for_scoring(result) == "What is BRCA1?"
+
+
+def test_invalid_completion_is_zero_even_for_location_or_negative_gold():
+    result = {"answer": None, "answer_source": None, "raw_completion": "What is BRCA1?"}
+    output = pilot._answer_for_scoring(result)
+    for task, gold in (("Gene location", "chr1"), ("SNP location", "chr1"), ("Protein-coding genes", "NA")):
+        assert pilot._score(output, gold, task) == ("", 0.0)
+
+
+def test_direct_benchmark_retains_answer_provenance(tmp_path, monkeypatch):
+    from agents.agent_registry.genegpt_agent import runner
+
+    (tmp_path / "raw").mkdir()
+    monkeypatch.setattr(runner, "run_genegpt_question", lambda *args, **kwargs: {
+        "status": "ok", "answer": "SLC12A6", "answer_source": "ncbi_evidence_extraction",
+        "raw_completion": "[https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=gene&id=9990]"})
+    result = pilot._run_direct(1, "Convert ENSG00000140199 to official gene symbol.", tmp_path)
+    assert pilot._answer_for_scoring(result) == "SLC12A6"

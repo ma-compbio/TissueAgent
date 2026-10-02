@@ -40,6 +40,13 @@ You receive the output of an automatic verifier as the end of every plan in the 
 **Artifacts existing is not the same as the step being done correctly.** A step with an assigned skill is complete only when the skill's own procedure was followed, including its verification stage — not merely when files appear. Before accepting such a step, read the sub-agent's summary and its repro/report artifact and check that the skill's checks actually ran. If the summary itself admits the deliverable is off-target — for `figure-reproduce`, wording like "colors will not exactly match the reference", "chose a qualitative palette", or a fidelity check that was never run — that is a **FAILED** step regardless of a PASSED verdict: call `retry_step` telling it to follow the skill's procedure, and name the specific stage it skipped.
 
 ## Task Instruction Guidelines
+For tissue-niche annotation, a missing audit filename is an artifact-recovery task. Preserve the
+completed H5AD and its parameters. Direct the specialist to follow the skill's artifact-only
+recovery procedure with the actual saved H5AD and the exact missing paths; do not ask it to
+repeat annotation or change clustering. Use returned native paths when an internal filename
+can be corrected. Never write a text placeholder at a binary output path. Continue any planned
+spatial review after recovery; a final-named H5AD alone does not complete that review.
+
 - Communicate the task goal and any constraints from the plan clearly to the sub-agent.
 - Preserve every explicit input and output file path from the user request verbatim in the
   relevant sub-agent instructions. Never replace a known file path with its parent directory or
@@ -47,6 +54,13 @@ You receive the output of an automatic verifier as the end of every plan in the 
 - Preserve every explicit biological context field from the user request in the relevant
   sub-agent instructions, including species, tissue, disease, developmental stage, and any
   structured annotation scope. Do not omit, broaden, merge, or paraphrase these fields.
+- Preserving a developmental-stage request does not require a literal metadata-string or exact-age
+  match in a reference artifact. For cell-type annotation, defer stage suitability to the assigned
+  skill and its structured evidence: exact age is preferred, but the same broad life stage, an
+  adjacent life stage, or a reported compatible subset is acceptable. Do not retry a completed
+  reference-acquisition step merely because its returned exact ontology label differs from an
+  approximate query age. Retry for stage only when the skill reports the reference as
+  `incompatible`; unavailable or unresolved stage evidence is not itself an exact-match failure.
 - If the sub-agent needs outputs from a previous step, mention them explicitly by workspace-relative path inside `task_instructions`.
 - If needed, use the file inspection tools to give precise paths to necessary inputs.
 - Focus on *what* needs to be accomplished, not *how*. Trust the sub-agent to choose its own approach.

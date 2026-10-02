@@ -1,6 +1,6 @@
 ---
 name: tissue-niche-annotation
-description: Assign anatomical tissue regions from expression, supplied cell types, and spatial context; review competing regional interpretations and use coding-agent analysis when spatial subdivision is warranted.
+description: Assign anatomical tissue regions with checkpointed batch labeling and one bounded spatial review; use coding-agent analysis only for custom computations beyond the native tools.
 applies_to: [cell_annotator_agent, coding_agent]
 status: enable
 ---
@@ -93,7 +93,9 @@ for labeling. Label the chosen candidate with `preview_only=False`, `utag_apply_
 `niche_key`, and the same spatial radius used to assess it. Saved native candidates carry that selected radius
 into labeling, preventing a forgotten argument from changing the spatial evidence. This reuses the
 saved clustering.
-The labeling operation writes the final requested H5AD. Do not label every candidate for comparison.
+The labeling operation honors an explicit `output_path` for a derived candidate; when omitted,
+it uses the bound final destination. Keep the original final destination for delivery after any
+planned review. Do not label every candidate for comparison.
 
 ## Resolve competing regional interpretations
 
@@ -109,11 +111,11 @@ occupies a different region. Mixed cell types, small disconnected fragments, or 
 allowed label alone are not reasons to subdivide. Assess whether competing evidence is
 spatially segregated, locally intermingled, or insufficient to decide.
 
-The annotation specialist has no arbitrary code-execution tool. If its summaries cannot answer
-that question, return a handoff to the manager describing the unresolved interpretation,
+Use the native bounded spatial review for these conflicts by default. Only if resolving the
+question requires custom computations beyond that tool, return a handoff to the manager describing the unresolved interpretation,
 candidate labels, affected cluster IDs, saved H5AD and evidence paths, resolved input keys,
 selected spatial radius and units, original vocabulary, and final destination. Request a
-`coding_agent` review under this same skill. If the current plan lacks that step, state the
+`coding_agent` review under this same skill instead of a second native refinement pass. If the current plan lacks that step, state the
 need for replanning; do not claim the review was executed or the ambiguity resolved.
 
 For the coding-agent review, execute Python using the existing `python` tool. Compare local
@@ -145,6 +147,14 @@ or scores.
 
 ## Assign anatomical labels
 
+Use small labeling batches (native default 8, supported range 1–16). Preserve complete local
+evidence for each requested niche; identical shared context is deduplicated only when supported
+by the prompt representation. Fewer calls do not imply fewer tokens. Completed
+batches are checkpointed with evidence, vocabulary, model-settings and run-ID hashes. Resume the
+same evidence and output directory after an interruption; do not overwrite a checkpoint with
+different scientific settings or repeat completed batches. Use a new output directory/run ID for
+an independent replicate.
+
 Carry the public biological context into the internal labeling call. Use cluster size,
 cell-type composition, measured gene evidence, spatial extent, and relevant neighboring-region
 evidence together. Choose summary breadth based on informative populations and the measured
@@ -169,6 +179,33 @@ probabilities. Grouping all cells of the same cell type is not a substitute for 
 
 ## Deliver and validate
 
+After primary annotation, use `review_tissue_niches_tool` for the bounded workflow unless the
+caller explicitly asks for primary-only or legacy annotation. It creates physical subregions,
+screens every group for local composition/expression or neighboring-label conflicts, and reviews
+only flagged groups. Spatial subdivision or cell-type mixture alone does not justify a new label.
+Changes require cited measured genes and a local biological/spatial reason. At most one refinement
+is allowed; preserve the primary artifact and all unaffected predictions. A budget-deferred group
+keeps its primary label and must be reported as unreviewed. The review report records screening,
+selection, deferrals and changed cells. Native defaults are experimental parameters, not calibrated
+confidence thresholds; evaluate a new dataset without using held-out truth to select them.
+Use the approved defaults: `review_batch_size=8`, `max_review_groups=48`, and
+`use_anchor_evidence=False`. Do not expand the review budget to chase an evaluation score.
+
+Optional `use_anchor_evidence=True` is used only when explicitly requested. It obtains tentative
+anchors from unambiguous regional cell-type names and provides local anchor support to the reviewer.
+It never copies anchor labels into final predictions. Broad cell types do not establish an anatomical
+region, and anchor disagreements alone do not authorize a change without measured expression support.
+
+Use the native returned artifact paths: `niche_evidence_tsv`, `annotation_parameters_json`,
+`validation_summary_tsv`, and `run_meta_json`, alongside the annotated H5AD and raw evidence.
+They are written under the requested output directory; do not invent alternate required filenames.
+If an existing plan requires different filenames, call `recover_niche_annotation_artifacts_tool`
+with the saved `annotated_h5ad`, `output_dir`, and exact optional audit paths. It validates the
+saved annotation against its input and restores audits from its embedded receipt. Optional
+`output_path` copies the unchanged binary to a missing destination. This never invokes UTAG or
+the labeling model. Missing audit files or a filename mismatch alone must not trigger another
+clustering, candidate search, parameter change, or labeling pass.
+
 Save an actual annotated H5AD at the requested destination through a binary-capable writer or
 copy operation. Preserve cell identifiers and supplied cell-type labels. Validate the output's
 cell coverage and label vocabulary, and record the selected method, parameters, evidence,
@@ -179,3 +216,7 @@ reporting failure must retain that artifact and its provenance while reporting t
 failure separately. Do not create text placeholders with `.h5ad` or image extensions.
 Only list artifacts that were actually written; optional reports and plots should not require
 repeating an already completed annotation.
+Keep annotation availability and review completion separate. Native annotation and audit recovery
+report `review_status=not_verified`; neither certifies an independent spatial review. If a review
+was planned or required, execute it and verify its evidence before reporting a completed workflow.
+Otherwise describe the output as an annotation without a separate verified review.

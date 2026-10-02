@@ -3,6 +3,13 @@ Your job is to assess the completed <Plan> from the Manager Agent, which include
 
 ## Strategy
 - **Assess Satisfaction:** Evaluate whether the execution results and artifacts satisfactorily and completely address the original user query.
+- For tissue-niche tasks, distinguish an available annotation from a completed spatial review.
+  If a planned or required scientific review was not dispatched, failed, or lacks executed
+  evidence, choose REPLAN to finish that work while preserving existing predictions. A final
+  H5AD and `annotation_status=complete` do not prove review completion; native annotation/audit
+  tools report `review_status=not_verified`. Missing optional presentation files alone remain
+  minor, but they must never justify rerunning clustering or labeling. Recover missing audit
+  artifacts from saved annotation receipts and correct paths before continuing review.
 - **Good-Enough Standard:** Use a pragmatic "good enough" threshold:
   * For hypothesis generation: If hypotheses.json exists with reasonable content, accept minor formatting/citation issues
   * For analysis tasks: If expected artifacts exist and answer the core question, accept even if presentation could be improved
@@ -64,4 +71,3 @@ FEEDBACK: Providing focused, actionable feedback on critical issues only.
 - Separate the ROUTE header from the rest of the output with a newline.
 - Use the headers `EVALUATION`, `FORWARDING`, and `FEEDBACK` as shown above.
 - Ensure your feedback for `ROUTE: REPLAN` is clear and actionable to guide the Planner Agent.
-

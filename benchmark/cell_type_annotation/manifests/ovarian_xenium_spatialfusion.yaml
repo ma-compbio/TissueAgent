@@ -1,0 +1,57 @@
+schema_version: "1.0"
+dataset_id: ovarian_xenium_spatialfusion
+title: SpatialFusion ovarian-cancer Xenium cell-annotation benchmark
+species: human
+tissue: ovary and adjacent tissue
+disease: ovarian cancer
+developmental_stage: adult
+query:
+  kind: local_h5ad
+  path: benchmark/cell_type_annotation/ovarian_cell_annotation_agent_input/query.h5ad
+  expected_n_obs: 338695
+  expected_n_vars: 5101
+  size_bytes: 183830142
+  sha256: 7beeb265351ed81b522932d9e4ab0cb85e193beac27d90e98c6bb30b650dde40
+  require_spatial: true
+  selection_blind_allowed_metadata:
+    obs:
+      - transcript_counts
+      - control_probe_counts
+      - genomic_control_counts
+      - control_codeword_counts
+      - unassigned_codeword_counts
+      - deprecated_codeword_counts
+      - total_counts
+      - cell_area
+      - nucleus_area
+      - nucleus_count
+      - segmentation_method
+      - z_level
+      - X_coord
+      - Y_coord
+    obsm: [spatial]
+    obsp: []
+    uns: [species]
+ground_truth:
+  column: major_celltype
+  held_out_columns: [major_celltype, minor_celltype, path_region, cell_labels]
+  path: benchmark/cell_type_annotation/ovarian_cell_annotation/evaluation/ground_truth.tsv
+reference_audit:
+  require_agent_generated: true
+  require_live_discovery: true
+  require_zero_observation_id_overlap: true
+  forbidden_collection_dois: []
+baselines:
+  gptcelltype:
+    tissue_name: ovary and adjacent tissue with ovarian cancer
+    species_name: human
+    model: gpt-5.5
+    max_marker_cells_per_cluster: 1000
+    max_marker_cells_total: 50000
+    marker_sampling_random_seed: 42
+  spatialagent:
+    model: gpt-5.5
+    use_azure: false
+    act_timeout_seconds: 10800
+    source_revision: e51ec0f6b1e5c8ddbc52dae846031fbc04d3c9d6
+mapping: benchmark/cell_type_annotation/mappings/ovarian_xenium_spatialfusion.json

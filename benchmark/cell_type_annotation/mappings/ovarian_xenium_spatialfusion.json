@@ -1,0 +1,24 @@
+{
+  "target_labels": [
+    "Endothelial",
+    "Epithelial",
+    "Lymphocytes",
+    "Malignant",
+    "Myeloid",
+    "Pericytes",
+    "Stromal",
+    "Unassigned"
+  ],
+  "ground_truth_mapping": {
+    "Endothelial": "Endothelial",
+    "Epithelial": "Epithelial",
+    "Lymphocytes": "Lymphocytes",
+    "Malignant": "Malignant",
+    "Myeloid": "Myeloid",
+    "Pericytes": "Pericytes",
+    "Stromal": "Stromal",
+    "Unassigned": "Unassigned"
+  },
+  "common_prediction_mapping": {},
+  "method_prediction_mapping": {}
+}

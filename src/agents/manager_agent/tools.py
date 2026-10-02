@@ -42,16 +42,10 @@ class StepArgs(BaseModel):
 
     task_instructions: str = Field(
         description=(
-<<<<<<< HEAD
-            "Free-text instructions delegated to the sub-agent assigned to this step. "
-            "Mention any prior-step artifacts that are relevant inputs by their "
-            "workspace-relative paths."
-=======
             "Step-specific context delegated to the assigned sub-agent. The original user request "
             "and assigned plan step are prepended automatically. Mention relevant prior-step "
             "artifacts by their workspace-relative paths; do not restate or weaken the user "
             "request."
->>>>>>> origin/main
         ),
     )
     expected_artifacts: Optional[list[str]] = Field(
@@ -205,6 +199,11 @@ def _preserve_cell_annotator_user_request(
                 ).hexdigest(),
             }
             additions.append(
+                ("Orchestrator-bound explicit CellTypist request. Call "
+                 "run_requested_celltypist_tool with no arguments; it executes this exact "
+                 "user-selected reference/seed configuration. Do not run automatic method "
+                 "selection or substitute Harmony:\n" + json.dumps(context, sort_keys=True))
+                if "celltypist_execution_request" in context else
                 "Orchestrator-bound inspect_cell_annotation_methods_tool annotation-context "
                 "arguments — these values are injected as the authoritative contract. If you "
                 "also populate them in the tool call, pass every value verbatim and never "
@@ -250,6 +249,22 @@ def _cell_annotation_context_from_user_request(user_request: str) -> dict[str, A
         if not isinstance(scope, dict):
             raise ValueError("Annotation scope contract must be a JSON object.")
         context["annotation_scope"] = scope
+    explicit_gptcelltype_patterns = (
+        r"\bprimary_method\s*=\s*['\"]gptcelltype['\"]",
+        r"\b(?:use|select|force)\s+gptcelltype\s+as\s+(?:the\s+)?primary(?:\s+(?:backend|method))?\b",
+    )
+    if any(
+        re.search(pattern, user_request, flags=re.IGNORECASE)
+        for pattern in explicit_gptcelltype_patterns
+    ):
+        context["allow_gptcelltype_fallback"] = True
+    from agents.agent_registry.cell_annotater_agent.tools_impl.requested_celltypist import (
+        parse_execution_request,
+    )
+
+    requested_celltypist = parse_execution_request(user_request)
+    if requested_celltypist is not None:
+        context["celltypist_execution_request"] = requested_celltypist
     return context
 
 

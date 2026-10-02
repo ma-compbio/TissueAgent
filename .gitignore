@@ -70,6 +70,8 @@ COPILOT_QA.md
 # since the 2026-07-25 consolidation — needs its own `biomysterybench/*` line to
 # stay excluded. Without it the whole HF clone becomes trackable.
 benchmark/*
+# Local cell-annotation evaluation payloads (large, not versioned).
+/benchmark/cell_type_annotation/
 !benchmark/*.py
 /benchmark/biofigbench/
 !benchmark/biomysterybench/
@@ -175,3 +177,68 @@ benchmark/mllmcelltype_gpt4o_subset/data/*
 findings.md
 progress.md
 task_plan.md
+
+
+tmp
+notebooks
+
+# Annotation benchmark definitions; local datasets and run payloads stay ignored.
+!/benchmark/cell_type_annotation/
+/benchmark/cell_type_annotation/*
+!/benchmark/cell_type_annotation/README.md
+!/benchmark/cell_type_annotation/__init__.py
+!/benchmark/cell_type_annotation/agent_baseline_worker.py
+!/benchmark/cell_type_annotation/baselines.py
+!/benchmark/cell_type_annotation/bcl.py
+!/benchmark/cell_type_annotation/benchmark_inputs.py
+!/benchmark/cell_type_annotation/benchmarks.py
+!/benchmark/cell_type_annotation/evaluation.py
+!/benchmark/cell_type_annotation/guarded_voting.py
+!/benchmark/cell_type_annotation/han_mouse_brain_stereoseq.py
+!/benchmark/cell_type_annotation/package_inputs.py
+!/benchmark/cell_type_annotation/plot_agent_baseline_comparison.py
+!/benchmark/cell_type_annotation/plot_repeatability_with_baselines.py
+!/benchmark/cell_type_annotation/plot_tissueagent_repeatability.py
+!/benchmark/cell_type_annotation/prediction_states.py
+!/benchmark/cell_type_annotation/run_agent_baseline_comparison.py
+!/benchmark/cell_type_annotation/run_tissueagent_repeatability.py
+!/benchmark/cell_type_annotation/tissueagent_runner.py
+!/benchmark/cell_type_annotation/configs/
+!/benchmark/cell_type_annotation/manifests/
+!/benchmark/cell_type_annotation/mappings/
+!/benchmark/niche_annotation/
+/benchmark/niche_annotation/*
+!/benchmark/niche_annotation/README.md
+!/benchmark/niche_annotation/__init__.py
+!/benchmark/niche_annotation/agent_baseline_worker.py
+!/benchmark/niche_annotation/agent_baselines.py
+!/benchmark/niche_annotation/agent_collection.py
+!/benchmark/niche_annotation/agent_inputs.py
+!/benchmark/niche_annotation/evaluate_agents.py
+!/benchmark/niche_annotation/evaluation.py
+!/benchmark/niche_annotation/final_agent_evaluation.py
+!/benchmark/niche_annotation/plot_agent_comparison.py
+!/benchmark/niche_annotation/protocol.py
+!/benchmark/niche_annotation/run_agents.py
+!/benchmark/niche_annotation/spatialfusion_ovca.py
+!/benchmark/niche_annotation/configs/
+!/benchmark/niche_annotation/agent_manifests/
+!/benchmark/cell_type_annotation/outputs/
+/benchmark/cell_type_annotation/outputs/*
+!/benchmark/cell_type_annotation/outputs/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906/
+/benchmark/cell_type_annotation/outputs/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906/*
+!/benchmark/cell_type_annotation/outputs/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906/README.md
+!/benchmark/cell_type_annotation/outputs/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906/comparison_metrics.tsv
+!/benchmark/cell_type_annotation/outputs/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906/evaluation_comparison.pdf
+!/benchmark/cell_type_annotation/outputs/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906/evaluation_comparison.png
+!/benchmark/cell_type_annotation/outputs/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906/individual_run_metrics.tsv
+!/benchmark/cell_type_annotation/outputs/agent-baselines-matched-heart-bcl-stereoseq-gpt51-20260906/provenance.json
+!/benchmark/cell_type_annotation/outputs/transcript.log
+
+# Versioned annotation notebooks; other local notebook artifacts remain ignored.
+!/notebooks/
+/notebooks/*
+!/notebooks/README.md
+!/notebooks/cell_annotation_benchmark.ipynb
+!/notebooks/cell_annotation_w_baselines.ipynb
+!/notebooks/tissue_niche_agent_baselines.ipynb

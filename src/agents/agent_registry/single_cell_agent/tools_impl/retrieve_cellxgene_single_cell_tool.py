@@ -12,6 +12,10 @@ import pandas as pd
 from pathlib import Path
 
 from agents.workspace_paths import resolve_project_output, workspace_relative
+from agents.agent_registry.cell_annotater_agent.tools_impl.reference_labels import (
+    biological_label_mask,
+    REFERENCE_LABEL_POLICY,
+)
 
 
 MAX_AUTOMATIC_SOURCE_H5AD_BYTES = 2 * 1024**3
@@ -188,6 +192,7 @@ def retrieve_cellxgene_reference_subset(
     organism: str = "Mus musculus",
     tissues: list[str] | None = None,
     diseases: list[str] | None = None,
+    development_stages: list[str] | None = None,
 ):
     """Retrieve a reproducible label-balanced Census subset without full source downloads."""
     try:
@@ -205,6 +210,54 @@ def retrieve_cellxgene_reference_subset(
                 raise ValueError(f"Invalid CELLxGENE dataset ID: {dataset_id}")
         if filepath.exists():
             if _valid_h5ad(filepath):
+                cached = ad.read_h5ad(filepath, backed="r")
+                try:
+                    if (
+                        cached.uns.get("tissueagent_cellxgene_subset", {}).get(
+                            "reference_label_policy"
+                        )
+                        != REFERENCE_LABEL_POLICY
+                    ):
+                        raise ValueError(
+                            "Existing reference predates the biological-target/metadata policy; "
+                            "use a new filename."
+                        )
+                    stored = cached.uns["tissueagent_cellxgene_subset"]
+                    checks = {
+                        "dataset_ids": dataset_ids,
+                        "census_version": census_version,
+                        "label_column": label_column,
+                        "max_cells_per_label": max_cells_per_label,
+                        "max_source_cells": max_source_cells,
+                        "random_state": random_state,
+                        "include_labels": include_labels or [],
+                        "organism": organism,
+                        "tissues": tissues or [],
+                        "diseases": diseases or [],
+                        "development_stages": development_stages or [],
+                    }
+                    for key, expected in checks.items():
+                        actual = stored.get(key)
+                        if isinstance(expected, list):
+                            actual = list(actual) if actual is not None else None
+                        if actual != expected:
+                            raise ValueError(
+                                f"Cached reference request differs at {key}; use a new filename."
+                            )
+                    cached_audit = {
+                        "n_cells": int(cached.n_obs),
+                        "n_genes": int(cached.n_vars),
+                        "n_labels": int(cached.obs[label_column].nunique()),
+                        "n_placeholder_cells_excluded_before_sampling": int(
+                            stored["n_placeholder_cells_excluded_before_sampling"]
+                        ),
+                        "source_cell_counts": {
+                            str(key): int(value)
+                            for key, value in stored["source_cell_counts"].items()
+                        },
+                    }
+                finally:
+                    cached.file.close()
                 provenance_path = _write_provenance(
                     filepath,
                     {
@@ -220,6 +273,9 @@ def retrieve_cellxgene_reference_subset(
                         "organism": organism,
                         "tissues": tissues or [],
                         "diseases": diseases or [],
+                        "development_stages": development_stages or [],
+                        "reference_label_policy": REFERENCE_LABEL_POLICY,
+                        **cached_audit,
                     },
                 )
                 return {
@@ -248,7 +304,11 @@ def retrieve_cellxgene_reference_subset(
         clauses = [f"({dataset_filter})", "is_primary_data == True"]
         clauses.extend(
             clause
-            for clause in (equals_any("tissue", tissues), equals_any("disease", diseases))
+            for clause in (
+                equals_any("tissue", tissues),
+                equals_any("disease", diseases),
+                equals_any("development_stage", development_stages),
+            )
             if clause
         )
         value_filter = " and ".join(clauses)
@@ -297,6 +357,9 @@ def retrieve_cellxgene_reference_subset(
                 .to_pandas()
             )
             metadata = metadata.dropna(subset=[label_column])
+            valid_targets = biological_label_mask(metadata[label_column])
+            n_placeholder_excluded = int((~valid_targets).sum())
+            metadata = metadata.loc[valid_targets].copy()
             if include_labels:
                 metadata = metadata[metadata[label_column].isin(include_labels)]
                 missing_labels = sorted(
@@ -326,7 +389,23 @@ def retrieve_cellxgene_reference_subset(
                 organism=organism,
                 X_name="raw",
                 obs_coords=join_ids,
-                obs_column_names=["dataset_id", label_column, "tissue", "disease", "assay"],
+                obs_column_names=list(
+                    dict.fromkeys(
+                        [
+                            "dataset_id",
+                            label_column,
+                            "tissue",
+                            "tissue_general",
+                            "disease",
+                            "assay",
+                            "donor_id",
+                            "development_stage",
+                            "development_stage_ontology_term_id",
+                            "cell_type_ontology_term_id",
+                            "is_primary_data",
+                        ]
+                    )
+                ),
                 var_column_names=["feature_id", "feature_name"],
             )
         if reference.n_obs != len(join_ids):
@@ -351,6 +430,9 @@ def retrieve_cellxgene_reference_subset(
             "organism": organism,
             "tissues": tissues or [],
             "diseases": diseases or [],
+            "development_stages": development_stages or [],
+            "reference_label_policy": REFERENCE_LABEL_POLICY,
+            "n_placeholder_cells_excluded_before_sampling": n_placeholder_excluded,
         }
         filepath.parent.mkdir(parents=True, exist_ok=True)
         partial = filepath.with_name(filepath.name + ".partial")
@@ -379,6 +461,9 @@ def retrieve_cellxgene_reference_subset(
                 "organism": organism,
                 "tissues": tissues or [],
                 "diseases": diseases or [],
+                "development_stages": development_stages or [],
+                "reference_label_policy": REFERENCE_LABEL_POLICY,
+                "n_placeholder_cells_excluded_before_sampling": n_placeholder_excluded,
                 "n_cells": reference.n_obs,
                 "n_genes": reference.n_vars,
                 "n_labels": int(reference.obs[label_column].nunique()),

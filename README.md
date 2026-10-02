@@ -296,12 +296,12 @@ OmicVerse GPTCellType comparison remains an isolated optional dependency:
 uv sync --frozen --extra cell-annotation-benchmarks
 ```
 
-This installs only the versions pinned in `uv.lock`; the demo never installs packages at runtime.
+This installs only the versions pinned in `uv.lock`; the benchmark never installs packages at runtime.
 Biomni and SpatialAgent baselines use their own upstream environments to avoid dependency conflicts
 and expose configurable base models through the same benchmark runner/output path. See
 [`docs/cell_annotation_agent_baselines.md`](docs/cell_annotation_agent_baselines.md) for setup and
-[`demo/cell_annotation_benchmark.ipynb`](demo/cell_annotation_benchmark.ipynb) for the developing
-human heart, BCL, and Han mouse brain Stereo-seq quick/full demo. The guide also includes a
+[`notebooks/cell_annotation_benchmark.ipynb`](notebooks/cell_annotation_benchmark.ipynb) for the developing
+human heart, BCL, and Han mouse brain Stereo-seq quick/full benchmark. The guide also includes a
 saved-results plotting command that needs no API keys or expression data.
 The ovarian Seurat conversion additionally requires an existing R installation with
 Seurat and Matrix. Missing R packages are reported explicitly and are never installed by

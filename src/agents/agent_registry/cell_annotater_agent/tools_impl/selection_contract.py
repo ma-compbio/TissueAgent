@@ -21,7 +21,7 @@ ANNOTATION_CONTEXT_CONTRACT_VERSION = "cell_annotation_context_contract_v1"
 CONFIGURATION_CONTRACT_VERSION = "cell_annotation_scientific_configuration_contract_v2"
 CONFIGURATION_EXECUTION_TOKEN_VERSION = "cell_annotation_execution_token_v2"
 INPUT_IDENTITY_VERSION = "resolved_file_stat_and_bounded_content_identity_v1"
-HARMONY_PARAMETER_POLICY_VERSION = "harmony_execution_parameter_policy_v1"
+HARMONY_PARAMETER_POLICY_VERSION = "harmony_execution_parameter_policy_v3_shift_diagnostics"
 CELLTYPIST_PARAMETER_POLICY_VERSION = "celltypist_execution_parameter_policy_v1"
 GPTCELLTYPE_PARAMETER_POLICY_VERSION = "gptcelltype_execution_parameter_policy_v1"
 _INPUT_IDENTITY_SAMPLE_BYTES = 64 * 1024
@@ -59,6 +59,7 @@ _SCIENTIFIC_CONFIGURATION_FIELDS = {
         "min_cells",
         "target_sum",
         "n_top_genes",
+        "feature_scaling",
         "n_pcs",
         "min_shared_genes",
         "harmony_key",
@@ -403,6 +404,11 @@ def _normalize_harmony_configuration(
     classifier = scientific["classifier"]
     if classifier not in {"mlp", "knn"}:
         raise ValueError("scientific_configuration.classifier must be 'mlp' or 'knn'.")
+    feature_scaling = scientific["feature_scaling"]
+    if feature_scaling not in {"none", "unit_variance"}:
+        raise ValueError(
+            "scientific_configuration.feature_scaling must be 'none' or 'unit_variance'."
+        )
     gene_mapping_target = scientific["gene_mapping_target"]
     if gene_mapping_target not in {"symbol", "ensembl"}:
         raise ValueError(
@@ -921,18 +927,20 @@ def register_selection_contract(
 ) -> dict[str, Any]:
     """Register one inspector result for validation before backend execution."""
     default_candidates = selection_policy.get("default_candidates")
+    authorized_candidates = selection_policy.get("authorized_candidates")
     fallback_candidates = selection_policy.get("fallback_candidates")
     unknown_candidates = selection_policy.get("unknown_candidates")
     if not all(
         isinstance(candidates, list) and all(candidate in _METHODS for candidate in candidates)
-        for candidates in (default_candidates, fallback_candidates, unknown_candidates)
+        for candidates in (
+            default_candidates,
+            authorized_candidates,
+            fallback_candidates,
+            unknown_candidates,
+        )
     ):
         raise ValueError("Selection policy contains invalid candidate lists.")
-    allowed_candidates = (
-        list(default_candidates)
-        if default_candidates
-        else [*fallback_candidates, *unknown_candidates]
-    )
+    allowed_candidates = list(authorized_candidates)
     rationale_guard = selection_policy.get("rationale_guard")
     if not isinstance(rationale_guard, Mapping):
         raise ValueError("Selection policy lacks a structured rationale guard.")
@@ -1050,6 +1058,33 @@ def _validation_error(violations: list[str]) -> dict[str, Any]:
         "violations": violations,
         "message": "Selection validation failed: " + "; ".join(violations),
     }
+
+
+def _primary_priority_violations(
+    selected_method: str,
+    authorized_candidates: list[str],
+    suitability_confidences: Mapping[str, str],
+) -> list[str]:
+    """Require the first non-low-suitability backend in policy order."""
+    if selected_method not in authorized_candidates:
+        return []
+    violations = []
+    if suitability_confidences[selected_method] == "low":
+        violations.append(
+            f"selected_method {selected_method!r} has low suitability; abstain instead"
+        )
+    selected_index = authorized_candidates.index(selected_method)
+    earlier_suitable = [
+        candidate
+        for candidate in authorized_candidates[:selected_index]
+        if suitability_confidences[candidate] != "low"
+    ]
+    if earlier_suitable:
+        violations.append(
+            f"selected_method {selected_method!r} cannot bypass earlier suitable candidate(s): "
+            + ", ".join(earlier_suitable)
+        )
+    return violations
 
 
 def _validated_backend_rationale(
@@ -1172,23 +1207,13 @@ def validate_cell_annotation_selection_tool(
     except ValueError as exc:
         violations.append(str(exc))
     if method in _METHODS and suitability_confidences is not None:
-        eligible_methods = [
-            candidate
-            for candidate in _METHODS
-            if contract["method_assessments"].get(candidate, {}).get("prerequisites")
-            != "not_met"
-        ]
-        selected_level = _SUITABILITY_LEVELS[suitability_confidences[method]]
-        higher_methods = [
-            candidate
-            for candidate in eligible_methods
-            if _SUITABILITY_LEVELS[suitability_confidences[candidate]] > selected_level
-        ]
-        if higher_methods:
-            violations.append(
-                f"selected_method {method!r} has lower qualitative suitability than runnable "
-                "method(s): " + ", ".join(higher_methods)
+        violations.extend(
+            _primary_priority_violations(
+                method,
+                list(contract["allowed_candidates"]),
+                suitability_confidences,
             )
+        )
     selected_celltypist_model = None
     celltypist_model_confidences = None
     celltypist_scope_assessments = None

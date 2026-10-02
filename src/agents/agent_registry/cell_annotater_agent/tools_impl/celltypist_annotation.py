@@ -41,6 +41,10 @@ CELLTYPIST_MAX_INFERENCE_BATCH_ELEMENTS = 5_000_000
 CELLTYPIST_THRESHOLD_UNASSIGNED_SENTINEL = "__tissueagent_celltypist_threshold_unassigned__"
 _CELLTYPIST_CONFIG_LOCK = threading.RLock()
 ANNOTATION_COLUMNS = (
+    "celltypist_raw_prediction",
+    "celltypist_raw_confidence",
+    "celltypist_majority_prediction",
+    "celltypist_over_clustering",
     "celltypist_predicted_cell_type",
     "celltypist_prediction_confidence",
     "celltypist_status",
@@ -441,6 +445,7 @@ def _train_reference_model(
     reference_path: Path,
     cell_type_column: str,
     n_jobs: int,
+    random_state: int = CELLTYPIST_RANDOM_STATE,
 ) -> tuple[Any, dict[str, Any]]:
     reference.obs[cell_type_column] = (
         reference.obs[cell_type_column].astype("string").astype(str).to_numpy()
@@ -457,7 +462,7 @@ def _train_reference_model(
         use_SGD=use_sgd,
         mini_batch=use_sgd,
         feature_selection=feature_selection,
-        random_state=CELLTYPIST_RANDOM_STATE,
+        random_state=random_state,
         details="TissueAgent reference-trained CellTypist model",
         source=workspace_relative(reference_path),
         version="tissueagent_reference_v1",
@@ -471,7 +476,7 @@ def _train_reference_model(
         "use_sgd": use_sgd,
         "mini_batch": use_sgd,
         "feature_selection": feature_selection,
-        "random_state": CELLTYPIST_RANDOM_STATE,
+        "random_state": random_state,
         "mini_batch_sampling_reproducible": not use_sgd,
         "reproducibility_note": (
             "CellTypist 1.7.1 mini-batch sampling uses the process-global NumPy RNG and is not "
@@ -548,6 +553,7 @@ def _overclustering_resolution(n_obs: int) -> int:
 
 def _create_transcriptomic_overclustering(
     query: ad.AnnData,
+    random_state: int = CELLTYPIST_RANDOM_STATE,
 ) -> tuple[np.ndarray, dict[str, Any]]:
     if query.n_obs <= 50:
         raise ValueError("CellTypist majority voting requires more than 50 query observations.")
@@ -576,21 +582,21 @@ def _create_transcriptomic_overclustering(
     sc.pp.pca(
         clustering,
         n_comps=n_pcs,
-        random_state=CELLTYPIST_RANDOM_STATE,
+        random_state=random_state,
     )
     n_neighbors = min(10, clustering.n_obs - 1)
     sc.pp.neighbors(
         clustering,
         n_neighbors=n_neighbors,
         n_pcs=n_pcs,
-        random_state=CELLTYPIST_RANDOM_STATE,
+        random_state=random_state,
     )
     resolution = _overclustering_resolution(clustering.n_obs)
     sc.tl.leiden(
         clustering,
         resolution=resolution,
         key_added="_celltypist_over_clustering",
-        random_state=CELLTYPIST_RANDOM_STATE,
+        random_state=random_state,
         flavor="igraph",
         n_iterations=2,
         directed=False,
@@ -604,7 +610,7 @@ def _create_transcriptomic_overclustering(
         "resolution": int(resolution),
         "scale_zero_center": True,
         "scale_max_value": 10,
-        "random_state": CELLTYPIST_RANDOM_STATE,
+        "random_state": random_state,
         "n_clusters": int(pd.Series(clusters).nunique()),
     }
 
@@ -617,6 +623,7 @@ def _run_celltypist_inference(
     p_thres: float,
     majority_voting: bool,
     over_clustering: np.ndarray | None,
+    prediction_details: dict[str, Any] | None = None,
 ) -> tuple[np.ndarray, np.ndarray, str, np.ndarray, dict[str, Any]]:
     features = pd.Index(np.asarray(model.features, dtype=str))
     if not features.is_unique:
@@ -716,6 +723,9 @@ def _run_celltypist_inference(
                 "|".join(classes[row_flags]) or "Unassigned" for row_flags in threshold_flags
             ]
 
+    if prediction_details is not None:
+        prediction_details.update(raw_labels=labels.astype(str).copy(),
+                                  raw_confidence=raw_confidence.copy())
     inference_passes = 1
     n_confidence_fallbacks = 0
     if majority_voting:
@@ -758,6 +768,8 @@ def _run_celltypist_inference(
     if not np.isfinite(confidence).all():
         raise ValueError("CellTypist returned non-finite prediction confidence values.")
     prediction_column = "majority_voting" if majority_voting else "predicted_labels"
+    if prediction_details is not None and majority_voting:
+        prediction_details["majority_labels"] = labels.astype(str).copy()
     return (
         labels.astype(str),
         confidence,
@@ -920,10 +932,17 @@ def celltypist_annotation_tool(
     n_jobs: int = 1,
     min_feature_overlap: int = 50,
     execution_contract: dict[str, Any] | None = None,
+    random_state: int = CELLTYPIST_RANDOM_STATE,
+    overclustering_strategy: str = "native",
 ) -> Dict[str, Any]:
     """Annotate a cell-resolved query with an explicit CellTypist label source."""
     start_time = time.monotonic()
     operation = "celltypist_annotation"
+
+    if type(random_state) is not int or not 0 <= random_state < 2**32:
+        return _error_result("validate_parameters", ValueError("Invalid random_state"))
+    if overclustering_strategy not in {"native", "bounded_v1"}:
+        return _error_result("validate_parameters", ValueError("Unknown overclustering strategy"))
 
     if not isinstance(selection_rationale, str) or not selection_rationale.strip():
         return _error_result(
@@ -1124,6 +1143,7 @@ def celltypist_annotation_tool(
                     reference_path=reference_path,
                     cell_type_column=cell_type_column,
                     n_jobs=n_jobs,
+                    random_state=random_state,
                 )
                 model_path = custom_model_path
                 if model_path is None:
@@ -1150,11 +1170,19 @@ def celltypist_annotation_tool(
         clustering_metadata = None
         if majority_voting:
             stage = "create_transcriptomic_over_clustering"
-            over_clustering, clustering_metadata = _create_transcriptomic_overclustering(
-                spatial_annotation
-            )
+            if overclustering_strategy == "bounded_v1":
+                from .celltypist_bounded_graph import overcluster
+
+                over_clustering, clustering_metadata = overcluster(
+                    spatial_annotation, random_state, annotated_path.parent
+                )
+            else:
+                over_clustering, clustering_metadata = _create_transcriptomic_overclustering(
+                    spatial_annotation, random_state=random_state
+                )
 
         stage = "annotate_query"
+        prediction_details: dict[str, Any] = {}
         (
             labels,
             confidence,
@@ -1168,6 +1196,7 @@ def celltypist_annotation_tool(
             p_thres=float(p_thres),
             majority_voting=majority_voting,
             over_clustering=over_clustering,
+            prediction_details=prediction_details,
         )
 
         stage = "attach_predictions"
@@ -1181,6 +1210,21 @@ def celltypist_annotation_tool(
             confidence,
             threshold_unassigned,
         )
+        # Preserve both native stages for subsequent evidence review. No voting guard
+        # or heuristic label substitution is applied here.
+        positions = output.obs_names.get_indexer(spatial_annotation.obs_names)
+        for column, values in (
+            ("celltypist_raw_prediction", prediction_details["raw_labels"]),
+            ("celltypist_majority_prediction", prediction_details.get("majority_labels")),
+            ("celltypist_over_clustering", over_clustering),
+        ):
+            if values is not None:
+                full = np.full(output.n_obs, "Unassigned", dtype=object)
+                full[positions] = values
+                output.obs[column] = pd.Categorical(full)
+        raw_confidence = np.full(output.n_obs, np.nan)
+        raw_confidence[positions] = prediction_details["raw_confidence"]
+        output.obs["celltypist_raw_confidence"] = raw_confidence
         if output.n_obs != len(original_obs_names) or not pd.Index(output.obs_names).equals(
             original_obs_names
         ):
@@ -1197,6 +1241,8 @@ def celltypist_annotation_tool(
 
         provenance: dict[str, Any] = {
             "annotation_method": "celltypist",
+            "random_state": random_state,
+            "overclustering_strategy": overclustering_strategy,
             "label_source": label_source,
             "selection_rationale": selection_rationale.strip(),
             "mode": mode,
