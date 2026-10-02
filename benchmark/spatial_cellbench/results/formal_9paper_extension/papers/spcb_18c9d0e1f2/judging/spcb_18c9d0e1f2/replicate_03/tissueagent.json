@@ -1,0 +1,161 @@
+{
+  "status": "success",
+  "unit_fingerprint": "98385210a437ce936c8aec8832ba9faff10482695bfba7a6780a6a2e15162741",
+  "generation_proposal_sha256": "18f9a2c6efdc65e87befa9c281a690ef7235857c67d6eeddd22502337fe6f67c",
+  "truth_sha256": "a25c0b30a9ce893b23afada2bca80855f7f3db0377c7382cc1f55a53755562bd",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "860c23ba765f98af8e6fc1d9c518f6cd828a614d9b507df4ef7402cf67d884ea",
+    "9ca69ce1123764cf7e834f2777d659104b3c8a81fa416ca48728d3a4c12f2caf",
+    "9f1131d6858a33d5cd19d62434fd88ec103e6a3439ed08c4819de28df9b991d0",
+    "699f7777b689b184ecd3eb082911759c60f54678e5d3dd0fb6842ee3074f19aa",
+    "c1604e494ce9af94c9de2c633d44d4a7a8e22f4344cfc95c229a96c93a468e89",
+    "7a27a2214bc514c51c1169dfb7a65c3a4392bf3be3460fc92fc1fad671aa6b18",
+    "8e6ec2e645011482bf143b7d8ff68984776f934af41e720b36b8376d41965ffa",
+    "d795c640825410a3ca2af2de6211907023c517467859ec05aa46a49a7a47b7ef",
+    "2e385e469bfc407c5d98c4d60941bcb34ca6d3f9a4f3e9d8daccef213e0d4d3a"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis, 'Global Spatial Autocorrelation Analysis,' aims to quantify the overall tendency of gene expression values to cluster or disperse across a tissue section using spatial autocorrelation metrics like Moran's I and Geary's C. This matches the objective of 'G07: Detect spatially heterogeneous genes in olfactory bulb,' where spatial autocorrelation is computed to identify expression patterns associated with anatomical layers. Both analyses focus on understanding spatial heterogeneity using spatial autocorrelation metrics."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis and the ground-truth analysis with ID G07 both focus on addressing the effects of density in spatial gene expression studies. The proposed analysis aims to detect genuine spatial regulation by adjusting for local cell or spot density variations, ensuring that residual spatial patterns are not confounded by density effects. Similarly, G07 aims to test density-robust spatial statistics, focusing on whether spatial heterogeneity conclusions remain stable after accounting for nonuniform cellular density. Both share the main scientific objective of distinguishing spatial patterns while controlling for density-related confounders."
+    },
+    {
+      "candidate_index": 2,
+      "match": false,
+      "reason": "The proposed analysis focuses on segmenting tissues into discrete spatial domains based on marked point processes to identify histological compartments or microenvironments in 2D sections. None of the ground-truth analyses have a matching objective. While some ground-truth analyses involve understanding spatial patterns or heterogeneity, they focus on different objectives such as communication mapping (G01), spatially heterogeneous genes detection (G02), complementary signals inference (G03), cell clustering with spatial information (G04), layered spatial organization resolution (G05), gene pattern grouping (G06), within-cell-type heterogeneity (G07), 3D data integration (G08), and density-robust statistics (G09). None are specifically aimed at the segmentation of tissues into distinct regions using marked point processes."
+    },
+    {
+      "candidate_index": 3,
+      "match": false,
+      "reason": "The proposed analysis focuses on assessing cell-type co-localization using a spatial graph and statistical comparison to a null model to determine enrichment or depletion, specifically looking at how often cell types appear as neighbors relative to random chance. None of the ground-truth analyses share this main objective. While some of the ground-truth analyses involve spatial relationships and adjacency, such as using adjacency in spatial programs (G01) or identifying complementary signals between cell types (G09), they do not specifically aim to assess neighborhood enrichment for cell-type co-localization, which is the primary focus of the proposed analysis."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis aims to infer intercellular communication by examining the spatial co-patterning of ligand and receptor expression. This aligns with the objective of G04, \"Infer complementary signals between cell types,\" which involves identifying ligand and receptor patterns in neighboring populations. Both analyses focus on the spatial relationships and expression patterns of ligands and receptors to infer communication."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis '3D Spatial Heterogeneity Modeling in Volumetric Tissues' matches the ground-truth analysis 'G02: Resolve layered and multilayer spatial organization'. Both focus on examining and resolving spatial organization through layers and in three-dimensional contexts, aiming to understand spatial programs and structures in tissues."
+    },
+    {
+      "candidate_index": 6,
+      "match": false,
+      "reason": "The proposed analysis focuses on decomposing spatial gene expression signals into multiple scales using wavelet transforms to separate fine-grained local structures from broader gradients. This approach is aimed at identifying genes that contribute significantly at specific spatial scales, thus addressing denoising and pattern detection challenges. None of the analyses in the ground-truth set focus specifically on multi-scale decomposition of spatial patterns or the use of wavelet transforms for identifying scale-specific contributions of genes. The analyses in the ground-truth set involve clustering, spatial heterogeneity, communication mapping, and structural resolution, none of which align with the main scientific objective of multi-scale pattern decomposition using wavelet transforms."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis involves creating a spatial adjacency network and analyzing its graph-theoretic properties to understand tissue microenvironments through network community detection and correlations with gene expression. This is distinct from any of the ground-truth analyses. The closest ground-truth analysis, G02, involves spatially informed cell clustering, which combines spatial adjacency with expression data to distinguish subpopulations. However, the main objectives differ because the proposed analysis focuses on network measures and community detection rather than clustering to discriminate subpopulations. Thus, the scientific objectives are not the same."
+    },
+    {
+      "candidate_index": 8,
+      "match": true,
+      "reason": "The proposed analysis 'Spatial Gradient and Boundary Detection' aims to identify sharp transitions and smooth gradients in gene expression to highlight compartment borders or layer transitions within tissues. This aligns with G05 'Resolve layered and multilayer spatial organization,' which is concerned with resolving layered spatial organization to compare spatial programs across tissue layers or sections."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 5,
+    "candidate_count": 9,
+    "candidate_hit_fraction": 0.5555555555555556
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 9,
+    "observable_model_attempts": 9,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.3796731680631638,
+        "input_tokens": 820,
+        "output_tokens": 102,
+        "total_tokens": 922
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 2.332294575870037,
+        "input_tokens": 806,
+        "output_tokens": 117,
+        "total_tokens": 923
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 3.9370742943137884,
+        "input_tokens": 806,
+        "output_tokens": 164,
+        "total_tokens": 970
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 2.073453702032566,
+        "input_tokens": 815,
+        "output_tokens": 125,
+        "total_tokens": 940
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.383822726085782,
+        "input_tokens": 814,
+        "output_tokens": 78,
+        "total_tokens": 892
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.2219316959381104,
+        "input_tokens": 819,
+        "output_tokens": 70,
+        "total_tokens": 889
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 2.645191263407469,
+        "input_tokens": 825,
+        "output_tokens": 137,
+        "total_tokens": 962
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.670801317319274,
+        "input_tokens": 827,
+        "output_tokens": 119,
+        "total_tokens": 946
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 1.3352788258343935,
+        "input_tokens": 812,
+        "output_tokens": 71,
+        "total_tokens": 883
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 17.982
+  },
+  "trace_sha256": "3940b185579f26d4ef5db314558ffdab6bcbf4213a7abb6ffb653bebe04ee650",
+  "checkpoint_sha256": "b10b0bc26ae09a2b1ea7ac85523d11e81fbf881ef6c18e05e597cb02e2c6be1d"
+}

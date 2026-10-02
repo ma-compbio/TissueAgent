@@ -1,0 +1,79 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "923b958735de46f1aaa2e6ee176f752a7f3df8086e8ae7005d74ebdfc8dcb929",
+  "eval_id": "spcb_c30d4e5f6a",
+  "replicate": 1,
+  "proposal_count": 9,
+  "proposal_sha256": "b49fc36f9f786bf0ca46f9aece82d6882fe6e4e3013a395f1bd7c284653c65d0",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Domain Segmentation",
+        "summary": "This analysis involves identifying spatially coherent regions within a tissue by integrating gene expression profiles and spatial coordinates. The method would use spatially-aware clustering algorithms, such as graph-based or Bayesian segmentation approaches, to delineate domains that correspond to distinct cell states or microenvironments. Domain boundaries can then be validated against known tissue anatomy or histological landmarks."
+      },
+      {
+        "title": "Spatial Pseudotime Ordering",
+        "summary": "The goal of this analysis is to develop a pseudotime trajectory that respects spatial proximities between cells or spots. By incorporating spatial neighborhood information into the ordering process, the analysis will determine a continuous progression of cell states as they transition through developmental stages, tissue repair, or disease progression. Trajectories can then be compared to known marker gene patterns to validate the inferred temporal sequence."
+      },
+      {
+        "title": "Local Neighborhood Expression Gradient Analysis",
+        "summary": "This approach focuses on quantifying gene expression changes over short spatial distances to capture fine-scale transitions in tissue. By computing local gradients of expression and linking them with spatial coordinates, the analysis reveals directional shifts in cell states or microenvironment factors. This method can highlight small but functionally relevant changes that might be overlooked with coarse global comparisons."
+      },
+      {
+        "title": "Spatial Marker Gene Identification & Domain Zoning",
+        "summary": "In this analysis, computational methods will be employed to identify marker genes specifically enriched within distinct spatial domains, as determined by prior segmentation analyses. The approach includes differential expression testing that accounts for spatial correlation, enabling the discovery of genes whose expression uniquely characterizes specific anatomical regions or evolving pathologies within the tissue."
+      },
+      {
+        "title": "Spatial Trajectory Inference in Tissue Remodeling",
+        "summary": "Leveraging the power of spatial transcriptomics, this analysis combines trajectory inference with spatial modeling to capture dynamic processes such as tissue repair or disease progression. Techniques such as spatially constrained minimum spanning trees or diffusion maps will be applied to infer paths through cell states that honor tissue architecture, providing insights into how tissue remodeling occurs in a coordinated spatial manner."
+      },
+      {
+        "title": "Spatial Cell-Cell Communication Analysis",
+        "summary": "This analysis aims to map ligand-receptor interactions within spatial contexts by integrating spatial proximity data with transcriptomic profiles. By identifying pairs of interacting molecules that are co-localized in neighboring cell groups, the study will pinpoint potential communication networks that regulate tissue homeostasis or pathogenesis. The methodology will leverage spatial statistics to ensure that inferred interactions are biologically plausible given actual cell arrangements."
+      },
+      {
+        "title": "Subcellular Localization Pattern Analysis",
+        "summary": "Utilizing high-resolution spatial transcriptomics, this project investigates RNA distribution at subcellular scales. The analysis will delineate regulatory hotspots within individual cells by mapping RNA molecules relative to key cellular landmarks. Advanced image processing and spatial statistics will be employed to uncover patterns of subcellular compartmentalization that contribute to cellular function and differentiation."
+      },
+      {
+        "title": "Spatial Variation and Domain Transition Dynamics",
+        "summary": "This analysis characterizes transitional zones where sharp changes in gene expression occur across adjacent spatial domains. By modeling spatial autocorrelation and employing change-point detection algorithms, the study will identify regions of rapid cellular state transitions and relate these zones to underlying morphogenetic or pathologic processes. The resulting maps highlight critical boundaries where biological function may shift."
+      },
+      {
+        "title": "Spatial Co-expression Network Analysis",
+        "summary": "The proposed analysis constructs co-expression networks that integrate both molecular and spatial information. By focusing on pairs of genes that exhibit correlated expression patterns only within specific tissue regions, the analysis reveals spatially localized regulatory modules. Network measures can then be used to identify hub genes and signaling pathways that are potentially active within discrete areas of the tissue architecture."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "ab436a05aea916e5d82f67e27df79d735c38da627142c533ae5fd5b75068ec4e",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 8.172973215929233,
+        "input_tokens": 415,
+        "output_tokens": 1336,
+        "total_tokens": 1751
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "deb95daf8ce94a6378007a19487dc114f7bbfd0b4737fb57e1648da4423015bd",
+    "overview_sha256": null,
+    "elapsed_seconds": 8.178
+  },
+  "trace_sha256": "344495a4a4a4aa17f70dbe4c56ccd73019fb63d953479da4879f50996861ad26",
+  "checkpoint_sha256": "ddbe9225eebfcea6b13deb8d787084045cc6c8725359869a74e0a381d75e4edc"
+}

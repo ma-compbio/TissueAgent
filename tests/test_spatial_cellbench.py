@@ -630,13 +630,22 @@ def test_frozen_corpus_and_archive_validate() -> None:
         BENCHMARK / "data" / "public_contexts.json",
         BENCHMARK / "data" / "ground_truth.json",
     )
-    assert result["paper_count"] == 11
-    assert result["analysis_count"] == 112
+    assert result["paper_count"] == 20
+    assert result["analysis_count"] == 193
     assert sorted(result["analysis_counts"].values()) == [
         5,
+        8,
+        8,
+        8,
         9,
         9,
         9,
+        9,
+        9,
+        9,
+        10,
+        10,
+        10,
         11,
         11,
         11,
@@ -648,11 +657,12 @@ def test_frozen_corpus_and_archive_validate() -> None:
     archives = [
         ROOT / "papers-20260711T025044Z-2-001.zip",
         ROOT / "papers-20260721T071755Z-1-001.zip",
+        ROOT / "papers-20260902T-extension-001.zip",
     ]
     if all(archive.is_file() for archive in archives):
         assert validate_archives(
             BENCHMARK / "data" / "corpus_manifest.json", archives
-        )["verified_pdfs"] == 11
+        )["verified_pdfs"] == 20
 
 
 def test_contexts_are_title_free_and_have_no_legacy_appendix() -> None:

@@ -1,0 +1,75 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "16a068783e6f03a72b797c947c08bcd78094b5b8b619447cb7afd4c7b65f7a97",
+  "eval_id": "spcb_e50f6a7b8c",
+  "replicate": 2,
+  "proposal_count": 8,
+  "proposal_sha256": "ba97737192970ac3884d95f69417bcba5c4e2d2c3b1f24c58c7fcb507991ea21",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Graph Construction and Clustering",
+        "summary": "This analysis will involve constructing spatial graphs based on the physical coordinates of transcriptomic spots or cells. By defining various neighborhood radii and criteria to link adjacent molecular observations, we will cluster spots into distinct groups that respect both expression similarity and spatial proximity. The clustering results can then be visualized over the tissue image to reveal microenvironment structures and potential gradients of cell states."
+      },
+      {
+        "title": "Spatial Autocorrelation of Gene Expression",
+        "summary": "In this approach, we will compute spatial autocorrelation statistics (such as Moran's I or Geary's C) for individual genes across tissue sections to identify those with non-random spatial patterns. Genes with significant spatial autocorrelation may be implicated in tissue organization or localized biological functions. The analysis will integrate statistical testing with spatial plots to highlight emerging patterns and potential regulatory hotspots."
+      },
+      {
+        "title": "Neighborhood Enrichment of Cell Types",
+        "summary": "This analysis will focus on examining the spatial proximity of different cell types by leveraging expression markers derived from the spatial transcriptomics data. By testing for the enrichment of specific cell types within defined neighborhoods, we can identify preferential spatial associations. Cluster-based approaches coupled with permutation testing will reveal statistically significant interactions between distinct cell populations."
+      },
+      {
+        "title": "Spatial Segmentation and Tissue Zonation",
+        "summary": "Using both expression profiles and the corresponding high-resolution tissue images, this analysis segments the tissue into zones with distinct molecular patterns. Advanced image processing and unsupervised segmentation algorithms will partition the tissue into functional regions. This approach will also enable the comparison of morphological boundaries with transcriptomic region assignments, enhancing our understanding of tissue organization."
+      },
+      {
+        "title": "Cell-Cell Interaction via Ligand-Receptor Co-Localization",
+        "summary": "This approach aims to explore potential cellular communication by assessing the spatial co-localization of ligand and receptor pairs within adjacent cells or spots. The analysis combines spatial proximity data with expression levels of key signaling molecules to predict interactive networks. Highlighted interactions will strengthen the link between physical adjacency and functional communication in the tissue microenvironment."
+      },
+      {
+        "title": "Spatial Differential Expression Across Tissue Regions",
+        "summary": "In this analysis, we will divide the tissue into spatially defined regions using clustering or segmentation, followed by a differential expression analysis between zones. By statistically comparing gene expression levels across regions, we can determine region-specific signatures and pathways. This study will help to elucidate how varying microenvironments drive gene expression heterogeneity within the tissue."
+      },
+      {
+        "title": "Integration of Morphological Features with Molecular Data",
+        "summary": "This analysis focuses on aligning high-dimensional spatial transcriptomics data with extracted morphological features from matched microscopy images. Image processing techniques such as tiling, segmentation, and feature extraction will yield metrics such as texture or intensity, which will then be integrated with transcriptomic profiles. This approach will help to correlate morphological properties with molecular states, enhancing our understanding of tissue architecture."
+      },
+      {
+        "title": "Multi-scale Tiling and Image Segmentation Pipeline",
+        "summary": "Given the challenge of very large high-resolution images, this analysis will develop a multi-scale tiling pipeline to efficiently process spatial transcriptomics data. The approach involves segmenting the tissue image at various scales, mapping transcriptomic observations to these tiles, and performing localized analyses within each tile. This strategy permits both fine-grained and global views of spatial gene expression and tissue organization, ensuring scalability and detailed resolution."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "a973345bd4c5e47c2c4ef9fcd453e258257f3245401db2eb71177c513837bc10",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 5.595012462930754,
+        "input_tokens": 396,
+        "output_tokens": 1079,
+        "total_tokens": 1475
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "e7560ccf80100b98f9461c10641f81f7b9488ac979a29843f9c7d4005e777670",
+    "overview_sha256": null,
+    "elapsed_seconds": 5.615
+  },
+  "trace_sha256": "33391c2d51649c76ce0ee0300a6eca450d553f01c20f8f5528b344bce98ca3e9",
+  "checkpoint_sha256": "f7a875fb54719c6fb8fee90cfc52c67d9f1b3b6261ed39f70967cd254bc871a2"
+}

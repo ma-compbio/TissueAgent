@@ -1,0 +1,161 @@
+{
+  "status": "success",
+  "unit_fingerprint": "0f16b7c40334fe8d6d8382c5a386186b9b306b62cc669e0ae0828aa12aa5866e",
+  "generation_proposal_sha256": "0fab676d321caf4add24cf391df559ab150640fef1ad36afbb3e3ad9a36a7589",
+  "truth_sha256": "6638af0911bf694e663d8347a59f926ba8438f1ebfc39bbc6c4ae884e1331d95",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "a4b72c3e899710dce91cf9da0ef4f0d43c4435f8d7bc6ea23327f24f03aaa83b",
+    "de7892b12b4362c73ff7ca56eff6f4cb73d7e0b423c6c57fa020f6af183536cf",
+    "bb5ad89267aaf518c7abad27f3bdd360992e6558b00c7ecdeee702e55485fb52",
+    "057d5623ce4b4c13204d1c553dec51becf6a652db740c48fdb54e13499621796",
+    "1dccc43a539f9a1637b06452ab98b4a46f78056c75a4b4478bff7eb3d54090b6",
+    "f98714b439210e214da4479178ebadb48e8e5dbd439bef50e272b9791c552d3c",
+    "f4179f9f6790b92de7093603fffc7bfee184e57c5dceb7782f4234555802ead7",
+    "40a49e8ed115a8825bce266dc173f81b6b1f92f4fa0e32a98bfe8b92f0425cdd",
+    "7d47b57c6b24e405ced7c8cfee2275814d505f1e077a6ea77013cd8cfb8bc00e"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis shares the main scientific objective with G06, which is to identify and cluster spatial domains while preserving boundaries. Both analyses aim at discovering spatially organized structures in tissue, emphasizing the importance of preserving spatial boundaries and correctly assigning domains (and in the case of the proposed analysis, also cell types). The key aspect of boundary-preserving clustering and identifying spatial domains is a common goal between the two analyses."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on denoising spatial transcriptomics data while preserving sharp expression transitions, particularly boundaries. This aligns with the main scientific objective of ground-truth analysis G02, which is to denoise expression data while preserving layer-specific marker signals, which essentially implies maintaining important boundaries in the spatial expression profiles."
+    },
+    {
+      "candidate_index": 2,
+      "match": false,
+      "reason": "The proposed analysis focuses on handling technical variability and batch effects across multiple tissue sections through cross-section alignment and batch correction. Its main objective is to ensure precise integration and reliable cross-comparison of tissue domains. None of the ground-truth analyses have the same primary objective; they focus on spatial domain analysis, 3D reconstructions, specific domain identifications, or other unique spatial analyses. The proposed analysis does not match any ground-truth analysis in terms of main scientific objective."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis titled \"Three-Dimensional Reconstruction through Serial Section Integration\" matches the ground-truth analysis G06, which is \"Extract three-dimensional expression domains\". Both analyses focus on reconstructing a 3D tissue representation from serial sections and involve identifying features or domains that persist across the reconstructed volume. The main scientific objective of building a 3D model from serial section data and analyzing spatial continuity and domain organization is shared between these analyses."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis involves clustering informed by spatial autocorrelation to characterize distinct biological domains, with validation using differential expression and spatial continuity, focusing on how clusters reflect known tissue structures. This aligns with the objectives in G06 ('Map adult mouse brain domains'), which identifies spatial regions and validates them, and G07 ('Identify cortical laminar spatial domains'), which involves clustering to recover annotated spatial layers. Both reference the identification and validation of spatial domains using clustering with respect to known structures or layers, similar to the proposed analysis"
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on dimensionality reduction for joint expression-spatial data to improve clustering and visualization by preserving tissue structure and spatial gradients. None of the ground-truth analyses focus on the same core objective of joint dimensionality reduction to visualize and cluster spatial transcriptomics data. Although there are analyses related to spatial domains (G08, G09) or structure recovery (G03), they do not emphasize the specific goal of optimized dimensionality reduction for joint data improvement, which is the main objective of the proposed analysis."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis focuses on evaluating denoising performance with attention to preserving signal integrity and spatial coherence, including boundary preservation. This matches ground-truth analysis G09, which also aims to denoise expression data while preserving boundaries and layer-specific marker signals."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis aligns with ground-truth analysis G06. Both focus on reconstructing 3D tissue representations from serial sections and identifying structural features or expression domains in the resulting 3D models. The scientific objective of integrating 2D spatial datasets into a 3D model to characterize tissue architecture is a clear match."
+    },
+    {
+      "candidate_index": 8,
+      "match": true,
+      "reason": "The proposed analysis focuses on examining how resolution variability influences domain delineation, contrasting expression patterns and spatial clustering outcomes at different resolutions. It also evaluates domain stability and marker gene consistency across scales. This objective of comparing spatial domains at different resolutions is similar to ground-truth analysis G05, which evaluates laminar organization preservation across different spatial resolutions using different platforms. Both analyses involve assessment of spatial domain consistency and characterization across varying resolutions."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 7,
+    "candidate_count": 9,
+    "candidate_hit_fraction": 0.7777777777777778
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 9,
+    "observable_model_attempts": 9,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.9984125886112452,
+        "input_tokens": 802,
+        "output_tokens": 90,
+        "total_tokens": 892
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.1012875847518444,
+        "input_tokens": 807,
+        "output_tokens": 70,
+        "total_tokens": 877
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.8330803755670786,
+        "input_tokens": 797,
+        "output_tokens": 103,
+        "total_tokens": 900
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.8387022260576487,
+        "input_tokens": 799,
+        "output_tokens": 97,
+        "total_tokens": 896
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 2.0651117004454136,
+        "input_tokens": 797,
+        "output_tokens": 109,
+        "total_tokens": 906
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.9829566925764084,
+        "input_tokens": 798,
+        "output_tokens": 111,
+        "total_tokens": 909
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.1166469603776932,
+        "input_tokens": 809,
+        "output_tokens": 58,
+        "total_tokens": 867
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 4.248435847461224,
+        "input_tokens": 798,
+        "output_tokens": 73,
+        "total_tokens": 871
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 1.922898069024086,
+        "input_tokens": 808,
+        "output_tokens": 92,
+        "total_tokens": 900
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 18.11
+  },
+  "trace_sha256": "68f8c51cebefe54eec4993fd018a1d190c7863b3c1070ad4120cda8a69a74cd5",
+  "checkpoint_sha256": "e4997acd1668ea73997fef2710823c403429270fd931221779191635970937ee"
+}

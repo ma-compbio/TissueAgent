@@ -1,0 +1,75 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "73d5152cf257febc47d04f06efee7846069cfc84818f9a1dae3a37a454e5902c",
+  "eval_id": "spcb_d40e5f6a7b",
+  "replicate": 1,
+  "proposal_count": 8,
+  "proposal_sha256": "21cb75cd3c0ad6f38d30bf6b966b82e69e75fd6a8511d251b7cb004433fbd402",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Contamination Detection via Gene Expression Gradients",
+        "summary": "This analysis develops a computational method that leverages local gene expression gradients to flag spots with potential contamination. By analyzing abrupt transcriptional changes over short spatial distances relative to neighboring spots, the method identifies locations where RNA profiles deviate from expected tissue patterns. The approach integrates spatial coordinates with expression data to produce contamination scores and thresholds, validated using datasets that include mixtures of species-specific transcripts."
+      },
+      {
+        "title": "Boundary Integrity Analysis Using Marker Gene Specificity",
+        "summary": "In this analysis, marker gene specificity is mapped across annotated tissue boundaries to detect spots that exhibit mixed signals. The study compares the expected marker expression within well-defined anatomical regions against observed overlapping patterns, helping to identify misassignments. Statistical models are deployed to quantify the degree of mixing at the border and to adjust assignments, thus reinforcing the biological delineation of tissue domains."
+      },
+      {
+        "title": "Geometric-Expression Integrated Correction Strategy",
+        "summary": "This analysis designs an integrated framework that combines tissue geometry with gene expression profiles to identify and repair misassigned spots. By building a multi-layered model that uses both spatial proximity and expression similarity, the method detects aberrant spots and corrects them by borrowing signal from neighbors. Performance is validated on controlled mixtures with known labels and gold-standard annotated tissues, ensuring that corrections respect the underlying spatial structure."
+      },
+      {
+        "title": "Spatially Aware Deconvolution of Mixed Spots",
+        "summary": "This approach employs spatial deconvolution algorithms to resolve mixed gene expression signals found in capture regions containing adjacent cell types. Incorporating spatial adjacency, the method estimates the proportion of each cell type within a spot. To assess its effectiveness, the analysis compares marker gene recovery and specificity before and after the deconvolution process, highlighting improvements in cell-type assignments that are sensitive to spatial context."
+      },
+      {
+        "title": "Contamination Impact Quantification on Downstream Clustering",
+        "summary": "Focusing on the downstream effects of contamination, this analysis simulates various levels and patterns of spot contamination to evaluate its impact on clustering outcomes. Leveraging spatial clustering algorithms, the study quantifies how misassigned spots distort cluster purity and marker specificity. By comparing clustering results before and after applying correction strategies, the method provides statistical assessments of improvements in anatomical consistency."
+      },
+      {
+        "title": "Gold-Standard Tissue Validation of Correction Methods",
+        "summary": "This analysis uses tissues with gold-standard anatomical annotations to rigorously validate contamination correction strategies. Spatial transcriptomics data from these well-characterized samples are subjected to the correction pipeline, and the resulting spot assignments are benchmarked against the known tissue structures. Key metrics such as sensitivity, specificity, and concordance of marker expression are calculated to establish the method's reliability."
+      },
+      {
+        "title": "Local versus Distant Contamination Effects Profiling",
+        "summary": "Designed to distinguish contamination that occurs locally from that which arises from distant tissue sources, this analysis profiles spots based on the spatial extent of their aberrant signals. By mapping the expression similarity along with physical distances, the study categorizes contamination events into local and distant types. Targeted correction protocols are then optimized separately for each category, with performance measured by the recovery of distinct tissue domains."
+      },
+      {
+        "title": "Multi-Boundary Correction and Marker Recovery Analysis",
+        "summary": "This analysis concentrates on regions where multiple biological boundaries converge, a scenario prone to complex contamination patterns. A tailored correction algorithm is applied to these multi-boundary areas to adjust spot assignments based on localized geometric and expression discrepancies. Post-correction analyses focus on the recovery of distinct marker gene signatures and improved delineation of anatomical subdomains, ensuring precise resolution of overlapping tissue interfaces."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "cafbf3797487b651b0dd64fd17ddf641441a364bcccb8f6cb9f7deec95625ca1",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 8.682154917973094,
+        "input_tokens": 405,
+        "output_tokens": 1575,
+        "total_tokens": 1980
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "63cc3ebd43fe24657568da6c552175d7f309d2241167f94c4e60e3c3496f080c",
+    "overview_sha256": null,
+    "elapsed_seconds": 8.718
+  },
+  "trace_sha256": "5fb3a1d84ee4ff04e742658dbad456f4c931c118bc2541699620835d27925be0",
+  "checkpoint_sha256": "b17bef20ae71899c1621b2c174abdafe165b9213b4c08b12e4b149efecd49a86"
+}

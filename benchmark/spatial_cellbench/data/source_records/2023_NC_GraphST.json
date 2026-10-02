@@ -1,0 +1,9 @@
+{
+  "paper_id": "2023_NC_GraphST",
+  "paper_title": "Spatially informed clustering, integration, and deconvolution of spatial transcriptomics with GraphST",
+  "paper_doi": "10.1038/s41467-023-36796-3",
+  "pmcid": "PMC9977836",
+  "paper_pdf": "papers/2023_NC_GraphST/paper.pdf",
+  "code_sources": ["https://github.com/JinmiaoChenLab/GraphST"],
+  "spatial_modalities": ["Visium", "Stereo-seq", "Slide-seqV2"]
+}

@@ -1,0 +1,83 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "4dfff4ac26841e581f65e2da255d707cdd6cd2947510d9244bbe3141e3f088e3",
+  "eval_id": "spcb_b20c3d4e5f",
+  "replicate": 2,
+  "proposal_count": 10,
+  "proposal_sha256": "f4df081c50e158a927e2bfc6d23f8406bbfdbbe515dc4941bf051b3332c1a910",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Heterogeneity Quantification",
+        "summary": "This analysis will calculate a heterogeneity index for each spatial neighborhood by integrating cell-state compositions with the geometric layout of the tissue. The approach involves computing divergence metrics between local gene expression profiles and comparing them across neighboring spots, while correcting for cell density and resolution disparities. This provides a quantitative measure of local microenvironmental variation in spatial transcriptomics data."
+      },
+      {
+        "title": "Neighborhood Composition Clustering",
+        "summary": "This analysis focuses on grouping spatial neighborhoods based on similarities in cell-type composition and gene expression profiles. By applying clustering algorithms that account for biological weightings and spatial distances, the study aims to detect recurrent microenvironments and identify distinct regions within the tissue that may correlate with different biological functions or disease states."
+      },
+      {
+        "title": "Differential Neighborhood Analysis Across Conditions",
+        "summary": "In this analysis, spatial neighborhoods will be compared under different experimental or disease conditions. Statistical tests and distance metrics will be used to identify regions where local cell compositions and transcriptomic patterns significantly differ between conditions, while explicitly controlling for varying neighborhood sizes and sampling densities."
+      },
+      {
+        "title": "Ligand-Receptor Interaction Mapping in Spatial Context",
+        "summary": "This analysis will examine the spatial expression patterns of ligand and receptor pairs within and between neighboring regions. By overlaying inferred interaction networks onto the tissue's spatial map, the method will identify putative cell-cell communication events and correlate these with localized gene expression changes indicative of microenvironment-specific signaling."
+      },
+      {
+        "title": "Multi-resolution Spatial Integration",
+        "summary": "To address the challenges of differing spatial resolutions, this analysis integrates data from various spatial omics platforms. It involves re-scaling and normalizing spot-level transcriptomic data while harmonizing cell-type labels across scales, allowing for refined detection of microenvironmental features that are robust across resolution differences."
+      },
+      {
+        "title": "Spatial Transition Boundary Detection",
+        "summary": "This analysis is designed to identify boundaries of abrupt cell state transitions within spatial transcriptomics data. By applying edge-detection algorithms on smoothed expression profiles across tissue sections, the study will pinpoint regions where local changes in gene expression mark transitions between distinct microenvironments or tissue layers."
+      },
+      {
+        "title": "Cell Density Normalization and Microenvironment Scoring",
+        "summary": "Focusing on the confounding effect of variable cell densities, this analysis will implement normalization strategies to decouple cell abundance from transcriptomic heterogeneity. It will compute microenvironment scores that combine normalized expression patterns with spatial metrics, ensuring that detected heterogeneity is driven by genuine biological variability."
+      },
+      {
+        "title": "Spatial Differential Interaction Network Analysis",
+        "summary": "This method involves building interaction networks based on proximity-enhanced ligand-receptor activity. Local networks are constructed for each neighborhood, and differential analyses are performed to detect changes in connectivity patterns across the tissue. This provides insights into how spatial organization influences intercellular communication."
+      },
+      {
+        "title": "Integrative Tissue Annotation with Spatial Microenvironment Patterns",
+        "summary": "This analysis will integrate existing tissue morphology and annotation data with spatial transcriptomics profiles. By overlaying anatomical landmarks and histological segments with computed microenvironment clusters, the study aims to enhance the interpretability of spatial omics data and elucidate the functional relevance of observed transcriptomic patterns."
+      },
+      {
+        "title": "Continuous Spatial Gradient Modeling",
+        "summary": "This analysis models gene expression as continuous functions of spatial coordinates using techniques such as Gaussian processes. It quantifies local gradients and identifies smooth or sharp transitions, capturing continuous changes in cell-state compositions. The analysis is tailored to capture subtle variations across tissue regions beyond discrete clustering methods."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "4ce07e4315758c38916ddb971b099d9fc7be7c49860e2f159722b654d41e4b06",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 9.249319960013963,
+        "input_tokens": 417,
+        "output_tokens": 994,
+        "total_tokens": 1411
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "e85e33ac5cf404da6c9999fd20301a9b5f53f87c8b70e0487534b03fa8c07d76",
+    "overview_sha256": null,
+    "elapsed_seconds": 9.254
+  },
+  "trace_sha256": "5f27f15d54e0d648c15dd27611f2a22648b79d53841df098c5fd3e0b1f377b10",
+  "checkpoint_sha256": "ac898de814c7b3d3c0efc0038062d19ead301db94c816ae94b8beadc56d15176"
+}

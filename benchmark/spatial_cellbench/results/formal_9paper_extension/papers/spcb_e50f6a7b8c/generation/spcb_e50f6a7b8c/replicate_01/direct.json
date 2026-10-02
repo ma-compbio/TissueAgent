@@ -1,0 +1,75 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "ac19ddc4e29b19a5af24739aa0a196db42db16c632f2620e976cc5fd2f12cc0a",
+  "eval_id": "spcb_e50f6a7b8c",
+  "replicate": 1,
+  "proposal_count": 8,
+  "proposal_sha256": "45495d6d38f87827e14742aaf1a004e09b77d8ae52cafc651e05a0cbae7749e2",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Gene Expression Patterning",
+        "summary": "This analysis will identify genes showing spatially patterned expression by computing local spatial statistics such as Moran’s I or Geary’s C for each gene. Spots or cells will be assigned neighborhood relations based on a flexible distance metric, and significant clustering or dispersion of gene expression levels will be identified. The method integrates expression data with spatial coordinates in a reproducible workflow, and statistical thresholds will be applied to control for multiple testing across all genes."
+      },
+      {
+        "title": "Neighborhood Enrichment of Cell Types",
+        "summary": "In this analysis, cell-type annotations are integrated with spatial spatial transcriptomics data to assess whether specific cell types are enriched near others. A spatial graph is constructed to capture cell-cell proximity, and enrichment is tested using permutation methods to determine if observed neighbor compositions differ from random expectations. The workflow addresses heterogeneous definitions of cell neighbors and can be adjusted based on assay-specific resolution."
+      },
+      {
+        "title": "Integrated Tissue Segmentation Analysis",
+        "summary": "This approach combines spatial gene expression profiles with high-resolution microscopy images to segment tissue into distinct regions. Morphological features are extracted via image tiling and segmentation followed by dimensionality reduction, which guides clustering of spatial transcriptomics spots. The integration between molecular and imaging data will uncover tissue architecture and boundary delineations, providing insights into how morphology and transcription overlap."
+      },
+      {
+        "title": "Spatial Differential Gene Expression",
+        "summary": "Focusing on differences across defined tissue regions, this analysis performs differential expression testing between spatially segregated areas. Tissue segmentation is first performed using both gene expression and morphological cues. Next, statistical methods identify genes that are significantly different between regions, highlighting localized biological processes. The method allows investigation of region-specific regulatory networks in spatial transcriptomic datasets."
+      },
+      {
+        "title": "Spatial Correlation Network Analysis",
+        "summary": "This analysis builds spatial gene correlation networks to uncover modules of co-expressed genes within localized neighborhoods. Using graph theory and correlation metrics, gene pairs are linked if their expression values are highly correlated in neighboring spots. The result is an interpretable network that highlights gene modules with potential functional relevance in tissue organization and signature spatial domains."
+      },
+      {
+        "title": "Tile-based Spatial Resolution Analysis",
+        "summary": "Large images from spatial omics experiments necessitate efficient image handling. This analysis divides whole-tissue images into tiles that match the spatial transcriptomic spots. Each tile is processed for morphological feature extraction through automated segmentation and intensity measurements. The spatial transcriptomics data are then aligned with tile-derived features, enabling multi-scale analyses that bridge cellular resolution with larger tissue architecture."
+      },
+      {
+        "title": "Integrated Morphological and Transcriptomic Profiling",
+        "summary": "Aiming to assess concordance between tissue morphology and molecular structure, this analysis fuses image-derived features with gene expression data. After segmenting the image and quantifying morphological characteristics, unsupervised clustering is applied independently to both data modalities. Subsequent cluster comparison and alignment reveal regions where morphological segmentation and transcriptomic profiles are in agreement or discordance, providing insights into tissue structure-function relationships."
+      },
+      {
+        "title": "Spatial Gene Module Co-variation Analysis",
+        "summary": "This approach investigates the co-variation of gene modules across spatial locations of the tissue. By applying dimensionality reduction and clustering to the expression matrix, distinct gene modules are defined and their spatial distribution is mapped back onto the tissue. Correlation metrics are used to assess co-expression within local neighborhoods, and the impact of spatial proximity on gene regulatory networks is quantified. This helps uncover location-specific gene network dynamics."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "a973345bd4c5e47c2c4ef9fcd453e258257f3245401db2eb71177c513837bc10",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 6.387022934039123,
+        "input_tokens": 396,
+        "output_tokens": 1227,
+        "total_tokens": 1623
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "e7560ccf80100b98f9461c10641f81f7b9488ac979a29843f9c7d4005e777670",
+    "overview_sha256": null,
+    "elapsed_seconds": 6.455
+  },
+  "trace_sha256": "dd847de7483bda5021070b7af98f22c513115ab5e474583538412db890d5dba5",
+  "checkpoint_sha256": "d55fd9dbdb5fe677a828e7b890abd98312e1e7e07086a583fbd4c9c828bf189e"
+}

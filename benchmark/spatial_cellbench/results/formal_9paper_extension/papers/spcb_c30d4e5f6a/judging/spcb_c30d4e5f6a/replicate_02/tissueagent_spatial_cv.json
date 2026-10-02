@@ -1,0 +1,161 @@
+{
+  "status": "success",
+  "unit_fingerprint": "7d18c649c2857db5ba1cf1ae446ae099f2ac5ceb2b6499bce484aa20d8d20425",
+  "generation_proposal_sha256": "890da3036b75bb2b557c2de3ff47d4d960c85fb03a16f8413264d2782352e5e0",
+  "truth_sha256": "effa3066f2368be7e4147538dbfefb90cc53ec080558325bc4cd608a3ae5b5a2",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "a5d0e0d25b52945e215ccc90acbf01bcc2714dd9e392845d0953ad173e742713",
+    "0d116f1e7452e1e1e42cb27fd6dc1310def73daa06c8dde56985841515ec90d0",
+    "0d9936b85fde0b68d5d2906844272ad90748258c4b74554d38a33d74ffa4fa17",
+    "f3d12cf84de267d225fbdc7882c107357f25f179efe92cd2a12a58fdb0aebcea",
+    "1256c30ede527e4f9cdd86a9b068b0206eec911fc445bb55f752b5bdb857b7b6",
+    "da03893a60217ebbbd9e07f9cc0a8daef501d1dc2a184e8e4da805d65473c0fc",
+    "c7ae0819d3c42f6f91a50f241d10746c08d304a78bd6fa9c66c8170305870aed",
+    "99599fa255cae80f0f40e30d3d4cc6f5ad2e4b3f7e3acb6045e7cedbf7e8481f",
+    "53fcec975ef30ebb85816e80af6796242c35acfa91b0da3b8e6a02d28f7ba869"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis focuses on delineating discrete tissue domains and analyzing continuous state transitions using spatial transcriptomics data, which captures the dual objectives of segmenting coherent spatial domains and understanding trajectory dynamics across transitions. This aligns with ground-truth analysis G05, which is about segmenting spatial domains, and with ground-truth analysis G06, which discusses benchmarking domain and trajectory accuracy. The proposed use of trajectory inference to map dynamic tissue reorganization is consistent with trajectory-focused analyses in the ground-truth set."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on creating a refined spatial representation through normalization and embedding techniques to enhance subsequent analyses like domain identification and continuous gradient detection. This aligns with G01's objective to use the learned embedding and spatial coordinates for identifying domain and trajectory-associated gene-expression patterns. Both analyses involve understanding spatially varying patterns and their relation to domains and trajectories, thus having similar scientific objectives."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis is focused on uncovering complex tissue architectures by constructing spatial graphs at multiple scales to identify fine-grained and large-scale tissue domains. This matches the main scientific objective of G08, which is to segment coherent spatial domains by clustering locations into biologically meaningful domains across spatial transcriptomics technologies."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis focuses on discovering spatially varying gene expression patterns and correlating them with anatomical landmarks, which aligns well with the main scientific objective of G01: using spatial coordinates to identify gene-expression patterns associated with specific domains."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis focuses on inferring cell-cell and region-region communication through statistical evaluation of ligand-receptor interactions, specifically in spatial contexts. The main scientific objective is the inference of spatial communication and signaling. This closely matches ground-truth analysis G06, which aims to map spatially constrained ligand-receptor relationships, particularly between tumor and immune populations, and identify communication regions. Both analyses focus on the main objective of mapping and understanding spatial communication through ligand-receptor interactions."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis \"Integration of Spatial Coordinates with Pseudotime Trajectory Inference\" and the ground-truth analysis \"Generate a pseudo-spatiotemporal map\" (G01) share the same main scientific objective. Both aim to order spatial locations along a continuous trajectory or map that captures transitions or progressions between states while respecting the spatial tissue layout. This involves integrating spatial data with trajectory inference to reveal developmental or pathological gradients, similar to ordering locations along a map showing transcriptional state progression."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis focuses on rigorous quality control, validation, and visual confirmation of tissue domains, which aligns with the scientific objective of ground-truth analysis G07, 'Segment coherent spatial domains.' Both analyses aim to ensure that identified spatial domains are biologically meaningful and robust, using methods such as clustering and validation across datasets and spatial scales."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis aims to construct spatial graphs to delineate tissue domains and assess cellular communication. This aligns with the objectives of G06, which involves mapping spatially constrained communication networks, and with G07, which involves segmenting coherent spatial domains. While the exact approaches may differ, the overall goals of identifying tissue architectures and communication pathways are consistent."
+    },
+    {
+      "candidate_index": 8,
+      "match": true,
+      "reason": "The proposed analysis focuses on capturing dynamic rearrangements within tissues through trajectory analysis and connecting molecular patterns to spatial organization. This objective aligns with ground-truth analysis G03, which aims to generate a pseudo-spatiotemporal map that orders spatial locations respecting tissue geometry and captures progression between transcriptional states. Both analyses involve understanding spatiotemporal changes and transitions in tissue context."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 9,
+    "candidate_count": 9,
+    "candidate_hit_fraction": 1.0
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 9,
+    "observable_model_attempts": 9,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 2.016212936490774,
+        "input_tokens": 778,
+        "output_tokens": 107,
+        "total_tokens": 885
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.6412582024931908,
+        "input_tokens": 773,
+        "output_tokens": 82,
+        "total_tokens": 855
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.6527827493846416,
+        "input_tokens": 777,
+        "output_tokens": 68,
+        "total_tokens": 845
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.322517516091466,
+        "input_tokens": 777,
+        "output_tokens": 53,
+        "total_tokens": 830
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.7468376830220222,
+        "input_tokens": 771,
+        "output_tokens": 101,
+        "total_tokens": 872
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.6929416172206402,
+        "input_tokens": 774,
+        "output_tokens": 108,
+        "total_tokens": 882
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.5701550338417292,
+        "input_tokens": 770,
+        "output_tokens": 75,
+        "total_tokens": 845
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.3147393725812435,
+        "input_tokens": 774,
+        "output_tokens": 77,
+        "total_tokens": 851
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 1.4614673741161823,
+        "input_tokens": 782,
+        "output_tokens": 82,
+        "total_tokens": 864
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 14.422
+  },
+  "trace_sha256": "5582125e87e203efe74d32d77e1951b6156ca8e70e347c706c796a23805e363b",
+  "checkpoint_sha256": "c5f61a7e4635096402a19a0bae94c0e4c8a1f48d326bb75d796ee1eb7b567ec4"
+}

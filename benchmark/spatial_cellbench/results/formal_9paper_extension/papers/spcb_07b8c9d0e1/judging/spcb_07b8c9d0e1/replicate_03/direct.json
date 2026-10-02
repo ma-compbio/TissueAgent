@@ -1,0 +1,175 @@
+{
+  "status": "success",
+  "unit_fingerprint": "5c5d36355a04c60deea952f82e5b26292eccc7f8e6f6986b13f624fe226706ca",
+  "generation_proposal_sha256": "242fb6a8ed159fe8d1e8bbe2b1b71e6134a6b5ef4ccdd656f7a02990cf50e503",
+  "truth_sha256": "243ecf68bec765b7f41e666a1c0fdb626f29ccd3c587e9929b88be2122b5c12d",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "c884f98648df00d81a67fab91a3067463b6760ec4cdbb61f62892e0d36b163fb",
+    "a1e92505d3517283a735759a1742eb02cb7fa9a840ef57e15de671551b3138e9",
+    "6485f5cd339205e37bc928e81b7ccab872b1aed3d83280fe84bfd698cc71e65d",
+    "dba22c9101f34c75bb043c20d89a28f0acd0e1f14e71e422be317a8660f44936",
+    "a9b7b5269211dbddcd1ec34b7c6d0cc0c0f2eb00ffa2b95b54bd15b677e391f9",
+    "d24aba282f4b3a0ddf0e1868145f1edafca7c31517424beb1c1a241d6a0985c5",
+    "6a220f9faaaed619ddb5e56fed3e1cb4f12f7df1e04f71203ef422359e9a4621",
+    "93f5926c75cda8a886e96d3423b166d0bc2b52d24e83fe695ff52bda3c51c514",
+    "73d2eee8492e4e4e13acff1b3f33c2ffa5d44c18d9f765e14b4507bcaa41b5c4",
+    "8b7ed081e6ffc81d4646d194e42246f39292d692af5fa477a487e7f41ea0ac8d"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis focuses on inferring spatial trajectories with an emphasis on spatial constraints and anatomical landmarks. This closely aligns with ground-truth analysis G02, which involves validating trajectories with morphology and time course data. Both objectives deal with understanding spatial trajectories in a biologically meaningful context, using external validation (anatomical landmarks or morphology/time course data) to confirm the results."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "Both the proposed analysis and ground truth G09 focus on identifying ligand-receptor pairs that are spatially constrained and exhibit significant co-occurrence. The proposed analysis describes integrating ligand-receptor expression with spatial distance filters to enhance cell-cell communication event detection, which aligns with the objective of G09 that involves detecting significant local co-occurrence of ligand-receptor pairs using spatial constraints."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis involves integrating gene expression data with imaging and coordinate data to enhance signal detection, particularly by addressing the challenge of noise in spatial transcriptomics data. This description matches ground-truth analysis G08, which focuses on using integration of morphology, expression, and distance to impute missing or noisy spatial expression. Both analyses aim to improve the quality of spatial gene expression data by dealing with noise and missing data through multimodal integration."
+    },
+    {
+      "candidate_index": 3,
+      "match": false,
+      "reason": "The proposed analysis focuses on spatial cell-type deconvolution by integrating tissue morphology and gene expression, aiming to provide refined tissue composition maps. None of the ground-truth analyses have the main objective of spatial cell-type deconvolution or mapping tissue composition. Instead, they focus on cell communication, validating spatial trajectories, or comparing models and technologies. Therefore, the main scientific objective of the proposed analysis does not match any in the ground-truth set."
+    },
+    {
+      "candidate_index": 4,
+      "match": false,
+      "reason": "The proposed analysis aims to reconstruct a 3D tissue structure from serial sections, focusing on creating a coherent 3D map using spatial and morphological cues. None of the ground-truth analyses share this main scientific objective. They instead focus on specific spatial analysis tasks such as mapping cell interactions, identifying spatial trajectories, validating across technologies, and imputing expressions, which are distinct from reconstructing 3D structures."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis aims to study spatial dynamics of gene expression in relation to injury and repair, focusing on identifying gradients and trajectories of repair or inflammatory responses. This aligns with ground-truth analysis G04, which involves inferring a spatial trajectory after brain injury, ordering locations from an injury site and identifying transcriptional transitions. Both analyses share the objective of understanding spatial dynamics and trajectories in the context of injury and repair processes."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis aims to validate cell-cell communication by cross-referencing ligand-receptor interactions with anatomical landmarks, focusing on spatial proximity and biologically plausible interactions. This matches the main objective of G01, which is about detecting spatially constrained ligand-receptor pairs using spatial neighborhoods to identify significant co-occurrences. Both analyses have a shared goal of validating ligand-receptor interactions based on spatial data."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis focuses on improving the detection of rare cellular states in noisy spatial transcriptomics data by using a multi-scale neighborhood profiling approach. This objective involves integrating local expression averages and global spatial patterns, and using adaptive window sizes to enhance sensitivity and robustness.\n\nNone of the ground-truth analyses focus on the main objective of detecting rare cellular states through spatial pattern analysis. They target objectives like spatial trajectory inference (G01, G06), morphology-aware modeling (G02), mapping cell communication (G03, G04), visualizing signal interactions (G07), imputation of noisy data (G09), and technology validation (G10). There is no analysis directly matching the proposed method’s goal of identifying rare cellular states using spatial neighborhood profiling."
+    },
+    {
+      "candidate_index": 8,
+      "match": true,
+      "reason": "The proposed analysis \"Morphology-Assisted Inference of Gene Expression Trajectories\" matches the ground-truth analysis \"Quantify expression changes along trajectories\" (G06) because both involve inferring and analyzing changes along spatial gene expression trajectories, with the proposed method emphasizing the integration of morphology for enhanced inference."
+    },
+    {
+      "candidate_index": 9,
+      "match": true,
+      "reason": "The proposed analysis aims to validate spatial patterns using temporal imaging data, emphasizing the integration of temporal data to understand spatial-temporal dynamics. This aligns with ground-truth analysis G04, which also involves validating spatial trajectories with independent time-course and morphological data."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 7,
+    "candidate_count": 10,
+    "candidate_hit_fraction": 0.7
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 10,
+    "observable_model_attempts": 10,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 2.1252281237393618,
+        "input_tokens": 872,
+        "output_tokens": 82,
+        "total_tokens": 954
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.3760426957160234,
+        "input_tokens": 869,
+        "output_tokens": 82,
+        "total_tokens": 951
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.45784068480134,
+        "input_tokens": 863,
+        "output_tokens": 94,
+        "total_tokens": 957
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.7736148331314325,
+        "input_tokens": 873,
+        "output_tokens": 97,
+        "total_tokens": 970
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.4687479808926582,
+        "input_tokens": 863,
+        "output_tokens": 90,
+        "total_tokens": 953
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.4222592618316412,
+        "input_tokens": 863,
+        "output_tokens": 91,
+        "total_tokens": 954
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.507303636521101,
+        "input_tokens": 869,
+        "output_tokens": 86,
+        "total_tokens": 955
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 2.6370492558926344,
+        "input_tokens": 854,
+        "output_tokens": 158,
+        "total_tokens": 1012
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 1.3821531515568495,
+        "input_tokens": 866,
+        "output_tokens": 70,
+        "total_tokens": 936
+      },
+      {
+        "stage": "judge_10",
+        "kind": "structured",
+        "elapsed_seconds": 1.2658795230090618,
+        "input_tokens": 867,
+        "output_tokens": 58,
+        "total_tokens": 925
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 16.418
+  },
+  "trace_sha256": "1f5dc43ef39fcb7cf8de23ee12fd34ecbca3a00a169fd0e664c8e55ae81e8d9f",
+  "checkpoint_sha256": "071104456aa5de552b22460fd08bd40b96721ee9cbbd038dfa196f0aecbc2c03"
+}

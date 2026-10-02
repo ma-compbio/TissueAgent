@@ -1,0 +1,370 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "9ce0381bdaccb0457ba38c5eb8230591035183e1f0a3dba945943971adf8cc25",
+  "eval_id": "spcb_b20c3d4e5f",
+  "replicate": 3,
+  "proposal_count": 10,
+  "proposal_sha256": "2993b5cb02eb536c64e089a8fd33937e4f705b3262985ac212138b7516ae4974",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Enhanced Neighborhood Composition Similarity Analysis",
+        "summary": "This analysis focuses on comparing spatial neighborhoods by evaluating the cell type composition within each region. It emphasizes the use of refined similarity metrics that account for differences in neighborhood size and the continuous nature of cellular transitions. The approach highlights subtle variations that might be missed by global analyses, thereby revealing distinct patterns of tissue organization. By focusing on local microenvironmental features, the analysis provides crucial insights into functional heterogeneity and potential sites of biological activity within the tissue."
+      },
+      {
+        "title": "Recurrent Spatial Motif Discovery in Microenvironments",
+        "summary": "This proposal aims to identify recurrent patterns of microenvironments across tissue sections by clustering neighborhoods based on both cellular composition and spatial proximity. It targets the discovery of consistent spatial motifs that could signify common biological processes or pathological states. The analysis is designed to distinguish true biological patterns from confounding factors such as cell density variations. Ultimately, by uncovering these motifs, the study enhances our understanding of how similar local environments contribute to the overall tissue function."
+      },
+      {
+        "title": "Differential Microenvironment Analysis in Disease Contexts",
+        "summary": "This proposal is centered on contrasting neighborhood characteristics between healthy and diseased tissues. It examines how disease processes alter local cell compositions and signaling environments, thereby changing the overall spatial organization. The analysis emphasizes careful control of artifacts due to differing cell densities and measurement resolutions. By pinpointing regions with genuine alterations, this study offers insights into disease-specific microenvironmental shifts that could inform diagnostic or therapeutic strategies."
+      },
+      {
+        "title": "Integrative Analysis of Spatial Geometry and Dynamic Cell States",
+        "summary": "This proposal integrates spatial coordinates with dynamic changes in cell states to capture continuous gradients within tissues. It focuses on understanding how shifts in cell state compositions correlate with spatial positioning, thereby delineating zones of transition within the tissue microenvironment. The analysis is biologically informative as it reveals how local interactions and spatial context influence cellular behavior and function. By mapping these dynamic patterns, the study provides a richer picture of tissue heterogeneity and potential developmental or disease-related processes."
+      },
+      {
+        "title": "Spatial Continuum Mapping of Tissue Architecture",
+        "summary": "This analysis is designed to map gradual transitions in neighborhood compositions across complex tissue architectures. It focuses on capturing subtle shifts in cellular diversity that are characteristic of layered or continuously varying tissues. The approach is biologically informative as it differentiates genuine biological gradients from abrupt changes typically expected at tissue boundaries. By emphasizing the continuity of cellular states, the study enhances the understanding of how nuanced spatial variations contribute to overall tissue organization."
+      },
+      {
+        "title": "Identification of Ligand-Receptor Interaction Hotspots",
+        "summary": "This proposal targets the detection of spatial regions with enriched ligand-receptor interactions, contextualized within local neighborhood analyses. It seeks to link cell type compositions with signaling activities, thereby identifying hotspots of intercellular communication that may drive tissue remodeling or immune responses. By isolating these areas, the study provides insights into how molecular interactions establish and modulate the tissue microenvironment. The analysis also aims to differentiate true biological signaling enrichments from potential artifacts related to spatial resolution or cell clustering."
+      },
+      {
+        "title": "Quantitative Scoring Framework for Neighborhood Heterogeneity",
+        "summary": "This proposal introduces a comprehensive scoring scheme to quantify the heterogeneity within spatial neighborhoods. It integrates multiple aspects of tissue microenvironments, including cell density, compositional diversity, and continuity, into a single interpretable metric. The scoring framework is designed to facilitate direct comparisons across regions and conditions, thereby highlighting regions with significant deviations in local organization. Such a quantitative approach enhances the ability to systematically assess the impact of heterogeneity on overall tissue function and pathology."
+      },
+      {
+        "title": "Spatial Neighborhood Clustering with Biological Annotation Integration",
+        "summary": "This analysis aims to cluster spatial neighborhoods by leveraging both cell type profiles and geographical information, with an additional focus on aligning identified clusters with known biological annotations. It addresses the challenge of uncovering distinct microenvironments that might be associated with specific tissue functions or pathological states. The approach provides a method for classifying neighborhoods into biologically meaningful groups, which aids in the interpretation of complex spatial data. By reconciling computational clustering with empirical annotations, the study advances our understanding of tissue heterogeneity."
+      },
+      {
+        "title": "Tissue Boundary Detection via Neighborhood Transition Profiling",
+        "summary": "This proposal is designed to detect tissue boundaries by systematically identifying abrupt transitions in neighborhood composition and spatial organization. It focuses on distinguishing genuine structural changes from variations that arise due to technical artifacts like cell density differences. The analysis is biologically informative as it highlights regions where a shift in microenvironmental properties may indicate functional or pathological interfaces. By profiling these transitions, the study contributes to a refined understanding of tissue segmentation and the delineation of distinct microenvironments."
+      },
+      {
+        "title": "Multi-Scale Spatial Environment Analysis",
+        "summary": "This proposal presents a multi-scale approach to analyze spatial-omics data, examining both fine-grained and broader patterns of tissue heterogeneity. It is designed to capture local microenvironmental details as well as global structural trends that form overall tissue architecture. The analysis elucidates how variations at different spatial resolutions interact to influence cellular organization and function. By integrating observations across multiple scales, the study provides a comprehensive overview of spatial heterogeneity that advances our biological understanding of tissue systems."
+      }
+    ]
+  },
+  "trace": {
+    "native_tissueagent_graph": true,
+    "outer_graph": {
+      "node_sequence": [
+        "planner_agent",
+        "recruiter_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "evaluator_agent",
+        "evaluator_agent",
+        "evaluator_agent",
+        "evaluator_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent"
+      ],
+      "planner_format_retry_count": 0,
+      "recruiter_format_retry_count": 0,
+      "evaluator_replan_count": 0,
+      "evaluator_replan_request_count": 0
+    },
+    "task_sha256": "3815bae343f73baf0fb7d7a38c21d1baf484a2af8e5c69d84f3ac718eb8a9a2c",
+    "context_sha256": "4ce07e4315758c38916ddb971b099d9fc7be7c49860e2f159722b654d41e4b06",
+    "proposal_count": 10,
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "orchestration_model": {
+      "id": "gpt-5.1",
+      "provider": "openai",
+      "api_model": "gpt-5.1",
+      "reasoning_effort": "high"
+    },
+    "roster": [
+      "hypothesis",
+      "critic"
+    ],
+    "plan": {
+      "status": "recruited",
+      "user_request": "Coordinate domain agents to propose exactly 10 computational spatial-omics analyses likely performed in the hidden paper, using a draft–critique–synthesis workflow that outputs the final proposals as JSON.",
+      "current_step_id": 4,
+      "steps": [
+        {
+          "id": 1,
+          "title": "Draft candidate spatial-omics analyses",
+          "description": "Use the Hypothesis agent to generate an initial set of 10 candidate computational spatial-omics analysis proposals grounded in the provided background on spatial neighborhoods, microenvironments, and heterogeneity, and save them as a JSON draft at `project/outputs/hypotheses/draft_proposals.json`.",
+          "reasoning": "The Hypothesis agent is specialized for producing structured proposal files and can leverage the spatial-omics context to design plausible candidate analyses without executing them. Creating a draft proposals file provides a concrete starting point for critique and later refinement.",
+          "expected_artifacts": [
+            "project/outputs/hypotheses/draft_proposals.json"
+          ],
+          "assigned_agent": "hypothesis_agent",
+          "assignment_rationale": "The hypothesis_agent is explicitly specialized for drafting spatial paper analysis hypotheses and producing draft proposal JSON files, matching the need to create `draft_proposals.json` with 10 candidate analyses.",
+          "skills": [],
+          "status": "done",
+          "actual_outputs": [
+            "project/outputs/hypotheses/draft_proposals.json"
+          ],
+          "retry_count": 0,
+          "params": null
+        },
+        {
+          "id": 2,
+          "title": "Critique draft analysis proposals",
+          "description": "Use the Critic agent to read `project/outputs/hypotheses/draft_proposals.json` and produce a systematic evaluation at `project/outputs/hypotheses/critique.json` that comments on each draft proposal’s clarity, distinctness, feasibility, and alignment with spatial neighborhood-based heterogeneity analysis, without altering the draft file itself.",
+          "reasoning": "A dedicated Critic agent is best suited to assess the strengths, weaknesses, redundancy, and coverage of the draft proposals, ensuring they collectively capture key aspects such as neighborhood comparison, recurrent microenvironments, differential regions, and ligand–receptor patterns before final synthesis.",
+          "expected_artifacts": [
+            "project/outputs/hypotheses/critique.json"
+          ],
+          "assigned_agent": "critic_agent",
+          "assignment_rationale": "The critic_agent is dedicated to reviewing and critiquing candidate spatial analyses and is the only agent that advertises producing a critique JSON, making it the correct choice to write `critique.json` from the draft proposals.",
+          "skills": [],
+          "status": "done",
+          "actual_outputs": [
+            "project/outputs/hypotheses/critique.json"
+          ],
+          "retry_count": 0,
+          "params": null
+        },
+        {
+          "id": 3,
+          "title": "Synthesize final set of 10 proposals",
+          "description": "Use the Hypothesis agent again, now incorporating both the original background and `project/outputs/hypotheses/critique.json`, to revise and consolidate the ideas into a final JSON file at `project/outputs/hypotheses/final_proposals.json`. This file must be a JSON object whose only top-level key is `proposals`, containing exactly 10 items, each an object with only `title` and a detailed `summary` describing a distinct computational spatial-omics analysis concept (not its execution).",
+          "reasoning": "Returning to the Hypothesis agent after critique enables it to integrate feedback, remove redundancy, and sharpen each proposal while enforcing the required final structure and count. This step produces the single required deliverable that cleanly encodes the 10 best candidate analyses most consistent with the hidden paper’s likely spatial-omics focus.",
+          "expected_artifacts": [
+            "project/outputs/hypotheses/final_proposals.json"
+          ],
+          "assigned_agent": "hypothesis_agent",
+          "assignment_rationale": "The hypothesis_agent is designed for final synthesis of spatial analysis proposals into a structured JSON file, aligning with the requirement to generate the refined `final_proposals.json` containing exactly 10 proposals.",
+          "skills": [],
+          "status": "running",
+          "actual_outputs": [
+            "project/outputs/hypotheses/final_proposals.json"
+          ],
+          "retry_count": 0,
+          "params": null
+        }
+      ],
+      "last_edited_by": null,
+      "last_edited_at": null,
+      "provenance": {
+        "template_names": [],
+        "justification": "Existing templates (e.g., paper_hypothesis_generation) assume multi-step workflows with PDF analysis and dataset inventory, which conflict with the strict requirement for exactly three fixed steps and predefined output paths. A custom minimal plan better satisfies the benchmark’s constraints while still using Hypothesis and Critic agents as described."
+      }
+    },
+    "final_artifact_complete": true,
+    "plan_template_names": [],
+    "plan_step_count_compliant": true,
+    "plan_unassigned_steps": [],
+    "plan_unexpected_artifacts": [],
+    "plan_artifact_assignment_mismatches": [],
+    "manager_dispatched_all_steps": true,
+    "manager_nonfinal_steps_complete": true,
+    "manager_final_step_started": true,
+    "manager_acknowledged": false,
+    "manager_tool_calls": [
+      "next_step",
+      "read",
+      "next_step",
+      "read",
+      "next_step",
+      "read"
+    ],
+    "manager_write_count": 0,
+    "manager_write_paths": [],
+    "artifact_author_candidates": {
+      "hypotheses/final_proposals.json": [
+        "hypothesis_agent"
+      ],
+      "hypotheses/draft_proposals.json": [
+        "hypothesis_agent"
+      ],
+      "hypotheses/critique.json": [
+        "critic_agent"
+      ]
+    },
+    "intermediate_artifact_validity": {
+      "hypotheses/draft_proposals.json": true,
+      "hypotheses/critique.json": true
+    },
+    "hypothesis_invoked": true,
+    "hypothesis_validated_write_count": 2,
+    "hypothesis_draft_write_count": 1,
+    "hypothesis_final_write_count": 1,
+    "critic_validated_write_count": 1,
+    "spatial_cv_available": false,
+    "spatial_cv_recruited_steps": [],
+    "spatial_cv_invoked": false,
+    "spatial_cv_execution_success": false,
+    "spatial_cv_artifact_valid": false,
+    "spatial_cv_bundle_reason": "absent",
+    "spatial_cv_exposed_to_hypothesis": false,
+    "hypothesis_prompt_artifact_sets": [
+      [],
+      [
+        "hypotheses/critique.json",
+        "hypotheses/draft_proposals.json"
+      ]
+    ],
+    "hypothesis_prompt_exposures": [
+      {
+        "artifact_keys": [],
+        "artifact_sha256": {}
+      },
+      {
+        "artifact_keys": [
+          "hypotheses/critique.json",
+          "hypotheses/draft_proposals.json"
+        ],
+        "artifact_sha256": {
+          "hypotheses/critique.json": "fd9528a6a3f1cb24e2857c56ef3c2af780e7d03c3b86f168436c58920e43129c",
+          "hypotheses/draft_proposals.json": "bbe4bc394b2f41af009e3976404bccd0e3549c2387aba08f94deb9f4b4e7ef93"
+        }
+      }
+    ],
+    "spatial_cv_trace": null,
+    "ta_ai_calls": [
+      {
+        "name": "planner_agent",
+        "input_tokens": 3373,
+        "output_tokens": 2721,
+        "total_tokens": 6094
+      },
+      {
+        "name": "recruiter_agent",
+        "input_tokens": 2387,
+        "output_tokens": 409,
+        "total_tokens": 2796
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 2364,
+        "output_tokens": 277,
+        "total_tokens": 2641
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 2654,
+        "output_tokens": 36,
+        "total_tokens": 2690
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 3227,
+        "output_tokens": 241,
+        "total_tokens": 3468
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 5250,
+        "output_tokens": 35,
+        "total_tokens": 5285
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 5865,
+        "output_tokens": 297,
+        "total_tokens": 6162
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 6233,
+        "output_tokens": 36,
+        "total_tokens": 6269
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 6822,
+        "output_tokens": 188,
+        "total_tokens": 7010
+      },
+      {
+        "name": "evaluator_agent",
+        "input_tokens": 7742,
+        "output_tokens": 585,
+        "total_tokens": 8327
+      },
+      {
+        "name": "evaluator_agent",
+        "input_tokens": 8452,
+        "output_tokens": 113,
+        "total_tokens": 8565
+      },
+      {
+        "name": "evaluator_agent",
+        "input_tokens": 9041,
+        "output_tokens": 1306,
+        "total_tokens": 10347
+      },
+      {
+        "name": "evaluator_agent",
+        "input_tokens": 9382,
+        "output_tokens": 1209,
+        "total_tokens": 10591
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 10715,
+        "output_tokens": 945,
+        "total_tokens": 11660
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 11426,
+        "output_tokens": 21,
+        "total_tokens": 11447
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 11483,
+        "output_tokens": 1102,
+        "total_tokens": 12585
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 12620,
+        "output_tokens": 1057,
+        "total_tokens": 13677
+      },
+      {
+        "name": "hypothesis",
+        "input_tokens": 732,
+        "output_tokens": 1445,
+        "total_tokens": 2177
+      },
+      {
+        "name": "critic_agent",
+        "input_tokens": 1828,
+        "output_tokens": 2887,
+        "total_tokens": 4715
+      },
+      {
+        "name": "critic_agent",
+        "input_tokens": 5528,
+        "output_tokens": 1739,
+        "total_tokens": 7267
+      },
+      {
+        "name": "hypothesis",
+        "input_tokens": 3594,
+        "output_tokens": 1427,
+        "total_tokens": 5021
+      }
+    ],
+    "elapsed_seconds": 184.422,
+    "final_artifact_sha256": "e1ae2fbda34c638c6216f789c52f71e076447b9445ead02c87dd5e4b9be87168"
+  },
+  "trace_sha256": "7772116ebeea18ec7ba8f952653880154147102f2a6063bcb5f652f3979404bd",
+  "checkpoint_sha256": "ef117a32a004ec4110c5b46cbaa08752d46ba09b0fd4337a81736854056c64fb"
+}

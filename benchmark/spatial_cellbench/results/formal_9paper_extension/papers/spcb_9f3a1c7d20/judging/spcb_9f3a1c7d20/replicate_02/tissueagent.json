@@ -1,0 +1,175 @@
+{
+  "status": "success",
+  "unit_fingerprint": "6696c43717daad79d14cf1409eecaed70ffebad3ae2131175ded420645264804",
+  "generation_proposal_sha256": "c65b105391e4bffaa4204d54a03344076fcc9e4c1c0abb931cf0ce1c8a1a7ccd",
+  "truth_sha256": "8214cf8a5d93b39bc875bece8496694bce2a78faf058dd248d0ddb2457fab151",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "fe100b48a1aa77d76f62e9f560969d35edb17cd3aba3ee8a17bcf16ee7ec879f",
+    "c09f762f3665af4e5f94d927e46888818db3302f886194dc31ffd3f7b8591342",
+    "49ab1da4f86a1d6c4d3622b745574b9a36036714d92ac5f01219578a3c4b9b6e",
+    "25ffca7e1569044b8171e8242e693cc010417c3b2a3ddc9fedf061c048cceb03",
+    "248f0f7880486c00f6ce834964af2751d36a674f70a68fd1e24a84673fa8d268",
+    "345161d5d08029dfd16a7b4df4f1a25408e57f0ed58e96f8fa34d152e55816b3",
+    "0fa814d16e5d0ca39990d9ff546e5ce2b3973509a47a60e2c3db6b0d78d12f9f",
+    "5b379d4b34895b29e729f41bceb013853b126487eb0c3bfe2f9f6ab103bbbf6e",
+    "15bea21f06418325f630e3a0b4a5f7269508a68a7d1f4beb24d04cbec5de9129",
+    "58b19ac22f8e57331e13767e5b5f6e99ee990a5edf7d8c71a35480db37cd9176"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis aims to partition tissue into anatomically coherent domains by using a joint clustering of expression and geometry. Ground-truth analysis G01 involves clustering spots with expression and geometry to identify coherent anatomical layers in the olfactory bulb. Both analyses share the main scientific objective of identifying contiguous spatial domains/clusters that correspond to anatomical structures using expression data and tissue geometry."
+    },
+    {
+      "candidate_index": 1,
+      "match": false,
+      "reason": "The proposed analysis focuses on aligning and registering serial tissue sections using a technique that combines expression patterns and tissue geometry for robust alignment. The objective is to enable comparisons across sections and maintain anatomical continuity for downstream analysis. The ground-truth analyses include objectives such as vertical or horizontal integration of sections, three-dimensional reconstruction, domain identification, deconvolution, and spatial domain accuracy across various platforms. While some ground-truth objectives involve spatial alignment or integration in a broader sense (G01 and G05), none precisely match the specific objective of the proposed analysis, which is primarily about robust section alignment for continuity and technical correction, rather than integration or domain identification."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis aims to deconvolute mixed cell populations in spatial transcriptomics data by using spatial neighborhood information, which aligns with ground-truth analysis G09. G09 involves deconvolution of mixed spatial spots with a single-cell reference while utilizing neighborhood structure to improve the mapping. Both analyses share the objective of improving cell type proportion estimates using spatial neighborhood data."
+    },
+    {
+      "candidate_index": 3,
+      "match": false,
+      "reason": "The proposed analysis focuses on batch correction using geometric context to account for technical variability across tissue sections, aiming to preserve intrinsic spatial relationships. None of the ground-truth analyses specifically address this objective of batch correction in multi-section datasets, particularly leveraging geometric context while retaining biological signals during normalization. Each ground-truth analysis has distinct goals such as vertical integration, domain resolution, deconvolution, and others, none of which involve the main objective of correcting batch effects as described in the proposal."
+    },
+    {
+      "candidate_index": 4,
+      "match": false,
+      "reason": "The proposed analysis aims to construct a spatial neighborhood network to infer local cellular interactions based on spatial proximity and integrated transcriptomic and positional data. This approach focuses on revealing patterns of cell communication and localized signaling events. In contrast, none of the ground-truth analyses primarily focus on using a graph-based framework for analyzing local interactions through neighborhood networks to reveal spatially modulated cell communications specifically. Therefore, there is no match."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on constructing local co-expression networks and identifying spatial gene modules based on gene co-expression patterns. This analysis aims to understand how gene regulatory networks are influenced by the local tissue environment. None of the ground-truth analyses specifically aim to identify spatial gene modules based on co-expression networks within localized regions. The ground-truth analyses primarily focus on domain identification, cell-type integration, transfer of phenotypes, or mapping specific cell states, which are different scientific objectives from analyzing localized gene co-expression."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis aims to integrate single-cell RNA-seq data with spatial transcriptomics to project single-cell profiles onto spatial maps and enhance interpretability of mixed-cell resolution data. This matches the main scientific objective of the ground-truth analysis G04, which involves projecting single-cell profiles into spatial locations to estimate cell-type composition while leveraging neighborhood structure to improve mapping. Both analyses are focused on using single-cell data to enhance spatial transcriptomics interpretation through integration."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis focuses on inferring cellular signaling interactions specifically by combining spatial proximity with gene expression to model interactions among neighboring cells. This aims at understanding functional interactions driving tissue dynamics. In contrast, the ground-truth analyses primarily cover objectives related to mapping immune niches, integrating tissue sections, recovering anatomical structures or domains, and transferring or deconvolving single-cell phenotypes. None explicitly aim to model or infer signaling interactions between cells, thus no match is found."
+    },
+    {
+      "candidate_index": 8,
+      "match": false,
+      "reason": "The proposed analysis focuses on conducting differential expression analysis across anatomically defined domains using spatial segmentation to identify differentially regulated genes in distinct tissue areas. None of the ground-truth analyses match this main scientific objective. The ground-truth analyses are focused on mapping immune cell states, integrating tissue sections, resolving anatomical structures, recovering niches, identifying contiguous domains, benchmarking spatial domain accuracy, transferring phenotypes, deconvolution, building 3D representations, and comparing spatial versus expression-only integration. None of these specifically involve differential expression analysis between anatomically defined regions using spatial segmentation."
+    },
+    {
+      "candidate_index": 9,
+      "match": true,
+      "reason": "The proposed analysis focuses on joint clustering of multi-modal spatial omics data to uncover complex tissue heterogeneity and spatial domain structures. This aligns with the ground-truth analysis G05, which is about domain identification and clustering metrics across platforms. Both analyses address identifying spatial domains through clustering techniques, with an emphasis on integrating spatial data."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 4,
+    "candidate_count": 10,
+    "candidate_hit_fraction": 0.4
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 10,
+    "observable_model_attempts": 10,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.7561743799597025,
+        "input_tokens": 881,
+        "output_tokens": 80,
+        "total_tokens": 961
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 2.557082848623395,
+        "input_tokens": 882,
+        "output_tokens": 137,
+        "total_tokens": 1019
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.6681736074388027,
+        "input_tokens": 886,
+        "output_tokens": 81,
+        "total_tokens": 967
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 3.946050874888897,
+        "input_tokens": 877,
+        "output_tokens": 104,
+        "total_tokens": 981
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.644580788910389,
+        "input_tokens": 875,
+        "output_tokens": 91,
+        "total_tokens": 966
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.6622257325798273,
+        "input_tokens": 875,
+        "output_tokens": 108,
+        "total_tokens": 983
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.612267704680562,
+        "input_tokens": 879,
+        "output_tokens": 97,
+        "total_tokens": 976
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 2.0589175652712584,
+        "input_tokens": 880,
+        "output_tokens": 99,
+        "total_tokens": 979
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 2.053319949656725,
+        "input_tokens": 874,
+        "output_tokens": 121,
+        "total_tokens": 995
+      },
+      {
+        "stage": "judge_10",
+        "kind": "structured",
+        "elapsed_seconds": 2.300904395058751,
+        "input_tokens": 883,
+        "output_tokens": 73,
+        "total_tokens": 956
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 21.262
+  },
+  "trace_sha256": "6829c82ae20bc56f45ce73f9c2c6bbb563fea037a17f331538cce3656bbd0b1e",
+  "checkpoint_sha256": "594bda8e01a58e8a8e28a92d8ff880677a539c34de72341283c1815ed9c1edeb"
+}

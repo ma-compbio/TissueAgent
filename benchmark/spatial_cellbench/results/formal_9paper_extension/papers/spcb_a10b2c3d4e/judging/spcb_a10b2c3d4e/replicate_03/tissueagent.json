@@ -1,0 +1,161 @@
+{
+  "status": "success",
+  "unit_fingerprint": "35dfdfd0d2cd7742afa1c3c3eba5fb635c265ce35ba1b8d86ba22c77ffaaf855",
+  "generation_proposal_sha256": "b259b51f244e9fa2c476b52d21bd242278f7ed33ddf08c243a0a965074b3e975",
+  "truth_sha256": "6638af0911bf694e663d8347a59f926ba8438f1ebfc39bbc6c4ae884e1331d95",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "358f539b7b024282b1f943d7414fc2a627635c8f9d9fc147f19fbf1a6d953285",
+    "47a06d07da225f1ae6a9e2b5d13f8c1d6a8840e14c22c81fd7601add5b2b0053",
+    "5f2ddde8da4e5cebacf3d587d0cacb2d8f208371d3856e900c9978244f9ae884",
+    "d02fce6e84f6c5bc241665b1b2de4a4be960bb97b905eac59c0c183d7715082d",
+    "7040e743749a0fa7b55e64dd927a12a3c46e32f6586bd57ed732c028eee2c76d",
+    "aab727a2eb62d70fed7adec2fb7bc8d883200a3c230c586d617fc3cfcb7cfecb",
+    "96813d480a32efa90fead15af8a9eec349d1de035a0959d3dce1ff54822d0ad4",
+    "98916e23f004bd974b29ca02f3d2fa552095456681d7f7e2dfa754744e39a34e",
+    "29934e985ef1c4ca946a73b8e6cf522fe72e5077eefce7d152d0567d1beafd19"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis, 'Spatial Graph Embedding for Robust Domain Segmentation,' has the main scientific objective of segmenting tissues into biologically meaningful domains by leveraging graph-based embeddings of gene expression and spatial proximity. This is similar to the objective of G05, 'Map adult mouse brain domains,' which also aims to identify spatial regions (domains) in tissue sections. Both analyses focus on improving the accuracy and robustness of domain identification using spatial information; thus, they share the same main scientific objective."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on denoising spatial transcriptomics data while preserving expression boundaries. This aligns with the scientific objective of ground-truth analysis G02, which is about denoising expression while preserving boundaries and ensuring that spatial patterns and layer-specific signals are maintained. Both analyses share the main objective of improving the quality of spatial-transcriptomics data through denoising techniques that respect boundary preservation."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on refining boundary detection in heterogeneous tissues by employing edge detection on spatial gene expression maps. This aligns with the scientific objective of ground truth analysis G08, which aims to preserve boundaries while denoising expression data. Both analyses emphasize the preservation and accurate representation of biological features, specifically boundaries, in spatial-omics data."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis focuses on integrating data across multiple spatial resolutions to enable robust cross-platform comparisons. This aligns with the main scientific objective of G03, which is to compare olfactory-bulb platforms across different resolutions and assess the preservation of laminar organization. Both involve addressing challenges associated with different spatial scales and ensuring comparability or integration of data across platforms."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis focuses on reconstructing three-dimensional tissue architecture from consecutive sections, which aligns with the spatial alignment and integration of spatial data across sections. This matches the ground-truth analysis G05, which involves constructing a three-dimensional spatial network to connect consecutive sections with 3D coordinates."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis involves assessing domain segmentation accuracy through simulations, which aligns with the scientific objective of G08: \"Benchmark domain identification on simulated data.\" Both analyses focus on using simulated data to evaluate the accuracy of domain identification methods."
+    },
+    {
+      "candidate_index": 6,
+      "match": false,
+      "reason": "The proposed analysis focuses on developing a dimensionality reduction technique that incorporates spatial context and gene expression to enhance data visualization and support analyses like clustering and domain recovery. The key scientific objective is not the identification or extraction of specific spatial domains or regions, but rather the enhancement of data representation through dimensionality reduction.\n\nIn contrast, the ground-truth analyses are primarily focused on identifying or analyzing specific spatial domains, regions, or trajectories (G01, G03, G06, G07, G08) or on specific technical benchmarks and comparisons (G02, G04, G05, G09). As such, there is no direct match in main scientific objectives between the proposed analysis and any of the ground-truth analyses."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis focuses on deconvolution of cellular mixtures in spatially heterogeneous tissues, resolving distinct cellular populations from overlapping transcriptomic signals. None of the ground-truth analyses explicitly aim to deconvolve overlapping signals to distinguish cellular populations. Instead, they focus on tasks such as spatial domain identification, mapping specific brain regions, recovering three-dimensional structures, denoising, or analyzing spatial trajectories. Hence, none of these match the specific objective of deconvolving cellular mixtures as described in the proposal."
+    },
+    {
+      "candidate_index": 8,
+      "match": false,
+      "reason": "The proposed analysis focuses on normalization and bias correction for integrating data from different spatial transcriptomic platforms to eliminate artifacts and facilitate cross-dataset comparisons. None of the ground-truth analyses have a main scientific objective centered on normalization or bias correction for cross-platform data integration. The ground-truth analyses are primarily concerned with spatial domain identification, trajectory inference, and reconstruction of spatial expression profiles, which are distinct objectives from the proposed focus on cross-platform normalization."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 6,
+    "candidate_count": 9,
+    "candidate_hit_fraction": 0.6666666666666666
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 9,
+    "observable_model_attempts": 9,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.6500792279839516,
+        "input_tokens": 782,
+        "output_tokens": 106,
+        "total_tokens": 888
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 2.524369664490223,
+        "input_tokens": 791,
+        "output_tokens": 87,
+        "total_tokens": 878
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.999812375754118,
+        "input_tokens": 785,
+        "output_tokens": 75,
+        "total_tokens": 860
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 2.3163287360221148,
+        "input_tokens": 787,
+        "output_tokens": 79,
+        "total_tokens": 866
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.3503037560731173,
+        "input_tokens": 788,
+        "output_tokens": 65,
+        "total_tokens": 853
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.7191426809877157,
+        "input_tokens": 784,
+        "output_tokens": 53,
+        "total_tokens": 837
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 2.073696356266737,
+        "input_tokens": 779,
+        "output_tokens": 154,
+        "total_tokens": 933
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 2.113645516335964,
+        "input_tokens": 792,
+        "output_tokens": 107,
+        "total_tokens": 899
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 2.785249864682555,
+        "input_tokens": 786,
+        "output_tokens": 96,
+        "total_tokens": 882
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 18.536
+  },
+  "trace_sha256": "595452b92f019df55d0292a719bab5a713023ce8ab8cc181ffaed4f3bfb9216b",
+  "checkpoint_sha256": "15bcb7bfe4d858253c133a35d465cc2139ca76bfe34509e8f2fd9c3fb2e74b6d"
+}

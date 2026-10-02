@@ -1,0 +1,416 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "2c22495c9ab0dff3771f17b7c366eba3f3ed9717b73aafc859ce040430962635",
+  "eval_id": "spcb_18c9d0e1f2",
+  "replicate": 2,
+  "proposal_count": 9,
+  "proposal_sha256": "b56569f8a165ad1bf96ab487178817acf84e064c3d4f3a517bb9e6969c2e7483",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Density-Aware Spatial Expression Modeling",
+        "summary": "This analysis integrates normalization for cell density with rigorous statistical testing to distinguish true spatial heterogeneity from artifacts induced by uneven cell distributions. It computationally adjusts gene expression data using density correction techniques and then applies spatial significance tests to quantify the robustness of observed gene patterns. By leveraging both normalization and hypothesis testing, the method provides an unbiased assessment of spatial gene organization across diverse tissue regions."
+      },
+      {
+        "title": "Graph-Based Gene Co-expression and Communication Network Analysis",
+        "summary": "This proposal constructs spatial graphs where cells are represented as nodes and physical adjacencies as edges to explore gene co-expression patterns and infer potential cell-cell communication. It integrates density correction methods to ensure that signals are not due to local crowding but reflect genuine molecular interactions. The analysis clusters genes within these networks to identify communication modules and validate that observed interactions are statistically significant and biologically relevant."
+      },
+      {
+        "title": "Multi-Scale Spatial Pattern Recognition with Density Correction",
+        "summary": "This analysis employs multi-scale computational techniques to detect gene expression patterns at both fine and broad spatial resolutions. By incorporating density correction strategies, the method prevents misinterpretation of density-induced clusters as biologically significant patterns. It systematically analyzes spatial data from serial sections or volumetric datasets, ensuring compatibility across various spatial scales and measurement technologies."
+      },
+      {
+        "title": "Adjacency-Informed Gene Clustering via Density-Normalized Metrics",
+        "summary": "Focusing on spatial adjacency, this proposal uses clustering algorithms that incorporate density-normalized distance metrics to group genes with similar spatial expression profiles. It explicitly accounts for local cell density variations so that clustering reflects true biological interactions rather than artifacts of cell crowding. The method is designed to uncover coordinated gene modules and provide insights into tissue organization through adjacency-based grouping."
+      },
+      {
+        "title": "3D Voxel Reconstruction for Spatial Gene Analysis",
+        "summary": "This proposal extends traditional 2D spatial analyses into the third dimension by reconstructing tissue voxels from planar sections or volumetric data. It incorporates density correction to mitigate biases arising from variable cell counts across slices or regions. Through computational modeling of 3D spatial adjacencies, the method enables comprehensive analysis of tissue organization and spatial gene expression in a volumetric context."
+      },
+      {
+        "title": "Integrated Multi-Platform Spatial Transcriptomics Analysis",
+        "summary": "This analysis develops a computational framework to merge data from high-resolution imaging assays and broader capture-based technologies into a unified spatial expression map. It addresses inherent differences in spatial resolution and cell density across platforms by applying normalization and alignment techniques. The integrated approach facilitates robust cross-technology validation of spatial patterns and ensures that biological insights are consistently captured from diverse datasets."
+      },
+      {
+        "title": "Spatial Communication Signal Inference via Complementary Expression",
+        "summary": "Targeting cell-cell communication, this proposal infers signaling networks by evaluating complementary gene expression profiles between neighboring cells. The method leverages spatial adjacency data and incorporates density correction to isolate true interactions from artifacts of cell crowding. Through statistical modeling and network analysis, it identifies significant communication pathways that drive coordinated molecular responses in the tissue."
+      },
+      {
+        "title": "Density-Corrected Spatial Variability Testing",
+        "summary": "This analysis implements a statistical framework that explicitly integrates local cell density measurements to test for spatial variability in gene expression. By adjusting significance metrics for density-related biases, it robustly distinguishes true spatial heterogeneity from technical artifacts. The method is applicable across different tissue regions and experimental setups, ensuring that spatial patterns reflect biological organization rather than density-induced noise."
+      },
+      {
+        "title": "Layer-Specific Adjacency Analysis of Spatial Patterns",
+        "summary": "This proposal examines gene expression within anatomically defined tissue layers by combining layer segmentation with neighborhood-based adjacency analysis. It normalizes for local cell density variations within each layer to accurately detect layer-specific organizational features. The method provides detailed computational insights into how spatial arrangement and cell proximity contribute to the distinct molecular signatures in different tissue regions."
+      }
+    ]
+  },
+  "trace": {
+    "native_tissueagent_graph": true,
+    "outer_graph": {
+      "node_sequence": [
+        "planner_agent",
+        "planner_agent",
+        "recruiter_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "evaluator_agent",
+        "evaluator_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent"
+      ],
+      "planner_format_retry_count": 0,
+      "recruiter_format_retry_count": 0,
+      "evaluator_replan_count": 0,
+      "evaluator_replan_request_count": 0
+    },
+    "task_sha256": "9168889890a2f710f94649f77ce8fcec3c495cf7ce818bc01449a60639a906e5",
+    "context_sha256": "7060bfc722d8571ac5932666ba137fe83e5d0aeb1ece167bfb8e1bcd792ea0b1",
+    "proposal_count": 9,
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "orchestration_model": {
+      "id": "gpt-5.1",
+      "provider": "openai",
+      "api_model": "gpt-5.1",
+      "reasoning_effort": "high"
+    },
+    "roster": [
+      "hypothesis",
+      "critic"
+    ],
+    "plan": {
+      "status": "recruited",
+      "user_request": "Coordinate domain agents to propose exactly nine computational spatial-omics analyses most likely performed in the hidden paper, using a draft–critique–synthesis workflow and producing final_proposals.json.",
+      "current_step_id": 4,
+      "steps": [
+        {
+          "id": 1,
+          "title": "Draft nine spatial-omics analysis proposals",
+          "description": "Use the Hypothesis-style agent to generate an initial set of exactly nine distinct computational spatial-omics analysis proposals, guided only by the PUBLIC BACKGROUND and the paper’s stated goals (spatial organization, density-aware modeling, adjacency-based reasoning). Save them as a JSON draft at project/outputs/hypotheses/draft_proposals.json.",
+          "reasoning": "A dedicated hypothesis-generation agent is best suited to translate the conceptual requirements (spatially organized genes, shared spatial patterns, cross-cell-type communication, density normalization, 2D/3D support) into nine coherent, high-level analysis proposals without executing them. Writing this draft file creates a concrete artifact that subsequent critic and synthesis steps can condition on.",
+          "expected_artifacts": [
+            "project/outputs/hypotheses/draft_proposals.json"
+          ],
+          "assigned_agent": "hypothesis_agent",
+          "assignment_rationale": "This step requires drafting exactly nine spatial analysis proposals into draft_proposals.json, which matches the hypothesis_agent’s role as the generator of initial proposal sets for spatial papers.",
+          "skills": [],
+          "status": "done",
+          "actual_outputs": [
+            "project/outputs/hypotheses/draft_proposals.json"
+          ],
+          "retry_count": 0,
+          "params": null
+        },
+        {
+          "id": 2,
+          "title": "Critique draft proposals for quality and coverage",
+          "description": "Use the Critic-style agent to read project/outputs/hypotheses/draft_proposals.json and produce a structured critique that evaluates each draft proposal for plausibility, alignment with the PUBLIC BACKGROUND, distinctness from the others, and coverage of key themes (spatial heterogeneity vs. density, adjacency-based methods, multi-scale and multi-technology compatibility). Save this assessment to project/outputs/hypotheses/critique.json.",
+          "reasoning": "A separate critic agent helps identify gaps (e.g., missing aspects of density normalization or 3D/serial-sections handling), redundancies, and vague or impractical ideas in the draft set. Persisting the critique as its own artifact ensures that the final synthesis step can systematically refine the proposals based on explicit feedback, while preserving the original draft unchanged.",
+          "expected_artifacts": [
+            "project/outputs/hypotheses/critique.json"
+          ],
+          "assigned_agent": "critic_agent",
+          "assignment_rationale": "This step is a pure review/critique of the draft proposals and must write only a critique.json file, which is precisely the specialized function of the critic_agent.",
+          "skills": [],
+          "status": "done",
+          "actual_outputs": [
+            "project/outputs/hypotheses/critique.json"
+          ],
+          "retry_count": 0,
+          "params": null
+        },
+        {
+          "id": 3,
+          "title": "Synthesize final set of nine proposals",
+          "description": "Use the Hypothesis-style agent again to read project/outputs/hypotheses/draft_proposals.json and project/outputs/hypotheses/critique.json, then revise, merge, or replace draft ideas as needed to produce a final, coherent set of exactly nine computational spatial-omics analysis proposals that best match the likely contents of the hidden paper. Write project/outputs/hypotheses/final_proposals.json as a JSON object whose only top-level key is \"proposals\", mapped to an array of nine items where each item contains only a \"title\" and a detailed \"summary\" of the proposed analysis; do not execute any of the analyses.",
+          "reasoning": "A synthesis pass informed by the explicit critique enables construction of a balanced, non-redundant proposal set that collectively addresses spatially organized genes, shared spatial patterns, and cross-cell-type communication under uneven density and varying geometries. Constraining the final artifact to the specified JSON schema and exactly nine items satisfies the benchmark requirements while clearly separating proposal generation from any downstream execution.",
+          "expected_artifacts": [
+            "project/outputs/hypotheses/final_proposals.json"
+          ],
+          "assigned_agent": "hypothesis_agent",
+          "assignment_rationale": "This synthesis step must transform the draft plus critique into a final set of nine proposals in final_proposals.json, aligning with the hypothesis_agent’s advertised capability for final proposal synthesis.",
+          "skills": [],
+          "status": "running",
+          "actual_outputs": [
+            "project/outputs/hypotheses/final_proposals.json"
+          ],
+          "retry_count": 0,
+          "params": null
+        }
+      ],
+      "last_edited_by": null,
+      "last_edited_at": null,
+      "provenance": {
+        "template_names": [
+          "paper_hypothesis_generation"
+        ],
+        "justification": "The plan adapts the draft–critic–revise structure from the paper_hypothesis_generation template but strips away PDF and dataset handling, and changes the outputs to proposal-focused JSON files (draft_proposals.json, critique.json, final_proposals.json). No template is used as a candidate analysis itself; instead, the template only informs the high-level workflow of hypothesis drafting, critical review, and final synthesis."
+      }
+    },
+    "final_artifact_complete": true,
+    "plan_template_names": [
+      "paper_hypothesis_generation"
+    ],
+    "plan_step_count_compliant": true,
+    "plan_unassigned_steps": [],
+    "plan_unexpected_artifacts": [],
+    "plan_artifact_assignment_mismatches": [],
+    "manager_dispatched_all_steps": true,
+    "manager_nonfinal_steps_complete": true,
+    "manager_final_step_started": true,
+    "manager_acknowledged": false,
+    "manager_tool_calls": [
+      "next_step",
+      "read",
+      "read",
+      "grep",
+      "next_step",
+      "read",
+      "read",
+      "next_step",
+      "read",
+      "read",
+      "grep"
+    ],
+    "manager_write_count": 0,
+    "manager_write_paths": [],
+    "artifact_author_candidates": {
+      "hypotheses/final_proposals.json": [
+        "hypothesis_agent"
+      ],
+      "hypotheses/draft_proposals.json": [
+        "hypothesis_agent"
+      ],
+      "hypotheses/critique.json": [
+        "critic_agent"
+      ]
+    },
+    "intermediate_artifact_validity": {
+      "hypotheses/draft_proposals.json": true,
+      "hypotheses/critique.json": true
+    },
+    "hypothesis_invoked": true,
+    "hypothesis_validated_write_count": 2,
+    "hypothesis_draft_write_count": 1,
+    "hypothesis_final_write_count": 1,
+    "critic_validated_write_count": 1,
+    "spatial_cv_available": false,
+    "spatial_cv_recruited_steps": [],
+    "spatial_cv_invoked": false,
+    "spatial_cv_execution_success": false,
+    "spatial_cv_artifact_valid": false,
+    "spatial_cv_bundle_reason": "absent",
+    "spatial_cv_exposed_to_hypothesis": false,
+    "hypothesis_prompt_artifact_sets": [
+      [],
+      [
+        "hypotheses/critique.json",
+        "hypotheses/draft_proposals.json"
+      ]
+    ],
+    "hypothesis_prompt_exposures": [
+      {
+        "artifact_keys": [],
+        "artifact_sha256": {}
+      },
+      {
+        "artifact_keys": [
+          "hypotheses/critique.json",
+          "hypotheses/draft_proposals.json"
+        ],
+        "artifact_sha256": {
+          "hypotheses/critique.json": "82891db4185a9fb238d697a18c5a25e659b7cb47dc1c9b308b56f05399d77110",
+          "hypotheses/draft_proposals.json": "8760e640e64048d49ced463b48dcb39c29c92dbcd9f021d989b3bc36ea6d5e9b"
+        }
+      }
+    ],
+    "spatial_cv_trace": null,
+    "ta_ai_calls": [
+      {
+        "name": "planner_agent",
+        "input_tokens": 3358,
+        "output_tokens": 2041,
+        "total_tokens": 5399
+      },
+      {
+        "name": "planner_agent",
+        "input_tokens": 3924,
+        "output_tokens": 3339,
+        "total_tokens": 7263
+      },
+      {
+        "name": "recruiter_agent",
+        "input_tokens": 2533,
+        "output_tokens": 474,
+        "total_tokens": 3007
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 2423,
+        "output_tokens": 487,
+        "total_tokens": 2910
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 2798,
+        "output_tokens": 36,
+        "total_tokens": 2834
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 3394,
+        "output_tokens": 90,
+        "total_tokens": 3484
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 3986,
+        "output_tokens": 194,
+        "total_tokens": 4180
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 4283,
+        "output_tokens": 393,
+        "total_tokens": 4676
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 6018,
+        "output_tokens": 273,
+        "total_tokens": 6291
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 7353,
+        "output_tokens": 441,
+        "total_tokens": 7794
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 7865,
+        "output_tokens": 36,
+        "total_tokens": 7901
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 8436,
+        "output_tokens": 89,
+        "total_tokens": 8525
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 9003,
+        "output_tokens": 103,
+        "total_tokens": 9106
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 9320,
+        "output_tokens": 273,
+        "total_tokens": 9593
+      },
+      {
+        "name": "evaluator_agent",
+        "input_tokens": 10395,
+        "output_tokens": 217,
+        "total_tokens": 10612
+      },
+      {
+        "name": "evaluator_agent",
+        "input_tokens": 10966,
+        "output_tokens": 2451,
+        "total_tokens": 13417
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 12722,
+        "output_tokens": 487,
+        "total_tokens": 13209
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 13479,
+        "output_tokens": 17,
+        "total_tokens": 13496
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 13532,
+        "output_tokens": 2498,
+        "total_tokens": 16030
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 14859,
+        "output_tokens": 721,
+        "total_tokens": 15580
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 15431,
+        "output_tokens": 453,
+        "total_tokens": 15884
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 16003,
+        "output_tokens": 1683,
+        "total_tokens": 17686
+      },
+      {
+        "name": "hypothesis",
+        "input_tokens": 789,
+        "output_tokens": 1160,
+        "total_tokens": 1949
+      },
+      {
+        "name": "critic_agent",
+        "input_tokens": 1647,
+        "output_tokens": 2089,
+        "total_tokens": 3736
+      },
+      {
+        "name": "critic_agent",
+        "input_tokens": 3239,
+        "output_tokens": 1463,
+        "total_tokens": 4702
+      },
+      {
+        "name": "critic_agent",
+        "input_tokens": 6052,
+        "output_tokens": 1336,
+        "total_tokens": 7388
+      },
+      {
+        "name": "hypothesis",
+        "input_tokens": 3079,
+        "output_tokens": 1783,
+        "total_tokens": 4862
+      }
+    ],
+    "elapsed_seconds": 361.356,
+    "final_artifact_sha256": "455ac96600070a04be05740c921bcc413a85fa1f03a37966d7b4f6aa46ac6317"
+  },
+  "trace_sha256": "636c0301245021c985236d1411bcf8fdf242b24dccda2342da7cbbb3e389c6df",
+  "checkpoint_sha256": "2e4680d3db45e7be412e14a2f637ff07eef942ebab00a3acf2f963f4e76f52a3"
+}

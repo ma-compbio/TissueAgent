@@ -37,7 +37,7 @@ noncompliant run fails generation and is not silently treated as TA+CV.
 Each arm must have replicate IDs 1, 2, and 3 for a paper before that paper enters a contrast.
 Replicates are averaged within paper, the paper is the statistical unit, and uncertainty is a
 10,000-sample paired paper bootstrap with seed 20260720. Missing or failed units are not imputed.
-The eleven method-heavy papers form a descriptive benchmark; intervals are uncertainty summaries, not
+The twenty method-heavy papers form a descriptive benchmark; intervals are uncertainty summaries, not
 a basis for broad method-superiority claims.
 
 ## Protocol boundaries

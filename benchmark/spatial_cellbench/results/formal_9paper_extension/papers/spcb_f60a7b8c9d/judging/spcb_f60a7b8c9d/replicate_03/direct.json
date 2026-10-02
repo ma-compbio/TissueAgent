@@ -1,0 +1,147 @@
+{
+  "status": "success",
+  "unit_fingerprint": "596c0647aba17ea380c21b296545dab19fdd763d33e91efce4ed7c71e437fc96",
+  "generation_proposal_sha256": "a2c7eb365842fc938225a83722b859f3acb275f73f1e959a83dbd4fa0b7f53b6",
+  "truth_sha256": "0cc0e081cf825fcb98be7c77456cfd2c98194617a0e9c1598f6eac179864b05c",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "9a11de9e27c828d530a27dd40decb208df698fea560050b5a8bbf9a141bb9a7e",
+    "e67325c02280e61c8e648fe36595f16fe6b7d587c2dc055f14553aefb9275ca3",
+    "940d8fcb82101fa1379a9c289b12c8104ce57fd83b04ebd389c79412697b8712",
+    "b4c9a867aa14b5627ba7dcb984ab2403a4e85f3de4a7bb849216ee607d171358",
+    "fb266e72ca914b39edf630b5ad788366ac92f6f3c0be0cd8f04a2f1fef0bb08a",
+    "4c47a50fc9771b1593e1ddc5064b58b5dfb1e6414fa327173e9f5e5768eb7403",
+    "397a230f595e705b0bf26001a7a02d6d010ed33b1fea6c93534d7df73acac156",
+    "ebd05bf124e1959c0e0a9b946dba677cfeaf44c572c3f3758608efc88b41d952"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": false,
+      "reason": "The proposed analysis focuses on identifying biologically meaningful domains by integrating expression data with spatial coordinates, using clustering and spatial regularization techniques. It emphasizes the discovery of boundaries between distinct cell populations and spatial domain detection. None of the ground-truth analyses explicitly targets the identification of spatial domains or boundaries in tissue the same way the proposed analysis does. Ground-truth analysis G05, for instance, involves identifying spatially distinct subregions, but within the specific context of breast-tumor pathology, which is not the main objective of the proposed analysis. Therefore, none of the ground-truth analyses directly match the proposed analysis's main scientific objective."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis, \"Spatial Trajectory Inference,\" aims to capture developmental or disease progression trajectories across spatially organized regions by integrating latent representations with spatial coordinates. This matches the ground-truth analysis \"Infer spatial trajectories (G01),\" which also involves using latent representations to order spots along trajectories and evaluate coherent tissue transitions. Both analyses share the same main scientific objective of inferring spatial trajectories and understanding transitions across spatial regions."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis 'Computational Batch Correction Using Spatial Anchoring' shares its main scientific objective with ground-truth analysis G02, titled 'Correct batch effects between spatial samples'. Both analyses focus on correcting batch effects in spatial transcriptomics data while preserving relevant biological spatial structures. The proposed approach uses spatial anchoring to address batch inconsistencies, which aligns with the scientific goal of removing technical variation and maintaining tissue-specific context described in G02."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis 'Spatial Noise Denoising and Signal Recovery' focuses on developing methods to denoise spatial gene expression data and recover obscured gene expression signals, closely aligning with the ground-truth analysis 'G03' which aims to 'Denoise sparse spatial expression' and assess the recovery of known molecular patterns. Both analyses share the main scientific objective of denoising spatial expression data and evaluating the recovery of meaningful signals."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis aims to learn a compact latent space that retains gene expression patterns and fine-grained spatial structure, using techniques that include explicit spatial regularization. One of the ground-truth analyses, G08, also focuses on representation learning, specifically benchmarking representation quality across methods by comparing clustering accuracy and latent representations. Both analyses prioritize the quality and applicability of learned representations, suggesting a match in their main scientific objectives."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis aligns with ground-truth analysis G07's objective of reconstructing sparse gene expression data. Both involve the task of denoising or recovering missing gene expression using spatial information, although the proposed analysis emphasizes dropout recovery rather than general denoising. The objectives are sufficiently similar as both aim at improving data quality by addressing measurement deficiencies in spatial gene expression."
+    },
+    {
+      "candidate_index": 6,
+      "match": false,
+      "reason": "The proposed analysis focuses on integrating spatial coordinates into clustering transcriptomic data to improve resolution by balancing gene expression differences and spatial distances. This is primarily about refining clustering fidelity using spatial information. None of the ground-truth analyses explicitly match this aim. Closest is G03, which involves comparing clustering accuracy but does not explicitly blend spatial coordinates into the clustering method. Instead, G03 evaluates existing methods rather than proposing a new joint clustering technique that incorporates spatial data."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis focuses on constructing spatial neighborhood graphs to assess relationships and identify hubs and communities in tissue architecture, using network theory metrics. None of the ground-truth analyses explicitly focus on graph construction or network analysis as the primary objective. The ground-truth analyses deal with specific application goals like clustering cortical layers, integrating spatial datasets, mapping tumor subregions, or evaluating scalability. Therefore, there is no match in terms of the main scientific objective between the proposed analysis and the ground-truth set provided."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 5,
+    "candidate_count": 8,
+    "candidate_hit_fraction": 0.625
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 8,
+    "observable_model_attempts": 8,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 2.011517519131303,
+        "input_tokens": 730,
+        "output_tokens": 135,
+        "total_tokens": 865
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.4079469665884972,
+        "input_tokens": 727,
+        "output_tokens": 93,
+        "total_tokens": 820
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.492730025202036,
+        "input_tokens": 730,
+        "output_tokens": 95,
+        "total_tokens": 825
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.5732242073863745,
+        "input_tokens": 732,
+        "output_tokens": 94,
+        "total_tokens": 826
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.6100219655781984,
+        "input_tokens": 735,
+        "output_tokens": 90,
+        "total_tokens": 825
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.3926503378897905,
+        "input_tokens": 728,
+        "output_tokens": 81,
+        "total_tokens": 809
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.7098630592226982,
+        "input_tokens": 732,
+        "output_tokens": 99,
+        "total_tokens": 831
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.8698970600962639,
+        "input_tokens": 731,
+        "output_tokens": 107,
+        "total_tokens": 838
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 13.071
+  },
+  "trace_sha256": "0345894376c1d4c93504c48ca56faf3594a8ad94bdf102364129b353e9bd7669",
+  "checkpoint_sha256": "afa889138bbcaff797194f4f22dbe8dbf878fead8dbc8f812c96042af866dc3f"
+}

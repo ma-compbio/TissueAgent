@@ -1,0 +1,9 @@
+{
+  "paper_id": "2024_GM_SEDR",
+  "paper_title": "Unsupervised spatially embedded deep representation of spatial transcriptomics",
+  "paper_doi": "10.1186/s13073-024-01283-x",
+  "pmcid": "PMC10790257",
+  "paper_pdf": "papers/2024_GM_SEDR/paper.pdf",
+  "code_sources": ["https://github.com/JinmiaoChenLab/SEDR"],
+  "spatial_modalities": ["Visium", "Stereo-seq", "Slide-seq"]
+}

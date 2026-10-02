@@ -1,0 +1,83 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "fbbe70b5bb3f3728a7827ba2db7871c346e6a63f2fa83ee47544ff9a8d39355d",
+  "eval_id": "spcb_9f3a1c7d20",
+  "replicate": 3,
+  "proposal_count": 10,
+  "proposal_sha256": "14670d64961362ebb56febe1ba93cb17847c812fe0863afecd282cac668ee5c6",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Domain Segmentation",
+        "summary": "This analysis focuses on identifying contiguous spatial domains within tissue sections by clustering spots or cells based on gene expression while integrating coordinates as spatial features. The approach combines dimension reduction techniques that preserve spatial autocorrelation, and region-growing algorithms to demarcate anatomical or functional boundaries, ensuring that clusters reflect genuine tissue structures instead of arbitrary partitions."
+      },
+      {
+        "title": "Serial Section Alignment",
+        "summary": "This analysis involves aligning multiple tissue sections from the same specimen to reconstruct a 3D view of gene expression. It employs image registration techniques combined with spatial transcriptomics profiles, aligning both morphological landmarks and gene expression patterns. The method accounts for distortions and batch effects across sections while preserving local tissue architecture."
+      },
+      {
+        "title": "Neighborhood-Aware Cell Type Deconvolution",
+        "summary": "This project estimates the contribution of different cell types within mixed capture spots by incorporating spatial neighborhood information. By blending reference single-cell signatures with spatially-aware models, this analysis minimizes misclassification, ensuring that inferred cell types are consistent with neighboring spot identities and intrinsic tissue organization."
+      },
+      {
+        "title": "Graph-based Spatial Continuity Mapping",
+        "summary": "This analysis employs graph modeling where nodes represent spatial spots and edges connect proximate spots. The method leverages graph convolutional networks to learn latent representations that capture both gene expression profiles and spatial adjacency. This approach identifies subtle gradients and transitions in tissue structure that standard clustering may overlook."
+      },
+      {
+        "title": "Multi-Modal Integration of Sequencing and Imaging Data",
+        "summary": "This analysis bridges high-resolution imaging-based spatial transcriptomics with broad gene coverage from sequencing-based platforms. The integration uses data fusion techniques to align imaging-derived features with sequencing profiles, ensuring that the strengths of both methods are harnessed to capture fine spatial details and global expression trends."
+      },
+      {
+        "title": "Batch Correction for Spatial Serial Sections",
+        "summary": "This analysis focuses on the removal of technical artifacts induced by batch effects while preserving authentic spatial gradients. Methods such as mutual nearest neighbors and spatially constrained correction algorithms are applied across tissue slices. The approach is carefully tuned not to overcorrect and erase genuine biological variation between adjacent areas."
+      },
+      {
+        "title": "Histology-Guided Spatial Domain Refinement",
+        "summary": "In this analysis, histological images serve as an additional layer of information to guide the segmentation of spatial domains. By overlaying gene expression data with stained tissue features, the method refines clustering outputs, ensuring that the identified domains have both molecular and morphological relevance, thereby improving the interpretability of spatial patterns."
+      },
+      {
+        "title": "Transfer Learning from Single-Cell to Spatial Context",
+        "summary": "Leveraging high-resolution single-cell datasets, this analysis transfers cell type information onto the spatial transcriptomics data. It uses a neural network framework to predict cell state probabilities for spatial spots while preserving local spatial continuity. The resulting mapped cell types are validated against known tissue architecture and histological context."
+      },
+      {
+        "title": "Spatially Constrained Differential Expression",
+        "summary": "This project investigates differential gene expression across spatial domains while accounting for local tissue structure. A statistical framework is implemented that partitions the tissue into distinct domains and then performs within-domain comparisons, ensuring that differential signals are not artifacts of spatial heterogeneity or technical noise."
+      },
+      {
+        "title": "Multi-scale Analysis of Tissue Microenvironments",
+        "summary": "This analysis deciphers gene expression patterns at multiple spatial scales, from fine-grained cellular niches to broader tissue-level domains. By employing scale-adaptive clustering and spatial smoothing techniques, the method identifies how local cell states integrate into larger organizational patterns, providing insight into both microenvironmental interactions and overall tissue function."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 5.793535158969462,
+        "input_tokens": 430,
+        "output_tokens": 1069,
+        "total_tokens": 1499
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "02c0478e443c69db5b38845c57724979c4c2e70b1b9ab74b167d5d3fd16a10ac",
+    "overview_sha256": null,
+    "elapsed_seconds": 5.799
+  },
+  "trace_sha256": "4464d3d4ff378032ca4a216861fc753529d96fa8878f22e4c081d03957f1a63a",
+  "checkpoint_sha256": "db07a53511d4e963c621b8a4fdfab25e472922591c1b4a5babe7cc6d5eddd610"
+}

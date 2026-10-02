@@ -1,0 +1,395 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "e8e87f04326ce6bb3b24e5747cd879aa0ae32fe2a841e75bc5172f788a350d54",
+  "eval_id": "spcb_d40e5f6a7b",
+  "replicate": 2,
+  "proposal_count": 8,
+  "proposal_sha256": "ebbe991c3afac9e760f62cd9eeadb6c7d5a474b94ef96cf1a5cc76b258334a37",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Integrated Spatial Boundary and Multi-Region Correction",
+        "summary": "This analysis combines the strengths of spatial boundary alignment and segmentation to detect and correct misassigned spots in spatial transcriptomics data. It leverages tissue anatomical annotations to identify spots that cross clear and complex boundaries, while incorporating robust methods to differentiate genuine boundary signals from technical noise. The pipeline is validated using independent annotation datasets to ensure that the correction process accurately reflects biological reality without overfitting."
+      },
+      {
+        "title": "Local versus Distant Contamination Profiling with Quantitative Metrics",
+        "summary": "This proposal systematically distinguishes local from distant contamination in spatial transcriptomics by integrating spatial distance metrics with gene expression profiles. Quantitative thresholds are defined based on both simulation studies and empirical data from gold-standard tissue annotations. The analysis aims to provide clear classification criteria to capture both local spillovers and distant misassignments, ensuring a comprehensive understanding of contamination patterns."
+      },
+      {
+        "title": "Marker Gene Specificity Enhancement through Spatial Correction",
+        "summary": "This study evaluates the effect of spot correction on enhancing marker gene specificity. By comparing cell-type marker expression profiles before and after correction, the analysis assesses improvements in the delineation of tissue domains and cell-type calls. It employs independent validation datasets and cross-validation strategies to confirm that observed enhancements are biologically meaningful and not artifacts of overfitting."
+      },
+      {
+        "title": "Simulation of Varying Contamination Fractions to Test Correction Robustness",
+        "summary": "In this analysis, realistic simulations are used to generate spatial transcriptomics datasets with varying fractions of misassigned spots. The simulation design carefully mimics complex spatial gene expression patterns and spot mixing, allowing a controlled assessment of the correction method's sensitivity and specificity. This approach benchmarks method robustness under different contamination scenarios, providing insights into performance limits."
+      },
+      {
+        "title": "Species and Experimental Ground-Truth Signal Deconvolution",
+        "summary": "Leveraging datasets with known species labels, this proposal employs cross-species signal deconvolution to identify and correct misassigned transcripts. The analysis validates the correction approach by comparing species-specific signals in controlled experimental mixtures, while also discussing limitations for single-species contexts. This grounding in experimental data ensures a reliable benchmark for evaluating correction performance."
+      },
+      {
+        "title": "Downstream Clustering and Segmentation Quality Assurance Post Correction",
+        "summary": "This study explores the impact of spatial quality control on downstream analyses, focusing on clustering and spatial domain segmentation. Using objective metrics such as silhouette scores and benchmarks based on anatomical relevance, the analysis compares clustering results before and after spot correction across independent datasets. The goal is to demonstrate that robust correction leads to more consistent and biologically accurate segmentation of spatial transcriptomics data."
+      },
+      {
+        "title": "Threshold Optimization for Expression and Spatial Distance in Spot Correction",
+        "summary": "This proposal focuses on optimizing the thresholds used for identifying misassigned spots by systematically varying parameters related to gene expression and spatial proximity. The analysis combines simulation-based experiments with empirical validation across multiple datasets. Through adaptive thresholding strategies, the approach seeks to balance sensitivity and specificity in detecting contamination, while avoiding overfitting to particular tissue architectures."
+      },
+      {
+        "title": "Cross-Tissue Generalization of Spatial Correction Methods",
+        "summary": "To validate the robustness and applicability of the correction strategies, this analysis examines performance across diverse tissue types with complex architectures. The proposed pipeline is applied to multiple datasets with varying levels of spot contamination and distinct biological boundaries. Assessments focus on improvements in marker specificity, clustering consistency, and segmentation reliability, thereby confirming the generalizability of the quality control methods."
+      }
+    ]
+  },
+  "trace": {
+    "native_tissueagent_graph": true,
+    "outer_graph": {
+      "node_sequence": [
+        "planner_agent",
+        "recruiter_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "manager_agent",
+        "evaluator_agent",
+        "evaluator_agent",
+        "evaluator_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent",
+        "reporter_agent"
+      ],
+      "planner_format_retry_count": 0,
+      "recruiter_format_retry_count": 0,
+      "evaluator_replan_count": 0,
+      "evaluator_replan_request_count": 0
+    },
+    "task_sha256": "a4a26e2f560d377d067e7207d96f4863381fc8285236b2dcb8a77e14699157b0",
+    "context_sha256": "cafbf3797487b651b0dd64fd17ddf641441a364bcccb8f6cb9f7deec95625ca1",
+    "proposal_count": 8,
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "orchestration_model": {
+      "id": "gpt-5.1",
+      "provider": "openai",
+      "api_model": "gpt-5.1",
+      "reasoning_effort": "high"
+    },
+    "roster": [
+      "hypothesis",
+      "critic"
+    ],
+    "plan": {
+      "status": "recruited",
+      "user_request": "Coordinate domain agents to propose exactly 8 computational spatial-omics analyses most likely performed in the hidden paper, using a three-step draft–critique–synthesis workflow and producing the final proposals JSON file.",
+      "current_step_id": 4,
+      "steps": [
+        {
+          "id": 1,
+          "title": "Draft candidate analysis proposals",
+          "description": "Use the Hypothesis agent to generate an initial set of exactly eight candidate computational spatial-omics analyses, grounded in the provided background on spatial transcriptomics spot misassignment and quality control, and save them to project/outputs/hypotheses/draft_proposals.json without executing any analysis or specifying concrete results.",
+          "reasoning": "An unconstrained but problem-focused drafting step allows the Hypothesis agent to explore a diverse set of plausible analyses for detecting, characterizing, and correcting spot misassignments before any refinement pressure is applied.",
+          "expected_artifacts": [
+            "project/outputs/hypotheses/draft_proposals.json"
+          ],
+          "assigned_agent": "hypothesis_agent",
+          "assignment_rationale": "hypothesis_agent is explicitly designed to generate spatial-analysis proposal drafts and write them to hypotheses/draft_proposals.json, matching this step’s required artifact and function.",
+          "skills": [],
+          "status": "done",
+          "actual_outputs": [
+            "project/outputs/hypotheses/draft_proposals.json"
+          ],
+          "retry_count": 0,
+          "params": null
+        },
+        {
+          "id": 2,
+          "title": "Critique draft proposals",
+          "description": "Use the Critic agent to examine project/outputs/hypotheses/draft_proposals.json, assessing each proposed analysis for plausibility, relevance to spatial QC of spot mixtures, coverage of key failure modes (e.g., local vs distant contamination, multiple boundaries, varying affected fractions), redundancy, and risks of overfitting or inventing unsupported structure, then record this assessment in project/outputs/hypotheses/critique.json.",
+          "reasoning": "A dedicated critique step by the Critic agent helps identify gaps, overlaps, and weaknesses in the draft set so that the final proposal collection is both coherent and well-justified without resorting to trial execution or hidden-answer scoring.",
+          "expected_artifacts": [
+            "project/outputs/hypotheses/critique.json"
+          ],
+          "assigned_agent": "critic_agent",
+          "assignment_rationale": "critic_agent is specialized for reviewing and critiquing candidate spatial paper analyses and producing hypotheses/critique.json, exactly matching this critique step.",
+          "skills": [],
+          "status": "done",
+          "actual_outputs": [
+            "project/outputs/hypotheses/critique.json"
+          ],
+          "retry_count": 0,
+          "params": null
+        },
+        {
+          "id": 3,
+          "title": "Synthesize final proposal set",
+          "description": "Use the Hypothesis agent to combine insights from project/outputs/hypotheses/draft_proposals.json and project/outputs/hypotheses/critique.json to construct a refined, non-redundant set of exactly eight analyses most consistent with the hidden paper’s likely methods, ensuring that project/outputs/hypotheses/final_proposals.json is a JSON object whose only top-level key is \"proposals\", containing exactly eight items, each with only a \"title\" and a detailed \"summary\" of the proposed analysis while not executing any of them.",
+          "reasoning": "This synthesis step produces the required, well-structured final artifact by reconciling initial ideas with critique, yielding eight clearly motivated, distinct analysis proposals that align with the spatial QC context and output format constraints.",
+          "expected_artifacts": [
+            "project/outputs/hypotheses/final_proposals.json"
+          ],
+          "assigned_agent": "hypothesis_agent",
+          "assignment_rationale": "hypothesis_agent is responsible for synthesizing final proposal sets and writing hypotheses/final_proposals.json, aligning with the required refined set of eight analyses in this step.",
+          "skills": [],
+          "status": "running",
+          "actual_outputs": [
+            "project/outputs/hypotheses/final_proposals.json"
+          ],
+          "retry_count": 0,
+          "params": null
+        }
+      ],
+      "last_edited_by": null,
+      "last_edited_at": null,
+      "provenance": {
+        "template_names": [],
+        "justification": "Existing templates (e.g., for hypothesis generation or specific spatial analyses) include additional behaviors such as paper retrieval, dataset interrogation, or concrete analysis execution that conflict with the user’s strict three-step, proposal-only workflow and prohibition on identifying the source paper, so this minimal draft–critique–synthesis plan was designed from scratch."
+      }
+    },
+    "final_artifact_complete": true,
+    "plan_template_names": [],
+    "plan_step_count_compliant": true,
+    "plan_unassigned_steps": [],
+    "plan_unexpected_artifacts": [],
+    "plan_artifact_assignment_mismatches": [],
+    "manager_dispatched_all_steps": true,
+    "manager_nonfinal_steps_complete": true,
+    "manager_final_step_started": true,
+    "manager_acknowledged": false,
+    "manager_tool_calls": [
+      "next_step",
+      "read",
+      "next_step",
+      "next_step",
+      "read"
+    ],
+    "manager_write_count": 0,
+    "manager_write_paths": [],
+    "artifact_author_candidates": {
+      "hypotheses/final_proposals.json": [
+        "hypothesis_agent"
+      ],
+      "hypotheses/draft_proposals.json": [
+        "hypothesis_agent"
+      ],
+      "hypotheses/critique.json": [
+        "critic_agent"
+      ]
+    },
+    "intermediate_artifact_validity": {
+      "hypotheses/draft_proposals.json": true,
+      "hypotheses/critique.json": true
+    },
+    "hypothesis_invoked": true,
+    "hypothesis_validated_write_count": 2,
+    "hypothesis_draft_write_count": 1,
+    "hypothesis_final_write_count": 1,
+    "critic_validated_write_count": 1,
+    "spatial_cv_available": false,
+    "spatial_cv_recruited_steps": [],
+    "spatial_cv_invoked": false,
+    "spatial_cv_execution_success": false,
+    "spatial_cv_artifact_valid": false,
+    "spatial_cv_bundle_reason": "absent",
+    "spatial_cv_exposed_to_hypothesis": false,
+    "hypothesis_prompt_artifact_sets": [
+      [],
+      [
+        "hypotheses/critique.json",
+        "hypotheses/draft_proposals.json"
+      ],
+      [
+        "hypotheses/critique.json",
+        "hypotheses/draft_proposals.json"
+      ]
+    ],
+    "hypothesis_prompt_exposures": [
+      {
+        "artifact_keys": [],
+        "artifact_sha256": {}
+      },
+      {
+        "artifact_keys": [
+          "hypotheses/critique.json",
+          "hypotheses/draft_proposals.json"
+        ],
+        "artifact_sha256": {
+          "hypotheses/critique.json": "808000f32deac9e95599bda71407c7d53ca4bb25ad3d3460144c6f8bf37435ce",
+          "hypotheses/draft_proposals.json": "6e6eae28b9d25b18eb0812e91c13e018d4c2f58669ec90d7decf4ed3b5acbc65"
+        }
+      },
+      {
+        "artifact_keys": [
+          "hypotheses/critique.json",
+          "hypotheses/draft_proposals.json"
+        ],
+        "artifact_sha256": {
+          "hypotheses/critique.json": "808000f32deac9e95599bda71407c7d53ca4bb25ad3d3460144c6f8bf37435ce",
+          "hypotheses/draft_proposals.json": "6e6eae28b9d25b18eb0812e91c13e018d4c2f58669ec90d7decf4ed3b5acbc65"
+        }
+      }
+    ],
+    "spatial_cv_trace": null,
+    "ta_ai_calls": [
+      {
+        "name": "planner_agent",
+        "input_tokens": 3361,
+        "output_tokens": 2561,
+        "total_tokens": 5922
+      },
+      {
+        "name": "recruiter_agent",
+        "input_tokens": 2386,
+        "output_tokens": 343,
+        "total_tokens": 2729
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 2391,
+        "output_tokens": 423,
+        "total_tokens": 2814
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 2724,
+        "output_tokens": 36,
+        "total_tokens": 2760
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 3331,
+        "output_tokens": 438,
+        "total_tokens": 3769
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 4562,
+        "output_tokens": 702,
+        "total_tokens": 5264
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 5126,
+        "output_tokens": 36,
+        "total_tokens": 5162
+      },
+      {
+        "name": "manager_agent",
+        "input_tokens": 5699,
+        "output_tokens": 232,
+        "total_tokens": 5931
+      },
+      {
+        "name": "evaluator_agent",
+        "input_tokens": 6610,
+        "output_tokens": 220,
+        "total_tokens": 6830
+      },
+      {
+        "name": "evaluator_agent",
+        "input_tokens": 7305,
+        "output_tokens": 137,
+        "total_tokens": 7442
+      },
+      {
+        "name": "evaluator_agent",
+        "input_tokens": 7878,
+        "output_tokens": 2048,
+        "total_tokens": 9926
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 9325,
+        "output_tokens": 615,
+        "total_tokens": 9940
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 10100,
+        "output_tokens": 36,
+        "total_tokens": 10136
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 10674,
+        "output_tokens": 1054,
+        "total_tokens": 11728
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 10972,
+        "output_tokens": 36,
+        "total_tokens": 11008
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 11546,
+        "output_tokens": 541,
+        "total_tokens": 12087
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 12173,
+        "output_tokens": 36,
+        "total_tokens": 12209
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 12781,
+        "output_tokens": 1709,
+        "total_tokens": 14490
+      },
+      {
+        "name": "reporter_agent",
+        "input_tokens": 14521,
+        "output_tokens": 1157,
+        "total_tokens": 15678
+      },
+      {
+        "name": "hypothesis",
+        "input_tokens": 738,
+        "output_tokens": 1213,
+        "total_tokens": 1951
+      },
+      {
+        "name": "critic_agent",
+        "input_tokens": 1364,
+        "output_tokens": 1394,
+        "total_tokens": 2758
+      },
+      {
+        "name": "critic_agent",
+        "input_tokens": 3243,
+        "output_tokens": 898,
+        "total_tokens": 4141
+      },
+      {
+        "name": "hypothesis",
+        "input_tokens": 2432,
+        "output_tokens": 1865,
+        "total_tokens": 4297
+      },
+      {
+        "name": "hypothesis",
+        "input_tokens": 3283,
+        "output_tokens": 932,
+        "total_tokens": 4215
+      }
+    ],
+    "elapsed_seconds": 283.175,
+    "final_artifact_sha256": "992e80fd98acd382f445fd8e85d95438e93347b40728c7799967aade3481bb7a"
+  },
+  "trace_sha256": "9afa1bf36a96d509227ba3402a275026192d8b7c04c96bfc93d46cd959d5964f",
+  "checkpoint_sha256": "b3455bcb46737b738c7350f997eb602cb0b34754c87ddf7b2d374afe752a0904"
+}
