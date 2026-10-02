@@ -42,16 +42,10 @@ class StepArgs(BaseModel):
 
     task_instructions: str = Field(
         description=(
-<<<<<<< HEAD
-            "Free-text instructions delegated to the sub-agent assigned to this step. "
-            "Mention any prior-step artifacts that are relevant inputs by their "
-            "workspace-relative paths."
-=======
             "Step-specific context delegated to the assigned sub-agent. The original user request "
             "and assigned plan step are prepended automatically. Mention relevant prior-step "
             "artifacts by their workspace-relative paths; do not restate or weaken the user "
             "request."
->>>>>>> origin/main
         ),
     )
     expected_artifacts: Optional[list[str]] = Field(

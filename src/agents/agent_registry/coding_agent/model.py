@@ -18,8 +18,11 @@ Deliberate differences from the stock coding agent
   stateless**: each call is a fresh process, so nothing survives between calls
   (verified: ``export FOO=42`` then ``echo $FOO`` returns empty). A large
   ``.h5ad`` must be re-read per invocation, or the work written as a script.
-* **No R tool.** Neither environment ships an ``ir`` kernel, so an ``r()`` tool
-  would only ever fail; offering it invites the model to waste turns.
+* **R is opt-in per step, via the ``r-execution`` skill.** When the recruiter
+  assigns that skill to a step, the agent additionally gets an ``r()`` tool
+  backed by the sandbox's persistent IRkernel (the same ``KernelClient`` the
+  stock agent uses). Steps without the skill get a prompt and tool set
+  byte-identical to before — Python-only tasks never see R.
 * **No ``analysis.ipynb``, no inline plot capture, no executor failure budget.**
   All three are implemented inside ``KernelClient.execute``, which is not in
   this variant's path. Figures reach the user as files under
@@ -63,6 +66,11 @@ AGENT_DISPLAY_NAME = "Coding Agent"
 # outside DATA_DIR fails with ``path_not_found``.
 WORKSPACE_SKILLS_SOURCE = "/project/skills"
 
+# The recruiter-assigned skill that turns on the ``r`` tool for a step. Kept as
+# a name check (not a registry lookup) so a missing/renamed skill folder can
+# never break agent construction — it just means no step ever carries the name.
+R_SKILL_NAME = "r-execution"
+
 
 def _shell_env() -> dict[str, str]:
     """PATH override so the agent's shell reaches *this* interpreter's env.
@@ -87,10 +95,12 @@ def create_coding_agent(
     Args:
         state_queue: Queue finished sub-agent states are posted to for the UI.
             Receives ``(agent_id, final_state, invocation_id)``.
-        kernel_client: Accepted for signature compatibility with the stock
-            agent and **unused** — this variant executes through the shell.
-            ``graph.py`` filters ctor kwargs by ``inspect.signature``, so the
-            parameter must stay for the shared call site to keep working.
+        kernel_client: Client for the sandbox's Jupyter kernels. Shell
+            execution never touches it; it only backs the ``r`` tool, which
+            exists solely on steps the recruiter assigned the ``r-execution``
+            skill to. ``graph.py`` filters ctor kwargs by
+            ``inspect.signature``, so the parameter name must match the stock
+            agent's.
         context_resolver: Optional ``Callable[[str], StepContext | None]``
             resolving the currently-running plan step.
 
@@ -115,7 +125,7 @@ def create_coding_agent(
     )
     model = coding_agent_model_ctor()
 
-    def _system_prompt() -> str:
+    def _system_prompt(include_r: bool) -> str:
         """Base prompt, with the kernel-specific guidance replaced.
 
         The stock prompt documents ``python()``/``r()`` tools and the
@@ -123,9 +133,54 @@ def create_coding_agent(
         Rather than fork the whole prompt, we keep its domain guidance (paths,
         workspace policy, output schema) and overwrite the parts that would
         instruct the model to call tools it does not have.
+
+        With ``include_r`` (the step carries the ``r-execution`` skill) the
+        ``r`` tool exists, so its guidance is appended and the "no R kernel"
+        claim corrected. Without it, the output is byte-identical to the
+        pre-R prompt — Python-only steps must not pay for R in tokens or
+        distraction.
         """
         base = CodingAgentPrompt(sandbox_enabled=False)
-        return base.replace("{{skill_prompt}}", _SHELL_EXECUTION_NOTE)
+        note = _SHELL_EXECUTION_NOTE
+        if include_r:
+            note = (
+                note.replace("You have no Python/R kernel.", "You have no Python kernel.")
+                + _R_EXECUTION_NOTE
+            )
+        return base.replace("{{skill_prompt}}", note)
+
+    def _r(code: str) -> str:
+        """Execute R in the sandbox's persistent IRkernel via ``kernel_client``.
+
+        Text-only return: the deepagents tool loop carries strings, not the
+        stock agent's multimodal parts, so inline plots are spilled to files
+        under the project's ``outputs/figures/_trace/`` and returned as paths —
+        consistent with this variant's figures-are-files policy.
+        """
+        logging.info("r tool executing:\n%s", code)
+        result = kernel_client.execute(code, language="r")
+        logging.info("r tool output:\n%s", result.text)
+        text = result.text
+        if result.images:
+            from agents.agent_registry.coding_agent_cache.image_spill import (
+                spill_images_to_disk,
+            )
+
+            paths = spill_images_to_disk(result.images)
+            if paths:
+                listing = "\n".join(f"project/{p}" for p in paths)
+                text += f"\n[Inline plots were saved to:\n{listing}]"
+        return text
+
+    r_tool = StructuredTool.from_function(
+        func=_r,
+        name="r",
+        description=(
+            "Execute R code in a persistent Jupyter kernel and return its output."
+            " The kernel retains state (variables, libraries, definitions) across calls."
+            " Use cat() or print() to surface values you need to inspect."
+        ),
+    )
 
     def agent_invocation_tool(prompt: str) -> str:
         """Run the deep agent on a prompt and return its final message."""
@@ -165,13 +220,19 @@ def create_coding_agent(
         except Exception as e:
             logging.warning("per-step skill materialization failed: %s", e)
 
-        system_prompt = _system_prompt()
+        # The r tool exists only on steps the recruiter assigned the
+        # r-execution skill to; every other step gets the exact pre-R prompt
+        # and tool set. Guarded on kernel_client so a caller that never wired
+        # a kernel backend degrades to Python-only rather than a broken tool.
+        use_r = kernel_client is not None and R_SKILL_NAME in skills
+        system_prompt = _system_prompt(include_r=use_r)
 
         # Rebuilt per invocation: the skills index is read at agent-build time,
         # and each step materializes a different set. Construction is cheap next
         # to a single LLM round-trip.
         agent = create_deep_agent(
             model=model,
+            tools=[r_tool] if use_r else None,
             system_prompt=system_prompt,
             backend=backend,
             skills=[WORKSPACE_SKILLS_SOURCE],
@@ -241,4 +302,26 @@ So for anything beyond a trivial check:
 
 Use `python3` (not `python`). Prefer `read_file`/`write_file`/`edit_file`/`glob`/
 `grep` over shelling out to `cat`, `sed` or `find`.
+"""
+
+# Appended to the execution note only when the step carries the r-execution
+# skill (and so the ``r`` tool). Python-only steps never see this text.
+_R_EXECUTION_NOTE = """
+## R execution (this step)
+
+This step was assigned the `r-execution` skill, so you additionally have an
+`r` tool: it runs R code in a persistent Jupyter kernel. Unlike `execute`,
+**state persists across `r` calls** — variables, loaded libraries and in-memory
+objects survive from one call to the next.
+
+- Use `r` only for the work that needs R packages (e.g. Seurat, Bioconductor);
+  keep everything else in Python via `execute`.
+- The same workspace-relative paths apply (`project/uploads/...`,
+  `project/outputs/...`). Exchange data with Python through files
+  (`.csv`, `.rds`), not memory.
+- Save figures to `project/outputs/figures/` (`ggsave()`, or
+  `png(...); ...; dev.off()`). An inline plot you don't save is auto-spilled
+  to a file and its path returned in the tool output.
+- `project/skills/r-execution/SKILL.md` has full guidance, including package
+  installation.
 """

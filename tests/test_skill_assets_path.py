@@ -48,4 +48,7 @@ def test_assets_root_is_relative_and_reachable(name: str) -> None:
     # work in the tool the agent would use to reach it.
     out = glob_tool.func(f"{root}/*")
     assert "unsupported" not in out.lower(), f"{name}: glob rejected {root!r}"
-    assert f"{root}/scripts" in out, f"{name}: scripts/ not reachable at {root!r}"
+    # Not every folder skill bundles scripts (some exist to gate a capability,
+    # e.g. r-execution); only require reachability for the ones that do.
+    if (SKILLS_DIR / name / "scripts").is_dir():
+        assert f"{root}/scripts" in out, f"{name}: scripts/ not reachable at {root!r}"

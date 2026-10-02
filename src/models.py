@@ -483,6 +483,7 @@ def build_chat_model(
     arguments not understood by the other provider are dropped.
     """
     spec = get_model_spec(model_id, role=role)
+    model_seed = get_model_seed()
 
     if spec.provider == "openai":
         from langchain_openai import ChatOpenAI
