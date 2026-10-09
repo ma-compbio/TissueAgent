@@ -1,0 +1,79 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "cd8defcd01ad9e3eb800ba6677920443ae8b83b1931ad9a912b3d3bdc5874af3",
+  "eval_id": "spcb_c30d4e5f6a",
+  "replicate": 3,
+  "proposal_count": 9,
+  "proposal_sha256": "93be4e2e4b47ea8df3273fb261d5578442fea991c5d62e766a690bdd9e4dcca2",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Domain Delineation",
+        "summary": "This analysis will utilize spatially-aware clustering techniques to identify distinct tissue domains based on combined gene expression profiles and spatial coordinates. By incorporating density-based spatial clustering, the approach will account for local cell microenvironments and delineate regions that may correlate with known histological features, enabling the discovery of previously unrecognized spatially distinct domains in complex tissues."
+      },
+      {
+        "title": "Continuous Spatial Pseudotime Ordering",
+        "summary": "This project aims to develop a spatially-informed pseudotime trajectory that arranges cells or spots in a continuous order, respecting both expression similarity and physical location. By integrating spatial constraints with dimensionality reduction and trajectory inference methods, the analysis will reveal ordered biological processes such as tissue development or repair, while mitigating artifacts introduced by distant but similar states."
+      },
+      {
+        "title": "Gradient Gene Expression Mapping",
+        "summary": "Focusing on detecting spatial gradients of gene expression across tissue sections, this analysis will employ regression models correlating the expression of key marker genes with spatial coordinates. The outcome will highlight genes with spatially varying expression, suggesting roles in tissue patterning or morphogen gradients, and will facilitate the identification of transition zones between cellular states."
+      },
+      {
+        "title": "Spatial Communication Network Inference",
+        "summary": "This analysis will infer cell–cell communication networks based on spatial proximity and ligand-receptor co-expression patterns within tissue sections. By combining a spatial neighborhood graph with interaction inference algorithms, the study will reveal how localized cell interactions drive tissue organization and function, offering insights into signaling cascades critical for tissue homeostasis and disease progression."
+      },
+      {
+        "title": "Subcellular Localization and Transcriptomics Integration",
+        "summary": "Aiming to resolve transcriptomic patterns at subcellular resolution, this approach will integrate imaging-based spatial transcriptomics data with high-resolution cell segmentation. The analysis will map transcripts to subcellular compartments, delineating the spatial distribution of RNA molecules within single cells, and providing insights into cellular polarity, intracellular trafficking, and localized gene regulation."
+      },
+      {
+        "title": "Spatial Variability and Expression Heterogeneity Analysis",
+        "summary": "This analysis will quantify and model expression variability across spatial locations, accounting for uneven sampling and sparsity in the dataset. Statistical spatial autocorrelation measures and multimodal data integration will be used to assess how gene expression heterogeneity correlates with tissue architecture, uncovering microenvironmental influences on cellular states."
+      },
+      {
+        "title": "Spatial Trajectory Bridging Discrete Tissue States",
+        "summary": "The goal of this analysis is to construct continuous spatial trajectories that bridge known discrete tissue states or anatomical regions. By leveraging manifold learning paired with spatial constraints, the approach will map the progressive transitions between states, facilitating a more refined understanding of developmental processes or disease progression as cells traverse distinct anatomical niches."
+      },
+      {
+        "title": "Histology-Integrated Spatial Transcriptomics Analysis",
+        "summary": "This analysis integrates spatial transcriptomics data with co-registered histological imagery to correlate gene expression patterns with morphological features. Advanced image analysis combined with spatial transcriptomic mapping will be used to annotate morphological landmarks and quantify how these structural features influence local gene expression and cellular microenvironments."
+      },
+      {
+        "title": "Spatial Data Imputation and Reconstruction",
+        "summary": "Addressing the challenges of sparsity and uneven sampling, this analysis will implement spatially-informed imputation methods to recover missing or noisy gene expression values. By incorporating spatial regularization and leveraging nearby spot similarities, the approach will reconstruct more complete spatial expression maps that can be used for downstream analyses such as domain identification or trajectory inference."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "ab436a05aea916e5d82f67e27df79d735c38da627142c533ae5fd5b75068ec4e",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 5.4059898789273575,
+        "input_tokens": 415,
+        "output_tokens": 1111,
+        "total_tokens": 1526
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "deb95daf8ce94a6378007a19487dc114f7bbfd0b4737fb57e1648da4423015bd",
+    "overview_sha256": null,
+    "elapsed_seconds": 5.411
+  },
+  "trace_sha256": "837c9e70e86f35338e53a5b647bc2531968c779ba8f5025543893dd9f75d99ba",
+  "checkpoint_sha256": "469733df3ecbb203dfcb189350756a5864502f5ba1f6363b9ad28d5402505776"
+}

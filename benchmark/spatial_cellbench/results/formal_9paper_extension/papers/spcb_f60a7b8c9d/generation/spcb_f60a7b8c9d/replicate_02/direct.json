@@ -1,0 +1,75 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "0998c1c228637024fade7094f02668730542c6df2cf7c37e592d6f836078ca8f",
+  "eval_id": "spcb_f60a7b8c9d",
+  "replicate": 2,
+  "proposal_count": 8,
+  "proposal_sha256": "f2858e89ac8fe1df049dad7d77ee6c215189c7ef0d566fef74cec5a400151f72",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Neighborhood Embeddings",
+        "summary": "Develop an approach that integrates gene expression profiles with explicit spatial coordinates to form a neighborhood graph. The analysis would involve constructing an embedding that simultaneously leverages transcriptional similarity and physical proximity, ensuring that local tissue context is maintained. This method will be validated by checking its ability to distinguish spatially distinct regions and its robustness to varying resolution and noise levels in the measurements."
+      },
+      {
+        "title": "Domain and Tissue Region Segmentation",
+        "summary": "Perform domain detection by clustering spatial transcriptomics data into biologically meaningful regions. This study involves applying algorithms that use spatial adjacency combined with gene expression similarities to detect boundaries between tissue domains. The method would be benchmarked against annotated tissue regions, aiming to improve identification of rare cell states and subtle domain transitions in complex tissues."
+      },
+      {
+        "title": "Trajectory Inference in Spatial Context",
+        "summary": "Develop a trajectory inference method that incorporates both the spatial coordinates and the gene expression profiles of tissue sections. The analysis will use a spatially-constrained pseudotime model to reconstruct tissue developmental pathways or disease progression. Specific attention will be given to accurately capturing transitions in tissue microenvironments while mitigating the effects of spatial discontinuities."
+      },
+      {
+        "title": "Batch Correction with Spatial Constraints",
+        "summary": "Integrate a batch correction pipeline that accounts for both technical variation and spatial information in multi-platform spatial transcriptomic datasets. This analysis would leverage spatial neighborhood graphs to reconcile discrepancies across batches while preserving the physical context. It will include a comparison of standard correction methods with the spatially-aware approach to quantify improvements in tissue organization recovery."
+      },
+      {
+        "title": "Denoising and Imputation in Noisy Spatial Data",
+        "summary": "Introduce a spatially-aware denoising framework that employs neighborhood-based smoothing and latent space representations to correct for dropout events. The approach will impute missing values by considering both local gene expression patterns and spatial continuity. This analysis is expected to yield reconstructed expression profiles that more accurately reflect the true underlying biological states in complex tissue sections."
+      },
+      {
+        "title": "Multi-resolution Latent Space Modeling",
+        "summary": "Construct a multi-resolution latent space that adapts to varying levels of spatial granularity. This analysis addresses the challenge of integrating high-resolution spatial transcriptomics data, where computational efficiency and fine-grained spatial features must both be preserved. The proposed method will evaluate performance across different scales, ensuring that both global tissue structure and local cellular states are adequately captured."
+      },
+      {
+        "title": "Spatially-Driven Expression Recovery",
+        "summary": "Focus on recovering obscured gene expression signals by jointly modeling transcriptional profiles with spatial relationships. This analysis would utilize spatial priors to enhance lowly expressed or dropout-laden genes, aiming to produce a more reliable representation of gene activity. Comparisons with traditional expression reconstruction methods will highlight the benefits of incorporating spatial context in overcoming noise and sparsity."
+      },
+      {
+        "title": "Graph-based Integration of Spatial Omics Data",
+        "summary": "Apply graph neural networks to integrate spatial transcriptomics data with associated spatial neighborhood graphs. The analysis would involve training models that dynamically learn weights for gene expression and spatial proximity, thereby improving the embedding quality for downstream tasks like clustering, visualization, and trajectory inference. Performance metrics will include tissue organization recovery and computational scalability across heterogeneous datasets."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "339e5a80b4e2ec60500783291347f3bc765424b01e9733e135187cf645722519",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 4.700340233976021,
+        "input_tokens": 382,
+        "output_tokens": 919,
+        "total_tokens": 1301
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "b002028dd6a042421a1a1dd989313b7302079e2e5114888a5f7f9e4c45982fa0",
+    "overview_sha256": null,
+    "elapsed_seconds": 4.706
+  },
+  "trace_sha256": "2efb706f92a27ba49a16dc2257c31db6d6359746b615294764fdd04ac5e0269f",
+  "checkpoint_sha256": "170a1d77e176016c9b8bade39b4073bd0293876e0fb27a284526f8629ccf143d"
+}

@@ -1,0 +1,63 @@
+{
+  "identity": {
+    "protocol": "spatial_cellbench_dynamic_n_v2",
+    "paper_ids": [
+      "spcb_d40e5f6a7b"
+    ],
+    "oracle_analysis_counts": {
+      "spcb_d40e5f6a7b": 8
+    },
+    "arms": [
+      "direct",
+      "tissueagent",
+      "tissueagent_spatial_cv"
+    ],
+    "replicates": 3,
+    "generation_units": 9,
+    "judge_units": 9,
+    "generation_model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "orchestration_model": {
+      "id": "gpt-5.1",
+      "provider": "openai",
+      "api_model": "gpt-5.1",
+      "reasoning_effort": "high"
+    },
+    "judge_model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "source_fingerprint": {
+      "sha256": "4e6f997fb26d818935a9e2cc2900bcbbca997b92f766cbe663d9915c6f509c5a",
+      "file_count": 230
+    },
+    "overview_sha256": "34954dad7d5535ecad3d92e88d9cdc2a2fa9c90b5e3c7f8cad7ed4402a75114e",
+    "public_contexts_sha256": "bc714bfccd97f1b1e2d1dd2ec7d41b74dee93e9da5d9587e2514ca78874d6069",
+    "ground_truth_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+    "scope_adjudication_sha256": "757abc5da8b9485af4572bc21d124d24db2e67f8c4c6cdfb7bd5aec550b34c47"
+  },
+  "created_at": "2026-09-03T00:55:47.737517+00:00",
+  "git": {
+    "commit": "d29e1e8bcb05be378496e8056836908b0ba9139b",
+    "dirty": true,
+    "status_sha256": "650bf89282db089b8be42cbf3f526eb0badaffa1fd5414ee0d644e0762c81df8"
+  },
+  "invocations": [
+    {
+      "at": "2026-09-03T00:55:47.737245+00:00",
+      "skip_judge": true,
+      "retry_failed": false
+    },
+    {
+      "at": "2026-09-03T21:05:56.063916+00:00",
+      "skip_judge": false,
+      "retry_failed": true
+    }
+  ]
+}

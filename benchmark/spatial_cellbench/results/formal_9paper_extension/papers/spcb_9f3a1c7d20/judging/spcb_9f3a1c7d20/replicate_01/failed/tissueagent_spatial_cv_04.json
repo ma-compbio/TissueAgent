@@ -1,0 +1,24 @@
+{
+  "status": "failed",
+  "unit_fingerprint": "bbd03853ab9af298599e716dac098c9c8035cf5816deafa910c86442023dd4a5",
+  "generation_proposal_sha256": "016b3e8b592b31ba633397df04d28b9c4c3e0f2b95d108b067cc52922ada322c",
+  "truth_sha256": "8214cf8a5d93b39bc875bece8496694bce2a78faf058dd248d0ddb2457fab151",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "error_type": "APIConnectionError",
+  "error": "Connection error.",
+  "trace": {
+    "logical_model_calls": 0,
+    "observable_model_attempts": 1,
+    "calls": [],
+    "failed_attempts": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 135.5186268929392,
+        "error_type": "APIConnectionError"
+      }
+    ]
+  },
+  "trace_sha256": "6fbbb984287ff3603e5833cef4f12392f1bd6189d00598053d087fb9f8418be3",
+  "checkpoint_sha256": "68ba9badb23734be40f11672bdcd63f1ede353fa0cb4bd3414972675827a1b6f"
+}

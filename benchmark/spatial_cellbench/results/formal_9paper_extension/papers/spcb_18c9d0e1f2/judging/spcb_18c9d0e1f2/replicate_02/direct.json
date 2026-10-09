@@ -1,0 +1,161 @@
+{
+  "status": "success",
+  "unit_fingerprint": "c01b3a1b486a19a47a570fd6f1aa40ae4352ddc3f641b40827e0a976c63fba06",
+  "generation_proposal_sha256": "5616e32e357af1e7503d43fdb7a6aacd5d3a586c014977c05abbae3cfecd44a8",
+  "truth_sha256": "a25c0b30a9ce893b23afada2bca80855f7f3db0377c7382cc1f55a53755562bd",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "ac3dfed40f00ed9a55c2c705b8eebd04e8ac0ca8cb28b04518818f1b17610d2d",
+    "07a60d992889c9ebec6f82cce8f1e6a067b312e89b1dc3576aa117530754dad4",
+    "f3bc2fcddbab33cc8b7be61a003551e6c764995f4fb2cd4c23aa8fa0a1806a51",
+    "5af9aae58350480cb367934a0a4ec721fccca23ae074f06ebef457e5b443723b",
+    "6522a814a48e6a561ed1675b5e77aaa1e8fc8f367bd0d109cbee8e2d28813509",
+    "f2c6c1427ac3b1e13991e19caf7a56504afac144eff53a4d7e1aae03d35e9d05",
+    "da276ce93e2b965c5b3772e8181c5bc17518c7cfb88ca28b338b59aaed993a18",
+    "41a34b200b340e5d039e3315460753c5d712eacd89529854c3123d4fb7b2f577",
+    "51ec16081baae065d90b9eb46ab7a649e4d894491a186b10a9cdb0f1e60da702"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": false,
+      "reason": "The proposed analysis focuses on detecting spatial regions with enriched gene expression, accounting for cell density variations to find true hotspots. Its primary objective is to map gene hotspots by correcting for density. This does not directly align with any ground-truth analysis. While G08 also deals with density-robust spatial statistics, its purpose is to ensure consistency across tissues rather than detecting hotspots. No other ground-truth analysis shares the specific objective of identifying and mapping spatial gene expression hotspots through density corrections."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis aims to capture cell-to-cell communication by detecting ligand-receptor pairs and correlating them with spatial neighborhood architecture, which aligns with the main scientific objective of ground-truth analysis G06. G06 focuses on identifying ligand and receptor expression patterns in neighboring populations through inter-cell-type spatial cross-correlation."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis matches G01 because both focus on adjusting for or testing against alterations in spatial statistics due to variations in cell density within tissues. They share the scientific objective of addressing spatial expression analysis in the context of nonuniform cellular distribution, ensuring that findings are robust to local density effects."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis matches the ground-truth analysis G06 titled \"Resolve layered and multilayer spatial organization\". Both analyses focus on using spatial coordinates and registration techniques to align tissue layers or sections, enabling comparison of spatial patterns across two and three dimensions. The use of alignment and evaluation of spatial consistency in expression patterns are central objectives they share."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis focuses on measuring spatial autocorrelation of gene expression. One of the ground-truth analyses (G08) is specifically focused on computing spatial autocorrelation for genes in the olfactory bulb to identify expression patterns associated with anatomical layers. Both are focused on computing spatial autocorrelation as the main scientific objective, making them a match."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis focuses on clustering cells with similar gene expression patterns while accounting for spatial adjacency and tissue geometry. This matches the main scientific objective of G05, 'Perform spatially informed cell clustering', which involves combining spatial adjacency with expression data to distinguish subpopulations in different tissue locations."
+    },
+    {
+      "candidate_index": 6,
+      "match": false,
+      "reason": "The proposed analysis focuses on identifying co-localization of gene or pathway expressions across tissue regions, indicating potential interactions or complementary roles. It uses spatial point pattern analysis to detect statistically significant overlaps beyond random chance and accounts for density and spatial segregation to avoid artifacts. None of the ground-truth analyses have a primary objective of co-localization or focus explicitly on identifying overlapping or interacting expression patterns as a primary goal. While G04 and G09 involve exploring interactions between cell types, they are specifically about ligand-receptor pairs or communication, which is not the same as general co-localization of genes or pathways across tissue regions. Additionally, G04 focuses on inter-cell-type cross-correlation, which differs from the proposed within-region co-localization analysis."
+    },
+    {
+      "candidate_index": 7,
+      "match": false,
+      "reason": "The proposed analysis focuses on normalization and variance stabilization specifically for spatial transcriptomics data to ensure robust downstream analyses. None of the ground-truth analyses focus on normalization or variance stabilization as their main scientific objective. Instead, they cover a range of objectives like clustering, spatial heterogeneity, and identifying spatial patterns, but do not mention normalization or variance correction as their primary focus."
+    },
+    {
+      "candidate_index": 8,
+      "match": false,
+      "reason": "The proposed analysis focuses on integrating spatial datasets from different measurement technologies, aiming to reconcile differences in resolution and spatial coverage through alignment techniques and cross-modality normalization. The main scientific objective is to ensure consistent biological signal detection across different technologies, despite technical variability. None of the ground-truth analyses share this same objective of integrating and normalizing across different spatial technology platforms. The ground-truth analyses focus on specific spatial expression pattern analyses, spatial heterogeneity within cell types, inter-cell-type communication, and spatial clustering, without emphasizing cross-modality integration."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 5,
+    "candidate_count": 9,
+    "candidate_hit_fraction": 0.5555555555555556
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 9,
+    "observable_model_attempts": 9,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 2.2533020358532667,
+        "input_tokens": 799,
+        "output_tokens": 104,
+        "total_tokens": 903
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.397700197994709,
+        "input_tokens": 797,
+        "output_tokens": 70,
+        "total_tokens": 867
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.3481903616338968,
+        "input_tokens": 793,
+        "output_tokens": 65,
+        "total_tokens": 858
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 2.0735614467412233,
+        "input_tokens": 801,
+        "output_tokens": 76,
+        "total_tokens": 877
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.6314979568123817,
+        "input_tokens": 791,
+        "output_tokens": 75,
+        "total_tokens": 866
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.425264373421669,
+        "input_tokens": 794,
+        "output_tokens": 65,
+        "total_tokens": 859
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 2.8429208043962717,
+        "input_tokens": 796,
+        "output_tokens": 155,
+        "total_tokens": 951
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.9603418670594692,
+        "input_tokens": 795,
+        "output_tokens": 81,
+        "total_tokens": 876
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 2.0979213565587997,
+        "input_tokens": 789,
+        "output_tokens": 116,
+        "total_tokens": 905
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 17.033
+  },
+  "trace_sha256": "fba8a9db4f07f7ff0c89ce1e72927255a1739988de9568d63688d3eee7dc38d1",
+  "checkpoint_sha256": "23351ae82d62bbbe5f650de8967e05eaf3f39f74239dd0a067ebe56d95a357c1"
+}

@@ -1,0 +1,161 @@
+{
+  "status": "success",
+  "unit_fingerprint": "8f71e9353ed7832298882bf6bed71b3e0bbae4858d67361d9a4b23df5baffb3f",
+  "generation_proposal_sha256": "4dc9196c0964fd64a79c30da9fc1b46fb06d3a246c20677e9892706e526ed319",
+  "truth_sha256": "a25c0b30a9ce893b23afada2bca80855f7f3db0377c7382cc1f55a53755562bd",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "1254fff0f6d8c2e90d8895fb267f5a8515727620c71bb53cb5d19f75190c5454",
+    "d42b971b9e9b6f60cf901a99a516799d316b102ed1c883fa8e3059f5ed08af08",
+    "078cfa6ba7fc555fc1ca9bf4f790d4165d910a57fb671c063f8d788fb3b9df91",
+    "9e70bdf69f0b5f66f5623f3e4f5a9c75d005f8f1cf809c6fee9ba17306cc020d",
+    "1ae7a7a92173b37da5fd62dd5226a7da4448b71dc54f01562afeb44772db8851",
+    "746fcef1bf07f85b6b4abee24fdf0747c062286ba7edd43537ec25f0be64428e",
+    "544e9ea7861c9029dc70c7bda4ee2429b51be77ab62116104f5da1c7dd1ceac7",
+    "e2b32ebf1bf5f7f52cb6b8a37db4a81c2a05f1d95067c7012e2085f49496c739",
+    "5fbf1e1a504a70834e67d3296e1106c46d5d3cfd8f5afc338d6ccd1dd83cb137"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis matches ground-truth analysis \"G02\" titled \"Test density-robust spatial statistics.\" The main scientific objective of both analyses is to address issues related to uneven cellular density in spatial genomics data. The proposed analysis introduces a framework to perform density normalization and adjacency graph modeling, correcting for uneven cell densities and validating gene patterns by considering local density variations. Similarly, the ground-truth analysis focuses on comparing spatial heterogeneity calls across tissues with non-uniform cellular density and assessing whether conclusions remain stable after density changes. Both aim to ensure reliable spatial analysis outcomes in the context of variable cell density."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on identifying conserved spatial patterns by integrating molecular expression profiles with spatial location data using a hybrid clustering approach that leverages expression similarity and spatial proximity. This aligns with the ground-truth analysis G01, which involves clustering significant genes into spatial expression patterns using spatial correlations to form interpretable programs with shared tissue distributions. Both analyses share the main scientific objective of deriving spatial expression patterns through clustering methods sensitive to both molecular and spatial data."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis aligns with the scientific objective of ground-truth analysis G03, 'Infer complementary signals between cell types', as it aims to delineate tissue domains and infer intercellular communication using ligand-receptor interaction analyses. Both analyses focus on identifying communication patterns between cell types within spatially defined domains."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis emphasizes the use of density normalization and permutation testing for robust spatial feature detection. This aligns with the objective of G03, which is to test density-robust spatial statistics and assess whether spatial heterogeneity conclusions remain stable after accounting for density changes. Both analyses aim to enhance reliability in detecting genuine biological patterns amidst variable cellular densities."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis focuses on identifying spatially organized genes by integrating density-aware differential expression with spatial autocorrelation analysis, which aligns with the objectives of the ground-truth analysis G08. G08 aims to test density-robust spatial statistics, comparing spatial heterogeneity calls across tissues with nonuniform cellular density and assessing the stability of conclusions after density changes. The proposed analysis's emphasis on correcting biases introduced by variable cell densities and employing spatial autocorrelation aligns with G08's objective."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis focuses on quality control, spatial neighborhood calibration, density normalization, and intercellular communication through targeted ligand-receptor analysis. It emphasizes robust spatial neighborhood delineation and validation through cross-validation and sensitivity tests. While it mentions ligand-receptor analysis within spatial neighborhoods, the core objective is centered around quality control and neighborhood calibration, not predominantly on analyzing communication or spatial pattern identification between cell types as highlighted in ground-truth analyses such as G01 (inter-cell-type spatial communication) or G03 (communication in cerebellum). Furthermore, it is not primarily focused on spatial heterogeneity (G08) or gene clustering (G06). Thus, it does not match any specific ground-truth analysis, which are oriented towards specific outcomes like spatial cross-correlation (G01), layered organization (G02), or density-robust statistics (G08)."
+    },
+    {
+      "candidate_index": 6,
+      "match": false,
+      "reason": "The proposed analysis aims to integrate spatial data across multiple samples or technologies to identify conserved gene expression patterns, using methods like hybrid clustering and spatial autocorrelation, and emphasizes cross-sample comparison and validation of shared spatial structures. It focuses on identifying and validating conserved spatial domains across datasets to support biological interpretation.\n\nNone of the ground-truth analyses have the primary objective of comparing or integrating spatial data across samples (or different technologies) to identify conserved spatial patterns. Instead, the ground-truth analyses focus on objectives such as spatially informed cell clustering within a single context (G01), analysis of spatial heterogeneity (G05), and specific spatial pattern analyses within defined contexts, like the olfactory bulb or specific cell types. None emphasize the cross-sample integration and conservation aspect central to the proposed analysis. Therefore, the proposal does not match any of the ground-truth analyses."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis focuses on using a density-normalized clustering approach to profile spatial neighborhoods and then applying ligand-receptor scoring to assess intercellular communication, which aligns with the ground-truth analysis G08. G08's primary objective is to infer complementary signals between cell types and identify ligand and receptor expression patterns that occur in neighboring populations, which is consistent with the goals of the proposed analysis."
+    },
+    {
+      "candidate_index": 8,
+      "match": true,
+      "reason": "The proposed analysis aligns with the objectives of G02, which is about identifying inter-cell-type spatial cross-correlation to uncover ligand-receptor interactions that occur in neighboring populations, as part of its investigation into intercellular communication signals. Additionally, it aligns with the goals of G03, as it includes methods to ensure that identified spatial domains are robust to changes in cell density."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 7,
+    "candidate_count": 9,
+    "candidate_hit_fraction": 0.7777777777777778
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 9,
+    "observable_model_attempts": 9,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 2.198600698262453,
+        "input_tokens": 840,
+        "output_tokens": 130,
+        "total_tokens": 970
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.7872528191655874,
+        "input_tokens": 823,
+        "output_tokens": 96,
+        "total_tokens": 919
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 1.078096715733409,
+        "input_tokens": 822,
+        "output_tokens": 69,
+        "total_tokens": 891
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.737322423607111,
+        "input_tokens": 828,
+        "output_tokens": 76,
+        "total_tokens": 904
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.3764506410807371,
+        "input_tokens": 821,
+        "output_tokens": 103,
+        "total_tokens": 924
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 2.814080422744155,
+        "input_tokens": 832,
+        "output_tokens": 180,
+        "total_tokens": 1012
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 2.4230086393654346,
+        "input_tokens": 820,
+        "output_tokens": 183,
+        "total_tokens": 1003
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.4834939986467361,
+        "input_tokens": 837,
+        "output_tokens": 86,
+        "total_tokens": 923
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 1.2484294679015875,
+        "input_tokens": 840,
+        "output_tokens": 83,
+        "total_tokens": 923
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 16.149
+  },
+  "trace_sha256": "78136386951ee3d62b164d372b1e630a25f3de432cb53a1f97a689dc634169f3",
+  "checkpoint_sha256": "c8bcb5778701dfe893ed718f6bc7c9577748edf188e5cc177e199a6610371edc"
+}

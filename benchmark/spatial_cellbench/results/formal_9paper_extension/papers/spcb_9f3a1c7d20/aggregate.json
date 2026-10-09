@@ -1,0 +1,3233 @@
+{
+  "scheduled_units": 9,
+  "scored_unit_count": 9,
+  "scored_rows": [
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 1,
+      "arm": "direct",
+      "metrics": {
+        "matched_candidates": 6,
+        "candidate_count": 10,
+        "candidate_hit_fraction": 0.6
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 1,
+      "arm": "tissueagent",
+      "metrics": {
+        "matched_candidates": 4,
+        "candidate_count": 10,
+        "candidate_hit_fraction": 0.4
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 1,
+      "arm": "tissueagent_spatial_cv",
+      "metrics": {
+        "matched_candidates": 6,
+        "candidate_count": 10,
+        "candidate_hit_fraction": 0.6
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 2,
+      "arm": "direct",
+      "metrics": {
+        "matched_candidates": 5,
+        "candidate_count": 10,
+        "candidate_hit_fraction": 0.5
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 2,
+      "arm": "tissueagent",
+      "metrics": {
+        "matched_candidates": 4,
+        "candidate_count": 10,
+        "candidate_hit_fraction": 0.4
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 2,
+      "arm": "tissueagent_spatial_cv",
+      "metrics": {
+        "matched_candidates": 9,
+        "candidate_count": 10,
+        "candidate_hit_fraction": 0.9
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 3,
+      "arm": "direct",
+      "metrics": {
+        "matched_candidates": 7,
+        "candidate_count": 10,
+        "candidate_hit_fraction": 0.7
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 3,
+      "arm": "tissueagent",
+      "metrics": {
+        "matched_candidates": 4,
+        "candidate_count": 10,
+        "candidate_hit_fraction": 0.4
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 3,
+      "arm": "tissueagent_spatial_cv",
+      "metrics": {
+        "matched_candidates": 5,
+        "candidate_count": 10,
+        "candidate_hit_fraction": 0.5
+      }
+    }
+  ],
+  "completion": {
+    "direct": {
+      "scheduled": 3,
+      "generation_success": 3,
+      "judge_success": 3
+    },
+    "tissueagent": {
+      "scheduled": 3,
+      "generation_success": 3,
+      "judge_success": 3
+    },
+    "tissueagent_spatial_cv": {
+      "scheduled": 3,
+      "generation_success": 3,
+      "judge_success": 3
+    }
+  },
+  "arm_summaries": {
+    "direct": {
+      "scored_units": 3,
+      "pooled_candidate_hit": 0.6,
+      "mean_scored_unit_hit": 0.6,
+      "mean_paper_hit": 0.6,
+      "complete_paper_count": 1
+    },
+    "tissueagent": {
+      "scored_units": 3,
+      "pooled_candidate_hit": 0.4,
+      "mean_scored_unit_hit": 0.4000000000000001,
+      "mean_paper_hit": 0.4,
+      "complete_paper_count": 1
+    },
+    "tissueagent_spatial_cv": {
+      "scored_units": 3,
+      "pooled_candidate_hit": 0.6666666666666666,
+      "mean_scored_unit_hit": 0.6666666666666666,
+      "mean_paper_hit": 0.6666666666666666,
+      "complete_paper_count": 1
+    }
+  },
+  "contrasts": {
+    "tissueagent_minus_direct": {
+      "metric": "candidate_hit_fraction",
+      "treatment": "tissueagent",
+      "baseline": "direct",
+      "paper_count": 1,
+      "estimate": -0.19999999999999996,
+      "ci95": [
+        -0.19999999999999996,
+        -0.19999999999999996
+      ],
+      "ci_method": "paired_paper_percentile_bootstrap",
+      "bootstrap_samples": 10000,
+      "seed": 20260720,
+      "paper_deltas": {
+        "spcb_9f3a1c7d20": -0.19999999999999996
+      },
+      "excluded_incomplete_papers": []
+    },
+    "tissueagent_spatial_cv_minus_tissueagent": {
+      "metric": "candidate_hit_fraction",
+      "treatment": "tissueagent_spatial_cv",
+      "baseline": "tissueagent",
+      "paper_count": 1,
+      "estimate": 0.2666666666666666,
+      "ci95": [
+        0.2666666666666666,
+        0.2666666666666666
+      ],
+      "ci_method": "paired_paper_percentile_bootstrap",
+      "bootstrap_samples": 10000,
+      "seed": 20260720,
+      "paper_deltas": {
+        "spcb_9f3a1c7d20": 0.2666666666666666
+      },
+      "excluded_incomplete_papers": []
+    }
+  },
+  "unit_ledger": [
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 1,
+      "arm": "direct",
+      "proposal_count": 10,
+      "generation_status": "success",
+      "judge_status": "success",
+      "error_type": null,
+      "reason": null,
+      "generation_trace": {
+        "arm": "direct",
+        "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+        "model": {
+          "id": "o3-mini",
+          "provider": "openai",
+          "api_model": "o3-mini",
+          "reasoning_effort": "medium"
+        },
+        "logical_model_calls": 1,
+        "observable_model_attempts": 1,
+        "semantic_retries": 0,
+        "fallback_model": null,
+        "calls": [
+          {
+            "stage": "direct",
+            "kind": "structured",
+            "elapsed_seconds": 9.603737204917707,
+            "input_tokens": 430,
+            "output_tokens": 1049,
+            "total_tokens": 1479
+          }
+        ],
+        "failed_attempts": [],
+        "prompt_bundle_sha256": "02c0478e443c69db5b38845c57724979c4c2e70b1b9ab74b167d5d3fd16a10ac",
+        "overview_sha256": null,
+        "elapsed_seconds": 9.68
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 1,
+      "arm": "tissueagent",
+      "proposal_count": 10,
+      "generation_status": "success",
+      "judge_status": "success",
+      "error_type": null,
+      "reason": null,
+      "generation_trace": {
+        "native_tissueagent_graph": true,
+        "outer_graph": {
+          "node_sequence": [
+            "planner_agent",
+            "recruiter_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent"
+          ],
+          "planner_format_retry_count": 0,
+          "recruiter_format_retry_count": 0,
+          "evaluator_replan_count": 0,
+          "evaluator_replan_request_count": 0
+        },
+        "task_sha256": "23545e5da08320494db95dbb5a06034df4fc01ad4ddbd8dc76bbcf2a146dfef5",
+        "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+        "proposal_count": 10,
+        "model": {
+          "id": "o3-mini",
+          "provider": "openai",
+          "api_model": "o3-mini",
+          "reasoning_effort": "medium"
+        },
+        "orchestration_model": {
+          "id": "gpt-5.1",
+          "provider": "openai",
+          "api_model": "gpt-5.1",
+          "reasoning_effort": "high"
+        },
+        "roster": [
+          "hypothesis",
+          "critic"
+        ],
+        "plan": {
+          "status": "recruited",
+          "user_request": "Coordinate domain agents to propose, critique, and finalize exactly 10 computational spatial-omics analysis ideas most likely performed in a hidden paper, producing the required JSON hypothesis artifacts without executing any analyses.",
+          "current_step_id": 4,
+          "steps": [
+            {
+              "id": 1,
+              "title": "Draft candidate analysis proposals",
+              "description": "Invoke the Hypothesis agent to read the PUBLIC BACKGROUND and generate an initial set of computational spatial-omics analysis proposals likely to be used in such a study, without running any analyses. The agent will serialize these draft ideas as a JSON artifact at the required path.",
+              "reasoning": "A dedicated hypothesis-generating agent is best suited to translate the high-level description of spatial transcriptomics challenges (spatial domains, alignment, deconvolution, spatial representation learning, etc.) into a structured set of candidate analysis proposals. This draft serves as the raw material to be refined later and must be written to disk before any critique.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/draft_proposals.json"
+              ],
+              "assigned_agent": "hypothesis_agent",
+              "assignment_rationale": "hypothesis_agent is explicitly designed to generate spatial paper analysis hypotheses and write them to hypotheses/draft_proposals.json, matching this draft proposal step.",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/draft_proposals.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            },
+            {
+              "id": 2,
+              "title": "Critique draft proposals",
+              "description": "Invoke the Critic agent to load project/outputs/hypotheses/draft_proposals.json and evaluate the draft analyses for plausibility, distinctness, coverage of the PUBLIC BACKGROUND, and alignment with typical spatial-omics workflows, again without executing any analysis. The Critic will record its structured assessment and improvement suggestions in a JSON file at the required critique path.",
+              "reasoning": "A separate critic stage improves quality by identifying redundancies, gaps (e.g., missing spatial domain, alignment, or deconvolution angles), and over- or under-emphasis on particular aspects of the background. This critique guides the final synthesis step and must be stored as its own artifact for transparent downstream use.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "assigned_agent": "critic_agent",
+              "assignment_rationale": "critic_agent is the dedicated review-only agent for evaluating spatial analysis hypotheses and writing its assessments to hypotheses/critique.json, which is exactly what this critique step requires.",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            },
+            {
+              "id": 3,
+              "title": "Synthesize final proposal set",
+              "description": "Re-invoke the Hypothesis (or synthesis-capable) agent to jointly read project/outputs/hypotheses/draft_proposals.json and project/outputs/hypotheses/critique.json and construct the final set of exactly 10 refined computational spatial-omics analysis proposals. The agent will merge, refine, or discard drafts as needed, ensuring each final proposal is distinct, well-justified by the PUBLIC BACKGROUND, and not executed in practice. The final artifact will be a JSON object whose only top-level key is \"proposals\", mapping to an array of exactly 10 items, each an object with only \"title\" and a detailed \"summary\" fields, written to the specified path.",
+              "reasoning": "The final synthesis must transform preliminary ideas plus critique into a concise, coherent set of exactly 10 high-quality proposals, formatted exactly as requested for downstream benchmarking. Constraining the structure of project/outputs/hypotheses/final_proposals.json (top-level \"proposals\" key, 10 entries, only \"title\" and detailed \"summary\") ensures compatibility with the evaluation framework while keeping the step focused on conceptual proposal refinement rather than analysis execution.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "assigned_agent": "hypothesis_agent",
+              "assignment_rationale": "hypothesis_agent is also responsible for synthesizing final spatial analysis proposals and writing them to hypotheses/final_proposals.json, making it the correct agent for constructing the final set of 10 proposals.",
+              "skills": [],
+              "status": "running",
+              "actual_outputs": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            }
+          ],
+          "last_edited_by": null,
+          "last_edited_at": null,
+          "provenance": {
+            "template_names": [],
+            "justification": "No existing plan template matches this meta-level hypothesis-proposal and critique workflow; the user’s benchmark requires a custom three-step structure focused on drafting, critiquing, and synthesizing proposal JSON artifacts rather than running specific spatial-omics analyses."
+          }
+        },
+        "final_artifact_complete": true,
+        "plan_template_names": [],
+        "plan_step_count_compliant": true,
+        "plan_unassigned_steps": [],
+        "plan_unexpected_artifacts": [],
+        "plan_artifact_assignment_mismatches": [],
+        "manager_dispatched_all_steps": true,
+        "manager_nonfinal_steps_complete": true,
+        "manager_final_step_started": true,
+        "manager_acknowledged": false,
+        "manager_tool_calls": [
+          "next_step",
+          "read",
+          "next_step",
+          "read",
+          "read",
+          "next_step",
+          "read"
+        ],
+        "manager_write_count": 0,
+        "manager_write_paths": [],
+        "artifact_author_candidates": {
+          "hypotheses/final_proposals.json": [
+            "hypothesis_agent"
+          ],
+          "hypotheses/draft_proposals.json": [
+            "hypothesis_agent"
+          ],
+          "hypotheses/critique.json": [
+            "critic_agent"
+          ]
+        },
+        "intermediate_artifact_validity": {
+          "hypotheses/draft_proposals.json": true,
+          "hypotheses/critique.json": true
+        },
+        "hypothesis_invoked": true,
+        "hypothesis_validated_write_count": 2,
+        "hypothesis_draft_write_count": 1,
+        "hypothesis_final_write_count": 1,
+        "critic_validated_write_count": 1,
+        "spatial_cv_available": false,
+        "spatial_cv_recruited_steps": [],
+        "spatial_cv_invoked": false,
+        "spatial_cv_execution_success": false,
+        "spatial_cv_artifact_valid": false,
+        "spatial_cv_bundle_reason": "absent",
+        "spatial_cv_exposed_to_hypothesis": false,
+        "hypothesis_prompt_artifact_sets": [
+          [],
+          [
+            "hypotheses/critique.json",
+            "hypotheses/draft_proposals.json"
+          ]
+        ],
+        "hypothesis_prompt_exposures": [
+          {
+            "artifact_keys": [],
+            "artifact_sha256": {}
+          },
+          {
+            "artifact_keys": [
+              "hypotheses/critique.json",
+              "hypotheses/draft_proposals.json"
+            ],
+            "artifact_sha256": {
+              "hypotheses/critique.json": "12cd1001d43cf35466c3de22971133996d494800de70aceb023178fd0efeecb5",
+              "hypotheses/draft_proposals.json": "4ebd56248611b48ef4cebac7db27433f0f462cf9b6e81680de03a50b5b70caf4"
+            }
+          }
+        ],
+        "spatial_cv_trace": null,
+        "ta_ai_calls": [
+          {
+            "name": "planner_agent",
+            "input_tokens": 3386,
+            "output_tokens": 2902,
+            "total_tokens": 6288
+          },
+          {
+            "name": "recruiter_agent",
+            "input_tokens": 2492,
+            "output_tokens": 367,
+            "total_tokens": 2859
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2394,
+            "output_tokens": 326,
+            "total_tokens": 2720
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2649,
+            "output_tokens": 36,
+            "total_tokens": 2685
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 3256,
+            "output_tokens": 317,
+            "total_tokens": 3573
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 4269,
+            "output_tokens": 84,
+            "total_tokens": 4353
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 5578,
+            "output_tokens": 362,
+            "total_tokens": 5940
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 6011,
+            "output_tokens": 36,
+            "total_tokens": 6047
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 6592,
+            "output_tokens": 180,
+            "total_tokens": 6772
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 7562,
+            "output_tokens": 96,
+            "total_tokens": 7658
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 8143,
+            "output_tokens": 391,
+            "total_tokens": 8534
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 8724,
+            "output_tokens": 225,
+            "total_tokens": 8949
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 9078,
+            "output_tokens": 430,
+            "total_tokens": 9508
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 9727,
+            "output_tokens": 1536,
+            "total_tokens": 11263
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 11252,
+            "output_tokens": 450,
+            "total_tokens": 11702
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 13340,
+            "output_tokens": 17,
+            "total_tokens": 13357
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 13393,
+            "output_tokens": 944,
+            "total_tokens": 14337
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 691,
+            "output_tokens": 1729,
+            "total_tokens": 2420
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 1553,
+            "output_tokens": 1228,
+            "total_tokens": 2781
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 3082,
+            "output_tokens": 723,
+            "total_tokens": 3805
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 2337,
+            "output_tokens": 1718,
+            "total_tokens": 4055
+          }
+        ],
+        "elapsed_seconds": 190.702,
+        "final_artifact_sha256": "2a085596b9701f634f5c8349cb1750459de27b18271e5a12809999a04ccd6cc7"
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 1,
+      "arm": "tissueagent_spatial_cv",
+      "proposal_count": 10,
+      "generation_status": "success",
+      "judge_status": "success",
+      "error_type": null,
+      "reason": null,
+      "generation_trace": {
+        "native_tissueagent_graph": true,
+        "outer_graph": {
+          "node_sequence": [
+            "planner_agent",
+            "recruiter_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent"
+          ],
+          "planner_format_retry_count": 0,
+          "recruiter_format_retry_count": 0,
+          "evaluator_replan_count": 0,
+          "evaluator_replan_request_count": 0
+        },
+        "task_sha256": "6790a7318793513368a8577553cbe08dea26d66aae992039a41cc9ce71cf6339",
+        "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+        "proposal_count": 10,
+        "model": {
+          "id": "o3-mini",
+          "provider": "openai",
+          "api_model": "o3-mini",
+          "reasoning_effort": "medium"
+        },
+        "orchestration_model": {
+          "id": "gpt-5.1",
+          "provider": "openai",
+          "api_model": "gpt-5.1",
+          "reasoning_effort": "high"
+        },
+        "roster": [
+          "hypothesis",
+          "critic",
+          "spatial_cv"
+        ],
+        "plan": {
+          "status": "recruited",
+          "user_request": "Coordinate domain agents to propose exactly 10 computational spatial-omics analyses most likely performed in the hidden paper, using a three-step TA+CV workflow that produces draft, critique, and final proposal JSON artifacts.",
+          "current_step_id": 4,
+          "steps": [
+            {
+              "id": 1,
+              "title": "Draft spatial analysis proposal set",
+              "description": "Use the Spatial-CV Planning Agent (`spatial_cv_agent`) to generate an initial, machine-readable draft set of exactly 10 distinct computational spatial-omics analysis proposals grounded solely in the provided public background (e.g., spatial domains, multi-section alignment, spatially informed deconvolution, and joint expression–geometry representations). The agent should not execute any analyses, only describe them, and must physically write the draft artifact to `project/outputs/hypotheses/draft_proposals.json` in a structured JSON format suitable for downstream critique and synthesis.",
+              "reasoning": "A dedicated spatial-CV planning step provides a focused, domain-aware exploration of plausible analyses for the hidden paper, incorporating spatial structure and cross-validation thinking without running experiments. This establishes a concrete, editable proposal set that later agents can critique and refine, while satisfying the requirement that the Recruiter assign this step specifically to `spatial_cv_agent` and that the artifact be written to the exact draft path.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/draft_proposals.json"
+              ],
+              "assigned_agent": "spatial_cv_agent",
+              "assignment_rationale": "The spatial_cv_agent is explicitly required for the TA+CV treatment and is specialized for drafting exactly 10 spatial-paper analyses, producing the draft proposals artifact needed for downstream critique and synthesis.",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/draft_proposals.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            },
+            {
+              "id": 2,
+              "title": "Critique draft proposal set",
+              "description": "Use a critique-focused agent (e.g., a Critic agent) to read `project/outputs/hypotheses/draft_proposals.json` and produce a structured critique of the 10 draft proposals, assessing coverage of the problem space implied by the public background, redundancy between proposals, feasibility, interpretability, and alignment with spatial-omics and representation-learning goals. The agent must not alter the draft file or execute any analyses, and must physically write its critique to `project/outputs/hypotheses/critique.json` once the draft artifact exists.",
+              "reasoning": "A dedicated critique step provides quality control over the initial proposal set, identifying gaps, overlaps, and potential misalignments before final synthesis. This mirrors TA+CV-style separation between proposal generation and evaluation, and the explicit critique artifact enables the final synthesis agent to make traceable, justified adjustments while respecting the requirement that the Critic’s only output be the specified critique file.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "assigned_agent": "critic_agent",
+              "assignment_rationale": "The critic_agent is purpose-built to review and critique candidate spatial paper analyses and is the only agent that advertises producing a critique artifact, matching the requirements for writing hypotheses/critique.json without generating proposals.",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            },
+            {
+              "id": 3,
+              "title": "Synthesize final proposal set",
+              "description": "Use a hypothesis-synthesis agent (e.g., a Hypothesis or proposal-synthesis agent) to combine `project/outputs/hypotheses/draft_proposals.json` and `project/outputs/hypotheses/critique.json` into a refined, non-redundant final set of exactly 10 computational spatial-omics analysis proposals. The agent must not execute any analyses. It must physically write `project/outputs/hypotheses/final_proposals.json` as a JSON object whose only top-level key is `proposals`, mapping to an array of exactly 10 items; each item must contain only `title` and a detailed `summary` describing the proposed analysis, its spatial-omics rationale, and its relation to the paper’s likely goals, without introducing any additional fields.",
+              "reasoning": "This synthesis step turns the critiqued draft into the single required deliverable in the precise format requested, ensuring there are exactly 10 well-motivated, distinct proposals suitable for the hidden paper context. By strictly enforcing the output schema and not running any analyses, it cleanly separates design from execution while honoring all path and structural constraints on `final_proposals.json`.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "assigned_agent": "hypothesis_agent",
+              "assignment_rationale": "The hypothesis_agent is designed for drafting and final synthesis of exactly 10 spatial analysis proposals and can transform the critiqued draft into the required final_proposals.json object with the specified schema.",
+              "skills": [],
+              "status": "running",
+              "actual_outputs": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            }
+          ],
+          "last_edited_by": null,
+          "last_edited_at": null,
+          "provenance": {
+            "template_names": [],
+            "justification": "No existing plan template fits this highly constrained three-step TA+CV proposal-generation workflow, which must use specific agents (including `spatial_cv_agent`), fixed artifact paths, and a custom JSON structure without adding extra steps; therefore, the plan was written from scratch."
+          }
+        },
+        "final_artifact_complete": true,
+        "plan_template_names": [],
+        "plan_step_count_compliant": true,
+        "plan_unassigned_steps": [],
+        "plan_unexpected_artifacts": [],
+        "plan_artifact_assignment_mismatches": [],
+        "manager_dispatched_all_steps": true,
+        "manager_nonfinal_steps_complete": true,
+        "manager_final_step_started": true,
+        "manager_acknowledged": false,
+        "manager_tool_calls": [
+          "next_step",
+          "glob",
+          "read",
+          "read",
+          "grep",
+          "next_step",
+          "read",
+          "read",
+          "next_step",
+          "read",
+          "read",
+          "grep"
+        ],
+        "manager_write_count": 0,
+        "manager_write_paths": [],
+        "artifact_author_candidates": {
+          "hypotheses/final_proposals.json": [
+            "hypothesis_agent"
+          ],
+          "hypotheses/draft_proposals.json": [],
+          "hypotheses/critique.json": [
+            "critic_agent"
+          ]
+        },
+        "intermediate_artifact_validity": {
+          "hypotheses/draft_proposals.json": true,
+          "hypotheses/critique.json": true
+        },
+        "hypothesis_invoked": true,
+        "hypothesis_validated_write_count": 1,
+        "hypothesis_draft_write_count": 0,
+        "hypothesis_final_write_count": 1,
+        "critic_validated_write_count": 1,
+        "spatial_cv_available": true,
+        "spatial_cv_recruited_steps": [
+          1
+        ],
+        "spatial_cv_invoked": true,
+        "spatial_cv_execution_success": true,
+        "spatial_cv_artifact_valid": true,
+        "spatial_cv_bundle_reason": "valid",
+        "spatial_cv_exposed_to_hypothesis": true,
+        "hypothesis_prompt_artifact_sets": [
+          [
+            "hypotheses/critique.json",
+            "hypotheses/draft_proposals.json",
+            "hypotheses/spatial_cv_proposals.json"
+          ]
+        ],
+        "hypothesis_prompt_exposures": [
+          {
+            "artifact_keys": [
+              "hypotheses/critique.json",
+              "hypotheses/draft_proposals.json",
+              "hypotheses/spatial_cv_proposals.json"
+            ],
+            "artifact_sha256": {
+              "hypotheses/critique.json": "c67bb0db28ae90fdedba612d760d631db6fad6d45ab124a7fa136d97fcd46ea1",
+              "hypotheses/draft_proposals.json": "8ca851340879b177974e6126780c65ba5fe58d4e17d187e18901972f2709b13b",
+              "hypotheses/spatial_cv_proposals.json": "8ca851340879b177974e6126780c65ba5fe58d4e17d187e18901972f2709b13b"
+            }
+          }
+        ],
+        "spatial_cv_trace": {
+          "status": "success",
+          "protocol": "spatial_cv_dynamic_n_v1",
+          "eval_id": "spcb_9f3a1c7d20",
+          "model_id": "o3-mini",
+          "proposal_count": 10,
+          "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+          "overview_sha256": "34954dad7d5535ecad3d92e88d9cdc2a2fa9c90b5e3c7f8cad7ed4402a75114e",
+          "logical_model_calls": 30,
+          "observable_model_attempts": 30,
+          "calls": [
+            {
+              "stage": "spatial_cv_01_draft",
+              "kind": "structured",
+              "elapsed_seconds": 10.145871186978184,
+              "input_tokens": 927,
+              "output_tokens": 1187,
+              "total_tokens": 2114
+            },
+            {
+              "stage": "spatial_cv_01_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.01902751205489,
+              "input_tokens": 1138,
+              "output_tokens": 824,
+              "total_tokens": 1962
+            },
+            {
+              "stage": "spatial_cv_01_revision",
+              "kind": "structured",
+              "elapsed_seconds": 4.697365390020423,
+              "input_tokens": 1660,
+              "output_tokens": 642,
+              "total_tokens": 2302
+            },
+            {
+              "stage": "spatial_cv_02_draft",
+              "kind": "structured",
+              "elapsed_seconds": 4.311695679090917,
+              "input_tokens": 1060,
+              "output_tokens": 637,
+              "total_tokens": 1697
+            },
+            {
+              "stage": "spatial_cv_02_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.507895215996541,
+              "input_tokens": 1234,
+              "output_tokens": 925,
+              "total_tokens": 2159
+            },
+            {
+              "stage": "spatial_cv_02_revision",
+              "kind": "structured",
+              "elapsed_seconds": 4.597713973955251,
+              "input_tokens": 1857,
+              "output_tokens": 700,
+              "total_tokens": 2557
+            },
+            {
+              "stage": "spatial_cv_03_draft",
+              "kind": "structured",
+              "elapsed_seconds": 6.033585594035685,
+              "input_tokens": 1207,
+              "output_tokens": 1002,
+              "total_tokens": 2209
+            },
+            {
+              "stage": "spatial_cv_03_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.0511559329461306,
+              "input_tokens": 1362,
+              "output_tokens": 542,
+              "total_tokens": 1904
+            },
+            {
+              "stage": "spatial_cv_03_revision",
+              "kind": "structured",
+              "elapsed_seconds": 4.224113242002204,
+              "input_tokens": 1730,
+              "output_tokens": 551,
+              "total_tokens": 2281
+            },
+            {
+              "stage": "spatial_cv_04_draft",
+              "kind": "structured",
+              "elapsed_seconds": 4.920330169959925,
+              "input_tokens": 1354,
+              "output_tokens": 876,
+              "total_tokens": 2230
+            },
+            {
+              "stage": "spatial_cv_04_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.424118682043627,
+              "input_tokens": 1574,
+              "output_tokens": 767,
+              "total_tokens": 2341
+            },
+            {
+              "stage": "spatial_cv_04_revision",
+              "kind": "structured",
+              "elapsed_seconds": 4.568503735004924,
+              "input_tokens": 1975,
+              "output_tokens": 816,
+              "total_tokens": 2791
+            },
+            {
+              "stage": "spatial_cv_05_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.331716538988985,
+              "input_tokens": 1473,
+              "output_tokens": 943,
+              "total_tokens": 2416
+            },
+            {
+              "stage": "spatial_cv_05_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.764975221012719,
+              "input_tokens": 1696,
+              "output_tokens": 651,
+              "total_tokens": 2347
+            },
+            {
+              "stage": "spatial_cv_05_revision",
+              "kind": "structured",
+              "elapsed_seconds": 5.4896072439150885,
+              "input_tokens": 2173,
+              "output_tokens": 826,
+              "total_tokens": 2999
+            },
+            {
+              "stage": "spatial_cv_06_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.16061371890828,
+              "input_tokens": 1573,
+              "output_tokens": 713,
+              "total_tokens": 2286
+            },
+            {
+              "stage": "spatial_cv_06_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.5974427519831806,
+              "input_tokens": 1759,
+              "output_tokens": 658,
+              "total_tokens": 2417
+            },
+            {
+              "stage": "spatial_cv_06_revision",
+              "kind": "structured",
+              "elapsed_seconds": 4.253486794070341,
+              "input_tokens": 2179,
+              "output_tokens": 737,
+              "total_tokens": 2916
+            },
+            {
+              "stage": "spatial_cv_07_draft",
+              "kind": "structured",
+              "elapsed_seconds": 7.654880449059419,
+              "input_tokens": 1726,
+              "output_tokens": 1239,
+              "total_tokens": 2965
+            },
+            {
+              "stage": "spatial_cv_07_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.967267989064567,
+              "input_tokens": 2053,
+              "output_tokens": 801,
+              "total_tokens": 2854
+            },
+            {
+              "stage": "spatial_cv_07_revision",
+              "kind": "structured",
+              "elapsed_seconds": 8.242958732065745,
+              "input_tokens": 2552,
+              "output_tokens": 1179,
+              "total_tokens": 3731
+            },
+            {
+              "stage": "spatial_cv_08_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.356163574964739,
+              "input_tokens": 1855,
+              "output_tokens": 786,
+              "total_tokens": 2641
+            },
+            {
+              "stage": "spatial_cv_08_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.373796258005314,
+              "input_tokens": 1987,
+              "output_tokens": 720,
+              "total_tokens": 2707
+            },
+            {
+              "stage": "spatial_cv_08_revision",
+              "kind": "structured",
+              "elapsed_seconds": 3.859158933046274,
+              "input_tokens": 2341,
+              "output_tokens": 656,
+              "total_tokens": 2997
+            },
+            {
+              "stage": "spatial_cv_09_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.697063412051648,
+              "input_tokens": 1943,
+              "output_tokens": 832,
+              "total_tokens": 2775
+            },
+            {
+              "stage": "spatial_cv_09_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.8833334690425545,
+              "input_tokens": 2183,
+              "output_tokens": 770,
+              "total_tokens": 2953
+            },
+            {
+              "stage": "spatial_cv_09_revision",
+              "kind": "structured",
+              "elapsed_seconds": 5.089608463924378,
+              "input_tokens": 2651,
+              "output_tokens": 884,
+              "total_tokens": 3535
+            },
+            {
+              "stage": "spatial_cv_10_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.135338313993998,
+              "input_tokens": 2043,
+              "output_tokens": 766,
+              "total_tokens": 2809
+            },
+            {
+              "stage": "spatial_cv_10_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.459608597913757,
+              "input_tokens": 2280,
+              "output_tokens": 888,
+              "total_tokens": 3168
+            },
+            {
+              "stage": "spatial_cv_10_revision",
+              "kind": "structured",
+              "elapsed_seconds": 5.226840724004433,
+              "input_tokens": 2738,
+              "output_tokens": 786,
+              "total_tokens": 3524
+            }
+          ],
+          "failed_attempts": [],
+          "elapsed_seconds": 150.1,
+          "proposal_sha256": "b42d5743dcd2c6d869e4ac888dc02b97785e8b331cdd4a392e8ddb05867c6cfe"
+        },
+        "ta_ai_calls": [
+          {
+            "name": "planner_agent",
+            "input_tokens": 3436,
+            "output_tokens": 3100,
+            "total_tokens": 6536
+          },
+          {
+            "name": "recruiter_agent",
+            "input_tokens": 2751,
+            "output_tokens": 800,
+            "total_tokens": 3551
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2569,
+            "output_tokens": 554,
+            "total_tokens": 3123
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2923,
+            "output_tokens": 23,
+            "total_tokens": 2946
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2998,
+            "output_tokens": 36,
+            "total_tokens": 3034
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 3554,
+            "output_tokens": 93,
+            "total_tokens": 3647
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 4110,
+            "output_tokens": 369,
+            "total_tokens": 4479
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 4484,
+            "output_tokens": 973,
+            "total_tokens": 5457
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 5942,
+            "output_tokens": 84,
+            "total_tokens": 6026
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 7158,
+            "output_tokens": 326,
+            "total_tokens": 7484
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 7555,
+            "output_tokens": 36,
+            "total_tokens": 7591
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 8146,
+            "output_tokens": 132,
+            "total_tokens": 8278
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 8737,
+            "output_tokens": 120,
+            "total_tokens": 8857
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 9084,
+            "output_tokens": 307,
+            "total_tokens": 9391
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 10228,
+            "output_tokens": 140,
+            "total_tokens": 10368
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 10820,
+            "output_tokens": 1128,
+            "total_tokens": 11948
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 10871,
+            "output_tokens": 2945,
+            "total_tokens": 13816
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 11523,
+            "output_tokens": 1701,
+            "total_tokens": 13224
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 13327,
+            "output_tokens": 675,
+            "total_tokens": 14002
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 15247,
+            "output_tokens": 17,
+            "total_tokens": 15264
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 15300,
+            "output_tokens": 942,
+            "total_tokens": 16242
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 15893,
+            "output_tokens": 2582,
+            "total_tokens": 18475
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 17222,
+            "output_tokens": 1861,
+            "total_tokens": 19083
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 3942,
+            "output_tokens": 2360,
+            "total_tokens": 6302
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 5230,
+            "output_tokens": 1189,
+            "total_tokens": 6419
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 6374,
+            "output_tokens": 1311,
+            "total_tokens": 7685
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 8634,
+            "output_tokens": 1145,
+            "total_tokens": 9779
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 5081,
+            "output_tokens": 1786,
+            "total_tokens": 6867
+          }
+        ],
+        "elapsed_seconds": 428.952,
+        "final_artifact_sha256": "4674a8473c35fbc5889fecc5c0f956c276a0ced72dae4121f814dfafae53ddce"
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 2,
+      "arm": "direct",
+      "proposal_count": 10,
+      "generation_status": "success",
+      "judge_status": "success",
+      "error_type": null,
+      "reason": null,
+      "generation_trace": {
+        "arm": "direct",
+        "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+        "model": {
+          "id": "o3-mini",
+          "provider": "openai",
+          "api_model": "o3-mini",
+          "reasoning_effort": "medium"
+        },
+        "logical_model_calls": 1,
+        "observable_model_attempts": 1,
+        "semantic_retries": 0,
+        "fallback_model": null,
+        "calls": [
+          {
+            "stage": "direct",
+            "kind": "structured",
+            "elapsed_seconds": 6.116140709957108,
+            "input_tokens": 430,
+            "output_tokens": 1264,
+            "total_tokens": 1694
+          }
+        ],
+        "failed_attempts": [],
+        "prompt_bundle_sha256": "02c0478e443c69db5b38845c57724979c4c2e70b1b9ab74b167d5d3fd16a10ac",
+        "overview_sha256": null,
+        "elapsed_seconds": 6.121
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 2,
+      "arm": "tissueagent",
+      "proposal_count": 10,
+      "generation_status": "success",
+      "judge_status": "success",
+      "error_type": null,
+      "reason": null,
+      "generation_trace": {
+        "native_tissueagent_graph": true,
+        "outer_graph": {
+          "node_sequence": [
+            "planner_agent",
+            "recruiter_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent"
+          ],
+          "planner_format_retry_count": 0,
+          "recruiter_format_retry_count": 0,
+          "evaluator_replan_count": 0,
+          "evaluator_replan_request_count": 0
+        },
+        "task_sha256": "23545e5da08320494db95dbb5a06034df4fc01ad4ddbd8dc76bbcf2a146dfef5",
+        "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+        "proposal_count": 10,
+        "model": {
+          "id": "o3-mini",
+          "provider": "openai",
+          "api_model": "o3-mini",
+          "reasoning_effort": "medium"
+        },
+        "orchestration_model": {
+          "id": "gpt-5.1",
+          "provider": "openai",
+          "api_model": "gpt-5.1",
+          "reasoning_effort": "high"
+        },
+        "roster": [
+          "hypothesis",
+          "critic"
+        ],
+        "plan": {
+          "status": "recruited",
+          "user_request": "Coordinate domain agents to propose exactly 10 computational spatial-omics analyses most likely performed in the hidden paper, via a draft–critique–synthesis workflow that produces specific JSON artifacts.",
+          "current_step_id": 4,
+          "steps": [
+            {
+              "id": 1,
+              "title": "Draft candidate analysis proposals",
+              "description": "Use the Hypothesis agent to generate an initial set of computational spatial-omics analysis proposals, grounded only in the provided public background, and save them to `project/outputs/hypotheses/draft_proposals.json` without executing any analyses. The draft should already respect that proposals are spatially aware (jointly modeling expression and geometry) and plausible for a typical spatial transcriptomics paper, but need not yet be restricted to the final 10.",
+              "reasoning": "A dedicated hypothesis-generation agent is best suited to produce a structured, content-rich draft proposals file in the required JSON format, which then serves as the input for critique and refinement. Keeping this as a separate step ensures that the later Critic and synthesis stages have a concrete artifact to work from.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/draft_proposals.json"
+              ],
+              "assigned_agent": "hypothesis_agent",
+              "assignment_rationale": "The Hypothesis agent is explicitly designed to draft spatial analysis proposals and write them to hypotheses/draft_proposals.json, matching the required artifact and function of this step.",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/draft_proposals.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            },
+            {
+              "id": 2,
+              "title": "Critique draft proposals for quality",
+              "description": "Have the Critic agent read `project/outputs/hypotheses/draft_proposals.json` and produce a evaluation at `project/outputs/hypotheses/critique.json`, assessing each draft proposal for clarity, distinctness, biological and methodological plausibility given the background, and fit to the goal of inferring likely analyses of the hidden paper, without proposing new analyses or altering file formats.",
+              "reasoning": "A specialized Critic agent, whose advertised output is a critique file, can systematically identify overlaps, gaps, and weaknesses in the draft proposals while enforcing the constraints (no execution, no hidden-answer matching). This critique artifact will guide the final refinement by the Hypothesis agent.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "assigned_agent": "critic_agent",
+              "assignment_rationale": "The Critic agent specializes in reviewing and critiquing candidate spatial paper analyses, producing a critique at hypotheses/critique.json, which aligns exactly with this step’s goal.",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            },
+            {
+              "id": 3,
+              "title": "Synthesize final set of proposals",
+              "description": "Invoke the Hypothesis agent again to combine `project/outputs/hypotheses/draft_proposals.json` and `project/outputs/hypotheses/critique.json` into a final proposals file at `project/outputs/hypotheses/final_proposals.json`. This JSON must be a single object whose only top-level key is `proposals`, containing exactly 10 items, each an object with only `title` and a detailed `summary` describing a distinct, computational spatial-omics analysis likely performed in the hidden paper, with no analyses executed and no additional keys or paths created.",
+              "reasoning": "A second synthesis pass by the Hypothesis agent, now informed by the Critic’s feedback, is needed to select, refine, and, if necessary, rephrase proposals into a final, non-redundant set of exactly 10 analyses in the exact JSON schema required. This step produces the sole required final artifact for the benchmark.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "assigned_agent": "hypothesis_agent",
+              "assignment_rationale": "The Hypothesis agent is responsible for synthesizing and finalizing spatial analysis proposals and can write the required hypotheses/final_proposals.json artifact with exactly 10 proposals, as specified.",
+              "skills": [],
+              "status": "running",
+              "actual_outputs": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            }
+          ],
+          "last_edited_by": null,
+          "last_edited_at": null,
+          "provenance": {
+            "template_names": [],
+            "justification": "No existing plan template matches this meta-level draft–critique–synthesis workflow for generating analysis proposals (rather than executing analyses); the plan was therefore written from scratch while adhering to the specified artifact paths and agent roles."
+          }
+        },
+        "final_artifact_complete": true,
+        "plan_template_names": [],
+        "plan_step_count_compliant": true,
+        "plan_unassigned_steps": [],
+        "plan_unexpected_artifacts": [],
+        "plan_artifact_assignment_mismatches": [],
+        "manager_dispatched_all_steps": true,
+        "manager_nonfinal_steps_complete": true,
+        "manager_final_step_started": true,
+        "manager_acknowledged": false,
+        "manager_tool_calls": [
+          "next_step",
+          "read",
+          "next_step",
+          "read",
+          "next_step",
+          "read",
+          "read"
+        ],
+        "manager_write_count": 0,
+        "manager_write_paths": [],
+        "artifact_author_candidates": {
+          "hypotheses/final_proposals.json": [
+            "hypothesis_agent"
+          ],
+          "hypotheses/draft_proposals.json": [
+            "hypothesis_agent"
+          ],
+          "hypotheses/critique.json": [
+            "critic_agent"
+          ]
+        },
+        "intermediate_artifact_validity": {
+          "hypotheses/draft_proposals.json": true,
+          "hypotheses/critique.json": true
+        },
+        "hypothesis_invoked": true,
+        "hypothesis_validated_write_count": 2,
+        "hypothesis_draft_write_count": 1,
+        "hypothesis_final_write_count": 1,
+        "critic_validated_write_count": 1,
+        "spatial_cv_available": false,
+        "spatial_cv_recruited_steps": [],
+        "spatial_cv_invoked": false,
+        "spatial_cv_execution_success": false,
+        "spatial_cv_artifact_valid": false,
+        "spatial_cv_bundle_reason": "absent",
+        "spatial_cv_exposed_to_hypothesis": false,
+        "hypothesis_prompt_artifact_sets": [
+          [],
+          [
+            "hypotheses/critique.json",
+            "hypotheses/draft_proposals.json"
+          ]
+        ],
+        "hypothesis_prompt_exposures": [
+          {
+            "artifact_keys": [],
+            "artifact_sha256": {}
+          },
+          {
+            "artifact_keys": [
+              "hypotheses/critique.json",
+              "hypotheses/draft_proposals.json"
+            ],
+            "artifact_sha256": {
+              "hypotheses/critique.json": "214428ea11bfe9b788f98b30a035c2b9e1af70330d2f9f4b7024203a7c3eb767",
+              "hypotheses/draft_proposals.json": "c0602f82d7b46031166704c9158c0eabca9eeb9a29fb09891b0329fc9dfd834a"
+            }
+          }
+        ],
+        "spatial_cv_trace": null,
+        "ta_ai_calls": [
+          {
+            "name": "planner_agent",
+            "input_tokens": 3386,
+            "output_tokens": 2221,
+            "total_tokens": 5607
+          },
+          {
+            "name": "recruiter_agent",
+            "input_tokens": 2446,
+            "output_tokens": 297,
+            "total_tokens": 2743
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2418,
+            "output_tokens": 415,
+            "total_tokens": 2833
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2680,
+            "output_tokens": 36,
+            "total_tokens": 2716
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 3284,
+            "output_tokens": 273,
+            "total_tokens": 3557
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 5154,
+            "output_tokens": 331,
+            "total_tokens": 5485
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 5812,
+            "output_tokens": 307,
+            "total_tokens": 6119
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 6190,
+            "output_tokens": 36,
+            "total_tokens": 6226
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 6770,
+            "output_tokens": 139,
+            "total_tokens": 6909
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 7350,
+            "output_tokens": 843,
+            "total_tokens": 8193
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 8282,
+            "output_tokens": 551,
+            "total_tokens": 8833
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 8863,
+            "output_tokens": 251,
+            "total_tokens": 9114
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 9228,
+            "output_tokens": 1179,
+            "total_tokens": 10407
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 9279,
+            "output_tokens": 1017,
+            "total_tokens": 10296
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 10847,
+            "output_tokens": 482,
+            "total_tokens": 11329
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 11666,
+            "output_tokens": 1312,
+            "total_tokens": 12978
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 13011,
+            "output_tokens": 1083,
+            "total_tokens": 14094
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 715,
+            "output_tokens": 1209,
+            "total_tokens": 1924
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 1523,
+            "output_tokens": 2323,
+            "total_tokens": 3846
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 3291,
+            "output_tokens": 1934,
+            "total_tokens": 5225
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 6557,
+            "output_tokens": 1612,
+            "total_tokens": 8169
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 3061,
+            "output_tokens": 1495,
+            "total_tokens": 4556
+          }
+        ],
+        "elapsed_seconds": 218.661,
+        "final_artifact_sha256": "a46c98c8ea4e20865e9df1ba2e28f9eeff7e0d7c847a9856e1aeb56ea7572021"
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 2,
+      "arm": "tissueagent_spatial_cv",
+      "proposal_count": 10,
+      "generation_status": "success",
+      "judge_status": "success",
+      "error_type": null,
+      "reason": null,
+      "generation_trace": {
+        "native_tissueagent_graph": true,
+        "outer_graph": {
+          "node_sequence": [
+            "planner_agent",
+            "planner_agent",
+            "recruiter_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent"
+          ],
+          "planner_format_retry_count": 0,
+          "recruiter_format_retry_count": 0,
+          "evaluator_replan_count": 0,
+          "evaluator_replan_request_count": 0
+        },
+        "task_sha256": "6790a7318793513368a8577553cbe08dea26d66aae992039a41cc9ce71cf6339",
+        "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+        "proposal_count": 10,
+        "model": {
+          "id": "o3-mini",
+          "provider": "openai",
+          "api_model": "o3-mini",
+          "reasoning_effort": "medium"
+        },
+        "orchestration_model": {
+          "id": "gpt-5.1",
+          "provider": "openai",
+          "api_model": "gpt-5.1",
+          "reasoning_effort": "high"
+        },
+        "roster": [
+          "hypothesis",
+          "critic",
+          "spatial_cv"
+        ],
+        "plan": {
+          "status": "recruited",
+          "user_request": "Coordinate domain agents to propose exactly 10 computational spatial-omics analyses likely performed in the hidden paper, producing draft, critique, and final proposal JSON artifacts without executing the analyses.",
+          "current_step_id": 4,
+          "steps": [
+            {
+              "id": 1,
+              "title": "Draft spatial analysis proposals",
+              "description": "Use the Spatial-CV Planning Agent (`spatial_cv_agent`) to generate an initial set of 10 computational spatial-omics analysis proposals, based solely on the provided background about spatial transcriptomics. The agent will write these as a structured JSON draft to `project/outputs/hypotheses/draft_proposals.json`, capturing for each candidate a tentative title and descriptive summary focused on jointly modeling expression and geometry, spatial domains, section alignment, and spatially aware deconvolution/composition, without running any analyses.",
+              "reasoning": "A dedicated spatial planning agent is required to translate the generic background on spatial transcriptomics into a coherent, diverse draft set of 10 plausible analyses that a paper could perform, while respecting constraints like joint expression-geometry representation and multi-section integration. This draft becomes the foundation that later critique and synthesis will refine.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/draft_proposals.json"
+              ],
+              "assigned_agent": "spatial_cv_agent",
+              "assignment_rationale": "The user explicitly requires the Spatial-CV Planning Agent for drafting exactly 10 spatial-omics analysis proposals, and this agent is specialized for creating draft proposal sets (including spatially focused CV-style variants).",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/draft_proposals.json",
+                "project/outputs/hypotheses/spatial_cv_proposals.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            },
+            {
+              "id": 2,
+              "title": "Critique draft proposal set",
+              "description": "Have the Critic-style agent load `project/outputs/hypotheses/draft_proposals.json` and evaluate each of the 10 draft analyses for clarity, plausibility, distinctness, and alignment with the stated challenges (spatial domain identification, alignment across sections, cell-type composition in mixed spots, and preserving local continuity). The agent will not execute analyses or score against hidden answers, but will produce a structured critique with per-proposal comments and global suggestions, saved to `project/outputs/hypotheses/critique.json`.",
+              "reasoning": "A separate critique step ensures the draft proposals are systematically reviewed for overlap, missing aspects of the background (e.g., multi-organ or multi-platform integration), and potential misalignment with the spatial-omics challenges, providing actionable feedback that can guide a stronger final synthesis.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "assigned_agent": "critic_agent",
+              "assignment_rationale": "The critic_agent is designed solely for reviewing and critiquing candidate spatial paper analyses and for writing a critique JSON artifact, matching the needs of the draft evaluation step.",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            },
+            {
+              "id": 3,
+              "title": "Synthesize final proposal collection",
+              "description": "Using both `project/outputs/hypotheses/draft_proposals.json` and `project/outputs/hypotheses/critique.json`, a synthesis/Hypothesis-style agent will construct the final set of exactly 10 refined computational spatial-omics analyses most consistent with the background text. The agent will revise, merge, or replace draft items as needed (without executing any analysis) and write `project/outputs/hypotheses/final_proposals.json` as a JSON object whose only top-level key is `proposals`, mapped to an array of exactly 10 objects, each containing only `title` and a detailed `summary` describing the proposed analysis at a conceptual level.",
+              "reasoning": "This final synthesis step is needed to convert the critiqued draft into the required benchmark deliverable: a single, clean JSON file of 10 well-justified analysis proposals, all grounded in the spatial transcriptomics background and covering spatial domains, cross-section alignment, spatially aware deconvolution, and joint expression-geometry representations, without introducing extra metadata or running any computations on real data.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "assigned_agent": "hypothesis_agent",
+              "assignment_rationale": "The hypothesis_agent is responsible for final synthesis of exactly 10 spatial analysis hypotheses into a structured proposals JSON, aligning with the required final_proposals.json output format.",
+              "skills": [],
+              "status": "running",
+              "actual_outputs": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            }
+          ],
+          "last_edited_by": null,
+          "last_edited_at": null,
+          "provenance": {
+            "template_names": [
+              "paper_hypothesis_generation"
+            ],
+            "justification": "The paper_hypothesis_generation template was adapted conceptually for its draft→critique→final pattern, but simplified to three steps and retargeted to spatial-omics analysis proposal generation. We discarded its PDF/dataset inventory steps and its specific file paths, and instead aligned the plan to the user-mandated artifacts (draft_proposals.json, critique.json, final_proposals.json) and to the spatial transcriptomics background, ensuring that the template itself is not used as a candidate analysis."
+          }
+        },
+        "final_artifact_complete": true,
+        "plan_template_names": [
+          "paper_hypothesis_generation"
+        ],
+        "plan_step_count_compliant": true,
+        "plan_unassigned_steps": [],
+        "plan_unexpected_artifacts": [],
+        "plan_artifact_assignment_mismatches": [],
+        "manager_dispatched_all_steps": true,
+        "manager_nonfinal_steps_complete": true,
+        "manager_final_step_started": true,
+        "manager_acknowledged": false,
+        "manager_tool_calls": [
+          "next_step",
+          "read",
+          "read",
+          "read",
+          "next_step",
+          "read",
+          "next_step",
+          "read",
+          "read",
+          "read"
+        ],
+        "manager_write_count": 0,
+        "manager_write_paths": [],
+        "artifact_author_candidates": {
+          "hypotheses/final_proposals.json": [
+            "hypothesis_agent"
+          ],
+          "hypotheses/draft_proposals.json": [],
+          "hypotheses/critique.json": [
+            "critic_agent"
+          ]
+        },
+        "intermediate_artifact_validity": {
+          "hypotheses/draft_proposals.json": true,
+          "hypotheses/critique.json": true
+        },
+        "hypothesis_invoked": true,
+        "hypothesis_validated_write_count": 1,
+        "hypothesis_draft_write_count": 0,
+        "hypothesis_final_write_count": 1,
+        "critic_validated_write_count": 1,
+        "spatial_cv_available": true,
+        "spatial_cv_recruited_steps": [
+          1
+        ],
+        "spatial_cv_invoked": true,
+        "spatial_cv_execution_success": true,
+        "spatial_cv_artifact_valid": true,
+        "spatial_cv_bundle_reason": "valid",
+        "spatial_cv_exposed_to_hypothesis": true,
+        "hypothesis_prompt_artifact_sets": [
+          [
+            "hypotheses/critique.json",
+            "hypotheses/draft_proposals.json",
+            "hypotheses/spatial_cv_proposals.json"
+          ]
+        ],
+        "hypothesis_prompt_exposures": [
+          {
+            "artifact_keys": [
+              "hypotheses/critique.json",
+              "hypotheses/draft_proposals.json",
+              "hypotheses/spatial_cv_proposals.json"
+            ],
+            "artifact_sha256": {
+              "hypotheses/critique.json": "2c916a9c989c25f1352b7adee28214b81470998eacff5bd2b131c5f1ab7ed0ae",
+              "hypotheses/draft_proposals.json": "64f54423462723f077e2e5f466be148366fe1041c238787ee34ddfdfae70f9db",
+              "hypotheses/spatial_cv_proposals.json": "64f54423462723f077e2e5f466be148366fe1041c238787ee34ddfdfae70f9db"
+            }
+          }
+        ],
+        "spatial_cv_trace": {
+          "status": "success",
+          "protocol": "spatial_cv_dynamic_n_v1",
+          "eval_id": "spcb_9f3a1c7d20",
+          "model_id": "o3-mini",
+          "proposal_count": 10,
+          "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+          "overview_sha256": "34954dad7d5535ecad3d92e88d9cdc2a2fa9c90b5e3c7f8cad7ed4402a75114e",
+          "logical_model_calls": 30,
+          "observable_model_attempts": 30,
+          "calls": [
+            {
+              "stage": "spatial_cv_01_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.049263668013737,
+              "input_tokens": 927,
+              "output_tokens": 767,
+              "total_tokens": 1694
+            },
+            {
+              "stage": "spatial_cv_01_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.920546530978754,
+              "input_tokens": 1103,
+              "output_tokens": 695,
+              "total_tokens": 1798
+            },
+            {
+              "stage": "spatial_cv_01_revision",
+              "kind": "structured",
+              "elapsed_seconds": 5.082380671054125,
+              "input_tokens": 1560,
+              "output_tokens": 826,
+              "total_tokens": 2386
+            },
+            {
+              "stage": "spatial_cv_02_draft",
+              "kind": "structured",
+              "elapsed_seconds": 7.087985762045719,
+              "input_tokens": 1028,
+              "output_tokens": 1209,
+              "total_tokens": 2237
+            },
+            {
+              "stage": "spatial_cv_02_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.3859116890234873,
+              "input_tokens": 1198,
+              "output_tokens": 656,
+              "total_tokens": 1854
+            },
+            {
+              "stage": "spatial_cv_02_revision",
+              "kind": "structured",
+              "elapsed_seconds": 5.3086062639486045,
+              "input_tokens": 1680,
+              "output_tokens": 880,
+              "total_tokens": 2560
+            },
+            {
+              "stage": "spatial_cv_03_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.300257662078366,
+              "input_tokens": 1141,
+              "output_tokens": 861,
+              "total_tokens": 2002
+            },
+            {
+              "stage": "spatial_cv_03_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.0575720469933,
+              "input_tokens": 1347,
+              "output_tokens": 806,
+              "total_tokens": 2153
+            },
+            {
+              "stage": "spatial_cv_03_revision",
+              "kind": "structured",
+              "elapsed_seconds": 6.597368779010139,
+              "input_tokens": 1787,
+              "output_tokens": 752,
+              "total_tokens": 2539
+            },
+            {
+              "stage": "spatial_cv_04_draft",
+              "kind": "structured",
+              "elapsed_seconds": 6.421445174026303,
+              "input_tokens": 1248,
+              "output_tokens": 1064,
+              "total_tokens": 2312
+            },
+            {
+              "stage": "spatial_cv_04_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.6416780030122027,
+              "input_tokens": 1465,
+              "output_tokens": 771,
+              "total_tokens": 2236
+            },
+            {
+              "stage": "spatial_cv_04_revision",
+              "kind": "structured",
+              "elapsed_seconds": 4.67122364602983,
+              "input_tokens": 1998,
+              "output_tokens": 841,
+              "total_tokens": 2839
+            },
+            {
+              "stage": "spatial_cv_05_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.61198121891357,
+              "input_tokens": 1376,
+              "output_tokens": 928,
+              "total_tokens": 2304
+            },
+            {
+              "stage": "spatial_cv_05_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.034345626016147,
+              "input_tokens": 1583,
+              "output_tokens": 828,
+              "total_tokens": 2411
+            },
+            {
+              "stage": "spatial_cv_05_revision",
+              "kind": "structured",
+              "elapsed_seconds": 4.977218945976347,
+              "input_tokens": 2045,
+              "output_tokens": 751,
+              "total_tokens": 2796
+            },
+            {
+              "stage": "spatial_cv_06_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.1456521559739485,
+              "input_tokens": 1485,
+              "output_tokens": 771,
+              "total_tokens": 2256
+            },
+            {
+              "stage": "spatial_cv_06_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.4583047619089484,
+              "input_tokens": 1665,
+              "output_tokens": 487,
+              "total_tokens": 2152
+            },
+            {
+              "stage": "spatial_cv_06_revision",
+              "kind": "structured",
+              "elapsed_seconds": 6.190959581057541,
+              "input_tokens": 2042,
+              "output_tokens": 993,
+              "total_tokens": 3035
+            },
+            {
+              "stage": "spatial_cv_07_draft",
+              "kind": "structured",
+              "elapsed_seconds": 4.8596544690662995,
+              "input_tokens": 1605,
+              "output_tokens": 900,
+              "total_tokens": 2505
+            },
+            {
+              "stage": "spatial_cv_07_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.764106110087596,
+              "input_tokens": 1786,
+              "output_tokens": 681,
+              "total_tokens": 2467
+            },
+            {
+              "stage": "spatial_cv_07_revision",
+              "kind": "structured",
+              "elapsed_seconds": 6.479110790067352,
+              "input_tokens": 2229,
+              "output_tokens": 1061,
+              "total_tokens": 3290
+            },
+            {
+              "stage": "spatial_cv_08_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.15674692497123,
+              "input_tokens": 1716,
+              "output_tokens": 733,
+              "total_tokens": 2449
+            },
+            {
+              "stage": "spatial_cv_08_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.6639190670102835,
+              "input_tokens": 1922,
+              "output_tokens": 902,
+              "total_tokens": 2824
+            },
+            {
+              "stage": "spatial_cv_08_revision",
+              "kind": "structured",
+              "elapsed_seconds": 6.086105489986949,
+              "input_tokens": 2330,
+              "output_tokens": 1048,
+              "total_tokens": 3378
+            },
+            {
+              "stage": "spatial_cv_09_draft",
+              "kind": "structured",
+              "elapsed_seconds": 3.9714532390935346,
+              "input_tokens": 1821,
+              "output_tokens": 615,
+              "total_tokens": 2436
+            },
+            {
+              "stage": "spatial_cv_09_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.397551217,
+              "input_tokens": 2037,
+              "output_tokens": 574,
+              "total_tokens": 2611
+            },
+            {
+              "stage": "spatial_cv_09_revision",
+              "kind": "structured",
+              "elapsed_seconds": 4.7369740010472015,
+              "input_tokens": 2373,
+              "output_tokens": 712,
+              "total_tokens": 3085
+            },
+            {
+              "stage": "spatial_cv_10_draft",
+              "kind": "structured",
+              "elapsed_seconds": 4.821402622037567,
+              "input_tokens": 1922,
+              "output_tokens": 741,
+              "total_tokens": 2663
+            },
+            {
+              "stage": "spatial_cv_10_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.183956117951311,
+              "input_tokens": 2135,
+              "output_tokens": 695,
+              "total_tokens": 2830
+            },
+            {
+              "stage": "spatial_cv_10_revision",
+              "kind": "structured",
+              "elapsed_seconds": 8.04195451096166,
+              "input_tokens": 2656,
+              "output_tokens": 1012,
+              "total_tokens": 3668
+            }
+          ],
+          "failed_attempts": [],
+          "elapsed_seconds": 150.159,
+          "proposal_sha256": "4e28a835ea88ad9b382dce6e6e19e5c707b4fd296c7a7975117f30c403d5643d"
+        },
+        "ta_ai_calls": [
+          {
+            "name": "planner_agent",
+            "input_tokens": 3436,
+            "output_tokens": 1963,
+            "total_tokens": 5399
+          },
+          {
+            "name": "planner_agent",
+            "input_tokens": 4002,
+            "output_tokens": 3294,
+            "total_tokens": 7296
+          },
+          {
+            "name": "recruiter_agent",
+            "input_tokens": 2724,
+            "output_tokens": 788,
+            "total_tokens": 3512
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2527,
+            "output_tokens": 330,
+            "total_tokens": 2857
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2816,
+            "output_tokens": 86,
+            "total_tokens": 2902
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 3996,
+            "output_tokens": 106,
+            "total_tokens": 4102
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 4553,
+            "output_tokens": 274,
+            "total_tokens": 4827
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 6332,
+            "output_tokens": 35,
+            "total_tokens": 6367
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 6954,
+            "output_tokens": 254,
+            "total_tokens": 7208
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 7279,
+            "output_tokens": 36,
+            "total_tokens": 7315
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 7852,
+            "output_tokens": 83,
+            "total_tokens": 7935
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 8425,
+            "output_tokens": 113,
+            "total_tokens": 8538
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 8998,
+            "output_tokens": 255,
+            "total_tokens": 9253
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 10095,
+            "output_tokens": 241,
+            "total_tokens": 10336
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 10480,
+            "output_tokens": 36,
+            "total_tokens": 10516
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 11053,
+            "output_tokens": 2127,
+            "total_tokens": 13180
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 12710,
+            "output_tokens": 693,
+            "total_tokens": 13403
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 13464,
+            "output_tokens": 37,
+            "total_tokens": 13501
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 14039,
+            "output_tokens": 17,
+            "total_tokens": 14056
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 14092,
+            "output_tokens": 2500,
+            "total_tokens": 16592
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 3557,
+            "output_tokens": 2665,
+            "total_tokens": 6222
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 5344,
+            "output_tokens": 1860,
+            "total_tokens": 7204
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 8439,
+            "output_tokens": 1557,
+            "total_tokens": 9996
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 5119,
+            "output_tokens": 1848,
+            "total_tokens": 6967
+          }
+        ],
+        "elapsed_seconds": 355.808,
+        "final_artifact_sha256": "45d1a57398332e0c226e6e70bd34a35156ea0262a1fb2e135702bc0a977fb13c"
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 3,
+      "arm": "direct",
+      "proposal_count": 10,
+      "generation_status": "success",
+      "judge_status": "success",
+      "error_type": null,
+      "reason": null,
+      "generation_trace": {
+        "arm": "direct",
+        "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+        "model": {
+          "id": "o3-mini",
+          "provider": "openai",
+          "api_model": "o3-mini",
+          "reasoning_effort": "medium"
+        },
+        "logical_model_calls": 1,
+        "observable_model_attempts": 1,
+        "semantic_retries": 0,
+        "fallback_model": null,
+        "calls": [
+          {
+            "stage": "direct",
+            "kind": "structured",
+            "elapsed_seconds": 5.793535158969462,
+            "input_tokens": 430,
+            "output_tokens": 1069,
+            "total_tokens": 1499
+          }
+        ],
+        "failed_attempts": [],
+        "prompt_bundle_sha256": "02c0478e443c69db5b38845c57724979c4c2e70b1b9ab74b167d5d3fd16a10ac",
+        "overview_sha256": null,
+        "elapsed_seconds": 5.799
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 3,
+      "arm": "tissueagent",
+      "proposal_count": 10,
+      "generation_status": "success",
+      "judge_status": "success",
+      "error_type": null,
+      "reason": null,
+      "generation_trace": {
+        "native_tissueagent_graph": true,
+        "outer_graph": {
+          "node_sequence": [
+            "planner_agent",
+            "recruiter_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent"
+          ],
+          "planner_format_retry_count": 0,
+          "recruiter_format_retry_count": 0,
+          "evaluator_replan_count": 0,
+          "evaluator_replan_request_count": 0
+        },
+        "task_sha256": "23545e5da08320494db95dbb5a06034df4fc01ad4ddbd8dc76bbcf2a146dfef5",
+        "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+        "proposal_count": 10,
+        "model": {
+          "id": "o3-mini",
+          "provider": "openai",
+          "api_model": "o3-mini",
+          "reasoning_effort": "medium"
+        },
+        "orchestration_model": {
+          "id": "gpt-5.1",
+          "provider": "openai",
+          "api_model": "gpt-5.1",
+          "reasoning_effort": "high"
+        },
+        "roster": [
+          "hypothesis",
+          "critic"
+        ],
+        "plan": {
+          "status": "recruited",
+          "user_request": "Coordinate agents to design, critique, and finalize exactly 10 computational spatial-omics analysis proposals for a hidden paper, producing required JSON artifacts without executing the analyses.",
+          "current_step_id": 4,
+          "steps": [
+            {
+              "id": 1,
+              "title": "Draft candidate analysis proposals",
+              "description": "Use a hypothesis-generation agent to create an initial set of exactly 10 computational spatial-omics analysis proposals that fit the provided background, and write them as a JSON object to `project/outputs/hypotheses/draft_proposals.json`. The file should capture, for each candidate, at least a tentative title and summary, but need not yet conform to the final required schema.",
+              "reasoning": "An explicit drafting step lets the best-matched hypothesis agent explore the analysis space implied by the background and propose plausible spatial-omics computations, providing a concrete but provisional basis for structured critique and later refinement.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/draft_proposals.json"
+              ],
+              "assigned_agent": "hypothesis_agent",
+              "assignment_rationale": "hypothesis_agent is explicitly designed to draft exactly 10 likely spatial paper analyses and to write them to a draft proposals JSON file, matching the need to generate `project/outputs/hypotheses/draft_proposals.json`.",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/draft_proposals.json"
+              ],
+              "retry_count": 1,
+              "params": null
+            },
+            {
+              "id": 2,
+              "title": "Critique draft analysis proposals",
+              "description": "Use a critic-style agent to read `project/outputs/hypotheses/draft_proposals.json` and produce a structured critique at `project/outputs/hypotheses/critique.json` that assesses each proposed analysis for plausibility, distinctness, relevance to the background challenges, and clarity, and suggests focused improvements without altering the draft file itself.",
+              "reasoning": "A dedicated critique step, handled by the Critic agent, provides systematic feedback on strengths, weaknesses, overlap, and gaps among the 10 draft proposals, guiding the final synthesis toward a coherent, non-redundant, and well-justified set that best matches what the hidden paper is likely to have done.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "assigned_agent": "critic_agent",
+              "assignment_rationale": "critic_agent is a review-only specialist that produces `hypotheses/critique.json` and is therefore the correct agent to read the draft proposals and write `project/outputs/hypotheses/critique.json` without altering the drafts.",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            },
+            {
+              "id": 3,
+              "title": "Synthesize final proposal set",
+              "description": "Use a synthesis-oriented hypothesis agent to combine `project/outputs/hypotheses/draft_proposals.json` and `project/outputs/hypotheses/critique.json` into the final proposals file `project/outputs/hypotheses/final_proposals.json`. This final file must be a JSON object whose only top-level key is `proposals`, mapping to an array of exactly 10 items; each item must contain only `title` and a detailed `summary`, reflecting the refined, distinct, and most plausible computational spatial-omics analyses for the hidden paper.",
+              "reasoning": "The synthesis step turns the critiqued draft into the single required deliverable, enforcing the exact JSON schema and cardinality while incorporating critic feedback to select and polish the 10 most appropriate analyses, without performing any of them.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "assigned_agent": "hypothesis_agent",
+              "assignment_rationale": "hypothesis_agent is also responsible for final synthesis of spatial analysis proposals into a `final_proposals.json` file, making it the appropriate agent to integrate the draft and critique into `project/outputs/hypotheses/final_proposals.json` with exactly 10 refined proposals.",
+              "skills": [],
+              "status": "running",
+              "actual_outputs": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            }
+          ],
+          "last_edited_by": null,
+          "last_edited_at": null,
+          "provenance": {
+            "template_names": [],
+            "justification": "Existing templates focus on executing specific spatial or gene-level analyses (e.g., ligand–receptor analysis, deconvolution, hypothesis testing), whereas this task is a meta-level proposal and critique workflow to design candidate analyses. Therefore, a custom three-step plan was created to match the user’s required artifact paths and structure."
+          }
+        },
+        "final_artifact_complete": true,
+        "plan_template_names": [],
+        "plan_step_count_compliant": true,
+        "plan_unassigned_steps": [],
+        "plan_unexpected_artifacts": [],
+        "plan_artifact_assignment_mismatches": [],
+        "manager_dispatched_all_steps": true,
+        "manager_nonfinal_steps_complete": true,
+        "manager_final_step_started": true,
+        "manager_acknowledged": false,
+        "manager_tool_calls": [
+          "next_step",
+          "read",
+          "read",
+          "read",
+          "grep",
+          "retry_step",
+          "next_step",
+          "read",
+          "next_step",
+          "read",
+          "read",
+          "grep"
+        ],
+        "manager_write_count": 0,
+        "manager_write_paths": [],
+        "artifact_author_candidates": {
+          "hypotheses/final_proposals.json": [
+            "hypothesis_agent"
+          ],
+          "hypotheses/draft_proposals.json": [
+            "hypothesis_agent"
+          ],
+          "hypotheses/critique.json": [
+            "critic_agent"
+          ]
+        },
+        "intermediate_artifact_validity": {
+          "hypotheses/draft_proposals.json": true,
+          "hypotheses/critique.json": true
+        },
+        "hypothesis_invoked": true,
+        "hypothesis_validated_write_count": 2,
+        "hypothesis_draft_write_count": 1,
+        "hypothesis_final_write_count": 1,
+        "critic_validated_write_count": 1,
+        "spatial_cv_available": false,
+        "spatial_cv_recruited_steps": [],
+        "spatial_cv_invoked": false,
+        "spatial_cv_execution_success": false,
+        "spatial_cv_artifact_valid": false,
+        "spatial_cv_bundle_reason": "absent",
+        "spatial_cv_exposed_to_hypothesis": false,
+        "hypothesis_prompt_artifact_sets": [
+          [],
+          [],
+          [],
+          [
+            "hypotheses/critique.json",
+            "hypotheses/draft_proposals.json"
+          ],
+          [
+            "hypotheses/critique.json",
+            "hypotheses/draft_proposals.json"
+          ]
+        ],
+        "hypothesis_prompt_exposures": [
+          {
+            "artifact_keys": [],
+            "artifact_sha256": {}
+          },
+          {
+            "artifact_keys": [],
+            "artifact_sha256": {}
+          },
+          {
+            "artifact_keys": [],
+            "artifact_sha256": {}
+          },
+          {
+            "artifact_keys": [
+              "hypotheses/critique.json",
+              "hypotheses/draft_proposals.json"
+            ],
+            "artifact_sha256": {
+              "hypotheses/critique.json": "e7fa1c5d4eba727b73e12fc906412136dc60999f11609b1c464ef1a8cd539c26",
+              "hypotheses/draft_proposals.json": "c73b62821dd61c4f2024a0877ea98265765faf6dcd1e0c3891f5754231f384bd"
+            }
+          },
+          {
+            "artifact_keys": [
+              "hypotheses/critique.json",
+              "hypotheses/draft_proposals.json"
+            ],
+            "artifact_sha256": {
+              "hypotheses/critique.json": "e7fa1c5d4eba727b73e12fc906412136dc60999f11609b1c464ef1a8cd539c26",
+              "hypotheses/draft_proposals.json": "c73b62821dd61c4f2024a0877ea98265765faf6dcd1e0c3891f5754231f384bd"
+            }
+          }
+        ],
+        "spatial_cv_trace": null,
+        "ta_ai_calls": [
+          {
+            "name": "planner_agent",
+            "input_tokens": 3386,
+            "output_tokens": 2126,
+            "total_tokens": 5512
+          },
+          {
+            "name": "recruiter_agent",
+            "input_tokens": 2453,
+            "output_tokens": 632,
+            "total_tokens": 3085
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2383,
+            "output_tokens": 540,
+            "total_tokens": 2923
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2746,
+            "output_tokens": 36,
+            "total_tokens": 2782
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 3344,
+            "output_tokens": 291,
+            "total_tokens": 3635
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 3943,
+            "output_tokens": 596,
+            "total_tokens": 4539
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 4469,
+            "output_tokens": 560,
+            "total_tokens": 5029
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 4796,
+            "output_tokens": 324,
+            "total_tokens": 5120
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 5192,
+            "output_tokens": 656,
+            "total_tokens": 5848
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 7457,
+            "output_tokens": 322,
+            "total_tokens": 7779
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 8092,
+            "output_tokens": 320,
+            "total_tokens": 8412
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 8483,
+            "output_tokens": 36,
+            "total_tokens": 8519
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 9048,
+            "output_tokens": 124,
+            "total_tokens": 9172
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 9614,
+            "output_tokens": 159,
+            "total_tokens": 9773
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 9980,
+            "output_tokens": 214,
+            "total_tokens": 10194
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 11006,
+            "output_tokens": 1540,
+            "total_tokens": 12546
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 11571,
+            "output_tokens": 1901,
+            "total_tokens": 13472
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 13065,
+            "output_tokens": 323,
+            "total_tokens": 13388
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 13258,
+            "output_tokens": 37,
+            "total_tokens": 13295
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 13825,
+            "output_tokens": 37,
+            "total_tokens": 13862
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 14425,
+            "output_tokens": 36,
+            "total_tokens": 14461
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 15062,
+            "output_tokens": 17,
+            "total_tokens": 15079
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 15115,
+            "output_tokens": 2306,
+            "total_tokens": 17421
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 16200,
+            "output_tokens": 1303,
+            "total_tokens": 17503
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 794,
+            "output_tokens": 1186,
+            "total_tokens": 1980
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 2362,
+            "output_tokens": 1154,
+            "total_tokens": 3516
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 3322,
+            "output_tokens": 1543,
+            "total_tokens": 4865
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 1731,
+            "output_tokens": 3237,
+            "total_tokens": 4968
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 5809,
+            "output_tokens": 1858,
+            "total_tokens": 7667
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 3490,
+            "output_tokens": 1591,
+            "total_tokens": 5081
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 4707,
+            "output_tokens": 1505,
+            "total_tokens": 6212
+          }
+        ],
+        "elapsed_seconds": 267.383,
+        "final_artifact_sha256": "c805e91aa5bb49fd85509546ca79d10a3c21c28e310e4607ebcbf0451073e26e"
+      }
+    },
+    {
+      "eval_id": "spcb_9f3a1c7d20",
+      "replicate": 3,
+      "arm": "tissueagent_spatial_cv",
+      "proposal_count": 10,
+      "generation_status": "success",
+      "judge_status": "success",
+      "error_type": null,
+      "reason": null,
+      "generation_trace": {
+        "native_tissueagent_graph": true,
+        "outer_graph": {
+          "node_sequence": [
+            "planner_agent",
+            "planner_agent",
+            "recruiter_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "manager_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "evaluator_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent",
+            "reporter_agent"
+          ],
+          "planner_format_retry_count": 0,
+          "recruiter_format_retry_count": 0,
+          "evaluator_replan_count": 0,
+          "evaluator_replan_request_count": 0
+        },
+        "task_sha256": "6790a7318793513368a8577553cbe08dea26d66aae992039a41cc9ce71cf6339",
+        "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+        "proposal_count": 10,
+        "model": {
+          "id": "o3-mini",
+          "provider": "openai",
+          "api_model": "o3-mini",
+          "reasoning_effort": "medium"
+        },
+        "orchestration_model": {
+          "id": "gpt-5.1",
+          "provider": "openai",
+          "api_model": "gpt-5.1",
+          "reasoning_effort": "high"
+        },
+        "roster": [
+          "hypothesis",
+          "critic",
+          "spatial_cv"
+        ],
+        "plan": {
+          "status": "recruited",
+          "user_request": "Coordinate domain agents to propose exactly 10 computational spatial-omics analyses most likely performed in the hidden paper, using a three-step draft–critique–synthesis workflow that writes specific JSON artifacts.",
+          "current_step_id": 4,
+          "steps": [
+            {
+              "id": 1,
+              "title": "Draft spatial analysis proposals",
+              "description": "Use the Spatial-CV Planning Agent (`spatial_cv_agent`) to read the provided spatial transcriptomics background and generate an initial JSON draft of candidate computational spatial-omics analyses, writing it to `project/outputs/hypotheses/draft_proposals.json`.",
+              "reasoning": "A domain-aware spatial planning agent is needed to translate the textual background into an initial pool of conceptual (non-executed) analysis proposals that subsequent agents can critique and refine, while ensuring the draft is physically saved at the specified path.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/draft_proposals.json"
+              ],
+              "assigned_agent": "spatial_cv_agent",
+              "assignment_rationale": "The user explicitly requires that the Spatial-CV Planning Agent handle the initial drafting, and this agent is specialized for generating spatial-omics analysis proposals and writing the draft_proposals.json artifact.",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/draft_proposals.json",
+                "project/outputs/hypotheses/spatial_cv_proposals.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            },
+            {
+              "id": 2,
+              "title": "Critique draft proposal set",
+              "description": "Have the Critic agent evaluate `project/outputs/hypotheses/draft_proposals.json` for clarity, plausibility, distinctness, and alignment with the spatial transcriptomics background, saving structured comments and suggested improvements to `project/outputs/hypotheses/critique.json`.",
+              "reasoning": "Structured criticism from the Critic agent, operating solely on the draft file and public background, is required to identify weaknesses and guide revisions before final selection, without executing any analyses or referencing hidden answers.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "assigned_agent": "critic_agent",
+              "assignment_rationale": "The Critic agent is purpose-built to evaluate draft spatial-paper analyses and produce a structured critique in hypotheses/critique.json, matching the required critique step and output.",
+              "skills": [],
+              "status": "done",
+              "actual_outputs": [
+                "project/outputs/hypotheses/critique.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            },
+            {
+              "id": 3,
+              "title": "Synthesize final ten proposals",
+              "description": "Use the Hypothesis/final-synthesis agent to combine `project/outputs/hypotheses/draft_proposals.json` and `project/outputs/hypotheses/critique.json`, revising, selecting, and rewriting them into a final set of exactly 10 computational spatial-omics analysis proposals, and save them as a JSON object with a single top-level key `proposals` at `project/outputs/hypotheses/final_proposals.json`.",
+              "reasoning": "A dedicated synthesis step is needed to incorporate the Critic’s feedback, enforce the requirement of exactly 10 proposals, and produce the mandated final JSON structure on disk, ready for potential downstream execution but without running any analyses.",
+              "expected_artifacts": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "assigned_agent": "hypothesis_agent",
+              "assignment_rationale": "The Hypothesis agent is designed for final synthesis of spatial-paper analysis proposals and for writing the final_proposals.json file, making it the appropriate choice to produce the required JSON object with exactly 10 proposals.",
+              "skills": [],
+              "status": "running",
+              "actual_outputs": [
+                "project/outputs/hypotheses/final_proposals.json"
+              ],
+              "retry_count": 0,
+              "params": null
+            }
+          ],
+          "last_edited_by": null,
+          "last_edited_at": null,
+          "provenance": {
+            "template_names": [
+              "paper_hypothesis_generation"
+            ],
+            "justification": "The plan adapts the draft–critic–final pattern from the `paper_hypothesis_generation` template (sequential hypothesis drafting, critique, and revision) but simplifies it to exactly three steps with spatial-omics-specific roles: step (1) is explicitly assigned to the Spatial-CV Planning Agent rather than a generic Hypothesis agent, steps (2) and (3) map to Critic and final-synthesis/Hypothesis agents via their advertised critique and final-output files, and the outputs are restricted to the requested proposal JSON artifacts for this benchmark."
+          }
+        },
+        "final_artifact_complete": true,
+        "plan_template_names": [
+          "paper_hypothesis_generation"
+        ],
+        "plan_step_count_compliant": true,
+        "plan_unassigned_steps": [],
+        "plan_unexpected_artifacts": [],
+        "plan_artifact_assignment_mismatches": [],
+        "manager_dispatched_all_steps": true,
+        "manager_nonfinal_steps_complete": true,
+        "manager_final_step_started": true,
+        "manager_acknowledged": false,
+        "manager_tool_calls": [
+          "next_step",
+          "read",
+          "read",
+          "next_step",
+          "read",
+          "read",
+          "next_step",
+          "read"
+        ],
+        "manager_write_count": 0,
+        "manager_write_paths": [],
+        "artifact_author_candidates": {
+          "hypotheses/final_proposals.json": [
+            "hypothesis_agent"
+          ],
+          "hypotheses/draft_proposals.json": [],
+          "hypotheses/critique.json": [
+            "critic_agent"
+          ]
+        },
+        "intermediate_artifact_validity": {
+          "hypotheses/draft_proposals.json": true,
+          "hypotheses/critique.json": true
+        },
+        "hypothesis_invoked": true,
+        "hypothesis_validated_write_count": 1,
+        "hypothesis_draft_write_count": 0,
+        "hypothesis_final_write_count": 1,
+        "critic_validated_write_count": 1,
+        "spatial_cv_available": true,
+        "spatial_cv_recruited_steps": [
+          1
+        ],
+        "spatial_cv_invoked": true,
+        "spatial_cv_execution_success": true,
+        "spatial_cv_artifact_valid": true,
+        "spatial_cv_bundle_reason": "valid",
+        "spatial_cv_exposed_to_hypothesis": true,
+        "hypothesis_prompt_artifact_sets": [
+          [
+            "hypotheses/critique.json",
+            "hypotheses/draft_proposals.json",
+            "hypotheses/spatial_cv_proposals.json"
+          ]
+        ],
+        "hypothesis_prompt_exposures": [
+          {
+            "artifact_keys": [
+              "hypotheses/critique.json",
+              "hypotheses/draft_proposals.json",
+              "hypotheses/spatial_cv_proposals.json"
+            ],
+            "artifact_sha256": {
+              "hypotheses/critique.json": "7cdaf5610a7f1c9905bcfe622c40c26884f7d82c67e1e1c37ee208f17c497755",
+              "hypotheses/draft_proposals.json": "b8afd6dca6de9d771f992e2524a971f6211fd63324ed3f319faa8857ee727144",
+              "hypotheses/spatial_cv_proposals.json": "b8afd6dca6de9d771f992e2524a971f6211fd63324ed3f319faa8857ee727144"
+            }
+          }
+        ],
+        "spatial_cv_trace": {
+          "status": "success",
+          "protocol": "spatial_cv_dynamic_n_v1",
+          "eval_id": "spcb_9f3a1c7d20",
+          "model_id": "o3-mini",
+          "proposal_count": 10,
+          "context_sha256": "913c655e9f67d10e0c529f6c61cea3f56a62b4566066ea53bfae7b9b7f29cdce",
+          "overview_sha256": "34954dad7d5535ecad3d92e88d9cdc2a2fa9c90b5e3c7f8cad7ed4402a75114e",
+          "logical_model_calls": 30,
+          "observable_model_attempts": 30,
+          "calls": [
+            {
+              "stage": "spatial_cv_01_draft",
+              "kind": "structured",
+              "elapsed_seconds": 6.373050457099453,
+              "input_tokens": 927,
+              "output_tokens": 914,
+              "total_tokens": 1841
+            },
+            {
+              "stage": "spatial_cv_01_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.774864303064533,
+              "input_tokens": 1185,
+              "output_tokens": 937,
+              "total_tokens": 2122
+            },
+            {
+              "stage": "spatial_cv_01_revision",
+              "kind": "structured",
+              "elapsed_seconds": 5.010158432065509,
+              "input_tokens": 1692,
+              "output_tokens": 729,
+              "total_tokens": 2421
+            },
+            {
+              "stage": "spatial_cv_02_draft",
+              "kind": "structured",
+              "elapsed_seconds": 7.114975922042504,
+              "input_tokens": 1017,
+              "output_tokens": 1030,
+              "total_tokens": 2047
+            },
+            {
+              "stage": "spatial_cv_02_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.157270640018396,
+              "input_tokens": 1262,
+              "output_tokens": 754,
+              "total_tokens": 2016
+            },
+            {
+              "stage": "spatial_cv_02_revision",
+              "kind": "structured",
+              "elapsed_seconds": 5.7887809100793675,
+              "input_tokens": 1778,
+              "output_tokens": 906,
+              "total_tokens": 2684
+            },
+            {
+              "stage": "spatial_cv_03_draft",
+              "kind": "structured",
+              "elapsed_seconds": 4.100700873997994,
+              "input_tokens": 1111,
+              "output_tokens": 618,
+              "total_tokens": 1729
+            },
+            {
+              "stage": "spatial_cv_03_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.683747203904204,
+              "input_tokens": 1330,
+              "output_tokens": 704,
+              "total_tokens": 2034
+            },
+            {
+              "stage": "spatial_cv_03_revision",
+              "kind": "structured",
+              "elapsed_seconds": 7.770769560942426,
+              "input_tokens": 1732,
+              "output_tokens": 1275,
+              "total_tokens": 3007
+            },
+            {
+              "stage": "spatial_cv_04_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.821693010977469,
+              "input_tokens": 1229,
+              "output_tokens": 931,
+              "total_tokens": 2160
+            },
+            {
+              "stage": "spatial_cv_04_critic",
+              "kind": "text",
+              "elapsed_seconds": 5.630424965987913,
+              "input_tokens": 1439,
+              "output_tokens": 817,
+              "total_tokens": 2256
+            },
+            {
+              "stage": "spatial_cv_04_revision",
+              "kind": "structured",
+              "elapsed_seconds": 6.20346756989602,
+              "input_tokens": 1954,
+              "output_tokens": 1004,
+              "total_tokens": 2958
+            },
+            {
+              "stage": "spatial_cv_05_draft",
+              "kind": "structured",
+              "elapsed_seconds": 6.4510420600418,
+              "input_tokens": 1324,
+              "output_tokens": 1153,
+              "total_tokens": 2477
+            },
+            {
+              "stage": "spatial_cv_05_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.257839926984161,
+              "input_tokens": 1501,
+              "output_tokens": 554,
+              "total_tokens": 2055
+            },
+            {
+              "stage": "spatial_cv_05_revision",
+              "kind": "structured",
+              "elapsed_seconds": 7.951418883050792,
+              "input_tokens": 2009,
+              "output_tokens": 1410,
+              "total_tokens": 3419
+            },
+            {
+              "stage": "spatial_cv_06_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.875781020033173,
+              "input_tokens": 1428,
+              "output_tokens": 930,
+              "total_tokens": 2358
+            },
+            {
+              "stage": "spatial_cv_06_critic",
+              "kind": "text",
+              "elapsed_seconds": 3.7492748349905014,
+              "input_tokens": 1638,
+              "output_tokens": 666,
+              "total_tokens": 2304
+            },
+            {
+              "stage": "spatial_cv_06_revision",
+              "kind": "structured",
+              "elapsed_seconds": 5.853711929987185,
+              "input_tokens": 2130,
+              "output_tokens": 899,
+              "total_tokens": 3029
+            },
+            {
+              "stage": "spatial_cv_07_draft",
+              "kind": "structured",
+              "elapsed_seconds": 4.273347774986178,
+              "input_tokens": 1520,
+              "output_tokens": 648,
+              "total_tokens": 2168
+            },
+            {
+              "stage": "spatial_cv_07_critic",
+              "kind": "text",
+              "elapsed_seconds": 4.057554894941859,
+              "input_tokens": 1705,
+              "output_tokens": 620,
+              "total_tokens": 2325
+            },
+            {
+              "stage": "spatial_cv_07_revision",
+              "kind": "structured",
+              "elapsed_seconds": 5.254472428001463,
+              "input_tokens": 2215,
+              "output_tokens": 821,
+              "total_tokens": 3036
+            },
+            {
+              "stage": "spatial_cv_08_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.836979795014486,
+              "input_tokens": 1623,
+              "output_tokens": 1021,
+              "total_tokens": 2644
+            },
+            {
+              "stage": "spatial_cv_08_critic",
+              "kind": "text",
+              "elapsed_seconds": 5.383543242001906,
+              "input_tokens": 1860,
+              "output_tokens": 1070,
+              "total_tokens": 2930
+            },
+            {
+              "stage": "spatial_cv_08_revision",
+              "kind": "structured",
+              "elapsed_seconds": 4.666772487107664,
+              "input_tokens": 2308,
+              "output_tokens": 692,
+              "total_tokens": 3000
+            },
+            {
+              "stage": "spatial_cv_09_draft",
+              "kind": "structured",
+              "elapsed_seconds": 7.521405200008303,
+              "input_tokens": 1730,
+              "output_tokens": 1179,
+              "total_tokens": 2909
+            },
+            {
+              "stage": "spatial_cv_09_critic",
+              "kind": "text",
+              "elapsed_seconds": 6.08721271797549,
+              "input_tokens": 1997,
+              "output_tokens": 1110,
+              "total_tokens": 3107
+            },
+            {
+              "stage": "spatial_cv_09_revision",
+              "kind": "structured",
+              "elapsed_seconds": 5.630836192984134,
+              "input_tokens": 2485,
+              "output_tokens": 806,
+              "total_tokens": 3291
+            },
+            {
+              "stage": "spatial_cv_10_draft",
+              "kind": "structured",
+              "elapsed_seconds": 5.36373094690498,
+              "input_tokens": 1840,
+              "output_tokens": 957,
+              "total_tokens": 2797
+            },
+            {
+              "stage": "spatial_cv_10_critic",
+              "kind": "text",
+              "elapsed_seconds": 5.866730734007433,
+              "input_tokens": 2077,
+              "output_tokens": 1001,
+              "total_tokens": 3078
+            },
+            {
+              "stage": "spatial_cv_10_revision",
+              "kind": "structured",
+              "elapsed_seconds": 5.07332615996711,
+              "input_tokens": 2648,
+              "output_tokens": 790,
+              "total_tokens": 3438
+            }
+          ],
+          "failed_attempts": [],
+          "elapsed_seconds": 164.605,
+          "proposal_sha256": "fd88c460a0ab19d5d70e60f79e83882406ffd05cb29ad9a8c5914fffaf965b53"
+        },
+        "ta_ai_calls": [
+          {
+            "name": "planner_agent",
+            "input_tokens": 3436,
+            "output_tokens": 1955,
+            "total_tokens": 5391
+          },
+          {
+            "name": "planner_agent",
+            "input_tokens": 4002,
+            "output_tokens": 4086,
+            "total_tokens": 8088
+          },
+          {
+            "name": "recruiter_agent",
+            "input_tokens": 2501,
+            "output_tokens": 1062,
+            "total_tokens": 3563
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2384,
+            "output_tokens": 489,
+            "total_tokens": 2873
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 2743,
+            "output_tokens": 86,
+            "total_tokens": 2829
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 3911,
+            "output_tokens": 382,
+            "total_tokens": 4293
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 5509,
+            "output_tokens": 409,
+            "total_tokens": 5918
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 6745,
+            "output_tokens": 437,
+            "total_tokens": 7182
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 7253,
+            "output_tokens": 36,
+            "total_tokens": 7289
+          },
+          {
+            "name": "manager_agent",
+            "input_tokens": 7838,
+            "output_tokens": 203,
+            "total_tokens": 8041
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 8808,
+            "output_tokens": 173,
+            "total_tokens": 8981
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 9540,
+            "output_tokens": 140,
+            "total_tokens": 9680
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 10125,
+            "output_tokens": 417,
+            "total_tokens": 10542
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 10711,
+            "output_tokens": 644,
+            "total_tokens": 11355
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 11105,
+            "output_tokens": 1104,
+            "total_tokens": 12209
+          },
+          {
+            "name": "evaluator_agent",
+            "input_tokens": 11251,
+            "output_tokens": 2130,
+            "total_tokens": 13381
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 12918,
+            "output_tokens": 882,
+            "total_tokens": 13800
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 13652,
+            "output_tokens": 37,
+            "total_tokens": 13689
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 14239,
+            "output_tokens": 17,
+            "total_tokens": 14256
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 14292,
+            "output_tokens": 2750,
+            "total_tokens": 17042
+          },
+          {
+            "name": "reporter_agent",
+            "input_tokens": 15865,
+            "output_tokens": 2107,
+            "total_tokens": 17972
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 3473,
+            "output_tokens": 1904,
+            "total_tokens": 5377
+          },
+          {
+            "name": "critic_agent",
+            "input_tokens": 6039,
+            "output_tokens": 1270,
+            "total_tokens": 7309
+          },
+          {
+            "name": "hypothesis",
+            "input_tokens": 4858,
+            "output_tokens": 1892,
+            "total_tokens": 6750
+          }
+        ],
+        "elapsed_seconds": 476.775,
+        "final_artifact_sha256": "5c2fb83758777a8d6ede368487ed614be82a1f9a50f28c9e9cf1945d59e372b6"
+      }
+    }
+  ],
+  "ta_plus_cv_integration": {
+    "spatial_cv_available_rate": 1.0,
+    "spatial_cv_available_observed": 3,
+    "spatial_cv_invoked_rate": 1.0,
+    "spatial_cv_invoked_observed": 3,
+    "spatial_cv_artifact_valid_rate": 1.0,
+    "spatial_cv_artifact_valid_observed": 3,
+    "spatial_cv_exposed_to_hypothesis_rate": 1.0,
+    "spatial_cv_exposed_to_hypothesis_observed": 3,
+    "spatial_cv_recruitment_rate": 1.0,
+    "spatial_cv_recruitment_observed": 3
+  },
+  "checkpoint_sha256": "4961bb9a66e205d036f377ece1e9076260204339adaa6c8ddc2d39c30700f7cd"
+}

@@ -1,0 +1,175 @@
+{
+  "status": "success",
+  "unit_fingerprint": "7cec9b31174331f78761df8fbdac41797922ae87bb0e52fff378c11bec50b5a4",
+  "generation_proposal_sha256": "b815cb1667c2215e0e4134c54c8afdaaa052a1975f77e59bab0ff05761da3bbc",
+  "truth_sha256": "8214cf8a5d93b39bc875bece8496694bce2a78faf058dd248d0ddb2457fab151",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "491aaa289e165f26dfbeea828895e4ac729e573c6bafdee11afd80110168a7d2",
+    "fcea1f2904fb09fd344b13a304dbedec0d1191f026f1a6999ade835983a806d8",
+    "41e096fd595f2b1331a0ab42288c7adb4b05099ab48809e9dac75f9ed8463638",
+    "5af99f3c619504e834b994eb4af23b7a4071ec3e009db6fdd3add59b10a0aaf4",
+    "7a595426eff12d0d262780d51f2c226e60b9cf2cf9aed529b27bfc4adf7cbff8",
+    "421a93db2404440464ff5da7e9067b29bc3e7a832b485b204cc3d8b1e7323f7e",
+    "87f2c9e5992647b71ae0d78e3eacfa4b02bef02bc190ffdb1fa2bbbf2c2069c0",
+    "788563e1b4287a475cc621fd47b9967c0ecb153a39f84fd80d01ef70ecfee737",
+    "f6b3f1c6573de98a8ce5f1671c814c711e966ad1d40e52ebc03d52ef416af437",
+    "5373764945d6b60752d6d2023628171e0d5b9a6d49779ed6df2d9a8b48dda03f"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": true,
+      "reason": "The proposed analysis focuses on integrating gene expression and spatial coordinates to identify tissue domains and employs a reference-based deconvolution to infer cell-type composition in mixed spots. This aligns with analysis G05, which aims to deconvolve mixed spatial spots using a single-cell reference and involves projecting single-cell profiles to estimate cell-type composition with consideration for neighborhood structure. Both analyses share the main scientific objective of identifying cell-type composition in spatial domains using deconvolution techniques that leverage spatial and gene expression data."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis matches G05. The main scientific objective in both is the spatial integration of adjacent tissue sections. The proposed analysis seeks to refine spatial domains across related specimens through alignment of serial sections. Similarly, G05 describes horizontally integrating adjacent tissue sections to identify shared domains while preserving structural continuity across section boundaries."
+    },
+    {
+      "candidate_index": 2,
+      "match": true,
+      "reason": "The proposed analysis focuses on domain detection and alignment of serial tissue sections. This aligns with the main scientific objective of ground-truth ID 'G05', which involves using serial-section coordinates to build a 3D representation and ensuring consistent mapping of anatomical structures across sections. The emphasis on section alignment in the candidate aligns with the vertical integration objective in G05."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis matches with ground-truth analysis G03. Both analyses focus on deconvolving mixed spatial spots using reference-based methods to estimate cell-type composition, which is a central scientific objective in both cases."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis involves both serial section integration and deconvolution of mixed capture regions, matching two main objectives from the ground-truth analyses: integration of adjacent (horizontal) or serial (vertical) tissue sections and estimation of cell-type contributions from single-cell data. This aligns closely with G03, which focuses on integrating serial sections to build a three-dimensional representation, and also touches upon G01, which involves deconvolving mixed spatial spots to estimate cell-type composition."
+    },
+    {
+      "candidate_index": 5,
+      "match": false,
+      "reason": "The proposed analysis involves both the identification of spatial domains using graph-based methods and the deconvolution of cellular compositions, with an emphasis on preserving section integrity across related samples. The ground-truth analyses cover a range of objectives including fine-grained structure resolution, contiguous domain identification, platform benchmarking, phenotype transfer, exhaustion mapping, germinal-center recovery, spatial versus expression-only integration, and vertical integration. However, none of these focus explicitly on the simultaneous resolution of tissue domains and cellular compositions using a combined graph-based and deconvolution methodology, as well as the preservation of section integrity as described in the proposed analysis. Therefore, no direct match is found."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis focuses on identifying contiguous tissue domains and aligning serial sections to reduce technical variability. It involves multi-section registration and characterizing spatial domains through spatial graph-based clustering, which is similar to integrating adjacent tissue sections horizontally to identify shared domains while preserving structure that spans section boundaries, as seen in GROUND-TRUTH ANALYSIS G01. Both analyses aim to integrate multiple sections to identify coherent domains across boundaries."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis focuses on using deconvolution strategies to elucidate cellular composition within spatial domains, which aligns with the main objective of G09. Ground-truth analysis G09 involves deconvolving mixed spatial spots using a single-cell reference to estimate cell-type composition and improve mapping using neighborhood structure. Both analyses share the main goal of extracting cell-type signals from mixed spatial data using deconvolution."
+    },
+    {
+      "candidate_index": 8,
+      "match": true,
+      "reason": "The proposed analysis aims to integrate spatial information from serial tissue sections and resolve cell-type compositions, which aligns with the objective of G09. G09 focuses on integrating serial sections vertically to form a three-dimensional representation, emphasizing the preservation of tissue integrity across sections. The proposed analysis's emphasis on aligning serial sections and maintaining spatial continuity for cell-type composition analysis corresponds with the goals of G09, which involves using coordinates to integrate sections vertically. Both analyses share the same scientific objective of vertically integrating serial sections with a focus on maintaining anatomical context."
+    },
+    {
+      "candidate_index": 9,
+      "match": true,
+      "reason": "The proposed analysis and ground-truth analysis G08 both describe the objective of deconvolving mixed spatial spots using a reference, with an aim to resolve cell-type composition in spatial omics data."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 9,
+    "candidate_count": 10,
+    "candidate_hit_fraction": 0.9
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 10,
+    "observable_model_attempts": 10,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 1.8142897263169289,
+        "input_tokens": 895,
+        "output_tokens": 106,
+        "total_tokens": 1001
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 2.3998138401657343,
+        "input_tokens": 895,
+        "output_tokens": 69,
+        "total_tokens": 964
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 5.330376032739878,
+        "input_tokens": 898,
+        "output_tokens": 79,
+        "total_tokens": 977
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.6730727460235357,
+        "input_tokens": 903,
+        "output_tokens": 50,
+        "total_tokens": 953
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.870760452002287,
+        "input_tokens": 898,
+        "output_tokens": 101,
+        "total_tokens": 999
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 2.032565977424383,
+        "input_tokens": 894,
+        "output_tokens": 138,
+        "total_tokens": 1032
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.800514930859208,
+        "input_tokens": 889,
+        "output_tokens": 90,
+        "total_tokens": 979
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.9376834854483604,
+        "input_tokens": 892,
+        "output_tokens": 87,
+        "total_tokens": 979
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 2.6392962727695704,
+        "input_tokens": 888,
+        "output_tokens": 114,
+        "total_tokens": 1002
+      },
+      {
+        "stage": "judge_10",
+        "kind": "structured",
+        "elapsed_seconds": 1.2311178855597973,
+        "input_tokens": 901,
+        "output_tokens": 47,
+        "total_tokens": 948
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 22.733
+  },
+  "trace_sha256": "2afaa01e72a671844888f2b54a6cc13a891994e445ff691ff660823578be64b1",
+  "checkpoint_sha256": "d48edb876b8d44413e9ddfa2edb2d6b9f7afb0e6ceb3bc8a982817d96bbfc22f"
+}

@@ -1,0 +1,175 @@
+{
+  "status": "success",
+  "unit_fingerprint": "80cfe97889ad44e9f9edcdace0585e03b960240e7669110edd755ec73e048438",
+  "generation_proposal_sha256": "63bfcb6b6166c06b46efa5a4a0c1fc76820e243a086d2d416626c646e13c3d5a",
+  "truth_sha256": "243ecf68bec765b7f41e666a1c0fdb626f29ccd3c587e9929b88be2122b5c12d",
+  "truth_artifact_sha256": "c0d31c7df5808c89109954d415d9952c8e127f5b890583101ee46859d635380d",
+  "judge_protocol": "cellbench_independent_candidate_match_v1",
+  "judge_prompt_sha256": [
+    "81ed9c237c3d33ef180986c2b60e55d93c4d19327d943eebd951da4dd6c9efc8",
+    "2c9bf716ae99ddf0588fadb7c1e8541664af6085b8329e307394a8a6e6bd256a",
+    "119509b872d290c57abb69cf295ea17e4704ecaf9aa90037b2a237c62d31bd01",
+    "aaeba99485db8b7518dcbc4c630c84d516b786bb5c648c04e82b6a11d65b6f53",
+    "80aad917f394a8b69b86e4fb3fd7e53ecd4eedba726ebb146bba8538a022ee28",
+    "b1cb53e74ff8818c8a4d17459082cfafa4b76057a0eab2c50d4fc3f34ac6fbd2",
+    "bf6a18ce252c9a98bc6fd1008c0269151bcf57d2cce26a4d8bb3cb011a9d2648",
+    "0a5bb049d98498db175eb74410823f072597fb5df68c990c8848eb867224a649",
+    "d288c0f1f1f3d28902eb2a6ba2777c2ecc039b121628a35a6bcfecf15c8a92e6",
+    "a1dab6a14805dcefb7ad0221f1b7ed58db2f8d53fa82c664dcd343388bb12ac4"
+  ],
+  "decisions": [
+    {
+      "candidate_index": 0,
+      "match": false,
+      "reason": "The proposed analysis focuses on reconstructing cellular trajectories during tissue regeneration and development using gene expression profiles, spatial coordinates, and morphological features. It emphasizes neighborhood-constrained trajectory inference to ensure transitions within realistic physical proximities and validates with anatomical structures and time course data. While some elements are similar to the ground-truth analysis \"G04\", it focuses more on microglia density and cell-body morphology in post-injury scenarios. The proposed analysis has a broader application and different focus, concentrating on reconstruction and neighborhood constraints, and does not specifically mention validation using types of anatomical structure changes or morphology other than the emphasis on a stringent confinement of transitions. Hence, it does not match the main scientific objective of the ground-truth analyses listed."
+    },
+    {
+      "candidate_index": 1,
+      "match": true,
+      "reason": "The proposed analysis focuses on refining cell–cell communication studies by incorporating spatial proximity filters into ligand–receptor interaction analysis. This matches the objective of G08, which is to detect spatially constrained ligand-receptor pairs, as both analyses aim to identify ligand-receptor interactions that are spatially plausible and constrained by the local environment."
+    },
+    {
+      "candidate_index": 2,
+      "match": false,
+      "reason": "The proposed analysis focuses on clustering spatial transcriptomics spots by integrating gene expression, spatial coordinates, and morphology-derived features, with the goal of distinguishing cellular states in complex tissue regions. It emphasizes embedding neighborhood constraints into the clustering algorithm and validating against known tissue landmarks and histological patterns. \n\nNone of the ground-truth analyses have the primary scientific objective of clustering or identifying distinct cellular states by combining gene expression, spatial information, and morphological features with a focus on spatial clustering methods. Ground-truth analyses cover topics such as trajectory inference, ligand-receptor interaction mapping, morphological and expression model comparisons, and technology validation, none of which directly align with the clustering objective of the proposed analysis."
+    },
+    {
+      "candidate_index": 3,
+      "match": true,
+      "reason": "The proposed analysis aims to refine spatial transcriptomic trajectories using a neighborhood-based smoothing algorithm to address technical noise and missing measurements. This aligns with the objective of G08, which is to quantify expression changes along spatial trajectories. Both analyses focus on analyzing and refining spatial trajectories, although they might use different approaches or focus on different aspects of the analysis."
+    },
+    {
+      "candidate_index": 4,
+      "match": true,
+      "reason": "The proposed analysis focuses on noise reduction and imputation of gene expression in spatial transcriptomics data by integrating multiple modalities, such as expression, morphology, and distance metrics. This aligns with G07, which aims to impute missing or noisy spatial expression using integration of expression, morphology, and distance."
+    },
+    {
+      "candidate_index": 5,
+      "match": true,
+      "reason": "The proposed analysis aims to integrate spatial transcriptomics data across time points to reconstruct cellular trajectories, focusing extensively on temporal dynamics and validating with known time courses. This aligns with ground-truth analysis G08, which involves validating trajectories with morphology and time course data, indicating that the main scientific objective in both is to develop or validate spatial trajectories in the context of temporal or morphological consistency."
+    },
+    {
+      "candidate_index": 6,
+      "match": true,
+      "reason": "The proposed analysis focuses on constructing spatially robust cell-cell communication networks by integrating gene expression, spatial distance, and morphological data, with a focus on enforcing neighborhood constraints to ensure interactions occur within anatomically consistent regions. Similarly, Ground Truth G01 aims to detect spatially constrained ligand-receptor pairs using spatial neighborhoods. Both analyses center on identifying spatially relevant interactions constrained by anatomical or spatial factors, indicating a matching main scientific objective."
+    },
+    {
+      "candidate_index": 7,
+      "match": true,
+      "reason": "The proposed analysis aims to reconstruct high-resolution developmental maps using spatial transcriptomics with a focus on capturing subtle gradients and transitions in cellular states, which matches the scientific objective of G02 to trace embryonic breast-tissue transitions and identify transitions between anatomically organized cell states. Both analyses are concerned with understanding cellular transitions in a developmental context using spatial information."
+    },
+    {
+      "candidate_index": 8,
+      "match": false,
+      "reason": "The proposed analysis focuses on detecting and characterizing transcriptional gradients across tissues by integrating gene expression data, physical distances, and morphology, which primarily relates to spatial transcriptional gradient inference. The ground-truth analyses encompass objectives like cell communication mapping, validation across technologies, ligand-receptor interaction detection, imputation, and spatial trajectory inference. None of these analyses specifically addresses the main objective of inferring transcriptional gradients across tissues, distinguishing gradual changes from noise, or ensuring gradients are biologically plausible. Therefore, no match exists between the proposed analysis and the ground-truth set."
+    },
+    {
+      "candidate_index": 9,
+      "match": true,
+      "reason": "The proposed analysis focuses on integrating spatial-omics data across different platforms and resolutions, ensuring robust cross-platform integration by combining gene expression, spatial coordinates, and morphology. This matches the main scientific objective of ground-truth analysis G02, which involves validating spatial analyses across different technologies and platforms."
+    }
+  ],
+  "metrics": {
+    "matched_candidates": 7,
+    "candidate_count": 10,
+    "candidate_hit_fraction": 0.7
+  },
+  "trace": {
+    "model": {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "api_model": "gpt-4o",
+      "reasoning_effort": null
+    },
+    "logical_model_calls": 10,
+    "observable_model_attempts": 10,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "judge_01",
+        "kind": "structured",
+        "elapsed_seconds": 2.1353522408753633,
+        "input_tokens": 867,
+        "output_tokens": 153,
+        "total_tokens": 1020
+      },
+      {
+        "stage": "judge_02",
+        "kind": "structured",
+        "elapsed_seconds": 1.0723657999187708,
+        "input_tokens": 863,
+        "output_tokens": 74,
+        "total_tokens": 937
+      },
+      {
+        "stage": "judge_03",
+        "kind": "structured",
+        "elapsed_seconds": 2.02034155651927,
+        "input_tokens": 860,
+        "output_tokens": 145,
+        "total_tokens": 1005
+      },
+      {
+        "stage": "judge_04",
+        "kind": "structured",
+        "elapsed_seconds": 1.1705540604889393,
+        "input_tokens": 857,
+        "output_tokens": 76,
+        "total_tokens": 933
+      },
+      {
+        "stage": "judge_05",
+        "kind": "structured",
+        "elapsed_seconds": 1.0623537208884954,
+        "input_tokens": 857,
+        "output_tokens": 67,
+        "total_tokens": 924
+      },
+      {
+        "stage": "judge_06",
+        "kind": "structured",
+        "elapsed_seconds": 1.504995945841074,
+        "input_tokens": 849,
+        "output_tokens": 83,
+        "total_tokens": 932
+      },
+      {
+        "stage": "judge_07",
+        "kind": "structured",
+        "elapsed_seconds": 1.2410231847316027,
+        "input_tokens": 856,
+        "output_tokens": 93,
+        "total_tokens": 949
+      },
+      {
+        "stage": "judge_08",
+        "kind": "structured",
+        "elapsed_seconds": 1.0386146157979965,
+        "input_tokens": 854,
+        "output_tokens": 77,
+        "total_tokens": 931
+      },
+      {
+        "stage": "judge_09",
+        "kind": "structured",
+        "elapsed_seconds": 1.4872970711439848,
+        "input_tokens": 859,
+        "output_tokens": 122,
+        "total_tokens": 981
+      },
+      {
+        "stage": "judge_10",
+        "kind": "structured",
+        "elapsed_seconds": 1.1771298721432686,
+        "input_tokens": 860,
+        "output_tokens": 65,
+        "total_tokens": 925
+      }
+    ],
+    "failed_attempts": [],
+    "elapsed_seconds": 13.912
+  },
+  "trace_sha256": "56ed6b2d80446e90ac25088ff31bad13020cc40df28ea6e7e5329273186a79ff",
+  "checkpoint_sha256": "c1020dfde05f3e316d1016635b6f0b84f4a3cd2b2da79865ddb635d20d0661f1"
+}

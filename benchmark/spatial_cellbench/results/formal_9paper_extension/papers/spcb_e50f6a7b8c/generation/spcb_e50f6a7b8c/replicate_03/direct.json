@@ -1,0 +1,75 @@
+{
+  "status": "success",
+  "protocol": "spatial_cellbench_dynamic_n_v2",
+  "unit_fingerprint": "05d9aab2e93429f365242ba8e9411a6c2e81906dd099122bc97d734fd4b037e8",
+  "eval_id": "spcb_e50f6a7b8c",
+  "replicate": 3,
+  "proposal_count": 8,
+  "proposal_sha256": "2d4354f875babb1a18e62bff930347973df02e04d9b3ffc1a8c308310f7b363c",
+  "proposals": {
+    "proposals": [
+      {
+        "title": "Spatial Co-localization of Cell Types",
+        "summary": "This analysis will focus on mapping cell-type labels to their spatial coordinates, using statistical tests (such as Ripley’s K or nearest neighbor analysis) to determine if certain cell types are enriched or depleted in proximity to each other. The workflow involves spatial graph construction from the coordinate data, overlaying cellular identity obtained from transcriptomic signatures, and assessing local enrichment patterns to understand potential cell-cell interactions within the tissue microenvironment."
+      },
+      {
+        "title": "Spatial Differential Gene Expression Mapping",
+        "summary": "This study will segment the tissue into spatial regions based on tissue morphology and/or clustering results, then perform differential gene expression analysis across these regions. The strategy includes identifying spatially variable genes using methods like spatial autocorrelation metrics (e.g., Moran’s I) or Gaussian process models, enabling the characterization of genes driving regional differences in tissue organization."
+      },
+      {
+        "title": "Spatial Pattern Discovery Using Autocorrelation Statistics",
+        "summary": "In this analysis, spatial autocorrelation statistics will be applied to each gene to detect spatially patterned expression. By computing metrics such as Moran's I or Geary’s C for single genes, the study will identify genes with significant spatial clusters. These genes can then be further investigated to understand their roles in tissue development or pathological states, ensuring rigorous control for multiple comparisons across high-dimensional data."
+      },
+      {
+        "title": "Tissue Segmentation through Image and Spatial Transcriptomics Integration",
+        "summary": "This approach integrates high-resolution microscopy image data with spatial transcriptomic profiles. Using computational image segmentation methods (e.g., deep learning-based segmentation or traditional watershed algorithms), tissue regions are delineated and correlated with molecular profiles. The analysis examines how segmented tissue regions correspond to distinct gene expression patterns, enabling the elucidation of underlying tissue organization principles."
+      },
+      {
+        "title": "Neighborhood Graph Analysis for Local Molecular Interactions",
+        "summary": "Using spatial coordinates, this analysis will construct neighborhood graphs where nodes represent spots or cells and edges represent spatial proximity. Statistical analyses, including local clustering coefficients and graph centrality measures, will be employed to identify local hotspots of molecular activity and determine whether particular gene expression patterns are associated with high network connectivity, indicating potential localized molecular interactions."
+      },
+      {
+        "title": "Tile-Based Analysis for Massive Spatial Transcriptomics Datasets",
+        "summary": "To address memory constraints with massive imaging data, this analysis proposes a tiled processing approach. Large images are divided into smaller, manageable sections, and spatial transcriptomic data from corresponding regions are analyzed independently before integration. This method allows for locally refined segmentation and quantification while facilitating the aggregation of molecular and morphological features across the entire tissue sample."
+      },
+      {
+        "title": "Integration of Spatial Morphology with Molecular Signatures",
+        "summary": "This analysis will compare the spatial patterns derived from transcriptomic profiles to those obtained from morphological image features. By applying feature extraction techniques on tissue images and aligning these with spatial gene expression profiles, the study aims to identify concordant patterns that validate molecular findings with visible histological structures, thereby bridging the gap between molecular and morphological data."
+      },
+      {
+        "title": "Spatial Integration of Multi-modal Omics Data",
+        "summary": "Focusing on multi-modal spatial-omics, this analysis is designed to integrate spatial transcriptomic data with other spatially resolved omics measurements (such as proteomics or metabolomics) when available. The plan involves synchronizing datasets into a common spatial coordinate system, using dimensionality reduction and clustering to reveal how molecular pathways combine spatially, and ultimately uncovering coordinated spatial regulatory mechanisms within the tissue."
+      }
+    ]
+  },
+  "trace": {
+    "arm": "direct",
+    "context_sha256": "a973345bd4c5e47c2c4ef9fcd453e258257f3245401db2eb71177c513837bc10",
+    "model": {
+      "id": "o3-mini",
+      "provider": "openai",
+      "api_model": "o3-mini",
+      "reasoning_effort": "medium"
+    },
+    "logical_model_calls": 1,
+    "observable_model_attempts": 1,
+    "semantic_retries": 0,
+    "fallback_model": null,
+    "calls": [
+      {
+        "stage": "direct",
+        "kind": "structured",
+        "elapsed_seconds": 5.107069038087502,
+        "input_tokens": 396,
+        "output_tokens": 1164,
+        "total_tokens": 1560
+      }
+    ],
+    "failed_attempts": [],
+    "prompt_bundle_sha256": "e7560ccf80100b98f9461c10641f81f7b9488ac979a29843f9c7d4005e777670",
+    "overview_sha256": null,
+    "elapsed_seconds": 5.112
+  },
+  "trace_sha256": "8c1a02d92b8641fc3047c7d52e17fba674008bee3ff341cff9a45376dc2827e5",
+  "checkpoint_sha256": "cb87d645bb1bde865594360e3625867a1484193859bfc0fface3f10beb3da50c"
+}
