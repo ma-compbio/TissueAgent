@@ -27,7 +27,7 @@ def audit(event, args):
             if (inside(path, repository) and not inside(path, workspace)
                     and not inside(path, environment) and path != guard_file):
                 raise PermissionError('Benchmark isolation: repository files outside this workspace are unavailable')
-            if path.name in {'.bashrc', '.zshrc', '.env', 'auth.json'}:
+            if path.name in {'.bashrc', '.zshrc', '.env', 'auth.json'} or path.name.endswith('.env'):
                 raise PermissionError('Credential files are unavailable to analysis code')
             if event == 'open' and len(args) > 2:
                 flags = args[2] or 0

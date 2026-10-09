@@ -17,7 +17,8 @@ def _last_index_of_final(messages: list[BaseMessage], agent_name: str) -> int | 
     """
     for i in range(len(messages) - 1, -1, -1):
         msg = messages[i]
-        if isinstance(msg, AIMessage) and getattr(msg, "name", "") == agent_name:
+        if (isinstance(msg, AIMessage) and getattr(msg, "name", "") == agent_name
+                and not msg.tool_calls):
             return i
     return None
 
@@ -25,7 +26,8 @@ def _last_index_of_final(messages: list[BaseMessage], agent_name: str) -> int | 
 def filter_for_recruiter(messages: list[BaseMessage]) -> list[BaseMessage]:
     """Keep the task, latest failure assessment, and planner's revised plan.
 
-    Strips the planner's intermediate tool calls (template reads, globs, etc.).
+    Strips the planner's intermediate tool calls, retaining the recruiter's
+    own paired tool exchanges for the current plan.
     """
     result = [msg for msg in messages if isinstance(msg, HumanMessage)]
     feedback = _last_index_of_final(messages, "evaluator_agent")
@@ -34,6 +36,13 @@ def filter_for_recruiter(messages: list[BaseMessage]) -> list[BaseMessage]:
     idx = _last_index_of_final(messages, "planner_agent")
     if idx is not None:
         result.append(messages[idx])
+    kept_ids = set()
+    for msg in messages[idx + 1 if idx is not None else 0:]:
+        if isinstance(msg, AIMessage) and getattr(msg, 'name', '') == 'recruiter_agent':
+            result.append(msg)
+            kept_ids.update(call['id'] for call in msg.tool_calls)
+        elif isinstance(msg, ToolMessage) and msg.tool_call_id in kept_ids:
+            result.append(msg)
     return result
 
 
@@ -119,10 +128,9 @@ def filter_for_manager(
     * Planner / recruiter / evaluator AIMessages and their paired ToolMessages.
     * ``plan_updated`` / ``artifact_validation`` UI-only events.
 
-    On turn 1 the manager has no AIMessages yet, so the filter would return an
-    empty list — provider APIs reject that. In that case only, a synthetic
-    ``HumanMessage("Proceed.")`` is injected. On turn 2+ the real manager
-    AIMessages exist, so no synthetic message is added.
+    A synthetic ``HumanMessage("Proceed.")`` anchors every filtered history.
+    Some providers require a user turn even when assistant/tool exchanges exist.
+    The task and current plan remain in the system prompt.
     """
 
     def _filter(messages: list[BaseMessage]) -> list[BaseMessage]:
@@ -141,8 +149,6 @@ def filter_for_manager(
                         kept_tool_call_ids.add(tc_id)
             elif isinstance(msg, ToolMessage) and msg.tool_call_id in kept_tool_call_ids:
                 kept.append(msg)
-        if not kept:
-            kept.append(HumanMessage(content="Proceed."))
-        return kept
+        return [HumanMessage(content="Proceed."), *kept]
 
     return _filter

@@ -46,14 +46,12 @@ class OpenAIWebSearchEngine:
     default_model: str = "gpt-4o"
 
     def __post_init__(self):
-        """Initialize the OpenAI client from the provided or default API key."""
-        if self.api_key is None:
-            self.client = OpenAI()
-        else:
+        """Defer OpenAI credentials until this optional search tool is used."""
+        self.client = None
+        if self.api_key is not None:
             key = _coerce_secret(self.api_key)
             if not key or str(key).startswith("*"):
                 raise ValueError("Invalid OpenAI API key")
-            self.client = OpenAI(api_key=key)
 
     def run(
         self,
@@ -86,6 +84,8 @@ class OpenAIWebSearchEngine:
             sys += " " + instructions.strip()
 
         try:
+            if self.client is None:
+                self.client = OpenAI() if self.api_key is None else OpenAI(api_key=_coerce_secret(self.api_key))
             resp = self.client.responses.create(
                 model=mdl,
                 instructions=sys,

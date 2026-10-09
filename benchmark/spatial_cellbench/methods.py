@@ -55,9 +55,14 @@ def register_benchmark_models() -> None:
     )
     for spec in additions:
         existing = models._MODELS_BY_ID.get(spec.id)
-        if existing is not None and existing != spec:
-            raise ValueError(f"Global model definition conflicts with benchmark model {spec.id}")
-        models._MODELS_BY_ID[spec.id] = spec
+        if existing is not None:
+            fields = ("provider", "api_model", "reasoning_effort")
+            if any(getattr(existing, field) != getattr(spec, field) for field in fields):
+                raise ValueError(
+                    f"Global model definition conflicts with benchmark model {spec.id}"
+                )
+        else:
+            models._MODELS_BY_ID[spec.id] = spec
 
 
 class ModelCall(Protocol):
@@ -99,9 +104,7 @@ class LangChainModelCall:
         register_benchmark_models()
         self.model_id = model_id
         overrides = {"timeout": timeout, "max_retries": 0} if timeout is not None else {}
-        self._model = with_header_retry(
-            build_chat_model(model_id, **overrides), max_attempts=6
-        )
+        self._model = with_header_retry(build_chat_model(model_id, **overrides), max_attempts=6)
         self._chains: dict[type[BaseModel], object] = {}
         self._traces: list[CallTrace] = []
         self._failed_attempts: list[dict] = []
@@ -192,9 +195,7 @@ class LangChainModelCall:
         """Invoke one unstructured stage."""
         started = time.perf_counter()
         try:
-            message = self._model.invoke(
-                [("system", system_prompt), ("human", user_prompt)]
-            )
+            message = self._model.invoke([("system", system_prompt), ("human", user_prompt)])
         except Exception as exc:
             self._record_failure(stage, "text", started, exc)
             raise

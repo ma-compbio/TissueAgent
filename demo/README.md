@@ -24,12 +24,21 @@ This folder contains notebooks for several tasks described in the manuscript. Ea
 demo
 ├── data/                                # datasets and inputs for demo tasks
 ├── outputs/                             # transcripts and artifacts from demo tasks
+├── figure_recreation_lohoff-2a.ipynb    # atlas and seqFISH joint UMAP figure reproduction
 ├── figure_recreation_lohoff-2b.ipynb    # notebook for figure recreation task (Figure 2b from Lohoff et. al.)
 ├── figure_recreation_lohoff-2e.ipynb    # notebook for figure recreation task (Figure 2c from Lohoff et. al.)
 ├── spot_deconvolution_visium_heart.ipynb    # notebook for cell-type deconvolution task
 ├── notebook_utils.py                    # utility functions for setting up and running TissueAgent in notebooks
 └── README.md
 ```
+
+### Lohoff Figure 2a: atlas and seqFISH
+
+[`figure_recreation_lohoff-2a.ipynb`](figure_recreation_lohoff-2a.ipynb) supplies both `data/gastrulation_atlas_joint_umap.csv` and `data/seqfish_author_joint_umap.csv`. These contain the authors' published joint UMAP coordinates and cell-type labels from [`MGA_joint_UMAP.Rds`](https://content.cruk.cam.ac.uk/jmlab/SpatialMouseAtlas2020/MGA_joint_UMAP.Rds). The original seqFISH AnnData is also supplied, but its different embedding is not combined with the atlas coordinates. Source information and checksums are in `data/provenance_lohoff-2a.json`.
+
+This demo reconstructs the plotting workflow from processed coordinates; it does not recompute integration, cell-type annotation, or UMAP from expression. No palette file is supplied. The completed figure contains 16,861 atlas cells and 52,568 seqFISH cells after excluding 4,968 cells labeled `Low quality`.
+
+The notebook includes the completed [result](outputs/figure_recreation_lohoff-2a_with_atlas/figures/lohoff_fig2a_recreated.png), copied from the [atlas benchmark run](../benchmark/lohoff_2a_with_atlas_20261005/README.md), with its transcript, metrics, reports, and plotting code. It reuses that result only when the prompt, model, and input checksums match. To launch a fresh run, choose a new `OUTPUT_DIR` in the notebook and configure `OPENAI_API_KEY`. The previous seqFISH-only outputs remain in `outputs/figure_recreation_lohoff-2a/`.
 
 ### Hypothesis-recovery benchmark (Comment #7)
 

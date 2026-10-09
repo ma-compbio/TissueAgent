@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the frozen eleven-paper spatial benchmark corpus."""
+"""Validate the frozen twenty-paper spatial benchmark corpus."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from benchmark.spatial_cellbench.schemas import GroundTruthPaper, PublicContext
 
-EXPECTED_PAPERS = 11
+EXPECTED_PAPERS = 20
 CURATION_PROTOCOL = "cellbench_fig12_spatial_v2"
 CONTEXT_PROTOCOL = "cellbench_intro_only_v2"
 

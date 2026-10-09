@@ -1,5 +1,20 @@
 # Spatial CellBench analysis specification
 
+## Standalone CV extension (2026-10-03)
+
+The optional `spatial_cv` arm adds a standalone comparator to the completed three-arm
+experiment. It calls the identical `run_spatial_cv` draft--critique--revision implementation
+used inside TA+CV, taking exactly 3N o3-mini calls and returning the revised N proposals
+directly to the unchanged GPT-4o judge. It receives only the same public context, frozen
+spatial overview, and oracle N. There is no native TissueAgent orchestration in this arm.
+The extension uses 20 papers and three replicates in a separate immutable run directory;
+historical generation and judging checkpoints are not rerun or overwritten.
+
+For Table S6, compute the unweighted mean of paper hit fractions (the manuscript's
+Micro-Avg) and pooled candidate hit fraction (Macro-Avg) separately in each replicate;
+report the mean and population standard deviation (ddof=0) across those three scores.
+The frozen original contrasts below remain unchanged; the new row is descriptive.
+
 ## Primary observations
 
 For candidate \(c_i\) and the complete ground-truth set \(G\), GPT-4o returns one independent
@@ -37,7 +52,7 @@ noncompliant run fails generation and is not silently treated as TA+CV.
 Each arm must have replicate IDs 1, 2, and 3 for a paper before that paper enters a contrast.
 Replicates are averaged within paper, the paper is the statistical unit, and uncertainty is a
 10,000-sample paired paper bootstrap with seed 20260720. Missing or failed units are not imputed.
-The eleven method-heavy papers form a descriptive benchmark; intervals are uncertainty summaries, not
+The twenty method-heavy papers form a descriptive benchmark; intervals are uncertainty summaries, not
 a basis for broad method-superiority claims.
 
 ## Protocol boundaries

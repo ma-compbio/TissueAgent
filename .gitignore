@@ -153,6 +153,14 @@ docs/manuscript/
 
 data/
 
+# Retain the small frozen Spatial CellBench corpus and its source provenance.
+!benchmark/spatial_cellbench/data/
+benchmark/spatial_cellbench/data/*
+!benchmark/spatial_cellbench/data/*.json
+!benchmark/spatial_cellbench/data/source_records/
+!benchmark/spatial_cellbench/data/source_records/*.json
+benchmark/spatial_cellbench/results
+
 # Keep the canonical Lohoff 2b reference used by the demo notebook.
 !/demo/data/
 /demo/data/*
@@ -242,3 +250,6 @@ notebooks
 !/notebooks/cell_annotation_benchmark.ipynb
 !/notebooks/cell_annotation_w_baselines.ipynb
 !/notebooks/tissue_niche_agent_baselines.ipynb
+
+
+docs/grant

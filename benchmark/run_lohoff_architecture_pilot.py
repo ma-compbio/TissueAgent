@@ -76,19 +76,25 @@ def now():
     return datetime.now(timezone.utc).isoformat()
 
 
-def credentials():
+def credentials(required=('OPENAI_API_KEY', 'ANTHROPIC_API_KEY')):
     """Read only literal credential assignments from the previously authorized source."""
-    for line in (Path.home() / '.bashrc').read_text().splitlines():
-        m = re.match(r'\s*(?:export\s+)?(OPENAI_API_KEY|ANTHROPIC_API_KEY)\s*=\s*(.*)', line)
-        if not m or os.environ.get(m[1]):
+    sources = [Path.home() / '.bashrc']
+    if os.environ.get('TISSUEAGENT_BENCHMARK_CREDENTIAL_FILE'):
+        sources.append(Path(os.environ['TISSUEAGENT_BENCHMARK_CREDENTIAL_FILE']))
+    for source in sources:
+        if not source.is_file():
             continue
-        try:
-            parts = shlex.split(m[2], comments=True)
-        except ValueError:
-            continue
-        if len(parts) == 1 and '$' not in parts[0] and '`' not in parts[0]:
-            os.environ[m[1]] = parts[0]
-    if not all(os.environ.get(k) for k in ('OPENAI_API_KEY', 'ANTHROPIC_API_KEY')):
+        for line in source.read_text().splitlines():
+            m = re.match(r'\s*(?:export\s+)?(OPENAI_API_KEY|ANTHROPIC_API_KEY|OPENROUTER_API_KEY)\s*=\s*(.*)', line)
+            if not m or os.environ.get(m[1]):
+                continue
+            try:
+                parts = shlex.split(m[2], comments=True)
+            except ValueError:
+                continue
+            if len(parts) == 1 and '$' not in parts[0] and '`' not in parts[0]:
+                os.environ[m[1]] = parts[0]
+    if not all(os.environ.get(k) for k in required):
         raise RuntimeError('The configured generation/judging credentials are unavailable')
 
 
@@ -162,6 +168,10 @@ class ResponseTruncated(BaseException):
     """Stop the attempt without allowing tool-retry wrappers to hide truncation."""
 
 
+class StudyStopped(BaseException):
+    """Cooperative stop for a background study, without requiring OS signals."""
+
+
 def check_response_complete(message, generation_info=None):
     """Detect provider truncation even when the graph would otherwise return normally."""
     metadata = {**(generation_info or {}), **(getattr(message, 'response_metadata', None) or {})}
@@ -173,6 +183,8 @@ def check_response_complete(message, generation_info=None):
 
 def worker(out, arm, offline=False):
     manifest = json.loads((out / 'manifest.json').read_text())
+    model_config = manifest.get('model_config')
+    model_id = manifest.get('model', MODEL)
     seed = manifest.get('seed', 0)
     prompt = manifest.get('prompt', PROMPT)
     if type(seed) is not int or not isinstance(prompt, str) or not prompt.strip():
@@ -188,6 +200,9 @@ def worker(out, arm, offline=False):
                       TISSUEAGENT_REASONING_EFFORT='high',
                       TISSUEAGENT_RECURSION_LIMIT=str(LIMITS['graph_steps']),
                       TISSUEAGENT_EXECUTOR_RECURSION_LIMIT=str(LIMITS['execution_steps']))
+    if model_config:
+        for role in ('ORCHESTRATION', 'WORKER'):
+            os.environ[f'TISSUEAGENT_{role}_REASONING_EFFORT'] = model_config.get('reasoning_effort') or 'none'
     workspace = case / 'state/workspace'
     for name in ('project/outputs', 'project/uploads', 'library/datasets', 'project/skills', '.cache'):
         (workspace / name).mkdir(parents=True)
@@ -195,10 +210,18 @@ def worker(out, arm, offline=False):
                       XDG_CACHE_HOME=str(workspace / '.cache'),
                       NUMBA_CACHE_DIR=str(workspace / '.cache/numba'))
     for p in (out / 'inputs').iterdir():
-        dest = 'library/datasets' if p.suffix == '.h5ad' else 'project/uploads'
+        dest = manifest.get('input_destinations', {}).get(p.name)
+        if dest is None:
+            dest = 'library/datasets' if p.suffix == '.h5ad' else 'project/uploads'
         shutil.copy2(p, workspace / dest / p.name)
     sys.path[:0] = [str(source / 'src'), str(source)]
-    credentials()
+    required = (model_config['credential_env'],) if model_config else ('OPENAI_API_KEY', 'ANTHROPIC_API_KEY')
+    credentials(required)
+    if model_config:
+        # A non-OpenAI condition must not silently use an OpenAI-only specialist.
+        for key in ('OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'OPENROUTER_API_KEY'):
+            if key not in required:
+                os.environ.pop(key, None)
     import knowledge
     no_skills = arm in {'no_skill_registry', 'single_react_no_skills'}
     if no_skills:
@@ -207,6 +230,15 @@ def worker(out, arm, offline=False):
         knowledge.PLANS_DIR = case / 'empty_plans'; knowledge.PLANS_DIR.mkdir()
 
     import models
+    if model_config:
+        spec = models.ModelSpec(id=model_id, provider=model_config['provider'],
+            api_model=model_config['api_model'], label=model_config['label'],
+            reasoning_effort=model_config.get('reasoning_effort'))
+        models._MODELS_BY_ID[model_id] = spec
+        # Web search would introduce a second LLM and author-code access.
+        # All models receive the same offline task and the same disabled tool.
+        from agents.agent_registry.searcher_agent.tools_impl.openai_web_search_tool import OpenAIWebSearchEngine
+        OpenAIWebSearchEngine.run = lambda self, *args, **kwargs: 'Web search is disabled for this benchmark; use the supplied local inputs.'
     from langchain_core.callbacks import BaseCallbackHandler
     from langchain_core.messages import AIMessage, HumanMessage, ToolMessage, message_to_dict
     from langgraph.types import Command
@@ -218,7 +250,8 @@ def worker(out, arm, offline=False):
     started = time.monotonic()
     counts = dict(llm_calls=0, input_tokens=0, output_tokens=0, tool_calls=0,
                   execution_errors=0, execution_calls=0, local_failure_stops=0,
-                  manager_calls=0, evaluator_calls=0, manager_retries=0)
+                  manager_calls=0, evaluator_calls=0, manager_retries=0,
+                  cached_input_tokens=0, reasoning_tokens=0)
     lock = threading.RLock()
     calls = {}
 
@@ -230,6 +263,8 @@ def worker(out, arm, offline=False):
     class Recorder(BaseCallbackHandler):
         raise_error = True
         def on_chat_model_start(self, serialized, messages, *, run_id, **kwargs):
+            if model_config and any((out.parents[1] / name).exists() for name in ('STOP.json', 'INVALIDATED.json')):
+                raise StudyStopped('Background study stop requested')
             with lock:
                 counts['llm_calls'] += 1
                 calls[str(run_id)] = counts['llm_calls']
@@ -244,6 +279,8 @@ def worker(out, arm, offline=False):
                         usage = getattr(msg, 'usage_metadata', None) or {}
                         counts['input_tokens'] += usage.get('input_tokens', 0)
                         counts['output_tokens'] += usage.get('output_tokens', 0)
+                        counts['cached_input_tokens'] += (usage.get('input_token_details') or {}).get('cache_read', 0)
+                        counts['reasoning_tokens'] += (usage.get('output_token_details') or {}).get('reasoning', 0)
                         dump(case / 'calls' / f'{calls.get(str(run_id),0):03d}_output.json', message_to_dict(msg))
                 dump(case / 'heartbeat.json', dict(updated=now(), counts=counts, status='working'))
                 for group in response.generations:
@@ -255,10 +292,39 @@ def worker(out, arm, offline=False):
     recorder = Recorder()
     original_build = models.build_chat_model
     def build_model(model_id, **kwargs):
-        kwargs.update(callbacks=[recorder], max_retries=2, parallel_tool_calls=False)
+        kwargs.update(callbacks=[recorder], max_retries=2)
+        if model_config:
+            if model_id != manifest['model']:
+                raise ValueError('Unexpected backbone requested: ' + model_id)
+            kwargs.update(model_config.get('constructor_overrides', {}))
+            event('model_configuration', model_id=model_id, role=kwargs.get('role'),
+                  provider=model_config['provider'], api_model=model_config['api_model'])
+        else:
+            kwargs['parallel_tool_calls'] = False
         return original_build(model_id, **kwargs)
     models.build_chat_model = build_model
-    models.set_selection(MODEL, MODEL); models.set_model_seed(seed)
+    models.set_selection(model_id, model_id)
+    models.set_model_seed(model_config.get('request_seed') if model_config else seed)
+    if model_config and model_config['provider'] == 'openrouter':
+        import fcntl
+        from langchain_openai import ChatOpenAI
+        original_generate = ChatOpenAI._generate
+        def serialized_generate(self, *args, **kwargs):
+            while True:
+                if any((out.parents[1]/name).exists() for name in ('STOP.json','INVALIDATED.json')):
+                    raise StudyStopped('Study stopped while waiting for OpenRouter')
+                with (out.parents[1]/'openrouter_request.lock').open('a') as stream:
+                    fcntl.flock(stream, fcntl.LOCK_EX)
+                    try:
+                        return original_generate(self, *args, **kwargs)
+                    except Exception as exc:
+                        # Billing/concurrency outages are infrastructure, not
+                        # scientific failures. Preserve the attempt and await funding.
+                        if getattr(exc, 'status_code', None) != 402:
+                            raise
+                        event('waiting_for_openrouter_credits', error=str(exc)[:400])
+                time.sleep(30)
+        ChatOpenAI._generate = serialized_generate
 
     guard_dir = workspace / '.python_guard'; guard_dir.mkdir()
     shutil.copy2(source / 'benchmark/lohoff_execution_guard.py', guard_dir / 'sitecustomize.py')
@@ -471,17 +537,17 @@ def worker(out, arm, offline=False):
         # Union of native specialist analysis tools, with duplicate names collapsed.
         analysis_tools={t.name:t for a in AgentDefns if isinstance(a,ReActAgent) for t in a.tools}
         analysis_tools[read_template_tool.name]=read_template_tool
-        graph=create_deep(model=models.build_chat_model(MODEL,role='worker'),
+        graph=create_deep(model=models.build_chat_model(model_id,role='worker'),
                           tools=list(analysis_tools.values()), system_prompt=au.substitute_shared_prompts(combined),
                           backend=IsolatedBackend(root_dir=str(workspace),virtual_mode=True,inherit_env=False))
     else:
         graph=gm.create_tissueagent_graph(queue,lambda m:m,
                     allow_targeted_replanning=arm!='no_evaluator_replanning').compile()
-    config=dict(arm=arm,model=MODEL,seed=seed,panel=manifest.get('panel'),no_skills=no_skills,
+    config=dict(arm=arm,model=model_id,seed=seed,panel=manifest.get('panel'),no_skills=no_skills,
                 registered_skills=list(get_skill_metadata()),
                 template_index=_build_template_index(),
                 domain_agents=[a.id for a in AgentDefns],limits=LIMITS,
-                model_spec=str(models.get_model_spec(MODEL)))
+                model_spec=str(models.get_model_spec(model_id)), model_config=model_config)
     dump(case / 'condition.json',config)
     if offline:
         # Exercise the actual callbacks beyond the former caps without API calls.
@@ -500,9 +566,10 @@ def worker(out, arm, offline=False):
         else:
             raise AssertionError('Truncated responses must not be marked completed')
         assert counts['output_tokens'] == 8192
-        payload = models.build_chat_model(MODEL)._get_request_payload([HumanMessage('offline payload check')])
-        assert 'max_completion_tokens' not in payload and 'max_tokens' not in payload
-        assert payload['seed'] == seed
+        if not model_config:
+            payload = models.build_chat_model(model_id)._get_request_payload([HumanMessage('offline payload check')])
+            assert 'max_completion_tokens' not in payload and 'max_tokens' not in payload
+            assert payload['seed'] == seed
         counts.update({name: 0 for name in counts})
         shutil.rmtree(case / 'calls')
         (case / 'heartbeat.json').unlink()
@@ -542,6 +609,8 @@ def worker(out, arm, offline=False):
     status='completed'; error=None; state=None
     try:
         state=graph.invoke({'messages':[HumanMessage(prompt)]},config={'recursion_limit':LIMITS['graph_steps']})
+    except StudyStopped as exc:
+        status='stopped';error=str(exc)
     except ResponseTruncated as exc:
         status='response_truncated';error=str(exc)
     except Exception as exc:

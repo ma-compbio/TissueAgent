@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run and resume the three-arm spatial paper benchmark."""
+"""Run and resume the spatial paper benchmark and standalone CV extension."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import os
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from benchmark.spatial_cellbench.methods import (
     LangChainModelCall,
     register_benchmark_models,
     run_direct,
+    run_spatial_cv,
 )
 from benchmark.spatial_cellbench.prompts import (
     DIRECT_SYSTEM,
@@ -29,9 +31,12 @@ from benchmark.spatial_cellbench.schemas import (
     validate_proposal_count,
 )
 from benchmark.spatial_cellbench.statistics import paired_summary, paper_arm_means
+from benchmark.spatial_cellbench.refinement import OVERVIEW_ARM, REFINED_ARM
 from benchmark.spatial_cellbench.ta import (
     TA_ARM,
     TA_CV_ARM,
+    SPATIAL_CV_PROTOCOL,
+    _expected_cv_stages,
     recover_ta_partial_trace,
     run_tissueagent,
 )
@@ -46,7 +51,11 @@ CONTEXTS_PATH = DATA_DIR / "public_contexts.json"
 TRUTH_PATH = DATA_DIR / "ground_truth.json"
 OVERVIEW_PATH = BENCHMARK_DIR / "prompts" / "spatial_analysis_overview.md"
 PROTOCOL = "spatial_cellbench_dynamic_n_v2"
-ARMS = ("direct", TA_ARM, TA_CV_ARM)
+DEFAULT_ARMS = ("direct", TA_ARM, TA_CV_ARM)
+CV_ARM = "spatial_cv"
+EXPERIMENTAL_NATIVE_ARMS = (OVERVIEW_ARM, REFINED_ARM)
+NATIVE_ARMS = (TA_ARM, TA_CV_ARM, *EXPERIMENTAL_NATIVE_ARMS)
+ARMS = (*DEFAULT_ARMS, CV_ARM, *EXPERIMENTAL_NATIVE_ARMS)
 GENERATION_MODEL = "o3-mini"
 ORCHESTRATION_MODEL = "gpt-5.1"
 JUDGE_MODEL = "gpt-4o"
@@ -118,9 +127,7 @@ def _source_fingerprint() -> dict:
         )
     )
     for directory in (ROOT / "src" / "graph", ROOT / "src" / "agents"):
-        paths.extend(
-            path for path in directory.rglob("*") if path.suffix in {".py", ".txt", ".md"}
-        )
+        paths.extend(path for path in directory.rglob("*") if path.suffix in {".py", ".txt", ".md"})
     paths.extend((ROOT / "knowledge" / "plans").glob("*.md"))
     digest = hashlib.sha256()
     files = sorted({path.resolve() for path in paths if path.is_file()})
@@ -165,16 +172,10 @@ def _load_corpus() -> tuple[list[PublicContext], dict[str, GroundTruthPaper], di
     overview = OVERVIEW_PATH.read_text(encoding="utf-8")
     if _sha256_text(overview) != manifest["frozen_artifacts"]["spatial_overview_sha256"]:
         raise ValueError("Frozen spatial overview hash mismatch")
-    contexts = {
-        record.eval_id: record for record in _read_jsonl(CONTEXTS_PATH, PublicContext)
-    }
-    truths = {
-        record.eval_id: record for record in _read_jsonl(TRUTH_PATH, GroundTruthPaper)
-    }
+    contexts = {record.eval_id: record for record in _read_jsonl(CONTEXTS_PATH, PublicContext)}
+    truths = {record.eval_id: record for record in _read_jsonl(TRUTH_PATH, GroundTruthPaper)}
     included = [
-        paper["opaque_id"]
-        for paper in manifest["papers"]
-        if paper["eligibility"] == "include"
+        paper["opaque_id"] for paper in manifest["papers"] if paper["eligibility"] == "include"
     ]
     return [contexts[eval_id] for eval_id in included], truths, manifest, overview
 
@@ -203,9 +204,7 @@ def _run_identity(
         "overview_sha256": _sha256_text(overview),
         "public_contexts_sha256": manifest["frozen_artifacts"]["public_contexts_sha256"],
         "ground_truth_sha256": manifest["frozen_artifacts"]["ground_truth_sha256"],
-        "scope_adjudication_sha256": manifest["frozen_artifacts"][
-            "scope_adjudication_sha256"
-        ],
+        "scope_adjudication_sha256": manifest["frozen_artifacts"]["scope_adjudication_sha256"],
     }
 
 
@@ -310,7 +309,7 @@ def _caller_trace(
         "calls": caller.traces,
         "failed_attempts": caller.failed_attempts,
         "prompt_bundle_sha256": prompt_hash,
-        "overview_sha256": None,
+        "overview_sha256": _sha256_text(overview) if arm == CV_ARM else None,
         "elapsed_seconds": round(time.perf_counter() - started, 3),
     }
 
@@ -355,7 +354,7 @@ def run_generation_worker(payload: dict, workspace_root: Path) -> dict:
     )
     if payload["unit_fingerprint"] != expected_fingerprint:
         raise ValueError("Generation unit fingerprint mismatch")
-    if arm in {TA_ARM, TA_CV_ARM}:
+    if arm in NATIVE_ARMS:
         result = run_tissueagent(
             public,
             overview,
@@ -364,17 +363,37 @@ def run_generation_worker(payload: dict, workspace_root: Path) -> dict:
             proposal_count,
             workspace_root,
             include_spatial_cv=arm == TA_CV_ARM,
+            **({"experimental_arm": arm} if arm in EXPERIMENTAL_NATIVE_ARMS else {}),
         )
         proposals = validate_proposal_count(result["proposals"], proposal_count)
         trace = result["trace"]
     else:
         caller = LangChainModelCall(model_id)
         started = time.perf_counter()
-        prompt_hash = _sha256_text(
-            DIRECT_SYSTEM + "\n" + direct_prompt(public.context, proposal_count)
+        prompt_hash = (
+            _sha256_json(
+                {
+                    "protocol": SPATIAL_CV_PROTOCOL,
+                    "context_sha256": public.context_sha256,
+                    "overview_sha256": _sha256_text(overview),
+                    "prompts_sha256": hashlib.sha256(
+                        (BENCHMARK_DIR / "prompts.py").read_bytes()
+                    ).hexdigest(),
+                    "proposal_count": proposal_count,
+                }
+            )
+            if arm == CV_ARM
+            else _sha256_text(DIRECT_SYSTEM + "\n" + direct_prompt(public.context, proposal_count))
         )
         try:
-            proposals = run_direct(public, proposal_count, caller)
+            if arm == CV_ARM:
+                proposals = run_spatial_cv(public, overview, proposal_count, caller)
+                expected_stages = _expected_cv_stages(proposal_count)
+            else:
+                proposals = run_direct(public, proposal_count, caller)
+                expected_stages = ["direct"]
+            if [call.get("stage") for call in caller.traces] != expected_stages:
+                raise RuntimeError(f"{arm} call stages do not match its protocol")
         except Exception as exc:
             trace = _caller_trace(
                 caller,
@@ -395,10 +414,8 @@ def run_generation_worker(payload: dict, workspace_root: Path) -> dict:
             overview,
             started,
         )
-        if caller.call_count != 1:
-            raise RuntimeError(
-                f"{arm} made {caller.call_count} successful calls; expected 1"
-            )
+        if arm == CV_ARM:
+            trace["cv_protocol"] = SPATIAL_CV_PROTOCOL
     return {
         "protocol": PROTOCOL,
         "unit_fingerprint": expected_fingerprint,
@@ -429,7 +446,7 @@ def _worker_main(args: argparse.Namespace) -> int:
             "error": str(exc)[:1000],
         }
         trace = getattr(exc, "trace", None)
-        if payload.get("arm") in {TA_ARM, TA_CV_ARM}:
+        if payload.get("arm") in NATIVE_ARMS:
             try:
                 trace = recover_ta_partial_trace(
                     PublicContext.model_validate(payload["public"]),
@@ -440,6 +457,13 @@ def _worker_main(args: argparse.Namespace) -> int:
                     args.workspace_root,
                     include_spatial_cv=payload["arm"] == TA_CV_ARM,
                 )
+                refinement_path = (args.workspace_root / "workspace" / "project" / "outputs"
+                                   / "audit" / "refinement_trace.json")
+                if refinement_path.is_file():
+                    trace = {
+                        **(trace or {}),
+                        "refinement_trace": json.loads(refinement_path.read_text()),
+                    }
             except Exception as recovery_exc:
                 output["partial_trace_error"] = (
                     f"{type(recovery_exc).__name__}: {str(recovery_exc)[:300]}"
@@ -486,11 +510,7 @@ def _run_generation_subprocess(
     retry_failed: bool,
 ) -> dict:
     result_path = (
-        run_dir
-        / "generation"
-        / public.eval_id
-        / f"replicate_{replicate:02d}"
-        / f"{arm}.json"
+        run_dir / "generation" / public.eval_id / f"replicate_{replicate:02d}" / f"{arm}.json"
     )
     payload = _generation_payload(
         public,
@@ -612,10 +632,7 @@ def _judge_checkpoint(
             and existing.get("status") == "skipped"
             and existing.get("reason") == "generation_failed"
         )
-        if (
-            existing.get("unit_fingerprint") != fingerprint
-            and not retry_after_generation_failure
-        ):
+        if existing.get("unit_fingerprint") != fingerprint and not retry_after_generation_failure:
             raise ValueError("Judge checkpoint fingerprint mismatch")
         if existing.get("status") == "success" or not retry_failed:
             return existing
@@ -706,9 +723,7 @@ def _aggregate(
         arm_rows = [row for row in rows if row["arm"] == arm]
         aggregate["completion"][arm] = {
             "scheduled": len(arm_units),
-            "generation_success": sum(
-                unit["generation_status"] == "success" for unit in arm_units
-            ),
+            "generation_success": sum(unit["generation_status"] == "success" for unit in arm_units),
             "judge_success": sum(unit["judge_status"] == "success" for unit in arm_units),
         }
         matched = sum(row["metrics"]["matched_candidates"] for row in arm_rows)
@@ -717,8 +732,7 @@ def _aggregate(
             "scored_units": len(arm_rows),
             "pooled_candidate_hit": matched / candidates if candidates else None,
             "mean_scored_unit_hit": (
-                sum(row["metrics"]["candidate_hit_fraction"] for row in arm_rows)
-                / len(arm_rows)
+                sum(row["metrics"]["candidate_hit_fraction"] for row in arm_rows) / len(arm_rows)
                 if arm_rows
                 else None
             ),
@@ -727,9 +741,7 @@ def _aggregate(
         }
         if replicates == 3:
             means = paper_arm_means(rows, "candidate_hit_fraction")
-            paper_values = [
-                by_arm[arm] for by_arm in means.values() if arm in by_arm
-            ]
+            paper_values = [by_arm[arm] for by_arm in means.values() if arm in by_arm]
             summary["mean_paper_hit"] = (
                 sum(paper_values) / len(paper_values) if paper_values else None
             )
@@ -801,9 +813,7 @@ def _completion_exit_code(units: list[dict], skip_judge: bool) -> int:
 
 def _git_metadata() -> dict:
     try:
-        commit = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
-        ).strip()
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         status = subprocess.check_output(
             ["git", "status", "--porcelain"], cwd=ROOT, text=True
         ).strip()
@@ -830,6 +840,8 @@ def run_controller(args: argparse.Namespace) -> int:
         raise ValueError(f"--arms must be unique values from {ARMS}")
     if args.replicates not in (1, 2, 3):
         raise ValueError("--replicates must be 1, 2, or 3")
+    if args.workers < 1:
+        raise ValueError("--workers must be positive")
     identity = _run_identity(contexts, truths, manifest, overview, arms, args.replicates)
     source = identity["source_fingerprint"]
     if args.validate_only:
@@ -841,6 +853,7 @@ def run_controller(args: argparse.Namespace) -> int:
         "at": datetime.now(timezone.utc).isoformat(),
         "skip_judge": args.skip_judge,
         "retry_failed": args.retry_failed,
+        "workers": args.workers,
     }
     if meta_path.is_file():
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
@@ -858,63 +871,89 @@ def run_controller(args: argparse.Namespace) -> int:
 
     rows = []
     units = []
-    for public in contexts:
+
+    def execute_unit(public, replicate, arm):
         truth = truths[public.eval_id]
         proposal_count = len(truth.analyses)
-        for replicate in range(1, args.replicates + 1):
-            for arm in arms:
-                generation = _run_generation_subprocess(
-                    args.run_dir,
-                    public,
-                    proposal_count,
-                    arm,
-                    replicate,
-                    args.model,
-                    args.orchestration_model,
-                    overview,
-                    source["sha256"],
-                    args.timeout,
-                    args.retry_failed,
-                )
-                judged = None
-                judge_status = "not_run"
-                if not args.skip_judge:
-                    judged = _judge_checkpoint(
-                        args.run_dir,
-                        public,
-                        truth,
-                        arm,
-                        replicate,
-                        generation,
-                        args.judge_model,
-                        manifest["frozen_artifacts"]["ground_truth_sha256"],
-                        args.retry_failed,
-                    )
-                    judge_status = judged["status"]
-                unit = {
+        generation = _run_generation_subprocess(
+            args.run_dir,
+            public,
+            proposal_count,
+            arm,
+            replicate,
+            args.model,
+            args.orchestration_model,
+            overview,
+            source["sha256"],
+            args.timeout,
+            args.retry_failed,
+        )
+        judged = None
+        judge_status = "not_run"
+        if not args.skip_judge:
+            judged = _judge_checkpoint(
+                args.run_dir,
+                public,
+                truth,
+                arm,
+                replicate,
+                generation,
+                args.judge_model,
+                manifest["frozen_artifacts"]["ground_truth_sha256"],
+                args.retry_failed,
+            )
+            judge_status = judged["status"]
+        unit = {
+            "eval_id": public.eval_id,
+            "replicate": replicate,
+            "arm": arm,
+            "proposal_count": proposal_count,
+            "generation_status": generation["status"],
+            "judge_status": judge_status,
+            "error_type": generation.get("error_type") or (judged or {}).get("error_type"),
+            "reason": generation.get("error")
+            or (judged or {}).get("error")
+            or (judged or {}).get("reason"),
+            "generation_trace": generation.get("trace"),
+        }
+        row = None
+        if judged and judged.get("status") == "success":
+            row = {
+                "eval_id": public.eval_id,
+                "replicate": replicate,
+                "arm": arm,
+                "metrics": judged["metrics"],
+            }
+        print(
+            json.dumps(
+                {
                     "eval_id": public.eval_id,
                     "replicate": replicate,
                     "arm": arm,
-                    "proposal_count": proposal_count,
-                    "generation_status": generation["status"],
-                    "judge_status": judge_status,
-                    "error_type": generation.get("error_type")
-                    or (judged or {}).get("error_type"),
-                    "reason": generation.get("error")
-                    or (judged or {}).get("error")
-                    or (judged or {}).get("reason"),
-                    "generation_trace": generation.get("trace"),
+                    "generation": unit["generation_status"],
+                    "judge": unit["judge_status"],
                 }
-                units.append(unit)
-                if judged and judged.get("status") == "success":
-                    rows.append(
-                        {
-                            "eval_id": public.eval_id,
-                            "replicate": replicate,
-                            "arm": arm,
-                            "metrics": judged["metrics"],
-                        }
-                    )
+            ),
+            flush=True,
+        )
+        return unit, row
+
+    jobs = [
+        (public, replicate, arm)
+        for public in contexts
+        for replicate in range(1, args.replicates + 1)
+        for arm in arms
+    ]
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        futures = [pool.submit(execute_unit, *job) for job in jobs]
+        for future in as_completed(futures):
+            unit, row = future.result()
+            units.append(unit)
+            if row is not None:
+                rows.append(row)
+    key = lambda item: (item["eval_id"], item["replicate"], item["arm"])
+    rows.sort(key=key)
+    units.sort(key=key)
     _aggregate(
         args.run_dir,
         rows,
@@ -942,16 +981,14 @@ def merge_paper_runs(args: argparse.Namespace) -> int:
             raise FileNotFoundError(f"Missing paper aggregate: {path}")
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         expected_identity = _run_identity(
-            [public], truths, manifest, overview, list(ARMS), 3
+            [public], truths, manifest, overview, list(DEFAULT_ARMS), 3
         )
         if meta.get("identity") != expected_identity:
             raise ValueError(f"Paper run identity mismatch: {public.eval_id}")
         payload = json.loads(path.read_text(encoding="utf-8"))
         _validate_checkpoint_hash(payload, f"Paper aggregate {public.eval_id}")
         expected_keys = {
-            (public.eval_id, replicate, arm)
-            for replicate in (1, 2, 3)
-            for arm in ARMS
+            (public.eval_id, replicate, arm) for replicate in (1, 2, 3) for arm in DEFAULT_ARMS
         }
         unit_keys = {
             (unit["eval_id"], int(unit["replicate"]), unit["arm"])
@@ -969,8 +1006,7 @@ def merge_paper_runs(args: argparse.Namespace) -> int:
         ):
             raise ValueError(f"Paper aggregate is incomplete: {public.eval_id}")
         if any(
-            unit.get("generation_status") != "success"
-            or unit.get("judge_status") != "success"
+            unit.get("generation_status") != "success" or unit.get("judge_status") != "success"
             for unit in payload["unit_ledger"]
         ):
             raise ValueError(f"Paper aggregate contains failed units: {public.eval_id}")
@@ -981,7 +1017,7 @@ def merge_paper_runs(args: argparse.Namespace) -> int:
         rows,
         units,
         [public.eval_id for public in contexts],
-        list(ARMS),
+        list(DEFAULT_ARMS),
         3,
     )
     return 0
@@ -995,7 +1031,8 @@ def _parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--model", default=GENERATION_MODEL)
     run_parser.add_argument("--orchestration-model", default=ORCHESTRATION_MODEL)
     run_parser.add_argument("--judge-model", default=JUDGE_MODEL)
-    run_parser.add_argument("--arms", default=",".join(ARMS))
+    run_parser.add_argument("--arms", default=",".join(DEFAULT_ARMS))
+    run_parser.add_argument("--workers", type=int, default=1)
     run_parser.add_argument("--replicates", type=int, default=3)
     selection = run_parser.add_mutually_exclusive_group()
     selection.add_argument("--paper-id", action="append")

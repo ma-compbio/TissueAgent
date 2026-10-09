@@ -213,7 +213,7 @@ def build_critic_prompt(
 
 def build_critic_tools(outputs: Path) -> list:
     """Return read tools plus one benchmark-scoped critique writer."""
-    from langchain.tools import StructuredTool
+    from langchain_core.tools import StructuredTool
 
     from agents.agent_tools import file_read_tools
 
@@ -327,7 +327,7 @@ def create_spatial_cv_agent(
 ):
     """Create the naturally recruitable benchmark-local Spatial-CV tool."""
     del state_queue, context_resolver
-    from langchain.tools import StructuredTool
+    from langchain_core.tools import StructuredTool
 
     if (
         spatial_cv_public is None
@@ -440,10 +440,12 @@ def build_ta_roster(
     include_spatial_cv: bool,
     overview: str,
     model_id: str,
+    shared_overview: bool = False,
 ) -> list:
     """Build the native TA roster; TA+CV adds exactly one optional specialist."""
     from agents.agent_defns import CustomAgent, ReActAgent, WorkerModelCtor
     from agents.agent_registry.hypothesis_agent.model import create_hypothesis_agent
+    from benchmark.spatial_cellbench.refinement import overview_guidance
 
     roster = [
         CustomAgent(
@@ -463,7 +465,8 @@ def build_ta_roster(
                 "Review-only critic for candidate spatial paper analyses. Writes only "
                 "hypotheses/critique.json and never writes draft or final proposals."
             ),
-            prompt=lambda _state: build_critic_prompt(public, outputs, proposal_count),
+            prompt=lambda _state: build_critic_prompt(public, outputs, proposal_count)
+            + (overview_guidance(overview) if shared_overview else ""),
             tools=build_critic_tools(outputs),
             model_ctor=WorkerModelCtor,
         ),
@@ -739,8 +742,17 @@ def run_tissueagent(
     proposal_count: int,
     workspace_root: Path,
     include_spatial_cv: bool,
+    experimental_arm: str | None = None,
 ) -> dict:
     """Run the real outer TissueAgent graph with a restricted domain roster."""
+    from benchmark.spatial_cellbench.refinement import (
+        OVERVIEW_ARM, OVERVIEW_PROTOCOL, REFINED_ARM, RefinementSession, overview_guidance,
+    )
+
+    if experimental_arm not in {None, OVERVIEW_ARM, REFINED_ARM}:
+        raise ValueError("Unknown experimental native protocol")
+    if experimental_arm and include_spatial_cv:
+        raise ValueError("Experimental native arms cannot recruit Spatial-CV")
     _validate_public(public)
     if workspace_root.exists() and any(workspace_root.iterdir()):
         raise ValueError("TissueAgent benchmark workspace must be fresh and empty")
@@ -768,7 +780,12 @@ def run_tissueagent(
         include_spatial_cv,
         overview,
         model_id,
+        shared_overview=experimental_arm == OVERVIEW_ARM,
     )
+    refinement = None
+    if experimental_arm == REFINED_ARM:
+        refinement = RefinementSession(public, overview, proposal_count, outputs, model_id)
+        roster = refinement.roster()
     audit_path = outputs / "audit" / "hypothesis_prompt_exposure.jsonl"
     write_audit_path = outputs / "audit" / "hypothesis_validated_writes.jsonl"
     hypothesis_prompt = lambda: build_hypothesis_prompt(
@@ -776,7 +793,7 @@ def run_tissueagent(
         outputs,
         proposal_count,
         audit_path,
-    )
+    ) + (overview_guidance(overview) if experimental_arm == OVERVIEW_ARM else "")
     task = build_ta_task(public, proposal_count, require_spatial_cv=include_spatial_cv)
 
     from agents.recruiter_agent import prompt as recruiter_prompt
@@ -830,6 +847,10 @@ def run_tissueagent(
         {"recursion_limit": config.RECURSION_LIMIT},
     )
     elapsed = time.perf_counter() - started
+    if refinement is not None:
+        refinement.verify_artifacts()
+        if refinement.trace()["status"] != "success":
+            raise RuntimeError("Native refinement did not complete its bounded protocol")
     outer_graph_trace = _outer_agent_trace(result)
     _validate_outer_agent_trace(outer_graph_trace)
     manager_tool_calls = _agent_tool_calls(result, "manager_agent")
@@ -931,6 +952,12 @@ def run_tissueagent(
     )
     if not final_authors:
         raise RuntimeError("Final artifact does not match an audited native-agent write")
+    if refinement is not None and (
+        manager_writes or final_authors != ["hypothesis_agent"]
+    ):
+        raise RuntimeError(
+            "Refined proposals must be authored exclusively by the Hypothesis adapter"
+        )
     draft_path = outputs / "hypotheses" / "draft_proposals.json"
     draft_writes = [
         record
@@ -976,6 +1003,10 @@ def run_tissueagent(
     )
     if include_spatial_cv and not cv_exposed:
         raise RuntimeError("TA+CV final synthesis did not receive the recruited CV artifact")
+    if experimental_arm and (
+        len(plan.steps) != 3 or unassigned or unexpected_expected or wrong_owners
+    ):
+        raise RuntimeError("Experimental native arm requires three correctly assigned milestones")
     model_spec = models.get_model_spec(model_id)
     orchestration_model_spec = models.get_model_spec(orchestration_model_id)
     return {
@@ -1017,7 +1048,7 @@ def run_tissueagent(
             ],
             "artifact_author_candidates": artifact_author_candidates,
             "intermediate_artifact_validity": intermediate_artifact_validity,
-            "hypothesis_invoked": bool(exposures),
+            "hypothesis_invoked": bool(exposures) or bool(refinement and refinement.drafts),
             "hypothesis_validated_write_count": len(validated_writes),
             "hypothesis_draft_write_count": len(draft_writes),
             "hypothesis_final_write_count": len(final_writes),
@@ -1043,5 +1074,13 @@ def run_tissueagent(
             "ta_ai_calls": _collect_ai_usage(states),
             "elapsed_seconds": round(elapsed, 3),
             "final_artifact_sha256": hashlib.sha256(final_path.read_bytes()).hexdigest(),
+            **({
+                "experimental_arm": experimental_arm,
+                "overview_sha256": _sha256_text(overview),
+                "native_protocol": (
+                    refinement.trace()["protocol"] if refinement else OVERVIEW_PROTOCOL
+                ),
+                "refinement_trace": refinement.trace() if refinement else None,
+            } if experimental_arm else {}),
         },
     }

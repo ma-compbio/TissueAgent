@@ -21,6 +21,8 @@ from benchmark.spatial_cellbench.methods import run_direct, run_spatial_cv
 from benchmark.spatial_cellbench.prompts import cv_draft_prompt, direct_prompt
 from benchmark.spatial_cellbench.run import (
     ARMS,
+    CV_ARM,
+    DEFAULT_ARMS,
     GENERATION_MODEL,
     JUDGE_MODEL,
     ORCHESTRATION_MODEL,
@@ -329,11 +331,134 @@ def test_retry_replaces_skipped_judge_after_generation_recovers(
 
 
 def test_frozen_arms_and_models_have_no_forced_treatment() -> None:
-    assert ARMS == ("direct", TA_ARM, TA_CV_ARM)
+    assert DEFAULT_ARMS == ("direct", TA_ARM, TA_CV_ARM)
+    assert ARMS == (*DEFAULT_ARMS, CV_ARM, "tissueagent_overview", "tissueagent_refined")
     assert GENERATION_MODEL == "o3-mini"
     assert ORCHESTRATION_MODEL == "gpt-5.1"
     assert JUDGE_MODEL == "gpt-4o"
     assert "forced" not in " ".join(ARMS)
+
+
+def test_standalone_cv_worker_uses_review_loop_without_native_graph(monkeypatch, tmp_path):
+    public = public_context()
+    caller = FakeCaller()
+    monkeypatch.setattr(run_module, "_source_fingerprint", lambda: {"sha256": "source"})
+    monkeypatch.setattr(run_module, "LangChainModelCall", lambda model: caller)
+    monkeypatch.setattr(
+        run_module,
+        "run_tissueagent",
+        lambda *args, **kwargs: pytest.fail("Standalone CV invoked TissueAgent"),
+    )
+    payload = _generation_payload(
+        public, 3, CV_ARM, 1, GENERATION_MODEL, ORCHESTRATION_MODEL, "overview", "source"
+    )
+    result = run_module.run_generation_worker(payload, tmp_path)
+    assert len(result["proposals"]["proposals"]) == 3
+    assert caller.stages == _expected_cv_stages(3)
+    assert result["trace"]["logical_model_calls"] == 9
+    assert result["trace"]["overview_sha256"] == hashlib.sha256(b"overview").hexdigest()
+    assert result["trace"]["cv_protocol"] == "spatial_cv_dynamic_n_v1"
+    assert "ground_truth" not in json.dumps(payload)
+
+
+def test_model_registration_accepts_display_label_but_rejects_protocol_drift(monkeypatch):
+    from dataclasses import dataclass, replace
+    from benchmark.spatial_cellbench.methods import register_benchmark_models
+
+    @dataclass
+    class Spec:
+        id: str
+        provider: str
+        api_model: str
+        label: str
+        reasoning_effort: str | None = None
+
+    judge = Spec("gpt-4o", "openai", "gpt-4o", "GPT-4o")
+    fake = ModuleType("models")
+    fake.ModelSpec = Spec
+    fake._MODELS_BY_ID = {"gpt-4o": judge}
+    monkeypatch.setitem(sys.modules, "models", fake)
+    register_benchmark_models()
+    assert fake._MODELS_BY_ID["gpt-4o"] is judge
+    fake._MODELS_BY_ID["gpt-4o"] = replace(judge, api_model="different-model")
+    with pytest.raises(ValueError, match="conflicts"):
+        register_benchmark_models()
+
+
+def test_standalone_cv_rejects_incomplete_call_trace(monkeypatch, tmp_path):
+    caller = FakeCaller()
+    monkeypatch.setattr(run_module, "_source_fingerprint", lambda: {"sha256": "source"})
+    monkeypatch.setattr(run_module, "LangChainModelCall", lambda model: caller)
+    monkeypatch.setattr(run_module, "run_spatial_cv", lambda *args: proposals(3))
+    payload = _generation_payload(
+        public_context(),
+        3,
+        CV_ARM,
+        1,
+        GENERATION_MODEL,
+        ORCHESTRATION_MODEL,
+        "overview",
+        "source",
+    )
+    with pytest.raises(run_module.GenerationMethodError, match="call stages") as failure:
+        run_module.run_generation_worker(payload, tmp_path)
+    assert failure.value.trace["logical_model_calls"] == 0
+
+
+def test_parallel_controller_preserves_all_units_and_resumes(monkeypatch, tmp_path):
+    public = public_context()
+    hidden = truth(2)
+    manifest = {"frozen_artifacts": {"ground_truth_sha256": "truth"}}
+    monkeypatch.setattr(
+        run_module,
+        "_load_corpus",
+        lambda: ([public], {public.eval_id: hidden}, manifest, "overview"),
+    )
+    monkeypatch.setattr(
+        run_module,
+        "_run_identity",
+        lambda *args: {
+            "source_fingerprint": {"sha256": "source"},
+        },
+    )
+    monkeypatch.setattr(
+        run_module,
+        "_run_generation_subprocess",
+        lambda *args: {
+            "status": "success",
+            "trace": {},
+        },
+    )
+    monkeypatch.setattr(
+        run_module,
+        "_judge_checkpoint",
+        lambda *args: {
+            "status": "success",
+            "metrics": {
+                "matched_candidates": 1,
+                "candidate_count": 2,
+                "candidate_hit_fraction": 0.5,
+            },
+        },
+    )
+    args = run_module._parser().parse_args(
+        [
+            "run",
+            "--run-dir",
+            str(tmp_path),
+            "--arms",
+            CV_ARM,
+            "--workers",
+            "3",
+        ]
+    )
+    assert run_module.run_controller(args) == 0
+    assert run_module.run_controller(args) == 0
+    aggregate = json.loads((tmp_path / "aggregate.json").read_text())
+    _validate_checkpoint_hash(aggregate, "parallel aggregate")
+    assert aggregate["scored_unit_count"] == 3
+    assert [row["replicate"] for row in aggregate["scored_rows"]] == [1, 2, 3]
+    assert aggregate["arm_summaries"][CV_ARM]["mean_paper_hit"] == 0.5
 
 
 def test_ta_plus_cv_task_differs_only_by_declared_agent_treatment() -> None:
@@ -425,9 +550,7 @@ def test_recruited_spatial_cv_writes_standard_draft_and_audit_copy(
     result = agent.invoke({"prompt": "Generate the recruited candidate draft."})
     assert "produced 3" in result
     draft = json.loads((tmp_path / "hypotheses" / "draft_proposals.json").read_text())
-    audited = json.loads(
-        (tmp_path / "hypotheses" / "spatial_cv_proposals.json").read_text()
-    )
+    audited = json.loads((tmp_path / "hypotheses" / "spatial_cv_proposals.json").read_text())
     assert draft == audited
     assert len(draft["proposals"]) == 3
 
@@ -630,13 +753,22 @@ def test_frozen_corpus_and_archive_validate() -> None:
         BENCHMARK / "data" / "public_contexts.json",
         BENCHMARK / "data" / "ground_truth.json",
     )
-    assert result["paper_count"] == 11
-    assert result["analysis_count"] == 112
+    assert result["paper_count"] == 20
+    assert result["analysis_count"] == 193
     assert sorted(result["analysis_counts"].values()) == [
         5,
+        8,
+        8,
+        8,
         9,
         9,
         9,
+        9,
+        9,
+        9,
+        10,
+        10,
+        10,
         11,
         11,
         11,
@@ -648,11 +780,15 @@ def test_frozen_corpus_and_archive_validate() -> None:
     archives = [
         ROOT / "papers-20260711T025044Z-2-001.zip",
         ROOT / "papers-20260721T071755Z-1-001.zip",
+        ROOT / "papers-20260902T-extension-001.zip",
     ]
     if all(archive.is_file() for archive in archives):
-        assert validate_archives(
-            BENCHMARK / "data" / "corpus_manifest.json", archives
-        )["verified_pdfs"] == 11
+        assert (
+            validate_archives(BENCHMARK / "data" / "corpus_manifest.json", archives)[
+                "verified_pdfs"
+            ]
+            == 20
+        )
 
 
 def test_contexts_are_title_free_and_have_no_legacy_appendix() -> None:

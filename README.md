@@ -347,6 +347,7 @@ Notebook-based demos are available in `demo/` and can be run end-to-end to repro
 
 **Available notebooks:**
 
+- `demo/figure_recreation_lohoff-2a.ipynb`: atlas and seqFISH figure reproduction from published joint UMAP coordinates and labels
 - `demo/figure_recreation_lohoff-2b.ipynb`: figure reproduction workflow demo 1
 - `demo/figure_recreation_lohoff-2e.ipynb`: figure reproduction workflow demo 2
 - `demo/spot_deconvolution_visium_heart.ipynb`: cell-type deconvolution task
